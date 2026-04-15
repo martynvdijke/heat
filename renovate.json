@@ -24,15 +24,18 @@
   },
   "packageRules": [
     {
+      "matchCategories": [
+        "docker"
+      ],
+      "enabled": true
+    },
+    {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "matchCurrentVersion": "!/^0/",
       "automerge": true
     }
   ],
   "github-actions": {
-    "enabled": true
-  },
-  "docker": {
     "enabled": true
   }
 }
