@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/martynvdijke/heat/compare/v1.0.1...v1.0.2) (2026-04-15)
+
+
+### Bug Fixes
+
+* use /db ([cd6067a](https://github.com/martynvdijke/heat/commit/cd6067a760038d110accfe63cb4046dabd1b9044))
+
 ## [1.0.1](https://github.com/martynvdijke/heat/compare/v1.0.0...v1.0.1) (2026-04-15)
 
 # 1.0.0 (2026-04-15)
