@@ -89,25 +89,25 @@ func main() {
 		http.ServeFile(w, r, "/app/static/admin.html")
 	})
 
-	http.HandleFunc("/api/racers", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/api/racers", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			getRacers(w, r)
 		case "POST":
-			updateRacer(w, r)
+			authMiddleware(updateRacer)(w, r)
 		case "DELETE":
-			deleteRacer(w, r)
+			authMiddleware(deleteRacer)(w, r)
 		}
-	}))
+	})
 
-	http.HandleFunc("/api/race-info", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/api/race-info", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			getRaceInfo(w, r)
 		case "POST":
-			updateRaceInfo(w, r)
+			authMiddleware(updateRaceInfo)(w, r)
 		}
-	}))
+	})
 
 	http.HandleFunc("/api/upload", authMiddleware(handleUpload))
 
