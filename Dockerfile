@@ -1,12 +1,33 @@
-# Use the official Nginx image as the base image
-FROM nginx:alpine
+# Use the official Golang image to build the binary
+FROM golang:1.21-alpine AS builder
 
-# Copy the static web page files to the Nginx html directory
-COPY index.html /usr/share/nginx/html/
-COPY style.css /usr/share/nginx/html/
+# Install build dependencies for sqlite3 (CGO)
+RUN apk add --no-cache gcc musl-dev sqlite-dev
 
-# Expose port 80
-EXPOSE 80
+WORKDIR /app
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Copy go.mod and go.sum
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the source code
+COPY . .
+
+# Build the application with CGO enabled for sqlite3
+RUN CGO_ENABLED=1 GOOS=linux go build -o heat-server .
+
+# Use a small alpine image for the final stage
+FROM alpine:latest
+RUN apk add --no-cache sqlite-libs ca-certificates
+
+WORKDIR /app
+
+# Copy the binary and static files from the builder stage
+COPY --from=builder /app/heat-server .
+COPY --from=builder /app/static ./static
+
+# Expose the port
+EXPOSE 8080
+
+# Run the server
+CMD ["./heat-server"]

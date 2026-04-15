@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEAT Admin - Race Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f8f9fa; font-family: sans-serif; }
+        .admin-header { background: #111; color: white; padding: 20px 0; border-bottom: 5px solid #d40000; }
+        .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .btn-primary { background: #d40000; border-color: #d40000; }
+        .btn-primary:hover { background: #b30000; border-color: #b30000; }
+        .color-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <header class="admin-header mb-5">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0"><i class="fa-solid fa-gears me-2"></i>HEAT RACE CONTROL</h1>
+            <a href="/" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-eye me-1"></i> View Live Board</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row">
+            <!-- Race Info Management -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header bg-white fw-bold"><i class="fa-solid fa-flag-checkered me-2 text-danger"></i>Next Race Info</div>
+                    <div class="card-body">
+                        <form id="race-form">
+                            <div class="mb-3">
+                                <label class="form-label small">Country</label>
+                                <input type="text" class="form-control" name="country" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small">Track Name</label>
+                                <input type="text" class="form-control" name="track" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small">Date</label>
+                                <input type="text" class="form-control" name="date" required>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label small">Days Left</label>
+                                    <input type="number" class="form-control" name="days" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Hours Left</label>
+                                    <input type="number" class="form-control" name="hours" required>
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <label class="form-label small">Temp (°C)</label>
+                                    <input type="number" class="form-control" name="temperature" required>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small">Laps</label>
+                                    <input type="number" class="form-control" name="laps" required>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small">Length</label>
+                                    <input type="text" class="form-control" name="length" required placeholder="5.7KM">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 mt-2">Update Race Data</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Racer Management -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="fa-solid fa-users me-2 text-danger"></i>Racer Standings</span>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#racerModal" onclick="resetRacerForm()">
+                            <i class="fa-solid fa-plus me-1"></i> Add Racer
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Rank</th>
+                                    <th>Driver</th>
+                                    <th>Car</th>
+                                    <th>Points</th>
+                                    <th>Gap</th>
+                                    <th class="text-end pe-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="racer-list">
+                                <!-- Dynamic Content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Racer Modal -->
+    <div class="modal fade" id="racerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="racerModalLabel">Edit Racer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="racer-form">
+                        <input type="hidden" name="id">
+                        <div class="mb-3">
+                            <label class="form-label small">Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small">Profile Picture URL</label>
+                            <input type="url" class="form-control" name="profile_picture" required>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small">Car Name</label>
+                                <input type="text" class="form-control" name="car_name" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Car Color</label>
+                                <select class="form-select" name="car_color" required>
+                                    <option value="red">Red</option>
+                                    <option value="blue">Blue</option>
+                                    <option value="green">Green</option>
+                                    <option value="yellow">Yellow</option>
+                                    <option value="grey">Grey</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-4">
+                                <label class="form-label small">Points</label>
+                                <input type="number" class="form-control" name="points" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small">Rank</label>
+                                <input type="number" class="form-control" name="rank" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small">Gap</label>
+                                <input type="text" class="form-control" name="gap" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small">Fastest Lap</label>
+                            <input type="text" class="form-control" name="fastest_lap">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save Racer Data</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let racers = [];
+        const racerModal = new bootstrap.Modal(document.getElementById('racerModal'));
+
+        // Load Initial Data
+        async function init() {
+            await loadRaceInfo();
+            await loadRacers();
+        }
+
+        async function loadRaceInfo() {
+            const res = await fetch('/api/race-info');
+            const data = await res.json();
+            const form = document.getElementById('race-form');
+            Object.keys(data).forEach(key => {
+                if (form[key]) form[key].value = data[key];
+            });
+        }
+
+        async function loadRacers() {
+            const res = await fetch('/api/racers');
+            racers = await res.json();
+            const list = document.getElementById('racer-list');
+            list.innerHTML = racers.map(r => `
+                <tr>
+                    <td class="ps-3 fw-bold">${r.rank}</td>
+                    <td>
+                        <img src="${r.profile_picture}" class="rounded-circle me-2" width="30" height="30">
+                        ${r.name}
+                    </td>
+                    <td><span class="color-dot bg-${r.car_color}"></span> ${r.car_name}</td>
+                    <td>${r.points}</td>
+                    <td><span class="badge bg-secondary opacity-75">${r.gap}</span></td>
+                    <td class="text-end pe-3">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editRacer(${r.id})">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteRacer(${r.id})">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Form Submissions
+        document.getElementById('race-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd);
+            ['days', 'hours', 'temperature', 'laps'].forEach(k => data[k] = parseInt(data[k]));
+            
+            await fetch('/api/race-info', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            alert('Race data updated!');
+        });
+
+        document.getElementById('racer-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd);
+            data.id = data.id ? parseInt(data.id) : 0;
+            data.points = parseInt(data.points);
+            data.rank = parseInt(data.rank);
+            
+            await fetch('/api/racers', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            racerModal.hide();
+            loadRacers();
+        });
+
+        // Helper Functions
+        function editRacer(id) {
+            const r = racers.find(x => x.id === id);
+            const form = document.getElementById('racer-form');
+            document.getElementById('racerModalLabel').textContent = 'Edit Racer: ' + r.name;
+            Object.keys(r).forEach(key => {
+                if (form[key]) form[key].value = r[key];
+            });
+            racerModal.show();
+        }
+
+        function resetRacerForm() {
+            document.getElementById('racer-form').reset();
+            document.getElementById('racer-form').id.value = "";
+            document.getElementById('racerModalLabel').textContent = 'Add New Racer';
+        }
+
+        async function deleteRacer(id) {
+            if (confirm('Are you sure you want to remove this racer?')) {
+                await fetch(`/api/racers?id=${id}`, {method: 'DELETE'});
+                loadRacers();
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
