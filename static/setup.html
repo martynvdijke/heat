@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEAT Admin - Setup</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #111; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 40px; width: 100%; max-width: 400px; }
+        .admin-header { background: #d40000; color: white; padding: 10px 20px; border-radius: 5px; margin-bottom: 30px; text-align: center; }
+        .form-control { background: #2a2a2a; border: 1px solid #444; color: white; }
+        .form-control:focus { background: #333; border-color: #d40000; color: white; }
+        .btn-primary { background: #d40000; border-color: #d40000; }
+        .btn-primary:hover { background: #b30000; border-color: #b30000; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="admin-header">
+            <h4><i class="fa-solid fa-gears me-2"></i>HEAT Admin Setup</h4>
+        </div>
+        <form id="setup-form">
+            <div class="mb-3">
+                <label class="form-label text-white">Username</label>
+                <input type="text" class="form-control" name="username" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-white">Password</label>
+                <input type="password" class="form-control" name="password" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-white">Confirm Password</label>
+                <input type="password" class="form-control" name="confirm_password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Create Admin Account</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('setup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const password = fd.get('password');
+            const confirm = fd.get('confirm_password');
+            
+            if (password !== confirm) {
+                alert('Passwords do not match!');
+                return;
+            }
+            
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: fd.get('username'),
+                    password: password,
+                    setup: true
+                })
+            });
+            
+            if (res.ok) {
+                window.location.href = '/admin.html';
+            } else {
+                alert('Setup failed');
+            }
+        });
+    </script>
+</body>
+</html>

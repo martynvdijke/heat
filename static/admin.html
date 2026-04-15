@@ -19,7 +19,10 @@
     <header class="admin-header mb-5">
         <div class="container d-flex justify-content-between align-items-center">
             <h1 class="h3 mb-0"><i class="fa-solid fa-gears me-2"></i>HEAT RACE CONTROL</h1>
-            <a href="/" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-eye me-1"></i> View Live Board</a>
+            <div>
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-eye me-1"></i> View Live Board</a>
+                <button class="btn btn-danger btn-sm" onclick="logout()"><i class="fa-solid fa-sign-out-alt me-1"></i> Logout</button>
+            </div>
         </div>
     </header>
 
@@ -88,9 +91,9 @@
                                 <tr>
                                     <th class="ps-3">Rank</th>
                                     <th>Driver</th>
+                                    <th>Photo</th>
                                     <th>Car</th>
                                     <th>Points</th>
-                                    <th>Gap</th>
                                     <th class="text-end pe-3">Actions</th>
                                 </tr>
                             </thead>
@@ -120,8 +123,14 @@
                             <input type="text" class="form-control" name="name" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small">Profile Picture URL</label>
-                            <input type="url" class="form-control" name="profile_picture" required>
+                            <label class="form-label small">Profile Picture</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="profile_picture" id="profile_picture" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('imageInput').click()">
+                                    <i class="fa-solid fa-upload"></i>
+                                </button>
+                            </div>
+                            <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="uploadImage(this)">
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-6">
@@ -140,22 +149,14 @@
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
-                            <div class="col-4">
+                            <div class="col-6">
                                 <label class="form-label small">Points</label>
                                 <input type="number" class="form-control" name="points" required>
                             </div>
-                            <div class="col-4">
+                            <div class="col-6">
                                 <label class="form-label small">Rank</label>
                                 <input type="number" class="form-control" name="rank" required>
                             </div>
-                            <div class="col-4">
-                                <label class="form-label small">Gap</label>
-                                <input type="text" class="form-control" name="gap" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small">Fastest Lap</label>
-                            <input type="text" class="form-control" name="fastest_lap">
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Save Racer Data</button>
                     </form>
@@ -191,13 +192,10 @@
             list.innerHTML = racers.map(r => `
                 <tr>
                     <td class="ps-3 fw-bold">${r.rank}</td>
-                    <td>
-                        <img src="${r.profile_picture}" class="rounded-circle me-2" width="30" height="30">
-                        ${r.name}
-                    </td>
+                    <td>${r.name}</td>
+                    <td><img src="${r.profile_picture}" class="rounded-circle" width="30" height="30" onerror="this.style.display='none'"></td>
                     <td><span class="color-dot bg-${r.car_color}"></span> ${r.car_name}</td>
                     <td>${r.points}</td>
-                    <td><span class="badge bg-secondary opacity-75">${r.gap}</span></td>
                     <td class="text-end pe-3">
                         <button class="btn btn-sm btn-outline-primary" onclick="editRacer(${r.id})">
                             <i class="fa-solid fa-pen"></i>
@@ -265,6 +263,32 @@
                 loadRacers();
             }
         }
+
+        async function logout() {
+            await fetch('/api/logout', {method: 'POST'});
+            window.location.href = '/login.html';
+        }
+
+        async function uploadImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const fd = new FormData();
+            fd.append('image', file);
+            
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: fd
+            });
+            const data = await res.json();
+            document.getElementById('profile_picture').value = data.url;
+            input.value = '';
+        }
+
+        // Auth check
+        fetch('/api/check-setup').then(res => res.json()).then(data => {
+            if (!data.setup) window.location.href = '/setup.html';
+        });
 
         init();
     </script>
