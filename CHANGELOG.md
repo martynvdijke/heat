@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/martynvdijke/heat/compare/v1.0.2...v1.0.3) (2026-04-15)
+
+
+### Bug Fixes
+
+* frontend api premissions ([564372d](https://github.com/martynvdijke/heat/commit/564372df060d5acb3be077cdf49b14ad49bf54ad))
+
 ## [1.0.2](https://github.com/martynvdijke/heat/compare/v1.0.1...v1.0.2) (2026-04-15)
 
 
