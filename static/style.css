@@ -57,11 +57,17 @@ header {
 }
 
 .logo {
+    display: flex;
+    align-items: center;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 4rem;
+    font-size: 3.5rem;
     line-height: 0.8;
     letter-spacing: -1px;
     font-style: italic;
+}
+
+.logo img {
+    filter: drop-shadow(0 0 10px rgba(225, 6, 0, 0.4));
 }
 
 .logo span {
