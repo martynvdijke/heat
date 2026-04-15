@@ -1,3 +1,7 @@
 heat
 heat.db
 heat-server
+vendor/
+*.exe
+*.test
+*.out

@@ -20,19 +20,16 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: '1.26.2'
 
       - name: Download dependencies
         run: go mod download
 
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Build
-        run: go build -o heat .
+        run: go build -o heat-server .
 
       - name: Build the Docker image
         run: docker build . --file Dockerfile --tag heat:$(git rev-parse --short HEAD)
-
-      - name: Push Docker image
-        if: github.event_name != 'pull_request' && github.ref != 'refs/heads/main'
-        run: |
-          docker tag heat:$(git rev-parse --short HEAD) heat:latest
-          docker push heat:latest

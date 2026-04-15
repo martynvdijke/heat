@@ -43,32 +43,8 @@
                                 <input type="text" class="form-control" name="track" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label small">Date</label>
-                                <input type="text" class="form-control" name="date" required>
-                            </div>
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <label class="form-label small">Days Left</label>
-                                    <input type="number" class="form-control" name="days" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small">Hours Left</label>
-                                    <input type="number" class="form-control" name="hours" required>
-                                </div>
-                            </div>
-                            <div class="row g-2 mb-3">
-                                <div class="col-4">
-                                    <label class="form-label small">Temp (°C)</label>
-                                    <input type="number" class="form-control" name="temperature" required>
-                                </div>
-                                <div class="col-4">
-                                    <label class="form-label small">Laps</label>
-                                    <input type="number" class="form-control" name="laps" required>
-                                </div>
-                                <div class="col-4">
-                                    <label class="form-label small">Length</label>
-                                    <input type="text" class="form-control" name="length" required placeholder="5.7KM">
-                                </div>
+                                <label class="form-label small">Laps</label>
+                                <input type="number" class="form-control" name="laps" required>
                             </div>
                             <button type="submit" class="btn btn-primary w-100 mt-2">Update Race Data</button>
                         </form>
@@ -213,14 +189,21 @@
             e.preventDefault();
             const fd = new FormData(e.target);
             const data = Object.fromEntries(fd);
-            ['days', 'hours', 'temperature', 'laps'].forEach(k => data[k] = parseInt(data[k]));
+            data.laps = parseInt(data.laps);
             
-            await fetch('/api/race-info', {
+            console.log('Sending race info:', data);
+            
+            const res = await fetch('/api/race-info', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
             });
-            alert('Race data updated!');
+            console.log('Response:', res.status);
+            if (res.ok) {
+                alert('Race data updated!');
+            } else {
+                alert('Failed to update race data');
+            }
         });
 
         document.getElementById('racer-form').addEventListener('submit', async (e) => {
@@ -231,11 +214,14 @@
             data.points = parseInt(data.points);
             data.rank = parseInt(data.rank);
             
-            await fetch('/api/racers', {
+            console.log('Sending racer:', data);
+            
+            const res = await fetch('/api/racers', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
             });
+            console.log('Response:', res.status);
             racerModal.hide();
             loadRacers();
         });

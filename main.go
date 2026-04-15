@@ -29,15 +29,10 @@ type Racer struct {
 }
 
 type RaceInfo struct {
-	ID          int    `json:"id"`
-	Country     string `json:"country"`
-	Track       string `json:"track"`
-	Date        string `json:"date"`
-	Days        int    `json:"days"`
-	Hours       int    `json:"hours"`
-	Temperature int    `json:"temperature"`
-	Length      string `json:"length"`
-	Laps        int    `json:"laps"`
+	ID      int    `json:"id"`
+	Country string `json:"country"`
+	Track   string `json:"track"`
+	Laps    int    `json:"laps"`
 }
 
 type AdminUser struct {
@@ -73,30 +68,24 @@ func main() {
 	http.HandleFunc("/admin.html", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[ADMIN] Access attempt to admin.html")
 
-		// Debug: print all cookies
+		// Find the session cookie that exists in our store
+		var validSession string
 		for _, c := range r.Cookies() {
-			log.Printf("[ADMIN] Cookie: %s=%s", c.Name, c.Value[:16]+"...")
+			if c.Name == "session" {
+				if _, ok := sessionStore[c.Value]; ok {
+					validSession = c.Value
+					break
+				}
+			}
 		}
 
-		cookie, err := r.Cookie("session")
-		if err != nil {
-			log.Printf("[ADMIN] No session cookie, redirecting to login")
+		if validSession == "" {
+			log.Printf("[ADMIN] No valid session, redirecting to login")
 			http.Redirect(w, r, "/login.html", http.StatusFound)
 			return
 		}
-		log.Printf("[ADMIN] Session cookie found: %s", cookie.Value[:16]+"...")
-		expiry, ok := sessionStore[cookie.Value]
-		if !ok {
-			log.Printf("[ADMIN] Session not found in store, redirecting to login")
-			http.Redirect(w, r, "/login.html", http.StatusFound)
-			return
-		}
-		if time.Now().Unix() > expiry {
-			log.Printf("[ADMIN] Session expired, redirecting to login")
-			http.Redirect(w, r, "/login.html", http.StatusFound)
-			return
-		}
-		log.Printf("[ADMIN] Session valid, serving admin.html")
+
+		log.Printf("[ADMIN] Session valid: %s, serving admin.html", validSession[:16]+"...")
 		http.ServeFile(w, r, "/app/static/admin.html")
 	})
 
@@ -183,11 +172,6 @@ func initDB() {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		country TEXT,
 		track TEXT,
-		date TEXT,
-		days INTEGER,
-		hours INTEGER,
-		temperature INTEGER,
-		length TEXT,
 		laps INTEGER
 	);`
 
@@ -234,8 +218,8 @@ func seedData() {
 			r.Name, r.ProfilePicture, r.CarColor, r.CarName, r.Points, r.Rank)
 	}
 
-	db.Exec("INSERT INTO race_info (country, track, date, days, hours, temperature, length, laps) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-		"ITALY", "Autodromo Nazionale Monza", "SEPTEMBER 01-03, 2026", 4, 12, 24, "5.793 KM", 53)
+	db.Exec("INSERT INTO race_info (country, track, laps) VALUES (?, ?, ?)",
+		"Italy", "Monza", 53)
 }
 
 func hashPassword(password string) string {
@@ -245,19 +229,51 @@ func hashPassword(password string) string {
 
 func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("session")
-		if err != nil {
+		log.Printf("[AUTH] Checking session for: %s", r.URL.Path)
+
+		// Get all cookies and find the valid session one
+		cookies := r.Cookies()
+		log.Printf("[AUTH] All cookies: %v", cookies)
+
+		// Find the session cookie that exists in our store
+		var sessionCookie *http.Cookie
+		for _, c := range cookies {
+			if c.Name == "session" {
+				// Check if this session exists in our store
+				if _, ok := sessionStore[c.Value]; ok {
+					sessionCookie = c
+					log.Printf("[AUTH] Found valid session in store: %s", c.Value[:16]+"...")
+					break
+				}
+			}
+		}
+
+		if sessionCookie == nil {
+			log.Printf("[AUTH] No valid session cookie found")
+			log.Printf("[AUTH] Stored sessions:")
+			for k, v := range sessionStore {
+				log.Printf("[AUTH]   - %s (expires: %d)", k[:16]+"...", v)
+			}
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		expiry, ok := sessionStore[cookie.Value]
-		if !ok || time.Now().Unix() > expiry {
-			delete(sessionStore, cookie.Value)
+		log.Printf("[AUTH] Using session: %s", sessionCookie.Value[:16]+"...")
+
+		expiry, ok := sessionStore[sessionCookie.Value]
+		if !ok {
+			log.Printf("[AUTH] Session not found in store!")
+			http.Error(w, "Session expired", http.StatusUnauthorized)
+			return
+		}
+		if time.Now().Unix() > expiry {
+			log.Printf("[AUTH] Session expired")
+			delete(sessionStore, sessionCookie.Value)
 			http.Error(w, "Session expired", http.StatusUnauthorized)
 			return
 		}
 
+		log.Printf("[AUTH] Session valid, allowing: %s", r.URL.Path)
 		next.ServeHTTP(w, r)
 	}
 }
@@ -387,24 +403,32 @@ func getRacers(w http.ResponseWriter, r *http.Request) {
 func updateRacer(w http.ResponseWriter, r *http.Request) {
 	var racer Racer
 	if err := json.NewDecoder(r.Body).Decode(&racer); err != nil {
+		log.Printf("[RACER] Failed to decode: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("[RACER] Updating racer: ID=%d, Name=%s, Picture=%s, Car=%s (%s), Points=%d, Rank=%d",
+		racer.ID, racer.Name, racer.ProfilePicture, racer.CarName, racer.CarColor, racer.Points, racer.Rank)
 
 	if racer.ID == 0 {
 		_, err := db.Exec("INSERT INTO racers (name, profile_picture, car_color, car_name, points, rank) VALUES (?, ?, ?, ?, ?, ?)",
 			racer.Name, racer.ProfilePicture, racer.CarColor, racer.CarName, racer.Points, racer.Rank)
 		if err != nil {
+			log.Printf("[RACER] Insert failed: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		log.Printf("[RACER] Created new racer")
 	} else {
 		_, err := db.Exec("UPDATE racers SET name=?, profile_picture=?, car_color=?, car_name=?, points=?, rank=? WHERE id=?",
 			racer.Name, racer.ProfilePicture, racer.CarColor, racer.CarName, racer.Points, racer.Rank, racer.ID)
 		if err != nil {
+			log.Printf("[RACER] Update failed: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		log.Printf("[RACER] Updated racer ID=%d", racer.ID)
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -412,22 +436,27 @@ func updateRacer(w http.ResponseWriter, r *http.Request) {
 func deleteRacer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, _ := strconv.Atoi(idStr)
+	log.Printf("[RACER] Deleting racer ID=%d", id)
 	_, err := db.Exec("DELETE FROM racers WHERE id=?", id)
 	if err != nil {
+		log.Printf("[RACER] Delete failed: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("[RACER] Deleted racer ID=%d", id)
 	w.WriteHeader(http.StatusOK)
 }
 
 func getRaceInfo(w http.ResponseWriter, r *http.Request) {
 	var ri RaceInfo
-	err := db.QueryRow("SELECT country, track, date, days, hours, temperature, length, laps FROM race_info ORDER BY id DESC LIMIT 1").
-		Scan(&ri.Country, &ri.Track, &ri.Date, &ri.Days, &ri.Hours, &ri.Temperature, &ri.Length, &ri.Laps)
+	err := db.QueryRow("SELECT country, track, laps FROM race_info ORDER BY id DESC LIMIT 1").
+		Scan(&ri.Country, &ri.Track, &ri.Laps)
 	if err != nil {
+		log.Printf("[RACEINFO] Query failed: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("[RACEINFO] Fetched: %s at %s, Laps=%d", ri.Country, ri.Track, ri.Laps)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ri)
 }
@@ -435,43 +464,55 @@ func getRaceInfo(w http.ResponseWriter, r *http.Request) {
 func updateRaceInfo(w http.ResponseWriter, r *http.Request) {
 	var ri RaceInfo
 	if err := json.NewDecoder(r.Body).Decode(&ri); err != nil {
+		log.Printf("[RACEINFO] Failed to decode: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	_, err := db.Exec("INSERT INTO race_info (country, track, date, days, hours, temperature, length, laps) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-		ri.Country, ri.Track, ri.Date, ri.Days, ri.Hours, ri.Temperature, ri.Length, ri.Laps)
+	log.Printf("[RACEINFO] Updating: %s at %s, Laps=%d", ri.Country, ri.Track, ri.Laps)
+
+	_, err := db.Exec("INSERT INTO race_info (country, track, laps) VALUES (?, ?, ?)",
+		ri.Country, ri.Track, ri.Laps)
 	if err != nil {
+		log.Printf("[RACEINFO] Insert failed: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("[RACEINFO] Race info updated")
 	w.WriteHeader(http.StatusOK)
 }
 
 func handleUpload(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[UPLOAD] Upload request received")
 	if r.Method != "POST" {
+		log.Printf("[UPLOAD] Wrong method: %s", r.Method)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	file, header, err := r.FormFile("image")
 	if err != nil {
+		log.Printf("[UPLOAD] Failed to get form file: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
+	log.Printf("[UPLOAD] File received: %s, size: %d", header.Filename, header.Size)
 
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" && ext != ".webp" {
+		log.Printf("[UPLOAD] Invalid file type: %s", ext)
 		http.Error(w, "Invalid file type", http.StatusBadRequest)
 		return
 	}
 
 	filename := fmt.Sprintf("%d%s", time.Now().Unix(), ext)
 	uploadPath := filepath.Join("/app/static/images", filename)
+	log.Printf("[UPLOAD] Saving to: %s", uploadPath)
 
 	out, err := os.Create(uploadPath)
 	if err != nil {
+		log.Printf("[UPLOAD] Failed to create file: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -482,6 +523,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	staticCache["/static/images/"+filename] = data
 
+	log.Printf("[UPLOAD] Success! URL: /static/images/%s", filename)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"url": "/static/images/" + filename})
 }
