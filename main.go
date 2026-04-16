@@ -47,6 +47,13 @@ var (
 	staticCache  = make(map[string][]byte)
 )
 
+func shorten(s string) string {
+	if len(s) > 16 {
+		return s[:16] + "..."
+	}
+	return s
+}
+
 func main() {
 	if err := os.MkdirAll("/app/static/images", 0755); err != nil {
 		log.Printf("Warning: could not create images directory: %v", err)
@@ -85,7 +92,7 @@ func main() {
 			return
 		}
 
-		log.Printf("[ADMIN] Session valid: %s, serving admin.html", validSession[:16]+"...")
+		log.Printf("[ADMIN] Session valid: %s, serving admin.html", shorten(validSession))
 		http.ServeFile(w, r, "/app/static/admin.html")
 	})
 
@@ -242,7 +249,7 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				// Check if this session exists in our store
 				if _, ok := sessionStore[c.Value]; ok {
 					sessionCookie = c
-					log.Printf("[AUTH] Found valid session in store: %s", c.Value[:16]+"...")
+					log.Printf("[AUTH] Found valid session in store: %s", shorten(c.Value))
 					break
 				}
 			}
@@ -252,13 +259,13 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			log.Printf("[AUTH] No valid session cookie found")
 			log.Printf("[AUTH] Stored sessions:")
 			for k, v := range sessionStore {
-				log.Printf("[AUTH]   - %s (expires: %d)", k[:16]+"...", v)
+				log.Printf("[AUTH]   - %s (expires: %d)", shorten(k), v)
 			}
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		log.Printf("[AUTH] Using session: %s", sessionCookie.Value[:16]+"...")
+		log.Printf("[AUTH] Using session: %s", shorten(sessionCookie.Value))
 
 		expiry, ok := sessionStore[sessionCookie.Value]
 		if !ok {
@@ -320,11 +327,11 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 			sessionID := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d-%s-%d", user.ID, user.Username, time.Now().Unix()))))
 			sessionStore[sessionID] = time.Now().Add(24 * time.Hour).Unix()
-			log.Printf("[LOGIN] Session created: %s", sessionID[:16]+"...")
+			log.Printf("[LOGIN] Session created: %s", shorten(sessionID))
 
 			cookie := &http.Cookie{Name: "session", Value: sessionID, HttpOnly: true, Path: "/"}
 			http.SetCookie(w, cookie)
-			log.Printf("[LOGIN] Cookie set: session=%s", sessionID[:16]+"...")
+			log.Printf("[LOGIN] Cookie set: session=%s", shorten(sessionID))
 
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
@@ -339,10 +346,10 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
-		log.Printf("[LOGIN] Found user ID: %d, stored password hash: %s", user.ID, user.Password[:20]+"...")
+		log.Printf("[LOGIN] Found user ID: %d, stored password hash: %s", user.ID, shorten(user.Password))
 
 		inputHash := hashPassword(input.Password)
-		log.Printf("[LOGIN] Input password hash: %s", inputHash[:20]+"...")
+		log.Printf("[LOGIN] Input password hash: %s", shorten(inputHash))
 
 		if inputHash != user.Password {
 			log.Printf("[LOGIN] Password mismatch!")
@@ -353,11 +360,11 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[LOGIN] Password verified successfully")
 		sessionID := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d-%s-%d", user.ID, user.Username, time.Now().Unix()))))
 		sessionStore[sessionID] = time.Now().Add(24 * time.Hour).Unix()
-		log.Printf("[LOGIN] Session created: %s", sessionID[:16]+"...")
+		log.Printf("[LOGIN] Session created: %s", shorten(sessionID))
 
 		cookie := &http.Cookie{Name: "session", Value: sessionID, HttpOnly: true, Path: "/"}
 		http.SetCookie(w, cookie)
-		log.Printf("[LOGIN] Cookie set: session=%s", sessionID[:16]+"...")
+		log.Printf("[LOGIN] Cookie set: session=%s", shorten(sessionID))
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
