@@ -16,6 +16,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/gorilla/websocket"
 )
 
 type Racer struct {
@@ -26,6 +27,7 @@ type Racer struct {
 	CarName        string `json:"car_name"`
 	Points         int    `json:"points"`
 	Rank           int    `json:"rank"`
+	Position       int    `json:"position"`
 }
 
 type RaceInfo struct {
@@ -45,7 +47,68 @@ var (
 	db           *sql.DB
 	sessionStore = make(map[string]int64)
 	staticCache  = make(map[string][]byte)
+	upgrader     = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+	clients = make(map[*websocket.Conn]bool)
+	broadcast = make(chan []Racer)
 )
+
+func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("error upgrading: %v", err)
+		return
+	}
+	defer ws.Close()
+
+	clients[ws] = true
+	log.Printf("[WS] New client connected. Total clients: %d", len(clients))
+
+	for {
+		_, _, err := ws.ReadMessage()
+		if err != nil {
+			log.Printf("[WS] Client disconnected: %v", err)
+			delete(clients, ws)
+			break
+		}
+	}
+}
+
+func broadcastManager() {
+	for {
+		racers := <-broadcast
+		for client := range clients {
+			err := client.WriteJSON(racers)
+			if err != nil {
+				log.Printf("[WS] error broadcasting to client: %v", err)
+				client.Close()
+				delete(clients, client)
+			}
+		}
+	}
+}
+
+func broadcastRacers() {
+	rows, err := db.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position FROM racers ORDER BY rank ASC")
+	if err != nil {
+		log.Printf("error fetching racers for broadcast: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	var racers []Racer
+	for rows.Next() {
+		var r Racer
+		err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position)
+		if err != nil {
+			log.Printf("error scanning racer for broadcast: %v", err)
+			return
+		}
+		racers = append(racers, r)
+	}
+	broadcast <- racers
+}
 
 func shorten(s string) string {
 	if len(s) > 16 {
@@ -67,7 +130,9 @@ func main() {
 	defer db.Close()
 
 	initDB()
+	go broadcastManager()
 
+	http.HandleFunc("/ws", handleWebSocket)
 	http.HandleFunc("/api/login", handleLogin)
 	http.HandleFunc("/api/logout", handleLogout)
 	http.HandleFunc("/api/check-setup", handleCheckSetup)
@@ -171,7 +236,8 @@ func initDB() {
 		car_color TEXT,
 		car_name TEXT,
 		points INTEGER,
-		rank INTEGER
+		rank INTEGER,
+		position INTEGER DEFAULT 0
 	);`
 
 	createRaceInfoTable := `
@@ -193,6 +259,9 @@ func initDB() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Migration: add position if not exists (for existing DBs)
+	_, _ = db.Exec("ALTER TABLE racers ADD COLUMN position INTEGER DEFAULT 0")
 
 	_, err = db.Exec(createRaceInfoTable)
 	if err != nil {
@@ -385,7 +454,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func getRacers(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank FROM racers ORDER BY rank ASC")
+	rows, err := db.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position FROM racers ORDER BY rank ASC")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -395,7 +464,7 @@ func getRacers(w http.ResponseWriter, r *http.Request) {
 	var racers []Racer
 	for rows.Next() {
 		var r Racer
-		err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank)
+		err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -415,12 +484,12 @@ func updateRacer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[RACER] Updating racer: ID=%d, Name=%s, Picture=%s, Car=%s (%s), Points=%d, Rank=%d",
-		racer.ID, racer.Name, racer.ProfilePicture, racer.CarName, racer.CarColor, racer.Points, racer.Rank)
+	log.Printf("[RACER] Updating racer: ID=%d, Name=%s, Picture=%s, Car=%s (%s), Points=%d, Rank=%d, Position=%d",
+		racer.ID, racer.Name, racer.ProfilePicture, racer.CarName, racer.CarColor, racer.Points, racer.Rank, racer.Position)
 
 	if racer.ID == 0 {
-		_, err := db.Exec("INSERT INTO racers (name, profile_picture, car_color, car_name, points, rank) VALUES (?, ?, ?, ?, ?, ?)",
-			racer.Name, racer.ProfilePicture, racer.CarColor, racer.CarName, racer.Points, racer.Rank)
+		_, err := db.Exec("INSERT INTO racers (name, profile_picture, car_color, car_name, points, rank, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			racer.Name, racer.ProfilePicture, racer.CarColor, racer.CarName, racer.Points, racer.Rank, racer.Position)
 		if err != nil {
 			log.Printf("[RACER] Insert failed: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -428,8 +497,8 @@ func updateRacer(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("[RACER] Created new racer")
 	} else {
-		_, err := db.Exec("UPDATE racers SET name=?, profile_picture=?, car_color=?, car_name=?, points=?, rank=? WHERE id=?",
-			racer.Name, racer.ProfilePicture, racer.CarColor, racer.CarName, racer.Points, racer.Rank, racer.ID)
+		_, err := db.Exec("UPDATE racers SET name=?, profile_picture=?, car_color=?, car_name=?, points=?, rank=?, position=? WHERE id=?",
+			racer.Name, racer.ProfilePicture, racer.CarColor, racer.CarName, racer.Points, racer.Rank, racer.Position, racer.ID)
 		if err != nil {
 			log.Printf("[RACER] Update failed: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -437,6 +506,7 @@ func updateRacer(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("[RACER] Updated racer ID=%d", racer.ID)
 	}
+	broadcastRacers()
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -451,6 +521,7 @@ func deleteRacer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("[RACER] Deleted racer ID=%d", id)
+	broadcastRacers()
 	w.WriteHeader(http.StatusOK)
 }
 

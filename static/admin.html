@@ -68,6 +68,7 @@
                                 <tr>
                                     <th class="ps-3">Rank</th>
                                     <th>Driver</th>
+                                    <th>Position</th>
                                     <th>Photo</th>
                                     <th>Car</th>
                                     <th>Points</th>
@@ -126,13 +127,17 @@
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
-                            <div class="col-6">
+                            <div class="col-4">
                                 <label class="form-label small">Points</label>
                                 <input type="number" class="form-control" name="points" required>
                             </div>
-                            <div class="col-6">
+                            <div class="col-4">
                                 <label class="form-label small">Rank</label>
                                 <input type="number" class="form-control" name="rank" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small">Board Position</label>
+                                <input type="number" class="form-control" name="position" required>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Save Racer Data</button>
@@ -173,6 +178,7 @@
                 <tr>
                     <td class="ps-3 fw-bold">${r.rank}</td>
                     <td>${r.name}</td>
+                    <td class="small opacity-75">${r.position}</td>
                     <td><img src="${r.profile_picture}" class="rounded-circle" width="30" height="30" onerror="this.style.display='none'"></td>
                     <td><span class="color-dot bg-${r.car_color}"></span> ${r.car_name}</td>
                     <td>${r.points}</td>
@@ -218,6 +224,7 @@
             data.id = data.id ? parseInt(data.id) : 0;
             data.points = parseInt(data.points);
             data.rank = parseInt(data.rank);
+            data.position = parseInt(data.position || 0);
             
             console.log('Sending racer:', data);
             
@@ -234,9 +241,7 @@
         // Helper Functions
         function editRacer(id) {
             console.log('Editing racer ID:', id);
-            console.log('Racers array:', racers);
             const r = racers.find(x => x.id === id);
-            console.log('Found racer:', r);
             if (!r) {
                 alert('Racer not found!');
                 return;
@@ -246,6 +251,7 @@
             Object.keys(r).forEach(key => {
                 if (form[key]) form[key].value = r[key];
             });
+            if (form.position) form.position.value = r.position || 0;
             console.log('Form populated, showing modal');
             racerModal.show();
         }

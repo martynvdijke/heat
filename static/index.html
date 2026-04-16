@@ -65,6 +65,7 @@
                                 <th class="ps-4">POS</th>
                                 <th>DRIVER</th>
                                 <th>CAR</th>
+                                <th>GAP</th>
                                 <th class="pe-4 text-end">PTS</th>
                             </tr>
                         </thead>
@@ -104,6 +105,50 @@
         setTheme(savedTheme);
         themeToggle.addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
 
+        function renderRacers(racers) {
+            // Render Leaderboard (GAP calculation)
+            const lbBody = document.getElementById('leaderboard-body');
+
+            // Sort by rank for leaderboard (rank 1 is leader)
+            const sortedByRank = [...racers].sort((a, b) => a.rank - b.rank);
+            const leaderPosition = sortedByRank.length > 0 ? sortedByRank[0].position : 0;
+
+            lbBody.innerHTML = sortedByRank.map((r, i) => {
+                let gapText = "-";
+                if (i > 0) {
+                    const gap = leaderPosition - r.position;
+                    gapText = gap > 0 ? `+${gap} <small>VAKJES</small>` : "0";
+                }
+
+                return `
+                    <tr class="${i === 0 ? 'winner-row' : ''}">
+                        <td class="ps-4">${r.rank}</td>
+                        <td>
+                            <div class="driver-info">
+                                <img src="${r.profile_picture}" class="avatar" alt="${r.name}" onerror="this.style.display='none'">
+                                <span class="driver-name"><span class="color-indicator ${r.car_color} me-2"></span>${r.name}</span>
+                            </div>
+                        </td>
+                        <td>${r.car_name}</td>
+                        <td class="gap-cell">${gapText}</td>
+                        <td class="pe-4 text-end ${i === 0 ? 'fw-bold' : ''}">${r.points}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Render Standings (Sorted by Points)
+            const standings = [...racers].sort((a, b) => b.points - a.points);
+            const stContainer = document.getElementById('standings-container');
+            stContainer.innerHTML = standings.map((r, i) => `
+                <div class="standing-item">
+                    <span class="rank">${i + 1}</span>
+                    <img src="${r.profile_picture}" class="avatar-sm" alt="${r.name}" onerror="this.style.display='none'">
+                    <span class="driver text-uppercase fw-bold">${r.name}</span>
+                    <span class="points ms-auto">${r.points} PTS</span>
+                </div>
+            `).join('');
+        }
+
         // Fetch Data from API
         async function loadData() {
             try {
@@ -114,43 +159,29 @@
                 document.getElementById('race-track').textContent = race.track;
                 document.getElementById('race-laps').textContent = race.laps;
 
-                // Load Racers
+                // Load Racers (Initial)
                 const racerResp = await fetch('/api/racers');
                 const racers = await racerResp.json();
-                
-                // Render Leaderboard
-                const lbBody = document.getElementById('leaderboard-body');
-                lbBody.innerHTML = racers.map((r, i) => `
-                    <tr class="${i === 0 ? 'winner-row' : ''}">
-                        <td class="ps-4">${r.rank}</td>
-                        <td>
-                            <div class="driver-info">
-                                <img src="${r.profile_picture}" class="avatar" alt="${r.name}" onerror="this.style.display='none'">
-                                <span class="driver-name"><span class="color-indicator ${r.car_color} me-2"></span>${r.name}</span>
-                            </div>
-                        </td>
-                        <td>${r.car_name}</td>
-                        <td class="pe-4 text-end ${i === 0 ? 'fw-bold' : ''}">${r.points}</td>
-                    </tr>
-                `).join('');
+                renderRacers(racers);
 
-                // Render Standings (Sorted by Points)
-                const standings = [...racers].sort((a, b) => b.points - a.points);
-                const stContainer = document.getElementById('standings-container');
-                stContainer.innerHTML = standings.map((r, i) => `
-                    <div class="standing-item">
-                        <span class="rank">${i + 1}</span>
-                        <img src="${r.profile_picture}" class="avatar-sm" alt="${r.name}" onerror="this.style.display='none'">
-                        <span class="driver text-uppercase fw-bold">${r.name}</span>
-                        <span class="points ms-auto">${r.points} PTS</span>
-                    </div>
-                `).join('');
+                // Setup WebSocket
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+                ws.onmessage = (event) => {
+                    const updatedRacers = JSON.parse(event.data);
+                    renderRacers(updatedRacers);
+                };
+
+                ws.onclose = () => {
+                    console.log("WebSocket closed. Retrying in 5s...");
+                    setTimeout(loadData, 5000);
+                };
 
             } catch (err) {
                 console.error("Failed to load racing data:", err);
             }
         }
-
         loadData();
     </script>
 </body>

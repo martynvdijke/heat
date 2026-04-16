@@ -24,6 +24,11 @@ func TestMain(m *testing.M) {
 	defer db.Close()
 
 	initDB()
+	go func() {
+		for {
+			<-broadcast
+		}
+	}()
 
 	os.Exit(m.Run())
 }
