@@ -879,3 +879,475 @@ func TestSchemaMigrationToV3(t *testing.T) {
 		}
 	})
 }
+
+func TestLogout(t *testing.T) {
+	t.Run("LogoutClearsSession", func(t *testing.T) {
+		sessionID := "logout-test-session"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+
+		req, _ := http.NewRequest("POST", "/api/logout", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		handleLogout(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		if _, exists := sessionStore[sessionID]; exists {
+			t.Error("session should be cleared after logout")
+		}
+	})
+
+	t.Run("LogoutWithNoSession", func(t *testing.T) {
+		req, _ := http.NewRequest("POST", "/api/logout", nil)
+		rr := httptest.NewRecorder()
+		handleLogout(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+	})
+}
+
+func TestSessionExpiration(t *testing.T) {
+	t.Run("ExpiredSessionIsRejected", func(t *testing.T) {
+		sessionID := "expired-session"
+		sessionStore[sessionID] = time.Now().Add(-1 * time.Hour).Unix()
+
+		dummyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		handler := authMiddleware(dummyHandler)
+
+		req, _ := http.NewRequest("GET", "/api/test", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %v", status)
+		}
+
+		if _, exists := sessionStore[sessionID]; exists {
+			t.Error("expired session should be removed from store")
+		}
+	})
+}
+
+func TestRaceHistoryEdgeCases(t *testing.T) {
+	t.Run("SaveRaceWithEmptyResults", func(t *testing.T) {
+		sessionID := "test-session-empty-results"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		input := map[string]interface{}{
+			"race_date":  "2026-04-25",
+			"country":    "Hungary",
+			"track":      "Hungaroring",
+			"track_id":   "hungary",
+			"total_laps": 70,
+			"results":    []map[string]interface{}{},
+		}
+		body, _ := json.Marshal(input)
+		req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		saveRaceToHistory(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+	})
+
+	t.Run("GetRaceByID", func(t *testing.T) {
+		sessionID := "test-session-get-by-id"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		input := map[string]interface{}{
+			"race_date":  "2026-04-26",
+			"country":    "Spain",
+			"track":      "Catalunya",
+			"total_laps": 66,
+			"results": []map[string]interface{}{
+				{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25},
+			},
+		}
+		body, _ := json.Marshal(input)
+		req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		saveRaceToHistory(rr, req)
+
+		var resp map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		raceID := int(resp["id"].(float64))
+
+		req, _ = http.NewRequest("GET", fmt.Sprintf("/api/race-history?id=%d", raceID), nil)
+		rr = httptest.NewRecorder()
+		getRaceHistory(rr, req)
+
+		var history []map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &history)
+
+		if len(history) != 1 {
+			t.Errorf("expected 1 race, got %d", len(history))
+		}
+		if history[0]["country"] != "Spain" {
+			t.Errorf("expected country 'Spain', got '%v'", history[0]["country"])
+		}
+	})
+
+	t.Run("DeleteRaceWithoutID", func(t *testing.T) {
+		sessionID := "test-session-delete-no-id"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		req, _ := http.NewRequest("DELETE", "/api/race-history", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		deleteRaceHistory(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %v", status)
+		}
+	})
+}
+
+func TestQuoteEdgeCases(t *testing.T) {
+	t.Run("AddQuoteWithEmptyText", func(t *testing.T) {
+		sessionID := "test-session-empty-quote"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		quote := Quote{Text: ""}
+		body, _ := json.Marshal(quote)
+		req, _ := http.NewRequest("POST", "/api/quotes", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		handleQuotes(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %v", status)
+		}
+	})
+
+	t.Run("UpdateQuoteWithoutID", func(t *testing.T) {
+		sessionID := "test-session-update-no-id"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		quote := Quote{Text: "Updated text", Author: "Test"}
+		body, _ := json.Marshal(quote)
+		req, _ := http.NewRequest("PUT", "/api/quotes", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		handleQuotes(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %v", status)
+		}
+	})
+
+	t.Run("DeleteQuoteWithoutID", func(t *testing.T) {
+		sessionID := "test-session-delete-quote-no-id"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		req, _ := http.NewRequest("DELETE", "/api/quotes", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		handleQuotes(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %v", status)
+		}
+	})
+
+	t.Run("AddQuoteDefaultsAuthor", func(t *testing.T) {
+		sessionID := "test-session-default-author"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		quote := Quote{Text: "Test quote without author"}
+		body, _ := json.Marshal(quote)
+		req, _ := http.NewRequest("POST", "/api/quotes", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		handleQuotes(rr, req)
+
+		if status := rr.Code; status != http.StatusCreated {
+			t.Errorf("expected status 201, got %v", status)
+		}
+
+		var created Quote
+		json.Unmarshal(rr.Body.Bytes(), &created)
+		if created.Author != "Commentator" {
+			t.Errorf("expected default author 'Commentator', got '%s'", created.Author)
+		}
+	})
+}
+
+func TestRacerStatsEdgeCases(t *testing.T) {
+	t.Run("GetStatsForNonexistentRacer", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/racer-stats?id=9999", nil)
+		rr := httptest.NewRecorder()
+		getRacerStats(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var data map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &data)
+		stats := data["stats"].(map[string]interface{})
+
+		racesVal := stats["races"]
+		if racesVal != nil {
+			races := int(racesVal.(float64))
+			if races != 0 {
+				t.Errorf("expected 0 races for nonexistent racer, got %v", stats["races"])
+			}
+		}
+	})
+
+	t.Run("StatsAccumulateWithMultipleRaces", func(t *testing.T) {
+		sessionID := "test-session-multiple-races"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		for i := 0; i < 3; i++ {
+			input := map[string]interface{}{
+				"race_date":  fmt.Sprintf("2026-05-%02d", i+1),
+				"country":    "Test",
+				"track":      "Test",
+				"total_laps": 50,
+				"results": []map[string]interface{}{
+					{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true},
+				},
+			}
+			body, _ := json.Marshal(input)
+			req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+			req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+			rr := httptest.NewRecorder()
+			saveRaceToHistory(rr, req)
+		}
+
+		req, _ := http.NewRequest("GET", "/api/racer-stats?id=1", nil)
+		rr := httptest.NewRecorder()
+		getRacerStats(rr, req)
+
+		var data map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &data)
+		stats := data["stats"].(map[string]interface{})
+
+		racesVal := stats["races"]
+		if racesVal != nil {
+			races := int(racesVal.(float64))
+			if races < 1 {
+				t.Errorf("expected at least 1 race, got %v", stats["races"])
+			}
+		}
+	})
+}
+
+func TestLoginEdgeCases(t *testing.T) {
+	t.Run("InvalidLoginCredentials", func(t *testing.T) {
+		loginData := map[string]interface{}{
+			"username": "wronguser",
+			"password": "wrongpass",
+		}
+		body, _ := json.Marshal(loginData)
+		req, _ := http.NewRequest("POST", "/api/login", bytes.NewBuffer(body))
+		rr := httptest.NewRecorder()
+		handleLogin(rr, req)
+
+		if status := rr.Code; status != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %v", status)
+		}
+	})
+
+	t.Run("LoginWithInvalidJSON", func(t *testing.T) {
+		req, _ := http.NewRequest("POST", "/api/login", bytes.NewBufferString("invalid json"))
+		rr := httptest.NewRecorder()
+		handleLogin(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %v", status)
+		}
+	})
+}
+
+func TestGetRacersEdgeCases(t *testing.T) {
+	t.Run("RacersSortedByRank", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/racers", nil)
+		rr := httptest.NewRecorder()
+		getRacers(rr, req)
+
+		var racers []Racer
+		json.Unmarshal(rr.Body.Bytes(), &racers)
+
+		for i := 1; i < len(racers); i++ {
+			if racers[i].Rank < racers[i-1].Rank {
+				t.Error("racers should be sorted by rank")
+				break
+			}
+		}
+	})
+
+	t.Run("RacerFieldsAreComplete", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/racers", nil)
+		rr := httptest.NewRecorder()
+		getRacers(rr, req)
+
+		var racers []Racer
+		json.Unmarshal(rr.Body.Bytes(), &racers)
+
+		hasRacers := false
+		for _, r := range racers {
+			if r.Name != "" {
+				hasRacers = true
+			}
+		}
+
+		if !hasRacers {
+			t.Error("should have at least one racer with a name")
+		}
+	})
+}
+
+func TestWebSocketEdgeCases(t *testing.T) {
+	t.Run("WebSocketClientDisconnection", func(t *testing.T) {
+		s := httptest.NewServer(http.HandlerFunc(handleWebSocket))
+		defer s.Close()
+
+		u := "ws" + strings.TrimPrefix(s.URL, "http")
+		ws, _, err := websocket.DefaultDialer.Dial(u, nil)
+		if err != nil {
+			t.Fatalf("could not connect: %v", err)
+		}
+		defer ws.Close()
+
+		initialClientCount := len(clients)
+
+		ws.Close()
+		time.Sleep(100 * time.Millisecond)
+
+		if len(clients) >= initialClientCount {
+			t.Error("client should be removed after disconnect")
+		}
+	})
+}
+
+func TestMultipleRacerOperations(t *testing.T) {
+	t.Run("CreateMultipleRacers", func(t *testing.T) {
+		sessionID := "test-session-multi-racer"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		names := []string{"R. PETROV", "S. VETTEL", "K. RAIKKONEN"}
+		for _, name := range names {
+			racer := Racer{Name: name, CarColor: "red", CarName: "Test Car", Points: 0, Rank: 10}
+			body, _ := json.Marshal(racer)
+			req, _ := http.NewRequest("POST", "/api/racers", bytes.NewBuffer(body))
+			req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+			rr := httptest.NewRecorder()
+			updateRacer(rr, req)
+
+			if rr.Code != http.StatusOK {
+				t.Errorf("failed to create racer %s: status %d", name, rr.Code)
+			}
+		}
+	})
+
+	t.Run("UpdateMultipleRacers", func(t *testing.T) {
+		sessionID := "test-session-update-multi"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		req, _ := http.NewRequest("GET", "/api/racers", nil)
+		rr := httptest.NewRecorder()
+		getRacers(rr, req)
+
+		var racers []Racer
+		json.Unmarshal(rr.Body.Bytes(), &racers)
+
+		for i, r := range racers {
+			updated := Racer{
+				ID:       r.ID,
+				Name:     r.Name,
+				CarColor: r.CarColor,
+				CarName:  r.CarName,
+				Points:   (i + 1) * 10,
+				Rank:     i + 1,
+				Position: (i + 1) * 10,
+			}
+			body, _ := json.Marshal(updated)
+			req, _ := http.NewRequest("POST", "/api/racers", bytes.NewBuffer(body))
+			req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+			rr := httptest.NewRecorder()
+			updateRacer(rr, req)
+
+			if rr.Code != http.StatusOK {
+				t.Errorf("failed to update racer %d: status %d", r.ID, rr.Code)
+			}
+		}
+	})
+}
+
+func TestRaceInfoEdgeCases(t *testing.T) {
+	t.Run("UpdateRaceInfoWithAllFields", func(t *testing.T) {
+		sessionID := "test-session-full-race-info"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		ri := RaceInfo{Country: "Germany", Track: "Nürburgring", TrackID: "nurburgring", Laps: 60}
+		body, _ := json.Marshal(ri)
+		req, _ := http.NewRequest("POST", "/api/race-info", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		updateRaceInfo(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		req, _ = http.NewRequest("GET", "/api/race-info", nil)
+		rr = httptest.NewRecorder()
+		getRaceInfo(rr, req)
+
+		var updated RaceInfo
+		json.Unmarshal(rr.Body.Bytes(), &updated)
+
+		if updated.Country != "Germany" {
+			t.Errorf("expected country 'Germany', got '%s'", updated.Country)
+		}
+		if updated.Track != "Nürburgring" {
+			t.Errorf("expected track 'Nürburgring', got '%s'", updated.Track)
+		}
+		if updated.TrackID != "nurburgring" {
+			t.Errorf("expected track_id 'nurburgring', got '%s'", updated.TrackID)
+		}
+		if updated.Laps != 60 {
+			t.Errorf("expected 60 laps, got %d", updated.Laps)
+		}
+	})
+}
+
+func TestDeleteRacerEdgeCases(t *testing.T) {
+	t.Run("DeleteNonexistentRacer", func(t *testing.T) {
+		sessionID := "test-session-delete-nonexistent"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		req, _ := http.NewRequest("DELETE", "/api/racers?id=9999", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		deleteRacer(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200 (idempotent), got %v", status)
+		}
+	})
+}
