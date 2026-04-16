@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/gorilla/websocket"
 )
 
 func TestMain(m *testing.M) {
@@ -24,11 +26,7 @@ func TestMain(m *testing.M) {
 	defer db.Close()
 
 	initDB()
-	go func() {
-		for {
-			<-broadcast
-		}
-	}()
+	go broadcastManager()
 
 	os.Exit(m.Run())
 }
@@ -245,6 +243,56 @@ func TestUpdateAndDeleteRacer(t *testing.T) {
 			t.Error("racer not deleted")
 		}
 	})
+}
+
+func TestWebSocketBroadcast(t *testing.T) {
+	// Create a test server
+	s := httptest.NewServer(http.HandlerFunc(handleWebSocket))
+	defer s.Close()
+
+	// Convert http URL to ws URL
+	u := "ws" + strings.TrimPrefix(s.URL, "http")
+
+	// Connect to the server
+	ws, _, err := websocket.DefaultDialer.Dial(u, nil)
+	if err != nil {
+		t.Fatalf("could not open a ws connection on %s %v", u, err)
+	}
+	defer ws.Close()
+
+	// Trigger a broadcast by updating a racer
+	racer := Racer{ID: 1, Name: "A. PROST", Points: 100, Rank: 1, Position: 10}
+	body, _ := json.Marshal(racer)
+	req, _ := http.NewRequest("POST", "/api/racers", bytes.NewBuffer(body))
+	rr := httptest.NewRecorder()
+	updateRacer(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("updateRacer failed: %v", rr.Code)
+	}
+
+	// Read from WebSocket
+	_, message, err := ws.ReadMessage()
+	if err != nil {
+		t.Fatalf("could not read message: %v", err)
+	}
+
+	var racers []Racer
+	if err := json.Unmarshal(message, &racers); err != nil {
+		t.Fatalf("could not unmarshal message: %v", err)
+	}
+
+	// Verify the updated racer is in the broadcast
+	found := false
+	for _, r := range racers {
+		if r.ID == 1 && r.Position == 10 {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("updated racer not found in WebSocket broadcast")
+	}
 }
 
 func TestLoginAndSetup(t *testing.T) {
