@@ -209,7 +209,7 @@ func TestUpdateAndDeleteRacer(t *testing.T) {
 	})
 
 	t.Run("UpdateRacer", func(t *testing.T) {
-		updatedRacer := Racer{ID: racerID, Name: "L. HAMILTON", CarColor: "purple", CarName: "W12", Points: 25, Rank: 1}
+		updatedRacer := Racer{ID: racerID, Name: "L. HAMILTON", CarColor: "purple", CarName: "W12", Points: 25, Rank: 1, Position: 50}
 		body, _ := json.Marshal(updatedRacer)
 		req, _ := http.NewRequest("POST", "/api/racers", bytes.NewBuffer(body))
 		rr := httptest.NewRecorder()
@@ -221,9 +221,13 @@ func TestUpdateAndDeleteRacer(t *testing.T) {
 
 		// Verify update
 		var name string
-		db.QueryRow("SELECT name FROM racers WHERE id=?", racerID).Scan(&name)
+		var pos int
+		db.QueryRow("SELECT name, position FROM racers WHERE id=?", racerID).Scan(&name, &pos)
 		if name != "L. HAMILTON" {
 			t.Errorf("expected name L. HAMILTON, got %s", name)
+		}
+		if pos != 50 {
+			t.Errorf("expected position 50, got %d", pos)
 		}
 	})
 
