@@ -25,16 +25,60 @@
                 <button class="btn btn-danger btn-sm" onclick="logout()"><i class="fa-solid fa-sign-out-alt me-1"></i> Logout</button>
             </div>
         </div>
-    </header>
 
-    <div class="container">
-        <div class="row">
-            <!-- Race Info Management -->
-            <div class="col-lg-4">
+        <!-- Quote Management -->
+        <div class="row mt-4">
+            <div class="col-12">
                 <div class="card">
-                    <div class="card-header bg-white fw-bold"><i class="fa-solid fa-flag-checkered me-2 text-danger"></i>Next Race Info</div>
-                    <div class="card-body">
-                        <form id="race-form">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="fa-solid fa-microphone me-2 text-danger"></i>Commentator Quotes</span>
+                        <button class="btn btn-sm btn-success" onclick="resetQuoteForm()">
+                            <i class="fa-solid fa-plus me-1"></i> Add Quote
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3" style="width: 60%">Quote</th>
+                                    <th>Author</th>
+                                    <th class="text-end pe-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quote-list">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quote Modal -->
+    <div class="modal fade" id="quoteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="quoteModalLabel">Add Quote</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="quote-form">
+                        <input type="hidden" name="id" id="quote-id">
+                        <div class="mb-3">
+                            <label class="form-label small">Quote Text</label>
+                            <textarea class="form-control" name="text" id="quote-text" rows="3" required placeholder="Enter an exciting F1 commentary quote..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small">Author</label>
+                            <input type="text" class="form-control" name="author" id="quote-author" placeholder="Murray Walker">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save Quote</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
                             <div class="mb-3">
                                 <label class="form-label small">Country</label>
                                 <input type="text" class="form-control" name="country" required>
@@ -49,6 +93,16 @@
                             </div>
                             <button type="submit" class="btn btn-primary w-100 mt-2">Update Race Data</button>
                         </form>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header bg-white fw-bold"><i class="fa-solid fa-clock-rotate-left me-2 text-danger"></i>Archive Race</div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-3">Save current race results to history and start a new race.</p>
+                        <button class="btn btn-warning w-100" onclick="archiveRace()">
+                            <i class="fa-solid fa-archive me-1"></i> Archive to History
+                        </button>
                     </div>
                 </div>
             </div>
@@ -150,12 +204,22 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let racers = [];
+        let tracks = [];
         const racerModal = new bootstrap.Modal(document.getElementById('racerModal'));
 
-        // Load Initial Data
         async function init() {
+            await loadTracks();
             await loadRaceInfo();
             await loadRacers();
+            await loadQuotes();
+        }
+
+        async function loadTracks() {
+            const res = await fetch('/api/tracks');
+            tracks = await res.json();
+            const selector = document.getElementById('track-select');
+            selector.innerHTML = '<option value="">Select a circuit</option>' + 
+                tracks.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('');
         }
 
         async function loadRaceInfo() {
@@ -273,6 +337,121 @@
             await fetch('/api/logout', {method: 'POST'});
             window.location.href = '/login.html';
         }
+
+        async function archiveRace() {
+            if (!confirm('Archive the current race results? This will save them to history.')) return;
+            
+            const raceResp = await fetch('/api/race-info');
+            const race = await raceResp.json();
+            
+            const racerResp = await fetch('/api/racers');
+            const racerData = await racerResp.json();
+            
+            const results = racerData.map(r => ({
+                racer_id: r.id,
+                racer_name: r.name,
+                position: r.rank,
+                points: r.points,
+                fastest_lap: false,
+                finished: true
+            }));
+
+            const res = await fetch('/api/race-history', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    race_date: new Date().toISOString().split('T')[0],
+                    country: race.country,
+                    track: race.track,
+                    track_id: race.track_id || 'monza',
+                    total_laps: race.laps,
+                    results: results
+                })
+            });
+            
+            if (res.ok) {
+                alert('Race archived to history!');
+            } else {
+                alert('Failed to archive race');
+            }
+        }
+
+        const quoteModal = new bootstrap.Modal(document.getElementById('quoteModal'));
+
+        async function loadQuotes() {
+            const res = await fetch('/api/quotes');
+            const quotes = await res.json();
+            const list = document.getElementById('quote-list');
+            list.innerHTML = quotes.map(q => `
+                <tr>
+                    <td class="ps-3"><em>"${escapeHtml(q.text)}"</em></td>
+                    <td>${escapeHtml(q.author)}</td>
+                    <td class="text-end pe-3">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editQuote(${q.id})">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteQuote(${q.id})">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function editQuote(id) {
+            const res = await fetch('/api/quotes');
+            const quotes = await res.json();
+            const quote = quotes.find(q => q.id === id);
+            if (!quote) return;
+            
+            document.getElementById('quote-id').value = quote.id;
+            document.getElementById('quote-text').value = quote.text;
+            document.getElementById('quote-author').value = quote.author;
+            document.getElementById('quoteModalLabel').textContent = 'Edit Quote';
+            quoteModal.show();
+        }
+
+        function resetQuoteForm() {
+            document.getElementById('quote-form').reset();
+            document.getElementById('quote-id').value = '';
+            document.getElementById('quoteModalLabel').textContent = 'Add Quote';
+        }
+
+        async function deleteQuote(id) {
+            if (confirm('Are you sure you want to delete this quote?')) {
+                await fetch(`/api/quotes?id=${id}`, {method: 'DELETE'});
+                loadQuotes();
+            }
+        }
+
+        document.getElementById('quote-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('quote-id').value;
+            const text = document.getElementById('quote-text').value;
+            const author = document.getElementById('quote-author').value || 'Commentator';
+            
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? '/api/quotes' : '/api/quotes';
+            
+            const res = await fetch(url, {
+                method: method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id: id ? parseInt(id) : 0, text, author })
+            });
+            
+            if (res.ok) {
+                quoteModal.hide();
+                loadQuotes();
+            } else {
+                alert('Failed to save quote');
+            }
+        });
 
         async function uploadImage(input) {
             const file = input.files[0];
