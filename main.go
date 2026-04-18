@@ -241,8 +241,13 @@ func main() {
 	http.HandleFunc("/api/upload", authMiddleware(handleUpload))
 
 	http.HandleFunc("/api/tracks", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
+		switch r.Method {
+		case "GET":
 			getTracks(w, r)
+		case "POST":
+			authMiddleware(saveTrack)(w, r)
+		case "DELETE":
+			authMiddleware(deleteTrack)(w, r)
 		}
 	})
 
@@ -874,6 +879,42 @@ func getTracks(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tracks)
+}
+
+func saveTrack(w http.ResponseWriter, r *http.Request) {
+	var t Track
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, err := db.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record) VALUES (?, ?, ?, ?, ?, ?)`,
+		t.ID, t.Name, t.Country, t.ID, t.Length, t.LapRecord)
+	if err != nil {
+		log.Printf("[TRACK] Failed to save track: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(t)
+}
+
+func deleteTrack(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "ID required", http.StatusBadRequest)
+		return
+	}
+
+	_, err := db.Exec("DELETE FROM tracks WHERE id = ?", id)
+	if err != nil {
+		log.Printf("[TRACK] Failed to delete track: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func getRaceHistory(w http.ResponseWriter, r *http.Request) {

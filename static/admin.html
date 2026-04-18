@@ -49,6 +49,9 @@
                 <button class="nav-link" id="racers-tab" data-bs-toggle="tab" data-bs-target="#racers-pane" type="button"><i class="fa-solid fa-users me-2"></i>Racers</button>
             </li>
             <li class="nav-item">
+                <button class="nav-link" id="tracks-tab" data-bs-toggle="tab" data-bs-target="#tracks-pane" type="button"><i class="fa-solid fa-road me-2"></i>Tracks</button>
+            </li>
+            <li class="nav-item">
                 <button class="nav-link" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button"><i class="fa-solid fa-comment me-2"></i>Quotes</button>
             </li>
             <li class="nav-item">
@@ -142,6 +145,35 @@
                                     </tr>
                                 </thead>
                                 <tbody id="racer-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracks Pane -->
+            <div class="tab-pane fade" id="tracks-pane">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-road me-2 text-danger"></i>Race Tracks</span>
+                        <button class="btn btn-sm btn-success" onclick="openTrackModal()">
+                            <i class="fa-solid fa-plus me-1"></i> Add Track
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">ID</th>
+                                        <th>Name</th>
+                                        <th>Country</th>
+                                        <th>Length (km)</th>
+                                        <th>Lap Record</th>
+                                        <th class="text-end pe-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="track-list"></tbody>
                             </table>
                         </div>
                     </div>
@@ -290,18 +322,61 @@
         </div>
     </div>
 
+    <!-- Track Modal -->
+    <div class="modal fade" id="trackModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="trackModalLabel">Edit Track</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="track-form">
+                        <input type="hidden" name="id" id="track-id">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Track ID</label>
+                            <input type="text" class="form-control" name="id" required placeholder="e.g. zandvoort">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Track Name</label>
+                            <input type="text" class="form-control" name="name" required placeholder="e.g. Circuit Zandvoort">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Country</label>
+                            <input type="text" class="form-control" name="country" required placeholder="e.g. Netherlands">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Length (km)</label>
+                                <input type="number" class="form-control" name="length_km" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Lap Record</label>
+                                <input type="text" class="form-control" name="lap_record" placeholder="e.g. 1:09.000">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save Track</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let racers = [];
         let tracks = [];
+        let allTracks = [];
         const racerModal = new bootstrap.Modal(document.getElementById('racerModal'));
         const quoteModal = new bootstrap.Modal(document.getElementById('quoteModal'));
+        const trackModal = new bootstrap.Modal(document.getElementById('trackModal'));
 
         async function init() {
             document.getElementById('archive-date').valueAsDate = new Date();
             await loadTracks();
             await loadRaceInfo();
             await loadRacers();
+            await loadAllTracks();
             await loadQuotes();
             await loadHistory();
         }
@@ -314,6 +389,31 @@
                 selector.innerHTML = '<option value="">Choose a circuit...</option>' + 
                     tracks.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('');
             } catch (e) { console.error('Failed to load tracks', e); }
+        }
+
+        async function loadAllTracks() {
+            try {
+                const res = await fetch('/api/tracks');
+                allTracks = await res.json();
+                renderTrackList();
+            } catch (e) { console.error('Failed to load all tracks', e); }
+        }
+
+        function renderTrackList() {
+            const list = document.getElementById('track-list');
+            list.innerHTML = allTracks.map(t => `
+                <tr>
+                    <td class="ps-4"><code>${escapeHtml(t.id)}</code></td>
+                    <td class="fw-bold">${escapeHtml(t.name)}</td>
+                    <td>${escapeHtml(t.country)}</td>
+                    <td>${t.length_km} km</td>
+                    <td class="text-muted">${t.lap_record || '-'}</td>
+                    <td class="text-end pe-4">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editTrack('${t.id}')"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTrack('${t.id}')"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         function applyTrackPreset(id) {
@@ -450,6 +550,23 @@
             }
         });
 
+        document.getElementById('track-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            data.length_km = parseInt(data.length_km);
+            
+            const res = await fetch('/api/tracks', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                trackModal.hide();
+                loadTracks();
+                loadAllTracks();
+            }
+        });
+
         // Archive logic
         async function archiveRace() {
             const name = document.getElementById('archive-name').value;
@@ -567,6 +684,34 @@
             document.getElementById('profile_picture').value = data.url;
             document.getElementById('racer-pic-preview').src = data.url;
             document.getElementById('racer-pic-preview').style.display = 'inline-block';
+        }
+
+        function openTrackModal() {
+            document.getElementById('track-form').reset();
+            document.getElementById('track-id').value = '';
+            document.getElementById('trackModalLabel').textContent = 'Add New Track';
+            trackModal.show();
+        }
+
+        function editTrack(id) {
+            const t = allTracks.find(x => x.id === id);
+            if (!t) return;
+            const form = document.getElementById('track-form');
+            form.id.value = t.id;
+            form.name.value = t.name;
+            form.country.value = t.country;
+            form.length_km.value = t.length_km;
+            form.lap_record.value = t.lap_record || '';
+            document.getElementById('trackModalLabel').textContent = 'Edit Track: ' + t.name;
+            trackModal.show();
+        }
+
+        async function deleteTrack(id) {
+            if (confirm('Delete this track?')) {
+                await fetch(`/api/tracks?id=${id}`, {method: 'DELETE'});
+                loadTracks();
+                loadAllTracks();
+            }
         }
 
         async function logout() {
