@@ -361,7 +361,8 @@ func initDB() {
 	for version < currentSchemaVersion {
 		runMigration(version)
 		version++
-		db.Exec("UPDATE schema_version SET version = ?", version)
+		db.Exec("DELETE FROM schema_version")
+		db.Exec("INSERT INTO schema_version (version) VALUES (?)", version)
 		log.Printf("[DB] Migrated to schema version %d", version)
 	}
 
@@ -470,9 +471,8 @@ func runMigration(fromVersion int) {
 		)`)
 		seedQuotes()
 	case 3:
-		var columnExists bool
-		_ = db.QueryRow("SELECT COUNT(*) > 0 FROM pragma_table_info('race_history') WHERE name = 'name'").Scan(&columnExists)
-		if !columnExists {
+		_, err := db.Exec("SELECT name FROM race_history LIMIT 0")
+		if err != nil {
 			_, _ = db.Exec("ALTER TABLE race_history ADD COLUMN name TEXT")
 		}
 	}

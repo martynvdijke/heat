@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: admin.spec.ts >> Admin Interface >> should archive a race with a custom name
-- Location: tests/admin.spec.ts:126:7
+- Name: admin.spec.ts >> Admin Interface >> should delete a quote
+- Location: tests/admin.spec.ts:112:7
 
 # Error details
 

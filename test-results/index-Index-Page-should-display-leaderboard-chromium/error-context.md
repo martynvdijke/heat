@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: admin.spec.ts >> Admin Interface >> should archive a race with a custom name
-- Location: tests/admin.spec.ts:126:7
+- Name: index.spec.ts >> Index Page >> should display leaderboard
+- Location: tests/index.spec.ts:27:7
 
 # Error details
 

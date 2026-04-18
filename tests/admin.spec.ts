@@ -94,6 +94,35 @@ test.describe('Admin Interface', () => {
     await expect(page.locator('#quote-list')).toContainText('marathon');
   });
 
+  test('should delete a racer', async ({ page }) => {
+    await page.click('#racers-tab');
+    
+    // We need at least one racer to delete. Let's find one.
+    const racerCount = await page.locator('#racer-list tr').count();
+    if (racerCount > 0) {
+      const firstRacerName = await page.locator('#racer-list tr').first().locator('.fw-bold').innerText();
+      
+      page.on('dialog', dialog => dialog.accept());
+      await page.locator('#racer-list tr').first().locator('button.btn-outline-danger').click();
+      
+      await expect(page.locator('#racer-list')).not.toContainText(firstRacerName);
+    }
+  });
+
+  test('should delete a quote', async ({ page }) => {
+    await page.click('#quotes-tab');
+    
+    const quoteCount = await page.locator('#quote-list tr').count();
+    if (quoteCount > 0) {
+      const firstQuoteText = await page.locator('#quote-list tr').first().locator('em').innerText();
+      
+      page.on('dialog', dialog => dialog.accept());
+      await page.locator('#quote-list tr').first().locator('button.btn-outline-danger').click();
+      
+      await expect(page.locator('#quote-list')).not.toContainText(firstQuoteText.replace(/"/g, ''));
+    }
+  });
+
   test('should archive a race with a custom name', async ({ page }) => {
     await page.click('#race-tab');
     

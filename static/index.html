@@ -267,15 +267,18 @@
 
         function getPointAtDistance(lineString, percentage) {
             const coords = lineString.geometry.coordinates;
-            const totalLength = L.Polyline.fromGeoJSON(lineString).getLatLngs().reduce((acc, curr, i, arr) => {
+            const tempLayer = L.geoJSON(lineString);
+            const polyline = tempLayer.getLayers()[0];
+            const latLngs = polyline.getLatLngs();
+            const totalLength = latLngs.reduce((acc, curr, i, arr) => {
                 if (i === 0) return 0;
                 return acc + arr[i-1].distanceTo(curr);
             }, 0);
             const targetLength = totalLength * (percentage % 1);
             let currentLength = 0;
-            for (let i = 0; i < coords.length - 1; i++) {
-                const p1 = L.latLng(coords[i][1], coords[i][0]);
-                const p2 = L.latLng(coords[i+1][1], coords[i+1][0]);
+            for (let i = 0; i < latLngs.length - 1; i++) {
+                const p1 = latLngs[i];
+                const p2 = latLngs[i+1];
                 const dist = p1.distanceTo(p2);
                 if (currentLength + dist >= targetLength) {
                     const ratio = (targetLength - currentLength) / dist;
