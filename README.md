@@ -1,192 +1,152 @@
 # Heat - Racing Application
 
-A Go-based racing application with a web interface for managing racers, points, and race information. Built with a SQLite backend and served through a RESTful API.
+<p align="center">
+  <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go" alt="Go Version">
+  <img src="https://img.shields.io/badge/SQLite-3.x-003B57?style=for-the-badge&logo=sqlite" alt="SQLite">
+  <img src="https://img.shields.io/badge/Docker-20.10+-2496ED?style=for-the-badge&logo=docker" alt="Docker">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
+</p>
 
-## Project Overview
+> A lightweight Go-based racing management system for tracking racers, points, race results, and fastest lap times for the HEAT boardgame.
 
-Heat is a lightweight racing management system that tracks:
-- Racer profiles and statistics
-- Race information and results
-- Points and rankings
-- Fastest lap times
+## ✨ Features
 
-The application consists of:
-- **Backend**: Go server with REST API
-- **Database**: SQLite for data persistence
-- **Frontend**: HTML/CSS web interface
-- **Infrastructure**: Docker support for easy deployment
+- 🏎️ **Racer Management** - Track racer profiles and statistics
+- 🏁 **Race Tracking** - Record race information and results
+- 📊 **Points System** - Automated points and rankings
+- ⚡ **Fastest Laps** - Record and compare lap times
+- 🌐 **Web Interface** - Clean HTML/CSS frontend
+- 🐳 **Docker Ready** - Easy deployment with containers
 
-## Prerequisites
+## 🚀 Quick Start
 
-### For Local Development
-- **Go** 1.21 or higher
-- **SQLite3** development libraries
-- **GCC** compiler (for CGO)
-
-### For Docker
-- **Docker** 20.10+
-- **Docker Compose** 1.29+
-
-## Building Locally
-
-### 1. Install Dependencies
-
-Ensure Go dependencies are available:
 ```bash
+# Clone and setup
+git clone <repository-url>
+cd heat
+
+# Install dependencies
 go mod download
-go mod tidy
-```
 
-### 2. Build the Application
-
-Build the executable with SQLite support (requires CGO):
-```bash
+# Build
 CGO_ENABLED=1 go build -o heat-server .
-```
 
-On different platforms:
-- **Linux/macOS**: The command above works directly
-- **Windows**: Requires MinGW or similar C compiler setup
-
-The build will create a `heat-server` binary in the current directory.
-
-## Running Locally
-
-### 1. Run the Server
-
-```bash
+# Run
 ./heat-server
 ```
 
-The server will:
-- Initialize or connect to `heat.db` (SQLite database)
-- Start listening on `http://localhost:8080`
-- Serve static files (HTML/CSS) from the `static/` directory
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
-### 2. Access the Application
+## 📋 Prerequisites
 
-Open your browser and navigate to:
+| Component | Version | Notes |
+|-----------|---------|-------|
+| **Go** | 1.21+ | Backend runtime |
+| **SQLite3** | - | Development libraries required |
+| **GCC** | - | For CGO compilation |
+| **Docker** | 20.10+ | Optional, for containerized deployment |
+| **Docker Compose** | 1.29+ | Optional |
+
+### Linux Installation
+
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential libsqlite3-dev
 ```
-http://localhost:8080
+
+### macOS Installation
+
+```bash
+# With Homebrew
+brew install go sqlite3
+xcode-select --install
 ```
 
-### 3. API Endpoints
+## 🏗️ Project Structure
 
-The application exposes REST endpoints:
-- `GET /api/racers` - Get all racers
-- `POST /api/racers` - Update a racer
-- `DELETE /api/racers` - Delete a racer
-- `GET /` - Serve the web interface
+```
+.
+├── main.go               # Application entry point & API handlers
+├── go.mod                # Go module definition
+├── go.sum                # Dependency checksums
+├── heat.db               # SQLite database (created at runtime)
+├── Dockerfile            # Multi-stage Docker build
+├── docker-compose.yml    # Docker Compose orchestration
+├── static/
+│   ├── index.html        # Main web interface
+│   ├── admin.html        # Admin dashboard
+│   └── style.css         # Styling
+└── README.md             # This file
+```
 
-## Building with Docker
+## 🔌 API Endpoints
 
-Build the Docker image:
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/racers` | List all racers |
+| `POST` | `/api/racers` | Create/update a racer |
+| `DELETE` | `/api/racers` | Delete a racer |
+| `GET` | `/` | Web interface |
+
+## 🐳 Docker Deployment
+
+### Build Image
+
 ```bash
 docker build -t heat-server .
 ```
 
-The Docker build uses a multi-stage approach:
-1. **Builder stage**: Includes Go compiler and build dependencies
-2. **Runtime stage**: Minimal Alpine image with only runtime requirements
-
-## Running with Docker Compose
-
-### 1. Start the Application
+### Run with Docker Compose
 
 ```bash
+# Start the application
 docker-compose up -d
-```
 
-This will:
-- Build the image (if not already built)
-- Start the container named `heat_pedal_to_the_metal`
-- Expose the application on `http://localhost:8080`
-- Create a persistent volume `heat-data` for database storage
+# View logs
+docker-compose logs -f heat-server
 
-### 2. Access the Application
-
-Open your browser:
-```
-http://localhost:8080
-```
-
-### 3. Stop the Application
-
-```bash
+# Stop the application
 docker-compose down
 ```
 
-To remove the persistent data volume as well:
+The application will be available at [http://localhost:8080](http://localhost:8080)
+
+### Data Persistence
+
+- **Local**: Database stored as `heat.db` in the working directory
+- **Docker**: Database stored in the `heat-data` volume
+
+To remove persistent data:
 ```bash
 docker-compose down -v
 ```
 
-### 4. View Logs
+## 🛠️ Development
 
 ```bash
-docker-compose logs -f heat-server
-```
-
-## Project Structure
-
-```
-.
-├── main.go               # Application entry point and API handlers
-├── go.mod               # Go module definition
-├── go.sum              # Go dependencies checksums
-├── heat.db             # SQLite database (created at runtime)
-├── Dockerfile          # Multi-stage Docker build configuration
-├── docker-compose.yml  # Docker Compose orchestration
-├── static/
-│   ├── index.html      # Main web interface
-│   ├── admin.html      # Admin dashboard
-│   └── style.css       # Styling
-└── README.md           # This file
-```
-
-## Database
-
-The application uses SQLite with the database file `heat.db` created automatically on first run. The database is initialized by the `initDB()` function in `main.go`.
-
-### Data Persistence
-
-- **Local runs**: Database is stored as `heat.db` in the working directory
-- **Docker runs**: Database is stored in the `heat-data` volume for persistence across container restarts
-
-## Troubleshooting
-
-### Build Issues
-
-**Error: "no C compiler found"**
-- Install build essentials: `sudo apt-get install build-essential` (Linux) or XCode Command Line Tools (macOS)
-
-**Error: "sqlite3.h not found"**
-- Install SQLite dev packages: `sudo apt-get install libsqlite3-dev` (Linux)
-
-### Runtime Issues
-
-**Port 8080 already in use**
-- Change the port in `docker-compose.yml` or use a different port in local runs
-
-**Database locked errors**
-- Ensure only one instance of the application is running
-- Check for orphaned processes: `ps aux | grep heat-server`
-
-## Development
-
-To rebuild and test changes:
-
-```bash
-# Stop current container (if running)
+# Stop current container
 docker-compose down
 
-# Rebuild the image
-docker-compose build
-
-# Start the application
-docker-compose up -d
+# Rebuild and start
+docker-compose build && docker-compose up -d
 ```
 
-## License
+## ⚠️ Troubleshooting
 
-See [LICENSE](LICENSE) for details.
+### Build Errors
+
+| Error | Solution |
+|-------|----------|
+| `no C compiler found` | Install build essentials: `sudo apt-get install build-essential` |
+| `sqlite3.h not found` | Install dev packages: `sudo apt-get install libsqlite3-dev` |
+
+### Runtime Errors
+
+| Issue | Solution |
+|-------|----------|
+| Port 8080 in use | Change port in `docker-compose.yml` |
+| Database locked | Ensure only one instance is running |
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.

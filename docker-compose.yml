@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   heat:
-    build: .
-    ports:
-      - "8080:8080"
+    image: ghcr.io/martynvdijke/heat:latest
     volumes:
       - heat-data:/app
     container_name: heat
