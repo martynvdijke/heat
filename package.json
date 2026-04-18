@@ -1,6 +1,6 @@
 {
   "name": "heat",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A Go-based racing application with a web interface for managing racers, points, and race information. Built with a SQLite backend and served through a RESTful API.",
   "main": "index.js",
   "scripts": {
