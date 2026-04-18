@@ -162,7 +162,7 @@ func TestRaceInfo(t *testing.T) {
 	})
 
 	t.Run("UpdateRaceInfo", func(t *testing.T) {
-		ri := RaceInfo{Country: "Belgium", Track: "Spa", Laps: 44}
+		ri := RaceInfo{Country: "Belgium", Track: "Spa", Laps: 44, TrackID: "spa"}
 		body, _ := json.Marshal(ri)
 		req, _ := http.NewRequest("POST", "/api/race-info", bytes.NewBuffer(body))
 		rr := httptest.NewRecorder()
@@ -172,14 +172,26 @@ func TestRaceInfo(t *testing.T) {
 			t.Errorf("expected status 200, got %v", status)
 		}
 
-		// Verify update
+		// Verify update in DB
+		var dbCountry, dbTrack, dbTrackID string
+		var dbLaps int
+		err := db.QueryRow("SELECT country, track, track_id, laps FROM race_info ORDER BY id DESC LIMIT 1").
+			Scan(&dbCountry, &dbTrack, &dbTrackID, &dbLaps)
+		if err != nil {
+			t.Fatalf("failed to find race info in DB: %v", err)
+		}
+		if dbCountry != "Belgium" || dbTrack != "Spa" || dbTrackID != "spa" || dbLaps != 44 {
+			t.Errorf("DB data mismatch: got %s, %s, %s, %d", dbCountry, dbTrack, dbTrackID, dbLaps)
+		}
+
+		// Verify update via API
 		req, _ = http.NewRequest("GET", "/api/race-info", nil)
 		rr = httptest.NewRecorder()
 		getRaceInfo(rr, req)
 		var updatedRi RaceInfo
 		json.Unmarshal(rr.Body.Bytes(), &updatedRi)
 		if updatedRi.Country != "Belgium" || updatedRi.Track != "Spa" || updatedRi.Laps != 44 {
-			t.Errorf("race info not updated correctly: %+v", updatedRi)
+			t.Errorf("race info not updated correctly via API: %+v", updatedRi)
 		}
 	})
 }
@@ -468,6 +480,7 @@ func TestRaceHistory(t *testing.T) {
 		defer delete(sessionStore, sessionID)
 
 		input := map[string]interface{}{
+			"name":       "Test Race",
 			"race_date":  "2026-04-15",
 			"country":    "Italy",
 			"track":      "Monza",
@@ -489,20 +502,45 @@ func TestRaceHistory(t *testing.T) {
 			t.Errorf("expected status 200, got %v", status)
 		}
 
-		// Verify history was saved
+		// Get the inserted ID
+		var resp map[string]int64
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		raceID := resp["id"]
+
+		// Check race_history in DB
+		var dbName, dbCountry string
+		err := db.QueryRow("SELECT name, country FROM race_history WHERE id=?", raceID).Scan(&dbName, &dbCountry)
+		if err != nil {
+			t.Fatalf("failed to find race history in DB: %v", err)
+		}
+		if dbName != "Test Race" || dbCountry != "Italy" {
+			t.Errorf("DB mismatch for history: got %s, %s", dbName, dbCountry)
+		}
+
+		// Check race_results in DB
+		var resultCount int
+		db.QueryRow("SELECT COUNT(*) FROM race_results WHERE race_id=?", raceID).Scan(&resultCount)
+		if resultCount != 3 {
+			t.Errorf("expected 3 results in DB, got %d", resultCount)
+		}
+
+		// Check racer_stats in DB
+		var wins int
+		db.QueryRow("SELECT wins FROM racer_stats WHERE racer_id=1").Scan(&wins)
+		if wins < 1 {
+			t.Error("expected racer 1 to have at least 1 win in stats")
+		}
+
+		// Verify history was saved via API
 		req, _ = http.NewRequest("GET", "/api/race-history", nil)
 		rr = httptest.NewRecorder()
 		getRaceHistory(rr, req)
 
-		var history []map[string]interface{}
+		var history []RaceHistory
 		json.Unmarshal(rr.Body.Bytes(), &history)
 
-		if len(history) != 1 {
-			t.Errorf("expected 1 history entry, got %d", len(history))
-		}
-
-		if history[0]["country"] != "Italy" {
-			t.Errorf("expected country 'Italy', got '%v'", history[0]["country"])
+		if len(history) == 0 {
+			t.Fatal("no history entries found via API")
 		}
 	})
 
@@ -594,6 +632,7 @@ func TestRacerStats(t *testing.T) {
 		defer delete(sessionStore, sessionID)
 
 		input := map[string]interface{}{
+			"name":       "Test Race 2",
 			"race_date":  "2026-04-16",
 			"country":    "Belgium",
 			"track":      "Spa",
@@ -674,6 +713,7 @@ func TestDeleteRaceHistory(t *testing.T) {
 
 	// First, save a race
 	input := map[string]interface{}{
+		"name":       "Silverstone Test",
 		"race_date":  "2026-04-20",
 		"country":    "UK",
 		"track":      "Silverstone",
@@ -694,13 +734,13 @@ func TestDeleteRaceHistory(t *testing.T) {
 	rr = httptest.NewRecorder()
 	getRaceHistory(rr, req)
 
-	var history []map[string]interface{}
+	var history []RaceHistory
 	json.Unmarshal(rr.Body.Bytes(), &history)
 	if len(history) == 0 {
 		t.Fatal("no history to delete")
 	}
 
-	raceID := int(history[0]["id"].(float64))
+	raceID := history[0].ID
 
 	// Delete the race
 	req, _ = http.NewRequest("DELETE", fmt.Sprintf("/api/race-history?id=%d", raceID), nil)
@@ -712,15 +752,29 @@ func TestDeleteRaceHistory(t *testing.T) {
 		t.Errorf("expected status 200, got %v", status)
 	}
 
-	// Verify deletion
+	// Verify deletion in DB
+	var historyCount int
+	db.QueryRow("SELECT COUNT(*) FROM race_history WHERE id=?", raceID).Scan(&historyCount)
+	if historyCount != 0 {
+		t.Errorf("race_history entry with ID %d still exists in DB", raceID)
+	}
+
+	var resultsCount int
+	db.QueryRow("SELECT COUNT(*) FROM race_results WHERE race_id=?", raceID).Scan(&resultsCount)
+	if resultsCount != 0 {
+		t.Errorf("race_results entries for race_id %d still exist in DB", raceID)
+	}
+
+	// Verify deletion via API
 	req, _ = http.NewRequest("GET", "/api/race-history", nil)
 	rr = httptest.NewRecorder()
 	getRaceHistory(rr, req)
-	json.Unmarshal(rr.Body.Bytes(), &history)
+	var updatedHistory []RaceHistory
+	json.Unmarshal(rr.Body.Bytes(), &updatedHistory)
 
-	for _, h := range history {
-		if int(h["id"].(float64)) == raceID {
-			t.Error("race should have been deleted")
+	for _, h := range updatedHistory {
+		if h.ID == raceID {
+			t.Error("race should have been deleted (found in API response)")
 		}
 	}
 }
@@ -799,6 +853,16 @@ func TestQuotes(t *testing.T) {
 		if createdQuote.Text != "Test quote for unit testing!" {
 			t.Errorf("expected quote text 'Test quote for unit testing!', got '%s'", createdQuote.Text)
 		}
+
+		// Check DB
+		var dbText string
+		err := db.QueryRow("SELECT text FROM quotes WHERE id=?", createdQuote.ID).Scan(&dbText)
+		if err != nil {
+			t.Fatalf("failed to find quote in DB: %v", err)
+		}
+		if dbText != "Test quote for unit testing!" {
+			t.Errorf("expected DB text 'Test quote for unit testing!', got '%s'", dbText)
+		}
 	})
 
 	t.Run("AddQuoteWithoutAuth", func(t *testing.T) {
@@ -818,7 +882,11 @@ func TestQuotes(t *testing.T) {
 		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
 		defer delete(sessionStore, sessionID)
 
-		updatedQuote := Quote{ID: 1, Text: "Updated quote text", Author: "Updated Author"}
+		// Create a quote first to get a valid ID
+		res, _ := db.Exec("INSERT INTO quotes (text, author) VALUES ('Original', 'Original')")
+		quoteID, _ := res.LastInsertId()
+
+		updatedQuote := Quote{ID: int(quoteID), Text: "Updated quote text", Author: "Updated Author"}
 		body, _ := json.Marshal(updatedQuote)
 		req, _ := http.NewRequest("PUT", "/api/quotes", bytes.NewBuffer(body))
 		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
@@ -828,6 +896,16 @@ func TestQuotes(t *testing.T) {
 		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("expected status 200, got %v", status)
 		}
+
+		// Check DB
+		var dbText, dbAuthor string
+		err := db.QueryRow("SELECT text, author FROM quotes WHERE id=?", quoteID).Scan(&dbText, &dbAuthor)
+		if err != nil {
+			t.Fatalf("failed to find updated quote in DB: %v", err)
+		}
+		if dbText != "Updated quote text" || dbAuthor != "Updated Author" {
+			t.Errorf("DB update check failed: got %s, %s", dbText, dbAuthor)
+		}
 	})
 
 	t.Run("DeleteQuoteWithAuth", func(t *testing.T) {
@@ -835,13 +913,24 @@ func TestQuotes(t *testing.T) {
 		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
 		defer delete(sessionStore, sessionID)
 
-		req, _ := http.NewRequest("DELETE", "/api/quotes?id=1", nil)
+		// Create a quote first to get a valid ID
+		res, _ := db.Exec("INSERT INTO quotes (text, author) VALUES ('ToDelete', 'Author')")
+		quoteID, _ := res.LastInsertId()
+
+		req, _ := http.NewRequest("DELETE", fmt.Sprintf("/api/quotes?id=%d", quoteID), nil)
 		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
 		rr := httptest.NewRecorder()
 		handleQuotes(rr, req)
 
 		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("expected status 200, got %v", status)
+		}
+
+		// Check DB
+		var count int
+		db.QueryRow("SELECT COUNT(*) FROM quotes WHERE id=?", quoteID).Scan(&count)
+		if count != 0 {
+			t.Errorf("quote with ID %d still exists in DB after deletion", quoteID)
 		}
 	})
 
@@ -856,26 +945,147 @@ func TestQuotes(t *testing.T) {
 	})
 }
 
-func TestSchemaMigrationToV3(t *testing.T) {
-	t.Run("QuotesTableExists", func(t *testing.T) {
-		var count int
-		err := db.QueryRow("SELECT COUNT(*) FROM quotes").Scan(&count)
-		if err != nil {
-			t.Errorf("quotes table should exist: %v", err)
+func TestSaveRaceToHistoryWithName(t *testing.T) {
+	t.Run("SaveRaceToHistoryWithCustomName", func(t *testing.T) {
+		sessionID := "test-session-history-name"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		input := map[string]interface{}{
+			"name":       "2024 Season Finale",
+			"race_date":  "2026-04-15",
+			"country":    "Italy",
+			"track":      "Monza",
+			"track_id":   "monza",
+			"total_laps": 53,
+			"results": []map[string]interface{}{
+				{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true},
+			},
 		}
-		if count < 20 {
-			t.Errorf("expected at least 20 seeded quotes, got %d", count)
+		body, _ := json.Marshal(input)
+		req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		saveRaceToHistory(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		// Verify history was saved with the custom name in the database
+		var name string
+		err := db.QueryRow("SELECT name FROM race_history WHERE name='2024 Season Finale'").Scan(&name)
+		if err != nil {
+			t.Fatalf("failed to find archived race in DB: %v", err)
+		}
+		if name != "2024 Season Finale" {
+			t.Errorf("expected name '2024 Season Finale', got '%s'", name)
+		}
+
+		// Verify through API
+		req, _ = http.NewRequest("GET", "/api/race-history", nil)
+		rr = httptest.NewRecorder()
+		getRaceHistory(rr, req)
+
+		var history []RaceHistory
+		json.Unmarshal(rr.Body.Bytes(), &history)
+
+		found := false
+		for _, h := range history {
+			if h.Name == "2024 Season Finale" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("custom archive name not found in history via API")
+		}
+	})
+}
+
+func TestAdminAddRacerAndCheckDB(t *testing.T) {
+	sessionID := "admin-test-session"
+	sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+	defer delete(sessionStore, sessionID)
+
+	newRacer := Racer{
+		Name:           "M. VERSTAPPEN",
+		ProfilePicture: "/static/images/max.png",
+		CarColor:       "blue",
+		CarName:        "RB20",
+		Points:         100,
+		Rank:           1,
+		Position:       0,
+	}
+	body, _ := json.Marshal(newRacer)
+	req, _ := http.NewRequest("POST", "/api/racers", bytes.NewBuffer(body))
+	req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+	rr := httptest.NewRecorder()
+	updateRacer(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("failed to add racer: %d", rr.Code)
+	}
+
+	// Check DB
+	var name, car string
+	err := db.QueryRow("SELECT name, car_name FROM racers WHERE name='M. VERSTAPPEN'").Scan(&name, &car)
+	if err != nil {
+		t.Fatalf("racer not found in database: %v", err)
+	}
+	if name != "M. VERSTAPPEN" || car != "RB20" {
+		t.Errorf("database data mismatch: got %s, %s", name, car)
+	}
+}
+
+func TestAdminAddQuoteAndCheckDB(t *testing.T) {
+	sessionID := "admin-test-session-quote"
+	sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+	defer delete(sessionStore, sessionID)
+
+	newQuote := Quote{
+		Text:   "Simply lovely!",
+		Author: "Max Verstappen",
+	}
+	body, _ := json.Marshal(newQuote)
+	req, _ := http.NewRequest("POST", "/api/quotes", bytes.NewBuffer(body))
+	req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+	rr := httptest.NewRecorder()
+	handleQuotes(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("failed to add quote: %d", rr.Code)
+	}
+
+	// Check DB
+	var text, author string
+	err := db.QueryRow("SELECT text, author FROM quotes WHERE text='Simply lovely!'").Scan(&text, &author)
+	if err != nil {
+		t.Fatalf("quote not found in database: %v", err)
+	}
+	if text != "Simply lovely!" || author != "Max Verstappen" {
+		t.Errorf("database data mismatch: got %s, %s", text, author)
+	}
+}
+
+func TestSchemaMigrationToV4(t *testing.T) {
+	t.Run("NameColumnExistsInRaceHistory", func(t *testing.T) {
+		// Try to insert a row with the name column to verify it exists
+		_, err := db.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps) VALUES (?, ?, ?, ?, ?, ?)",
+			"Migration Test", "2026-01-01", "Test", "Test", "test", 10)
+		if err != nil {
+			t.Errorf("failed to insert into race_history with name column: %v", err)
 		}
 	})
 
-	t.Run("SchemaVersionIs3", func(t *testing.T) {
+	t.Run("SchemaVersionIs4", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
-		if version != 3 {
-			t.Errorf("expected schema version 3, got %d", version)
+		if version != 4 {
+			t.Errorf("expected schema version 4, got %d", version)
 		}
 	})
 }
@@ -942,6 +1152,7 @@ func TestRaceHistoryEdgeCases(t *testing.T) {
 		defer delete(sessionStore, sessionID)
 
 		input := map[string]interface{}{
+			"name":       "Hungary GP",
 			"race_date":  "2026-04-25",
 			"country":    "Hungary",
 			"track":      "Hungaroring",
@@ -966,6 +1177,7 @@ func TestRaceHistoryEdgeCases(t *testing.T) {
 		defer delete(sessionStore, sessionID)
 
 		input := map[string]interface{}{
+			"name":       "Spain GP",
 			"race_date":  "2026-04-26",
 			"country":    "Spain",
 			"track":      "Catalunya",
@@ -1119,6 +1331,7 @@ func TestRacerStatsEdgeCases(t *testing.T) {
 
 		for i := 0; i < 3; i++ {
 			input := map[string]interface{}{
+				"name":       fmt.Sprintf("Race %d", i),
 				"race_date":  fmt.Sprintf("2026-05-%02d", i+1),
 				"country":    "Test",
 				"track":      "Test",

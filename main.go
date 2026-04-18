@@ -76,7 +76,18 @@ type Quote struct {
 	CreatedAt string `json:"created_at"`
 }
 
-const currentSchemaVersion = 3
+type RaceHistory struct {
+	ID        int          `json:"id"`
+	Name      string       `json:"name"`
+	Date      string       `json:"race_date"`
+	Country   string       `json:"country"`
+	Track     string       `json:"track"`
+	TrackID   string       `json:"track_id"`
+	TotalLaps int          `json:"total_laps"`
+	Results   []RaceResult `json:"results,omitempty"`
+}
+
+const currentSchemaVersion = 4
 
 type AdminUser struct {
 	ID       int    `json:"id"`
@@ -412,6 +423,7 @@ func runMigration(fromVersion int) {
 	case 1:
 		_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS race_history (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT,
 			race_date TEXT,
 			country TEXT,
 			track TEXT,
@@ -457,6 +469,12 @@ func runMigration(fromVersion int) {
 			created_at TEXT DEFAULT CURRENT_TIMESTAMP
 		)`)
 		seedQuotes()
+	case 3:
+		var columnExists bool
+		_ = db.QueryRow("SELECT COUNT(*) > 0 FROM pragma_table_info('race_history') WHERE name = 'name'").Scan(&columnExists)
+		if !columnExists {
+			_, _ = db.Exec("ALTER TABLE race_history ADD COLUMN name TEXT")
+		}
 	}
 }
 
@@ -853,7 +871,7 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 	var args []interface{}
 
 	if raceID != "" {
-		query = `SELECT rh.id, rh.race_date, rh.country, rh.track, rh.track_id, rh.total_laps,
+		query = `SELECT rh.id, COALESCE(rh.name, ''), rh.race_date, rh.country, rh.track, rh.track_id, rh.total_laps,
 				 COALESCE(GROUP_CONCAT(rr.racer_id || ':' || rr.racer_name || ':' || rr.position || ':' || rr.points || ':' || rr.fastest_lap, '|'), '') as results
 				 FROM race_history rh
 				 LEFT JOIN race_results rr ON rh.id = rr.race_id
@@ -861,7 +879,7 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 				 GROUP BY rh.id`
 		args = []interface{}{raceID}
 	} else {
-		query = `SELECT id, race_date, country, track, track_id, total_laps FROM race_history ORDER BY race_date DESC LIMIT 20`
+		query = `SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps FROM race_history ORDER BY race_date DESC LIMIT 20`
 	}
 
 	rows, err := db.Query(query, args...)
@@ -871,22 +889,12 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	type HistoryRow struct {
-		ID        int          `json:"id"`
-		Date      string       `json:"race_date"`
-		Country   string       `json:"country"`
-		Track     string       `json:"track"`
-		TrackID   string       `json:"track_id"`
-		TotalLaps int          `json:"total_laps"`
-		Results   []RaceResult `json:"results,omitempty"`
-	}
-
-	var history []HistoryRow
+	var history []RaceHistory
 	for rows.Next() {
-		var h HistoryRow
+		var h RaceHistory
 		var resultsStr string
 		if raceID != "" {
-			rows.Scan(&h.ID, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &resultsStr)
+			rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &resultsStr)
 			if resultsStr != "" {
 				for _, r := range strings.Split(resultsStr, "|") {
 					parts := strings.Split(r, ":")
@@ -906,7 +914,7 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		} else {
-			rows.Scan(&h.ID, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps)
+			rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps)
 		}
 		history = append(history, h)
 	}
@@ -916,6 +924,7 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 
 func saveRaceToHistory(w http.ResponseWriter, r *http.Request) {
 	var input struct {
+		Name      string `json:"name"`
 		RaceDate  string `json:"race_date"`
 		Country   string `json:"country"`
 		Track     string `json:"track"`
@@ -938,10 +947,14 @@ func saveRaceToHistory(w http.ResponseWriter, r *http.Request) {
 	if input.RaceDate == "" {
 		input.RaceDate = time.Now().Format("2006-01-02")
 	}
+	if input.Name == "" {
+		input.Name = input.RaceDate
+	}
 
-	result, err := db.Exec("INSERT INTO race_history (race_date, country, track, track_id, total_laps) VALUES (?, ?, ?, ?, ?)",
-		input.RaceDate, input.Country, input.Track, input.TrackID, input.TotalLaps)
+	result, err := db.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps) VALUES (?, ?, ?, ?, ?, ?)",
+		input.Name, input.RaceDate, input.Country, input.Track, input.TrackID, input.TotalLaps)
 	if err != nil {
+		log.Printf("[HISTORY] Insert failed: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -1098,3 +1111,4 @@ func handleQuotes(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
