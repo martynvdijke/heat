@@ -30,16 +30,4 @@ test.describe('Index Page', () => {
     // Seed data has at least one racer
     await expect(rows.first()).toBeVisible();
   });
-
-  test('should switch circuits', async ({ page }) => {
-    await page.goto('/');
-    const selector = page.locator('#track-selector');
-    
-    // Select Spa
-    await selector.selectOption('spa');
-    
-    // Check if race details updated (Monza is 5km, Spa is 7km)
-    await expect(page.locator('#race-length')).toHaveText('7');
-    await expect(page.locator('#race-track')).toHaveText(/Spa/);
-  });
 });

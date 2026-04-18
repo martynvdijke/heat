@@ -13,10 +13,16 @@ plugins:
   - "@semantic-release/release-notes-generator"
   - "@semantic-release/changelog"
   - [
+      "@semantic-release/exec",
+      {
+        prepareCmd: "sed -i 's/\"version\": \".*\"/\"version\": \"${nextRelease.version}\"/' package.json && sed -i 's/const currentVersion = \".*\"/const currentVersion = \"${nextRelease.version}\"/' main.go && sed -i 's/\"version\": \".*\"/\"version\": \"${nextRelease.version}\"/' static/swagger.json"
+      }
+    ]
+  - [
       "@semantic-release/git",
       {
         message: "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
-        assets: ["CHANGELOG.md"],
+        assets: ["CHANGELOG.md", "package.json", "main.go", "static/swagger.json"],
       },
     ]
   - "@semantic-release/github"

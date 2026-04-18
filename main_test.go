@@ -359,14 +359,31 @@ func TestLoginAndSetup(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/check-setup", nil)
 		rr := httptest.NewRecorder()
 		handleCheckSetup(rr, req)
+
 		var resp map[string]bool
 		json.Unmarshal(rr.Body.Bytes(), &resp)
-		if resp["setup"] != true {
-			t.Errorf("expected setup true, got %v", resp["setup"])
+		if !resp["setup"] {
+			t.Error("expected setup to be true after user creation")
+		}
+	})
+
+	t.Run("BlockDuplicateSetup", func(t *testing.T) {
+		// Attempt setup again even though admin exists
+		input := map[string]interface{}{
+			"username": "hacker",
+			"password": "password",
+			"setup":    true,
+		}
+		body, _ := json.Marshal(input)
+		req, _ := http.NewRequest("POST", "/api/login", bytes.NewBuffer(body))
+		rr := httptest.NewRecorder()
+		handleLogin(rr, req)
+
+		if status := rr.Code; status != http.StatusForbidden {
+			t.Errorf("expected status 403 Forbidden for duplicate setup, got %v", status)
 		}
 	})
 }
-
 func TestGetTracks(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/tracks", nil)
 	rr := httptest.NewRecorder()

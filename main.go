@@ -88,6 +88,7 @@ type RaceHistory struct {
 }
 
 const currentSchemaVersion = 4
+const currentVersion = "1.0.0"
 
 type AdminUser struct {
 	ID       int    `json:"id"`
@@ -271,6 +272,11 @@ func main() {
 
 	http.HandleFunc("/api/quote/random", func(w http.ResponseWriter, r *http.Request) {
 		getRandomQuote(w, r)
+	})
+
+	http.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"version": currentVersion})
 	})
 
 	http.HandleFunc("/api-docs", func(w http.ResponseWriter, r *http.Request) {
@@ -618,6 +624,12 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		var count int
 		db.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
 		log.Printf("[LOGIN] Admin users in DB: %d", count)
+
+		if input.Setup && count > 0 {
+			log.Printf("[LOGIN] Setup attempt blocked: Admin user already exists")
+			http.Error(w, "Setup already completed", http.StatusForbidden)
+			return
+		}
 
 		if count == 0 {
 			log.Printf("[LOGIN] No admin users, creating new user: %s", input.Username)
@@ -1111,4 +1123,3 @@ func handleQuotes(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 }
-
