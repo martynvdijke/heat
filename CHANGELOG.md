@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/martynvdijke/heat/compare/v1.1.2...v1.2.0) (2026-04-20)
+
+
+### Features
+
+* add in experimental ai image background and opther ui fixes ([8eaf0d1](https://github.com/martynvdijke/heat/commit/8eaf0d15774cd81bf9a6d7539581d4eeba904709))
+
 ## [1.1.2](https://github.com/martynvdijke/heat/compare/v1.1.1...v1.1.2) (2026-04-20)
 
 ## [1.1.1](https://github.com/martynvdijke/heat/compare/v1.1.0...v1.1.1) (2026-04-19)
