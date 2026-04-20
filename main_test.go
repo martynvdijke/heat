@@ -1085,7 +1085,7 @@ func TestAdminAddQuoteAndCheckDB(t *testing.T) {
 	}
 }
 
-func TestSchemaMigrationToV4(t *testing.T) {
+func TestSchemaMigrationToV5(t *testing.T) {
 	t.Run("NameColumnExistsInRaceHistory", func(t *testing.T) {
 		// Try to insert a row with the name column to verify it exists
 		_, err := db.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps) VALUES (?, ?, ?, ?, ?, ?)",
@@ -1095,14 +1095,23 @@ func TestSchemaMigrationToV4(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs4", func(t *testing.T) {
+	t.Run("NewTrackColumnsExist", func(t *testing.T) {
+		// Check if new columns exist in tracks table
+		_, err := db.Exec("SELECT use_map_image, map_image_url, refresh_geojson FROM tracks LIMIT 0")
+		if err != nil {
+			t.Errorf("new track columns should exist: %v", err)
+		}
+	})
+
+	t.Run("SchemaVersionIs5", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
-		if version != 4 {
-			t.Errorf("expected schema version 4, got %d", version)
+
+		if version != 5 {
+			t.Errorf("expected schema version 5, got %d", version)
 		}
 	})
 }

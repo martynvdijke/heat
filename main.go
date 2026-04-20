@@ -39,12 +39,15 @@ type RaceInfo struct {
 }
 
 type Track struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Country   string `json:"country"`
-	GeoJSON   string `json:"geojson"`
-	Length    int    `json:"length_km"`
-	LapRecord string `json:"lap_record"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Country        string `json:"country"`
+	GeoJSON        string `json:"geojson"`
+	Length         int    `json:"length_km"`
+	LapRecord      string `json:"lap_record"`
+	UseMapImage    bool   `json:"use_map_image"`
+	MapImageURL    string `json:"map_image_url"`
+	RefreshGeoJSON bool   `json:"refresh_geojson"`
 }
 
 type RaceResult struct {
@@ -87,8 +90,8 @@ type RaceHistory struct {
 	Results   []RaceResult `json:"results,omitempty"`
 }
 
-const currentSchemaVersion = 4
-const currentVersion = "1.1.2"
+const currentSchemaVersion = 5
+const currentVersion = "1.2.0"
 
 type AdminUser struct {
 	ID       int    `json:"id"`
@@ -250,6 +253,8 @@ func main() {
 			authMiddleware(deleteTrack)(w, r)
 		}
 	})
+
+	http.HandleFunc("/api/tracks/ai-extract", authMiddleware(handleAIExtract))
 
 	http.HandleFunc("/api/race-history", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -486,6 +491,10 @@ func runMigration(fromVersion int) {
 		if err != nil {
 			_, _ = db.Exec("ALTER TABLE race_history ADD COLUMN name TEXT")
 		}
+	case 4:
+		_, _ = db.Exec("ALTER TABLE tracks ADD COLUMN use_map_image INTEGER DEFAULT 0")
+		_, _ = db.Exec("ALTER TABLE tracks ADD COLUMN map_image_url TEXT")
+		_, _ = db.Exec("ALTER TABLE tracks ADD COLUMN refresh_geojson INTEGER DEFAULT 1")
 	}
 }
 
@@ -862,7 +871,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTracks(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, name, country, geojson, length_km, lap_record FROM tracks ORDER BY name")
+	rows, err := db.Query("SELECT id, name, country, geojson, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks ORDER BY name")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -872,9 +881,13 @@ func getTracks(w http.ResponseWriter, r *http.Request) {
 	var tracks []Track
 	for rows.Next() {
 		var t Track
-		if err := rows.Scan(&t.ID, &t.Name, &t.Country, &t.GeoJSON, &t.Length, &t.LapRecord); err != nil {
+		var useMapImage, refreshGeoJSON int
+		if err := rows.Scan(&t.ID, &t.Name, &t.Country, &t.GeoJSON, &t.Length, &t.LapRecord, &useMapImage, &t.MapImageURL, &refreshGeoJSON); err != nil {
+			log.Printf("[TRACK] Scan error: %v", err)
 			continue
 		}
+		t.UseMapImage = useMapImage == 1
+		t.RefreshGeoJSON = refreshGeoJSON == 1
 		tracks = append(tracks, t)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -888,8 +901,8 @@ func saveTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record) VALUES (?, ?, ?, ?, ?, ?)`,
-		t.ID, t.Name, t.Country, t.ID, t.Length, t.LapRecord)
+	_, err := db.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		t.ID, t.Name, t.Country, t.ID, t.Length, t.LapRecord, boolToInt(t.UseMapImage), t.MapImageURL, boolToInt(t.RefreshGeoJSON))
 	if err != nil {
 		log.Printf("[TRACK] Failed to save track: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -898,6 +911,13 @@ func saveTrack(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(t)
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func deleteTrack(w http.ResponseWriter, r *http.Request) {
@@ -915,6 +935,28 @@ func deleteTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func handleAIExtract(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[AI] Track extraction requested")
+	
+	// This is a placeholder for AI extraction logic.
+	// In a real implementation, this would use a vision AI to trace the track.
+	
+	// Mock GeoJSON response
+	mockGeoJSON := `{
+		"type": "Feature",
+		"properties": {"name": "Extracted Track"},
+		"geometry": {
+			"type": "LineString",
+			"coordinates": [
+				[9.281, 45.621], [9.285, 45.625], [9.290, 45.620], [9.281, 45.621]
+			]
+		}
+	}`
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(mockGeoJSON))
 }
 
 func getRaceHistory(w http.ResponseWriter, r *http.Request) {
@@ -1068,13 +1110,6 @@ func getRacerStats(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"stats": s, "racer": rInfo})
-}
-
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
 }
 
 func getQuotes(w http.ResponseWriter, r *http.Request) {

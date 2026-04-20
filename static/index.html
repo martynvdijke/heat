@@ -22,6 +22,7 @@
             <div class="logo">
                 <img src="/static/logo.svg" alt="HEAT Logo" width="60" height="60" class="me-2">
                 <div>HEAT<span>Pedal to the Metal</span></div>
+                <div class="ms-3 d-none d-lg-block border-start ps-3 small opacity-50" style="font-family: 'Montserrat', sans-serif; letter-spacing: 1px; text-transform: uppercase;">Official Board Game<br>Companion</div>
             </div>
             <div class="racing-stripes"></div>
             <nav class="mt-3 mt-md-0 d-flex align-items-center gap-4">
@@ -297,20 +298,49 @@
         }
 
         function updateMap(trackId) {
+            if (!map) return;
             Object.values(racerMarkers).forEach(m => map.removeLayer(m));
             racerMarkers = {};
+            
+            // Clean up existing layers
+            map.eachLayer(layer => {
+                if (layer instanceof L.GeoJSON || layer instanceof L.ImageOverlay) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            const t = tracks.find(x => x.id === trackId) || { id: 'monza', use_map_image: false };
             const geojson = trackGeoJSON[trackId] || trackGeoJSON.monza;
-            L.geoJSON(geojson, {
-                style: { color: '#d40000', weight: 5, opacity: 0.8 }
-            }).addTo(map);
-            setTimeout(() => {
-                const layer = L.geoJSON(geojson);
-                map.fitBounds(layer.getBounds(), { padding: [20, 20] });
-            }, 100);
+
+            if (t.use_map_image && t.map_image_url) {
+                // Use image overlay. We need some bounds. 
+                // For simplicity, we use the GeoJSON bounds or a default if not available.
+                const tempLayer = L.geoJSON(geojson);
+                const bounds = tempLayer.getBounds();
+                L.imageOverlay(t.map_image_url, bounds, { opacity: 0.8 }).addTo(map);
+                map.fitBounds(bounds, { padding: [20, 20] });
+            } else {
+                L.geoJSON(geojson, {
+                    style: { color: '#d40000', weight: 5, opacity: 0.8 }
+                }).addTo(map);
+                setTimeout(() => {
+                    const layer = L.geoJSON(geojson);
+                    map.fitBounds(layer.getBounds(), { padding: [20, 20] });
+                }, 100);
+            }
         }
 
         function updateMapMarkers(racers) {
             if (!map) return;
+            
+            const t = tracks.find(x => x.id === currentTrack) || { id: 'monza', refresh_geojson: true };
+            if (!t.refresh_geojson) {
+                // If refresh is disabled, hide all markers and return
+                Object.values(racerMarkers).forEach(m => map.removeLayer(m));
+                racerMarkers = {};
+                return;
+            }
+
             const totalVakjes = 100;
             const geojson = trackGeoJSON[currentTrack] || trackGeoJSON.monza;
             racers.forEach(r => {

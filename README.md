@@ -1,22 +1,20 @@
-# Heat - Racing Application
+# Heat - Pedal to the Metal Companion
 
 <p align="center">
+  <img src="https://img.shields.io/badge/Board_Game-Heat%3A_Pedal_to_the_Metal-red?style=for-the-badge" alt="Heat Board Game">
+  <img src="https://img.shields.io/badge/Status-Inspired_Companion-orange?style=for-the-badge" alt="Inspired Companion">
   <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go" alt="Go Version">
-  <img src="https://img.shields.io/badge/SQLite-3.x-003B57?style=for-the-badge&logo=sqlite" alt="SQLite">
-  <img src="https://img.shields.io/badge/Docker-20.10+-2496ED?style=for-the-badge&logo=docker" alt="Docker">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
 </p>
 
-> A lightweight Go-based racing management system for tracking racers, points, race results, and fastest lap times for the HEAT boardgame.
+> This is a fan-made, digital "side-along" companion app for the **Heat: Pedal to the Metal** board game. It is designed to enhance your tabletop experience by providing real-time race tracking, championship management, and interactive map visualization.
 
-## ✨ Features
+## 🏁 Board Game Companion Features
 
-- 🏎️ **Racer Management** - Track racer profiles and statistics
-- 🏁 **Race Tracking** - Record race information and results
-- 📊 **Points System** - Automated points and rankings
-- ⚡ **Fastest Laps** - Record and compare lap times
-- 🌐 **Web Interface** - Clean HTML/CSS frontend
-- 🐳 **Docker Ready** - Easy deployment with containers
+- 🏎️ **Racer Tracking** - Keep track of all players' positions and status on the board.
+- 🗺️ **Interactive Maps** - Use official-style GeoJSON tracks or upload a photo of your own game board to use as a background.
+- 🤖 **AI Board Extraction** - (Alpha) Snap a photo of your board and let the AI attempt to trace the track spaces for digital tracking.
+- 📊 **Championship Management** - Automated points calculation and historical record-keeping across multiple race seasons.
+- ⚡ **Digital Dashboard** - A live, synchronized view for all players to see gaps, rankings, and fastest laps.
 
 ## 🚀 Quick Start
 

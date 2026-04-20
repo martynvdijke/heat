@@ -32,7 +32,7 @@
 <body>
     <header class="admin-header mb-4">
         <div class="container d-flex justify-content-between align-items-center">
-            <h1 class="h4 mb-0"><i class="fa-solid fa-flag-checkered me-2"></i>HEAT RACE CONTROL</h1>
+            <h1 class="h4 mb-0"><i class="fa-solid fa-flag-checkered me-2"></i>HEAT RACE CONTROL <small class="ms-2 opacity-50 fw-normal">Board Game Companion</small></h1>
             <div>
                 <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-eye me-1"></i> Live Board</a>
                 <button class="btn btn-danger btn-sm" onclick="logout()"><i class="fa-solid fa-sign-out-alt me-1"></i> Logout</button>
@@ -335,7 +335,7 @@
                         <input type="hidden" name="id" id="track-id">
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Track ID</label>
-                            <input type="text" class="form-control" name="id" required placeholder="e.g. zandvoort">
+                            <input type="text" class="form-control" name="id_visible" id="track-id-visible" required placeholder="e.g. zandvoort">
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Track Name</label>
@@ -353,6 +353,30 @@
                             <div class="col-6">
                                 <label class="form-label small fw-bold">Lap Record</label>
                                 <input type="text" class="form-control" name="lap_record" placeholder="e.g. 1:09.000">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="refresh-geojson" name="refresh_geojson" checked>
+                                <label class="form-check-label small fw-bold" for="refresh-geojson">Live GeoJSON Refresh</label>
+                            </div>
+                            <div class="form-text mt-0 mb-2">Enable to update car positions on the map in real-time.</div>
+                        </div>
+                        <div class="mb-3 border rounded p-3 bg-light">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="use-map-image" name="use_map_image" onchange="document.getElementById('map-image-settings').style.display = this.checked ? 'block' : 'none'">
+                                <label class="form-check-label small fw-bold" for="use-map-image">Use Map Image Background</label>
+                            </div>
+                            <div id="map-image-settings" style="display:none">
+                                <label class="form-label small fw-bold">Map Image URL</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" name="map_image_url" id="map-image-url">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('map-image-upload').click()">Upload</button>
+                                </div>
+                                <input type="file" id="map-image-upload" style="display:none" accept="image/*" onchange="uploadMapImage(this)">
+                                <button type="button" class="btn btn-sm btn-outline-info w-100" onclick="extractTrackFromAI()">
+                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Extract Track with AI (Alpha)
+                                </button>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Save Track</button>
@@ -407,7 +431,10 @@
                     <td class="fw-bold">${escapeHtml(t.name)}</td>
                     <td>${escapeHtml(t.country)}</td>
                     <td>${t.length_km} km</td>
-                    <td class="text-muted">${t.lap_record || '-'}</td>
+                    <td>
+                        ${t.use_map_image ? '<span class="badge bg-info text-dark">Image Map</span>' : '<span class="badge bg-secondary">GeoJSON</span>'}
+                        ${t.refresh_geojson ? '<i class="fa-solid fa-sync fa-spin ms-1 text-success small" title="Live Refresh On"></i>' : ''}
+                    </td>
                     <td class="text-end pe-4">
                         <button class="btn btn-sm btn-outline-primary" onclick="editTrack('${t.id}')"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTrack('${t.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -553,8 +580,11 @@
         document.getElementById('track-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.target));
+            data.id = document.getElementById('track-id-visible').value;
             data.length_km = parseInt(data.length_km);
-            
+            data.use_map_image = e.target.use_map_image.checked;
+            data.refresh_geojson = e.target.refresh_geojson.checked;
+
             const res = await fetch('/api/tracks', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -566,7 +596,6 @@
                 loadAllTracks();
             }
         });
-
         // Archive logic
         async function archiveRace() {
             const name = document.getElementById('archive-name').value;
@@ -698,12 +727,47 @@
             if (!t) return;
             const form = document.getElementById('track-form');
             form.id.value = t.id;
+            document.getElementById('track-id-visible').value = t.id;
             form.name.value = t.name;
             form.country.value = t.country;
             form.length_km.value = t.length_km;
             form.lap_record.value = t.lap_record || '';
-            document.getElementById('trackModalLabel').textContent = 'Edit Track: ' + t.name;
+            form.refresh_geojson.checked = t.refresh_geojson;
+            form.use_map_image.checked = t.use_map_image;
+            form.map_image_url.value = t.map_image_url || '';
+            document.getElementById('map-image-settings').style.display = t.use_map_image ? 'block' : 'none';
+            document.getElementById('trackModalLabel').innerText = 'Edit Track';
             trackModal.show();
+        }
+
+        async function uploadMapImage(input) {
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                document.getElementById('map-image-url').value = data.url;
+            } catch (e) { alert('Upload failed'); }
+        }
+
+        async function extractTrackFromAI() {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Analyzing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/tracks/ai-extract', { method: 'POST' });
+                const data = await res.json();
+                alert('AI successfully analyzed the track! GeoJSON has been generated.');
+                console.log('AI Extracted GeoJSON:', data);
+            } catch (e) { 
+                alert('AI extraction failed'); 
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
 
         async function deleteTrack(id) {

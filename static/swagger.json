@@ -3,7 +3,7 @@
   "info": {
     "title": "HEAT Racing API",
     "description": "API for the HEAT: Pedal to the Metal racing championship management system",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "contact": {
       "name": "HEAT Racing Federation"
     }
@@ -102,7 +102,7 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RacerInput" }
+              "schema": { "$ref": "#/components/schemas/Racer" }
             }
           }
         },
@@ -166,6 +166,48 @@
                   "type": "array",
                   "items": { "$ref": "#/components/schemas/Track" }
                 }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create or update a track",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Track" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Track saved" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a track",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Track deleted" }
+        }
+      }
+    },
+    "/api/tracks/ai-extract": {
+      "post": {
+        "summary": "AI Track Extraction",
+        "description": "Analyzes an image to extract race track GeoJSON (Alpha placeholder)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Extracted GeoJSON",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
               }
             }
           }
@@ -245,7 +287,7 @@
     },
     "/api/quotes": {
       "get": {
-        "summary": "Get all commentator quotes",
+        "summary": "Get all quotes",
         "responses": {
           "200": {
             "description": "List of quotes",
@@ -261,19 +303,18 @@
         }
       },
       "post": {
-        "summary": "Add a new quote",
+        "summary": "Create a quote",
         "security": [{ "cookieAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/QuoteInput" }
+              "schema": { "$ref": "#/components/schemas/Quote" }
             }
           }
         },
         "responses": {
-          "201": { "description": "Quote created" },
-          "401": { "description": "Unauthorized" }
+          "201": { "description": "Quote created" }
         }
       },
       "put": {
@@ -283,13 +324,12 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/QuoteInput" }
+              "schema": { "$ref": "#/components/schemas/Quote" }
             }
           }
         },
         "responses": {
-          "200": { "description": "Quote updated" },
-          "401": { "description": "Unauthorized" }
+          "200": { "description": "Quote updated" }
         }
       },
       "delete": {
@@ -299,14 +339,13 @@
           { "name": "id", "in": "query", "required": true, "schema": { "type": "integer" } }
         ],
         "responses": {
-          "200": { "description": "Quote deleted" },
-          "401": { "description": "Unauthorized" }
+          "200": { "description": "Quote deleted" }
         }
       }
     },
     "/api/quote/random": {
       "get": {
-        "summary": "Get a random commentator quote",
+        "summary": "Get a random quote",
         "responses": {
           "200": {
             "description": "Random quote",
@@ -319,9 +358,29 @@
         }
       }
     },
+    "/api/version": {
+      "get": {
+        "summary": "Get application version",
+        "responses": {
+          "200": {
+            "description": "Application version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": { "type": "string", "example": "1.2.0" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/upload": {
       "post": {
-        "summary": "Upload profile image",
+        "summary": "Upload an image",
         "security": [{ "cookieAuth": [] }],
         "requestBody": {
           "required": true,
@@ -338,52 +397,35 @@
         },
         "responses": {
           "200": {
-            "description": "Image uploaded",
+            "description": "Upload successful",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "url": { "type": "string", "example": "/static/images/1234567890.png" }
+                    "url": { "type": "string", "example": "/static/images/12345.png" }
                   }
                 }
               }
             }
-          },
-          "401": { "description": "Unauthorized" },
-          "400": { "description": "Invalid file type" }
-        }
-      }
-    },
-    "/ws": {
-      "get": {
-        "summary": "WebSocket for real-time racer updates",
-        "responses": {
-          "101": { "description": "Switching Protocols" }
+          }
         }
       }
     }
   },
   "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      }
+    },
     "schemas": {
       "Racer": {
         "type": "object",
         "properties": {
           "id": { "type": "integer" },
-          "name": { "type": "string", "example": "A. PROST" },
-          "profile_picture": { "type": "string", "example": "/static/images/prost.png" },
-          "car_color": { "type": "string", "enum": ["red", "blue", "green", "yellow", "grey"] },
-          "car_name": { "type": "string", "example": "Red Beast" },
-          "points": { "type": "integer", "example": 78 },
-          "rank": { "type": "integer", "example": 1 },
-          "position": { "type": "integer", "example": 50 }
-        }
-      },
-      "RacerInput": {
-        "type": "object",
-        "required": ["name", "car_color", "car_name", "points", "rank"],
-        "properties": {
-          "id": { "type": "integer", "description": "0 for new racer" },
           "name": { "type": "string" },
           "profile_picture": { "type": "string" },
           "car_color": { "type": "string" },
@@ -397,20 +439,19 @@
         "type": "object",
         "properties": {
           "id": { "type": "integer" },
-          "country": { "type": "string", "example": "Italy" },
-          "track": { "type": "string", "example": "Monza" },
-          "track_id": { "type": "string", "example": "monza" },
-          "laps": { "type": "integer", "example": 53 }
+          "country": { "type": "string" },
+          "track": { "type": "string" },
+          "laps": { "type": "integer" },
+          "track_id": { "type": "string" }
         }
       },
       "RaceInfoInput": {
         "type": "object",
-        "required": ["country", "track", "laps"],
         "properties": {
           "country": { "type": "string" },
           "track": { "type": "string" },
-          "track_id": { "type": "string" },
-          "laps": { "type": "integer" }
+          "laps": { "type": "integer" },
+          "track_id": { "type": "string" }
         }
       },
       "Track": {
@@ -421,14 +462,31 @@
           "country": { "type": "string", "example": "Italy" },
           "geojson": { "type": "string", "example": "monza" },
           "length_km": { "type": "integer", "example": 5 },
-          "lap_record": { "type": "string", "example": "1:18.887" }
+          "lap_record": { "type": "string", "example": "1:18.887" },
+          "use_map_image": { "type": "boolean", "example": false },
+          "map_image_url": { "type": "string", "example": "/static/images/map.png" },
+          "refresh_geojson": { "type": "boolean", "example": true }
+        }
+      },
+      "RaceResult": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "race_id": { "type": "integer" },
+          "racer_id": { "type": "integer" },
+          "racer_name": { "type": "string" },
+          "position": { "type": "integer" },
+          "points": { "type": "integer" },
+          "fastest_lap": { "type": "boolean" },
+          "finished": { "type": "boolean" }
         }
       },
       "RaceHistory": {
         "type": "object",
         "properties": {
           "id": { "type": "integer" },
-          "race_date": { "type": "string", "example": "2026-04-15" },
+          "name": { "type": "string" },
+          "race_date": { "type": "string" },
           "country": { "type": "string" },
           "track": { "type": "string" },
           "track_id": { "type": "string" },
@@ -441,8 +499,8 @@
       },
       "RaceHistoryInput": {
         "type": "object",
-        "required": ["country", "track", "total_laps", "results"],
         "properties": {
+          "name": { "type": "string" },
           "race_date": { "type": "string" },
           "country": { "type": "string" },
           "track": { "type": "string" },
@@ -463,16 +521,6 @@
           }
         }
       },
-      "RaceResult": {
-        "type": "object",
-        "properties": {
-          "racer_id": { "type": "integer" },
-          "racer_name": { "type": "string" },
-          "position": { "type": "integer" },
-          "points": { "type": "integer" },
-          "fastest_lap": { "type": "boolean" }
-        }
-      },
       "RacerStats": {
         "type": "object",
         "properties": {
@@ -490,26 +538,10 @@
         "type": "object",
         "properties": {
           "id": { "type": "integer" },
-          "text": { "type": "string", "example": "AND THERE'S THE CHEQUERED FLAG!" },
-          "author": { "type": "string", "example": "Murray Walker" },
+          "text": { "type": "string" },
+          "author": { "type": "string" },
           "created_at": { "type": "string" }
         }
-      },
-      "QuoteInput": {
-        "type": "object",
-        "required": ["text"],
-        "properties": {
-          "id": { "type": "integer", "description": "Required for updates" },
-          "text": { "type": "string" },
-          "author": { "type": "string" }
-        }
-      }
-    },
-    "securitySchemes": {
-      "cookieAuth": {
-        "type": "apiKey",
-        "in": "cookie",
-        "name": "session"
       }
     }
   }
