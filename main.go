@@ -88,7 +88,7 @@ type RaceHistory struct {
 }
 
 const currentSchemaVersion = 4
-const currentVersion = "1.1.1"
+const currentVersion = "1.1.2"
 
 type AdminUser struct {
 	ID       int    `json:"id"`
