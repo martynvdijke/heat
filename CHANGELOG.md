@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/martynvdijke/heat/compare/v1.2.0...v1.2.1) (2026-04-21)
+
+
+### Bug Fixes
+
+* add all racers colors ([3d37d99](https://github.com/martynvdijke/heat/commit/3d37d99457fc6fb1d3e6507847454efc9369f883))
+
 # [1.2.0](https://github.com/martynvdijke/heat/compare/v1.1.2...v1.2.0) (2026-04-20)
 
 
