@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/martynvdijke/heat/compare/v1.2.1...v1.2.2) (2026-04-22)
+
+
+### Bug Fixes
+
+* db persistense ([f2ee7c5](https://github.com/martynvdijke/heat/commit/f2ee7c55dcb18894c87567ff3fa8a55694c98907))
+
 ## [1.2.1](https://github.com/martynvdijke/heat/compare/v1.2.0...v1.2.1) (2026-04-21)
 
 
