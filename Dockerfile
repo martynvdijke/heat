@@ -16,9 +16,14 @@ RUN apk add --no-cache sqlite-libs ca-certificates
 
 WORKDIR /app
 
+ENV DOCKER=true
+
 COPY --from=builder /app/heat-server .
 COPY --from=builder /app/static ./static
-RUN mkdir -p /app/static/images
+COPY --from=builder /app/static/images ./images
+
+RUN mkdir -p /db && chmod 777 /db
+RUN mkdir -p /app/images && chmod 777 /app/images
 
 EXPOSE 8080
 

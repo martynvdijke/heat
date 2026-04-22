@@ -106,9 +106,11 @@ var (
 	upgrader     = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
-	clients   = make(map[*websocket.Conn]bool)
-	broadcast = make(chan []Racer)
-	basePath  = "/app"
+	clients    = make(map[*websocket.Conn]bool)
+	broadcast  = make(chan []Racer)
+	basePath   = "/app"
+	dbPath     = "/db/heat.db"
+	imagesPath = "/app/images"
 )
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -177,13 +179,19 @@ func shorten(s string) string {
 func main() {
 	if os.Getenv("DOCKER") != "true" {
 		basePath = "."
+		dbPath = "./heat.db"
+		imagesPath = filepath.Join(basePath, "static/images")
 	}
-	if err := os.MkdirAll(filepath.Join(basePath, "static/images"), 0755); err != nil {
+
+	if err := os.MkdirAll(imagesPath, 0755); err != nil {
 		log.Printf("Warning: could not create images directory: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+		log.Printf("Warning: could not create database directory: %v", err)
 	}
 
 	var err error
-	db, err = sql.Open("sqlite3", "./heat.db")
+	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -348,6 +356,10 @@ func main() {
 
 	fs := http.FileServer(http.Dir(filepath.Join(basePath, "static")))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	// Serve images from imagesPath (could be /app/images or static/images)
+	imgFs := http.FileServer(http.Dir(imagesPath))
+	http.Handle("/static/images/", http.StripPrefix("/static/images/", imgFs))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filepath.Join(basePath, "static/index.html"))
@@ -849,7 +861,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filename := fmt.Sprintf("%d%s", time.Now().Unix(), ext)
-	uploadPath := filepath.Join(basePath, "static/images", filename)
+	uploadPath := filepath.Join(imagesPath, filename)
 	log.Printf("[UPLOAD] Saving to: %s", uploadPath)
 
 	out, err := os.Create(uploadPath)

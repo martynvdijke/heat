@@ -111,8 +111,8 @@ The application will be available at [http://localhost:8080](http://localhost:80
 
 ### Data Persistence
 
-- **Local**: Database stored as `heat.db` in the working directory
-- **Docker**: Database stored in the `heat-data` volume
+- **Local**: Database stored as `heat.db` in the working directory; images in `static/images`
+- **Docker**: Database stored in `heat-db` volume at `/db/heat.db`; images in `heat-data` volume at `/app/images`
 
 To remove persistent data:
 ```bash

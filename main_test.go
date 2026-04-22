@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,12 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// Ensure we use local paths for tests
+	os.Unsetenv("DOCKER")
+	basePath = "."
+	dbPath = "./heat.db"
+	imagesPath = filepath.Join(basePath, "static/images")
+
 	var err error
 	db, err = sql.Open("sqlite3", ":memory:")
 	if err != nil {

@@ -5,7 +5,9 @@ services:
     image: ghcr.io/martynvdijke/heat:latest
     volumes:
       - heat-data:/app
+      - heat-db:/db
     container_name: heat
 
 volumes:
   heat-data:
+  heat-db:
