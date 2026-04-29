@@ -116,6 +116,20 @@
             </div>
         </div>
 
+        <section id="qualification" class="mt-5">
+            <h2 class="mb-4"><i class="fa-solid fa-random me-2"></i>Qualification Grid</h2>
+            <div class="card border-0 shadow-sm" id="qualification-section">
+                <div class="card-body">
+                    <div id="qualification-grid-display" class="row g-3">
+                        <div class="col-12 text-center text-muted py-4">
+                            <i class="fa-solid fa-shuffle fa-2x mb-2"></i>
+                            <p>Qualification grid will appear here after admin shuffle</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="history" class="mt-5">
             <h2 class="mb-4"><i class="fa-solid fa-clock-rotate-left me-2"></i>Race History</h2>
             <div class="row g-3" id="race-history-container">
@@ -493,6 +507,42 @@
             new bootstrap.Modal(document.getElementById('statsModal')).show();
         }
 
+        async function loadQualificationGrid() {
+            try {
+                const res = await fetch('/api/racers');
+                const racers = await res.json();
+                // Sort by rank to show grid order
+                const sorted = [...racers].sort((a, b) => a.rank - b.rank);
+                const gridDiv = document.getElementById('qualification-grid-display');
+
+                if (sorted.length === 0) {
+                    gridDiv.innerHTML = `
+                        <div class="col-12 text-center text-muted py-4">
+                            <i class="fa-solid fa-shuffle fa-2x mb-2"></i>
+                            <p>Qualification grid will appear here after admin shuffle</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                gridDiv.innerHTML = sorted.map((r, i) => `
+                    <div class="col-md-${sorted.length <= 4 ? 12/sorted.length : 3}">
+                        <div class="text-center p-3 border rounded ${i === 0 ? 'bg-warning bg-opacity-10 border-warning' : ''}">
+                            <div class="mb-2">
+                                <span class="badge ${i === 0 ? 'bg-warning text-dark' : 'bg-secondary'} fs-6">P${i + 1}</span>
+                            </div>
+                            <img src="${r.profile_picture}" class="rounded-circle mb-2" width="48" height="48" style="object-fit: cover" onerror="this.src='/static/images/helmet.svg'">
+                            <div class="fw-bold small">${r.name}</div>
+                            <div class="small text-muted"><span class="color-indicator ${r.car_color}"></span>${r.car_name}</div>
+                            ${i === 0 ? '<i class="fa-solid fa-crown text-warning"></i>' : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load qualification grid:', err);
+            }
+        }
+
         async function loadRaceHistory() {
             const res = await fetch('/api/race-history');
             const history = await res.json();
@@ -599,6 +649,7 @@
                 initMap();
                 renderRacers();
                 loadRaceHistory();
+                loadQualificationGrid();
                 startQuoteRotation();
 
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -606,6 +657,7 @@
                 ws.onmessage = (event) => {
                     racers = JSON.parse(event.data);
                     renderRacers();
+                    loadQualificationGrid();
                 };
                 ws.onclose = () => setTimeout(loadData, 5000);
 

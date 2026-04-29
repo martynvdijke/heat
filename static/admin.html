@@ -30,6 +30,29 @@
         .table thead th { background: #f8f9fa; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; color: #666; }
         .nav-tabs .nav-link { color: #666; font-weight: 600; border: none; padding: 10px 20px; }
         .nav-tabs .nav-link.active { color: var(--heat-red); border-bottom: 3px solid var(--heat-red); background: none; }
+        .qualification-card {
+            transition: all 0.3s ease;
+        }
+        @keyframes shuffleBounce {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shuffle-animation {
+            animation: shuffleBounce 0.3s ease-in-out;
+        }
+        .locked-position {
+            animation: lockFlash 0.5s ease-in-out;
+        }
+        @keyframes lockFlash {
+            0% { transform: scale(1); box-shadow: 0 0 0 rgba(40, 167, 69, 0.5); }
+            50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(40, 167, 69, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 0 rgba(40, 167, 69, 0); }
+        }
+        .qualification-card:hover {
+            transform: scale(1.02);
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -40,43 +63,13 @@
                 <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-eye me-1"></i> Live Board</a>
                 <button class="btn btn-danger btn-sm" onclick="logout()"><i class="fa-solid fa-sign-out-alt me-1"></i> Logout</button>
             </div>
+
+            <!-- Qualification Pane -->
+            <div class="tab-pane fade" 
+            </div>
         </div>
     </header>
-
-    <div class="container">
-        <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link active" id="race-tab" data-bs-toggle="tab" data-bs-target="#race-pane" type="button"><i class="fa-solid fa-gauge-high me-2"></i>Race Setup</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="racers-tab" data-bs-toggle="tab" data-bs-target="#racers-pane" type="button"><i class="fa-solid fa-users me-2"></i>Racers</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="tracks-tab" data-bs-toggle="tab" data-bs-target="#tracks-pane" type="button"><i class="fa-solid fa-road me-2"></i>Tracks</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button"><i class="fa-solid fa-comment me-2"></i>Quotes</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="archive-tab" data-bs-toggle="tab" data-bs-target="#archive-pane" type="button"><i class="fa-solid fa-box-archive me-2"></i>Archive</button>
-            </li>
-        </ul>
-
-        <div class="tab-content">
-            <!-- Race Setup Pane -->
-            <div class="tab-pane fade show active" id="race-pane">
-                <div class="row">
-                    <div class="col-md-7">
-                        <div class="card">
-                            <div class="card-header"><i class="fa-solid fa-location-dot me-2 text-danger"></i>Current Race Details</div>
-                            <div class="card-body">
-                                <form id="race-form">
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Select Preset Track</label>
-                                        <select class="form-select" id="track-select" onchange="applyTrackPreset(this.value)">
-                                            <option value="">Choose a circuit...</option>
-                                        </select>
-                                    </div>
+    </div>
                                     <hr>
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
@@ -112,7 +105,30 @@
                                     <label class="form-label small fw-bold">Archive Name (e.g. 2024 Season)</label>
                                     <input type="text" id="archive-name" class="form-control" placeholder="Enter archive name...">
                                 </div>
-                                <div class="mb-3">
+                                
+    <div class="container">
+        <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="race-tab" data-bs-toggle="tab" data-bs-target="#race-pane" type="button"><i class="fa-solid fa-gauge-high me-2"></i>Race Setup</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="racers-tab" data-bs-toggle="tab" data-bs-target="#racers-pane" type="button"><i class="fa-solid fa-users me-2"></i>Racers</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="tracks-tab" data-bs-toggle="tab" data-bs-target="#tracks-pane" type="button"><i class="fa-solid fa-road me-2"></i>Tracks</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button"><i class="fa-solid fa-comment me-2"></i>Quotes</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="archive-tab" data-bs-toggle="tab" data-bs-target="#archive-pane" type="button"><i class="fa-solid fa-box-archive me-2"></i>Archive</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="qualification-tab" data-bs-toggle="tab" data-bs-target="#qualification-pane" type="button"><i class="fa-solid fa-random me-2"></i>Qualification</button>
+            </li>
+        </ul>
+        <div class="tab-content">
+<div class="mb-3">
                                     <label class="form-label small fw-bold">Archive Date</label>
                                     <input type="date" id="archive-date" class="form-control">
                                 </div>
@@ -120,6 +136,74 @@
                                     <i class="fa-solid fa-box-archive me-1"></i> Archive Results
                                 </button>
                             </div>
+            
+            <!-- Qualification Pane -->
+            <div class="tab-pane fade" id="qualification-pane">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-random me-2 text-warning"></i>Qualification Shuffle</span>
+                                <button class="btn btn-sm btn-warning" onclick="startQualification()">
+                                    <i class="fa-solid fa-play me-1"></i> Start Shuffle
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <p class="small text-muted mb-3">Randomly shuffle grid positions with animation. Drivers will be shuffled one by one to determine the starting grid.</p>
+                                <div class="mb-3">
+                                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="resetQualification()">
+                                        <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" onclick="previewGrid()">
+                                        <i class="fa-solid fa-eye me-1"></i> Preview Grid
+                                    </button>
+                                </div>
+                                <div id="qualification-grid" class="row g-3">
+                                    <div class="col-12 text-center text-muted py-5">
+                                        <i class="fa-solid fa-shuffle fa-3x mb-3"></i>
+                                        <p>Click "Start Shuffle" to begin qualification</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header"><i class="fa-solid fa-list-ol me-2 text-danger"></i>Final Grid</div>
+                            <div class="card-body p-0">
+                                <div id="final-grid" class="p-3">
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fa-solid fa-trophy fa-2x mb-2"></i>
+                                        <p class="small mb-0">Final grid order will appear here</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header"><i class="fa-solid fa-gear me-2 text-danger"></i>Settings</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Shuffle Speed (ms)</label>
+                                    <input type="range" class="form-range" id="shuffle-speed" min="100" max="1000" step="100" value="300" oninput="document.getElementById('speed-value').textContent = this.value + 'ms'">
+                                    <div class="text-center small text-muted">Current: <span id="speed-value">300ms</span></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Grid Layout</label>
+                                    <select class="form-select" id="grid-layout">
+                                        <option value="2">2 Columns (Standard)</option>
+                                        <option value="3">3 Columns</option>
+                                        <option value="4">4 Columns</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-outline-primary w-100" onclick="applyGridPositions()">
+                                    <i class="fa-solid fa-check me-1"></i> Apply to Race
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
                         </div>
                     </div>
                 </div>
@@ -397,6 +481,8 @@
         let racers = [];
         let tracks = [];
         let allTracks = [];
+        let qualificationOrder = [];
+        let shuffleInterval = null;
         const racerModal = new bootstrap.Modal(document.getElementById('racerModal'));
         const quoteModal = new bootstrap.Modal(document.getElementById('quoteModal'));
         const trackModal = new bootstrap.Modal(document.getElementById('trackModal'));
@@ -602,6 +688,208 @@
                 loadAllTracks();
             }
         });
+        // Qualification logic
+        let lockedPositions = 0;
+
+        async function startQualification() {
+            const btn = document.querySelector('[onclick="startQualification()"]');
+
+            if (shuffleInterval) {
+                clearInterval(shuffleInterval);
+                shuffleInterval = null;
+                btn.innerHTML = '<i class="fa-solid fa-play me-1"></i> Start Shuffle';
+                return;
+            }
+
+            const speed = parseInt(document.getElementById('shuffle-speed').value);
+            const gridDiv = document.getElementById('qualification-grid');
+            const finalDiv = document.getElementById('final-grid');
+
+            // Get current racers
+            const res = await fetch('/api/racers');
+            const currentRacers = await res.json();
+
+            if (currentRacers.length === 0) {
+                alert('No racers available for qualification!');
+                return;
+            }
+
+            // Randomize initial order
+            qualificationOrder = [...currentRacers].sort(() => Math.random() - 0.5);
+            lockedPositions = 0;
+            finalDiv.innerHTML = '<div class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin fa-2x mb-2"></i><p class="small mb-0">Shuffling positions...</p></div>';
+            btn.innerHTML = '<i class="fa-solid fa-stop me-1"></i> Stop Shuffle';
+
+            // Shuffle interval - keeps mixing until we decide to lock
+            let shuffleCount = 0;
+            shuffleInterval = setInterval(() => {
+                // Shuffle all unlocked positions
+                for (let i = qualificationOrder.length - 1; i >= lockedPositions; i--) {
+                    const j = Math.floor(Math.random() * (i - lockedPositions + 1)) + lockedPositions;
+                    [qualificationOrder[i], qualificationOrder[j]] = [qualificationOrder[j], qualificationOrder[i]];
+                }
+
+                renderQualificationGrid(qualificationOrder, lockedPositions);
+                shuffleCount++;
+
+                // Lock one more position every 5 shuffles
+                if (shuffleCount % 5 === 0 && lockedPositions < qualificationOrder.length) {
+                    lockedPositions++;
+                    // Flash effect for newly locked position
+                    setTimeout(() => {
+                        if (shuffleInterval) renderQualificationGrid(qualificationOrder, lockedPositions);
+                    }, 50);
+                }
+
+                // All positions locked
+                if (lockedPositions >= qualificationOrder.length) {
+                    clearInterval(shuffleInterval);
+                    shuffleInterval = null;
+                    btn.innerHTML = '<i class="fa-solid fa-play me-1"></i> Start Shuffle';
+                    renderFinalGrid(qualificationOrder);
+                }
+            }, speed);
+        }
+
+        function renderQualificationGrid(order, locked) {
+            const gridDiv = document.getElementById('qualification-grid');
+            const cols = parseInt(document.getElementById('grid-layout').value);
+
+            gridDiv.innerHTML = order.map((r, i) => {
+                const isLocked = i < locked;
+                const animationClass = !isLocked ? 'shuffle-animation' : 'locked-position';
+                return `
+                    <div class="col-md-${12/cols}">
+                        <div class="qualification-card ${animationClass}" ${!isLocked ? 'style="animation-delay: ' + (i * 50) + 'ms"' : ''}>
+                            <div class="d-flex align-items-center p-2 border rounded ${isLocked ? 'bg-success' : 'bg-dark'} text-white">
+                                <span class="badge ${isLocked ? 'bg-warning' : 'bg-secondary'} text-dark me-2">
+                                    ${isLocked ? '<i class="fa-solid fa-lock me-1"></i>' : ''}P${i + 1}
+                                </span>
+                                <img src="${r.profile_picture}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover" onerror="this.src='https://via.placeholder.com/32'">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold small">${escapeHtml(r.name)}</div>
+                                    <div class="small opacity-75"><span class="color-dot bg-${r.car_color}"></span>${escapeHtml(r.car_name)}</div>
+                                </div>
+                                ${isLocked ? '<i class="fa-solid fa-check text-warning"></i>' : '<i class="fa-solid fa-arrows-rotate fa-spin text-muted"></i>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('') + `
+                <div class="col-12 text-center mt-3">
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: ${Math.round((locked / order.length) * 100)}%"></div>
+                        <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: ${Math.round(((order.length - locked) / order.length) * 100)}%"></div>
+                    </div>
+                    <small class="text-muted">Locked: ${locked}/${order.length} | Remaining: ${order.length - locked}</small>
+                </div>
+            `;
+        }
+
+        // Update grid display when layout changes
+        document.getElementById('grid-layout').addEventListener('change', function() {
+            if (qualificationOrder.length > 0 && !shuffleInterval) {
+                renderFinalGrid(qualificationOrder);
+            }
+        });
+
+        function renderFinalGrid(order) {
+            const finalDiv = document.getElementById('final-grid');
+            qualificationOrder = order;
+
+            finalDiv.innerHTML = order.map((r, i) => `
+                <div class="d-flex align-items-center p-2 mb-2 border rounded ${i === 0 ? 'border-warning bg-warning bg-opacity-10' : ''}" style="animation: lockFlash 0.5s ease-in-out ${i * 0.1}s">
+                    <span class="badge ${i === 0 ? 'bg-warning text-dark' : 'bg-secondary'} me-2" style="width: 40px">P${i + 1}</span>
+                    <img src="${r.profile_picture}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover" onerror="this.src='https://via.placeholder.com/32'">
+                    <div class="flex-grow-1">
+                        <div class="fw-bold small">${escapeHtml(r.name)}</div>
+                        <div class="small text-muted"><span class="color-dot bg-${r.car_color}"></span>${escapeHtml(r.car_name)}</div>
+                    </div>
+                    ${i === 0 ? '<i class="fa-solid fa-crown text-warning"></i>' : ''}
+                </div>
+            `).join('');
+        }
+
+        async function applyGridPositions() {
+            if (qualificationOrder.length === 0) {
+                alert('Please run qualification first!');
+                return;
+            }
+
+            if (!confirm('Apply this grid order to the race? This will update racer ranks.')) return;
+
+            // Update each racer's rank based on qualification order
+            for (let i = 0; i < qualificationOrder.length; i++) {
+                const racer = qualificationOrder[i];
+                const newRank = i + 1;
+
+                await fetch('/api/racers', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id: racer.id,
+                        name: racer.name,
+                        profile_picture: racer.profile_picture,
+                        car_name: racer.car_name,
+                        car_color: racer.car_color,
+                        points: racer.points,
+                        rank: newRank,
+                        position: racer.position
+                    })
+                });
+            }
+
+            alert('Grid positions applied!');
+            loadRacers();
+        }
+
+        function resetQualification() {
+            if (shuffleInterval) {
+                clearInterval(shuffleInterval);
+                shuffleInterval = null;
+                const btn = document.querySelector('[onclick="startQualification()"]');
+                btn.innerHTML = '<i class="fa-solid fa-play me-1"></i> Start Shuffle';
+            }
+            qualificationOrder = [];
+            lockedPositions = 0;
+            document.getElementById('qualification-grid').innerHTML = `
+                <div class="col-12 text-center text-muted py-5">
+                    <i class="fa-solid fa-shuffle fa-3x mb-3"></i>
+                    <p>Click "Start Shuffle" to begin qualification</p>
+                </div>
+            `;
+            document.getElementById('final-grid').innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fa-solid fa-trophy fa-2x mb-2"></i>
+                    <p class="small mb-0">Final grid order will appear here</p>
+                </div>
+            `;
+        }
+
+        function previewGrid() {
+            const cols = parseInt(document.getElementById('grid-layout').value);
+            const gridDiv = document.getElementById('qualification-grid');
+
+            if (qualificationOrder.length === 0) {
+                alert('Please run qualification first!');
+                return;
+            }
+
+            gridDiv.innerHTML = qualificationOrder.map((r, i) => `
+                <div class="col-md-${12/cols}">
+                    <div class="border rounded p-3 text-center ${i === 0 ? 'bg-warning bg-opacity-10 border-warning' : ''}">
+                        <div class="mb-2">
+                            <span class="badge ${i === 0 ? 'bg-warning text-dark' : 'bg-secondary'} fs-6">P${i + 1}</span>
+                        </div>
+                        <img src="${r.profile_picture}" class="rounded-circle mb-2" width="64" height="64" style="object-fit: cover" onerror="this.src='https://via.placeholder.com/64'">
+                        <div class="fw-bold">${escapeHtml(r.name)}</div>
+                        <div class="small text-muted"><span class="color-dot bg-${r.car_color}"></span>${escapeHtml(r.car_name)}</div>
+                        ${i === 0 ? '<i class="fa-solid fa-crown text-warning fa-2x mt-2"></i>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
         // Archive logic
         async function archiveRace() {
             const name = document.getElementById('archive-name').value;
