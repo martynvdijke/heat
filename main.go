@@ -364,6 +364,22 @@ func main() {
 		http.ServeFile(w, r, filepath.Join(basePath, "static/setup.html"))
 	})
 
+	http.HandleFunc("/stats.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(basePath, "static/stats.html"))
+	})
+
+	http.HandleFunc("/trophies.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(basePath, "static/trophies.html"))
+	})
+
+	http.HandleFunc("/controller.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(basePath, "static/controller.html"))
+	})
+
+	http.HandleFunc("/chat.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(basePath, "static/chat.html"))
+	})
+
 	fs := http.FileServer(http.Dir(filepath.Join(basePath, "static")))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
