@@ -5,7 +5,7 @@
 Before pushing any changes, always run:
 
 ```bash
-make pre-push
+task pre-push
 ```
 
 This will:
@@ -16,11 +16,18 @@ This will:
 ## Individual Commands
 
 ```bash
-make test           # Run all tests (go + playwright)
-make test-go        # Run Go tests only
-make test-playwright # Run Playwright tests only
-make fmt            # Run Go formatting only
-make check          # Run tests only (no formatting)
+task test           # Run all tests (go + playwright)
+task test-go        # Run Go tests only
+task test-playwright # Run Playwright tests only
+task fmt            # Run Go formatting only
+task check          # Run tests only (no formatting)
+```
+
+## Installation
+
+Install task from https://taskfile.dev:
+```bash
+go install github.com/go-task/task/v3/cmd/task@latest
 ```
 
 ## Running Tests Directly
@@ -33,14 +40,4 @@ go test ./...
 ### Playwright tests
 ```bash
 npx playwright test
-```
-
-### Single test file
-```bash
-go test -v -run TestName ./...
-```
-
-### Single playwright test
-```bash
-npx playwright test tests/filename.spec.ts
 ```

@@ -1,0 +1,39 @@
+version: '2'
+
+tasks:
+  pre-push:
+    desc: Run formatting and all tests before pushing
+    cmds:
+      - task: fmt
+      - task: test-go
+      - task: test-playwright
+    sources:
+      - "*.go"
+      - "tests/**"
+
+  test:
+    desc: Run all tests (go + playwright)
+    cmds:
+      - task: test-go
+      - task: test-playwright
+
+  test-go:
+    desc: Run Go tests
+    cmds:
+      - go test ./...
+
+  test-playwright:
+    desc: Run Playwright tests
+    cmds:
+      - npx playwright test
+
+  fmt:
+    desc: Run Go formatting
+    cmds:
+      - gofmt -w .
+
+  check:
+    desc: Run tests only (no formatting)
+    cmds:
+      - task: test-go
+      - task: test-playwright
