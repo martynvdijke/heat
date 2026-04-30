@@ -1019,8 +1019,10 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var h RaceHistory
 		var resultsStr string
+		var raceType string
 		if raceID != "" {
-			rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &resultsStr)
+			rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &raceType, &resultsStr)
+			h.RaceType = raceType
 			if resultsStr != "" {
 				for _, r := range strings.Split(resultsStr, "|") {
 					parts := strings.Split(r, ":")
