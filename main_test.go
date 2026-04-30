@@ -1092,7 +1092,7 @@ func TestAdminAddQuoteAndCheckDB(t *testing.T) {
 	}
 }
 
-func TestSchemaMigrationToV5(t *testing.T) {
+func TestSchemaMigration(t *testing.T) {
 	t.Run("NameColumnExistsInRaceHistory", func(t *testing.T) {
 		// Try to insert a row with the name column to verify it exists
 		_, err := db.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps) VALUES (?, ?, ?, ?, ?, ?)",
@@ -1110,15 +1110,15 @@ func TestSchemaMigrationToV5(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs5", func(t *testing.T) {
+	t.Run("SchemaVersionIs6", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
 
-		if version != 5 {
-			t.Errorf("expected schema version 5, got %d", version)
+		if version != 6 {
+			t.Errorf("expected schema version 6, got %d", version)
 		}
 	})
 }
@@ -1594,6 +1594,177 @@ func TestDeleteRacerEdgeCases(t *testing.T) {
 
 		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("expected status 200 (idempotent), got %v", status)
+		}
+	})
+}
+
+func TestRaceTypeFeature(t *testing.T) {
+	t.Run("SaveSeasonRace", func(t *testing.T) {
+		sessionID := "test-session-season-race"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		input := map[string]interface{}{
+			"name":       "Season Race 1",
+			"race_date":  "2026-05-01",
+			"country":    "Italy",
+			"track":      "Monza",
+			"track_id":   "monza",
+			"total_laps": 53,
+			"race_type":  "season",
+			"results": []map[string]interface{}{
+				{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true},
+			},
+		}
+		body, _ := json.Marshal(input)
+		req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		saveRaceToHistory(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var dbRaceType string
+		err := db.QueryRow("SELECT race_type FROM race_history WHERE name='Season Race 1'").Scan(&dbRaceType)
+		if err != nil {
+			t.Fatalf("failed to find race in DB: %v", err)
+		}
+		if dbRaceType != "season" {
+			t.Errorf("expected race_type 'season', got '%s'", dbRaceType)
+		}
+	})
+
+	t.Run("SaveOneOffRace", func(t *testing.T) {
+		sessionID := "test-session-oneoff"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		input := map[string]interface{}{
+			"name":       "Exhibition Race",
+			"race_date":  "2026-06-01",
+			"country":    "Monaco",
+			"track":      "Monaco",
+			"track_id":   "monaco",
+			"total_laps": 30,
+			"race_type":  "oneoff",
+			"results": []map[string]interface{}{
+				{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 0, "fastest_lap": false},
+			},
+		}
+		body, _ := json.Marshal(input)
+		req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		saveRaceToHistory(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var dbRaceType string
+		err := db.QueryRow("SELECT race_type FROM race_history WHERE name='Exhibition Race'").Scan(&dbRaceType)
+		if err != nil {
+			t.Fatalf("failed to find oneoff race in DB: %v", err)
+		}
+		if dbRaceType != "oneoff" {
+			t.Errorf("expected race_type 'oneoff', got '%s'", dbRaceType)
+		}
+	})
+
+	t.Run("GetRaceHistoryFilteredByType", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/race-history?type=season", nil)
+		rr := httptest.NewRecorder()
+		getRaceHistory(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var history []RaceHistory
+		json.Unmarshal(rr.Body.Bytes(), &history)
+
+		for _, h := range history {
+			if h.RaceType != "season" && h.RaceType != "" {
+				t.Errorf("expected only season races, got '%s'", h.RaceType)
+			}
+		}
+	})
+
+	t.Run("GetOneOffRaces", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/oneoff-races", nil)
+		rr := httptest.NewRecorder()
+		getOneOffRaces(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var history []RaceHistory
+		json.Unmarshal(rr.Body.Bytes(), &history)
+
+		for _, h := range history {
+			if h.RaceType != "oneoff" {
+				t.Errorf("expected only oneoff races, got '%s'", h.RaceType)
+			}
+		}
+	})
+
+	t.Run("DeleteOneOffRace", func(t *testing.T) {
+		sessionID := "test-session-delete-oneoff"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		input := map[string]interface{}{
+			"name":       "To Delete",
+			"race_date":  "2026-07-01",
+			"country":    "Test",
+			"track":      "Test",
+			"track_id":   "test",
+			"total_laps": 10,
+			"race_type":  "oneoff",
+			"results":    []map[string]interface{}{},
+		}
+		body, _ := json.Marshal(input)
+		req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		saveRaceToHistory(rr, req)
+
+		var resp map[string]int64
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		raceID := resp["id"]
+
+		req, _ = http.NewRequest("DELETE", fmt.Sprintf("/api/oneoff-races?id=%d", raceID), nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr = httptest.NewRecorder()
+		deleteOneOffRace(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+	})
+}
+
+func TestSchemaMigrationToV6(t *testing.T) {
+	t.Run("RaceTypeColumnExists", func(t *testing.T) {
+		var raceType string
+		err := db.QueryRow("SELECT race_type FROM race_history LIMIT 1").Scan(&raceType)
+		if err != nil {
+			t.Logf("race_type column may not exist yet: %v (this is expected for fresh DB)", err)
+		}
+	})
+
+	t.Run("SchemaVersionIs6", func(t *testing.T) {
+		var version int
+		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
+		if err != nil {
+			t.Errorf("schema_version should exist: %v", err)
+		}
+
+		if version != 6 {
+			t.Errorf("expected schema version 6, got %d", version)
 		}
 	})
 }

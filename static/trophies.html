@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEAT: Trophy Room</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        .trophy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.5rem; }
+        .trophy-card { background: var(--card-bg, #1a1a2e); border: 1px solid var(--border-color, #333); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease; }
+        .trophy-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .trophy-card.locked { opacity: 0.4; filter: grayscale(1); }
+        .achievement-badge { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.75rem; }
+        .achievement-badge.gold { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #333; }
+        .achievement-badge.silver { background: linear-gradient(135deg, #c0c0c0, #888); color: #333; }
+        .achievement-badge.bronze { background: linear-gradient(135deg, #cd7f32, #8b4513); color: #333; }
+        .achievement-badge.platinum { background: linear-gradient(135deg, #e5e4e2, #a0a0a0); color: #333; }
+        .achievement-badge.special { background: linear-gradient(135deg, #ff6b6b, #ff0000); }
+        .progress-bar-mini { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); margin-top: 0.5rem; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 3px; transition: width 0.5s ease; }
+    </style>
+</head>
+<body>
+    <div class="vintage-overlay"></div>
+    
+    <header class="py-4">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center position-relative">
+            <div class="logo">
+                <img src="/static/logo.svg" alt="HEAT Logo" width="60" height="60" class="me-2">
+                <div>HEAT<span>Pedal to the Metal</span></div>
+            </div>
+            <div class="racing-stripes"></div>
+            <nav class="mt-3 mt-md-0 d-flex align-items-center gap-4">
+                <ul class="mb-0 d-flex gap-3 list-unstyled">
+                    <li><a href="/" class="text-uppercase"><i class="fa-solid fa-house me-2"></i>Home</a></li>
+                    <li><a href="/stats.html" class="text-uppercase"><i class="fa-solid fa-chart-line me-2"></i>Statistics</a></li>
+                    <li><a href="/trophies.html" class="active text-uppercase"><i class="fa-solid fa-trophy me-2"></i>Trophies</a></li>
+                    <li><a href="/controller.html" class="text-uppercase"><i class="fa-solid fa-mobile-screen me-2"></i>Controller</a></li>
+                    <li><a href="/chat.html" class="text-uppercase"><i class="fa-solid fa-comments me-2"></i>Chat</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fa-solid fa-trophy me-2"></i>Trophy Room</h1>
+            <select id="driver-select" class="form-select w-auto">
+                <option value="">Select Driver</option>
+            </select>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span class="stat-value" id="total-trophies">0</span>
+                    <span class="stat-label">Wins</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <i class="fa-solid fa-medal"></i>
+                    <span class="stat-value" id="total-badges">0</span>
+                    <span class="stat-label">Badges</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <i class="fa-solid fa-fire"></i>
+                    <span class="stat-value" id="completion-rate">0%</span>
+                    <span class="stat-label">Complete</span>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="mb-3"><i class="fa-solid fa-crown me-2"></i>Race Wins</h3>
+        <div class="trophy-grid mb-5" id="race-wins-grid"></div>
+
+        <h3 class="mb-3"><i class="fa-solid fa-flag-checkered me-2"></i>Podium Finishes</h3>
+        <div class="trophy-grid mb-5" id="podium-grid"></div>
+
+        <h3 class="mb-3"><i class="fa-solid fa-stopwatch me-2"></i>Speed Records</h3>
+        <div class="trophy-grid mb-5" id="speed-grid"></div>
+
+        <h3 class="mb-3"><i class="fa-solid fa-star me-2"></i>Special Achievements</h3>
+        <div class="trophy-grid" id="special-grid"></div>
+    </main>
+
+    <footer class="py-5 mt-5">
+        <div class="container text-center">
+            <p class="mb-0 text-uppercase fw-bold"><i class="fa-solid fa-flag-checkered mx-2"></i> 2026 Heat Racing Federation <i class="fa-solid fa-flag-checkered mx-2"></i></p>
+            <span class="small opacity-50 text-uppercase letter-spacing-2 mt-2 d-block">Developed for legends. Driven by heat.</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const raceWinAchievements = [
+            { id: 'win1', name: 'First Victory', desc: 'Win your first race', icon: 'fa-flag', tier: 'bronze', req: 1 },
+            { id: 'win3', name: 'Hat Trick', desc: 'Win 3 races', icon: 'fa-hat-wizard', tier: 'silver', req: 3 },
+            { id: 'win5', name: 'Pole Master', desc: 'Win 5 races', icon: 'fa-star', tier: 'silver', req: 5 },
+            { id: 'win10', name: 'Dominant', desc: 'Win 10 races', icon: 'fa-crown', tier: 'gold', req: 10 },
+            { id: 'win25', name: 'Legend', desc: 'Win 25 races', icon: 'fa-trophy', tier: 'platinum', req: 25 },
+            { id: 'win50', name: 'GOAT', desc: 'Win 50 races', icon: 'fa-gem', tier: 'special', req: 50 }
+        ];
+
+        const podiumAchievements = [
+            { id: 'podium1', name: 'First Podium', desc: 'Finish on podium', icon: 'fa-person-rowing', tier: 'bronze', req: 1 },
+            { id: 'podium5', name: 'Consistent', desc: '5 podiums', icon: 'fa-medal', tier: 'silver', req: 5 },
+            { id: 'podium10', name: 'Elite', desc: '10 podiums', icon: 'fa-award', tier: 'gold', req: 10 },
+            { id: 'podium25', name: 'Champ', desc: '25 podiums', icon: 'fa-crown', tier: 'platinum', req: 25 }
+        ];
+
+        const speedAchievements = [
+            { id: 'fl1', name: 'Speed Demon', desc: 'Set 1 fastest lap', icon: 'fa-bolt', tier: 'bronze', req: 1 },
+            { id: 'fl3', name: 'Lightning', desc: 'Set 3 fastest laps', icon: 'fa-bolt', tier: 'silver', req: 3 },
+            { id: 'fl5', name: 'Rocket', desc: 'Set 5 fastest laps', icon: 'fa-rocket', tier: 'gold', req: 5 },
+            { id: 'fl10', name: 'Supersonic', desc: 'Set 10 fastest laps', icon: 'fa-meteor', tier: 'platinum', req: 10 }
+        ];
+
+        async function loadDrivers() {
+            const res = await fetch('/api/racers');
+            const racers = await res.json();
+            
+            const select = document.getElementById('driver-select');
+            racers.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = r.name;
+                select.appendChild(opt);
+            });
+            
+            if (racers.length > 0) {
+                select.value = racers[0].id;
+                loadAchievements(racers[0].id);
+            }
+        }
+
+        async function loadAchievements(driverId) {
+            try {
+                const statsRes = await fetch(`/api/racer-stats?id=${driverId}`);
+                const statsData = await statsRes.json();
+                const stats = statsData.stats || {};
+                
+                const wins = stats.Wins || 0;
+                const podiums = stats.Podiums || 0;
+                const fastestLaps = stats.FastestLaps || 0;
+                
+                let badges = 0;
+                if (wins >= 1) badges++;
+                if (wins >= 3) badges++;
+                if (wins >= 5) badges++;
+                if (podiums >= 1) badges++;
+                if (podiums >= 5) badges++;
+                if (fastestLaps >= 1) badges++;
+                if (fastestLaps >= 3) badges++;
+                
+                document.getElementById('total-trophies').textContent = wins;
+                document.getElementById('total-badges').textContent = badges;
+                document.getElementById('completion-rate').textContent = Math.round((badges / 14) * 100) + '%';
+                
+                renderTrophyGrid('race-wins-grid', raceWinAchievements, wins);
+                renderTrophyGrid('podium-grid', podiumAchievements, podiums);
+                renderTrophyGrid('speed-grid', speedAchievements, fastestLaps);
+                renderSpecialAchievements(wins, podiums, fastestLaps);
+                
+            } catch (err) {
+                console.error('Failed to load achievements:', err);
+            }
+        }
+
+        function renderTrophyGrid(gridId, achievements, current) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = achievements.map(a => {
+                const achieved = current >= a.req;
+                const progress = Math.min((current / a.req) * 100, 100);
+                
+                return `
+                    <div class="trophy-card ${achieved ? '' : 'locked'}">
+                        <div class="achievement-badge ${a.tier}">
+                            <i class="fa-solid ${a.icon}"></i>
+                        </div>
+                        <h5 class="mb-1">${a.name}</h5>
+                        <p class="small text-muted mb-2">${a.desc}</p>
+                        ${!achieved ? `
+                            <div class="progress-bar-mini">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <small class="text-muted">${current}/${a.req}</small>
+                        ` : '<i class="fa-solid fa-check-circle text-success"></i>'}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderSpecialAchievements(wins, podiums, fastestLaps) {
+            const special = [
+                { id: 'perfect_season', name: 'Perfect Season', desc: 'Win every race', icon: 'fa-crown', tier: 'special', achieved: wins >= 5 },
+                { id: 'track_master', name: 'Track Master', desc: 'Win at 5 tracks', icon: 'fa-map', tier: 'platinum', achieved: wins >= 5 },
+                { id: 'comeback_kid', name: 'Comeback Kid', desc: 'Win from last', icon: 'fa-arrow-up', tier: 'gold', achieved: false },
+                { id: 'hat_trick', name: 'Hat Trick', desc: 'Win 3 in a row', icon: 'fa-gem', tier: 'gold', achieved: wins >= 3 },
+                { id: 'points_leader', name: 'Points Leader', desc: 'Lead championship', icon: 'fa-chart-line', tier: 'silver', achieved: wins > 0 },
+                { id: 'most_laps', name: 'Most Laps Led', desc: 'Lead 50 laps', icon: 'fa-road', tier: 'silver', achieved: fastestLaps >= 3 }
+            ];
+            
+            document.getElementById('special-grid').innerHTML = special.map(a => `
+                <div class="trophy-card ${a.achieved ? '' : 'locked'}">
+                    <div class="achievement-badge ${a.tier}">
+                        <i class="fa-solid ${a.icon}"></i>
+                    </div>
+                    <h5 class="mb-1">${a.name}</h5>
+                    <p class="small text-muted">${a.desc}</p>
+                    ${a.achieved ? '<i class="fa-solid fa-check-circle text-success"></i>' : ''}
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('driver-select').addEventListener('change', (e) => {
+            if (e.target.value) loadAchievements(e.target.value);
+        });
+
+        loadDrivers();
+    </script>
+</body>
+</html>

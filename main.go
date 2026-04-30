@@ -87,10 +87,11 @@ type RaceHistory struct {
 	Track     string       `json:"track"`
 	TrackID   string       `json:"track_id"`
 	TotalLaps int          `json:"total_laps"`
+	RaceType  string       `json:"race_type,omitempty"` // "season" or "oneoff"
 	Results   []RaceResult `json:"results,omitempty"`
 }
 
-const currentSchemaVersion = 5
+const currentSchemaVersion = 6
 const currentVersion = "1.2.3"
 
 type AdminUser struct {
@@ -277,6 +278,15 @@ func main() {
 
 	http.HandleFunc("/api/racer-stats", func(w http.ResponseWriter, r *http.Request) {
 		getRacerStats(w, r)
+	})
+
+	http.HandleFunc("/api/oneoff-races", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			getOneOffRaces(w, r)
+		case "DELETE":
+			authMiddleware(deleteOneOffRace)(w, r)
+		}
 	})
 
 	http.HandleFunc("/api/quotes", func(w http.ResponseWriter, r *http.Request) {
@@ -507,6 +517,8 @@ func runMigration(fromVersion int) {
 		_, _ = db.Exec("ALTER TABLE tracks ADD COLUMN use_map_image INTEGER DEFAULT 0")
 		_, _ = db.Exec("ALTER TABLE tracks ADD COLUMN map_image_url TEXT")
 		_, _ = db.Exec("ALTER TABLE tracks ADD COLUMN refresh_geojson INTEGER DEFAULT 1")
+	case 5:
+		_, _ = db.Exec(`ALTER TABLE race_history ADD COLUMN race_type TEXT DEFAULT 'season'`)
 	}
 }
 
@@ -973,12 +985,13 @@ func handleAIExtract(w http.ResponseWriter, r *http.Request) {
 
 func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 	raceID := r.URL.Query().Get("id")
+	raceType := r.URL.Query().Get("type")
 
 	var query string
 	var args []interface{}
 
 	if raceID != "" {
-		query = `SELECT rh.id, COALESCE(rh.name, ''), rh.race_date, rh.country, rh.track, rh.track_id, rh.total_laps,
+		query = `SELECT rh.id, COALESCE(rh.name, ''), rh.race_date, rh.country, rh.track, rh.track_id, rh.total_laps, COALESCE(rh.race_type, 'season'),
 				 COALESCE(GROUP_CONCAT(rr.racer_id || ':' || rr.racer_name || ':' || rr.position || ':' || rr.points || ':' || rr.fastest_lap, '|'), '') as results
 				 FROM race_history rh
 				 LEFT JOIN race_results rr ON rh.id = rr.race_id
@@ -986,7 +999,13 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 				 GROUP BY rh.id`
 		args = []interface{}{raceID}
 	} else {
-		query = `SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps FROM race_history ORDER BY race_date DESC LIMIT 20`
+		if raceType != "" {
+			query = `SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps, COALESCE(race_type, 'season')
+					 FROM race_history WHERE race_type = ? ORDER BY race_date DESC LIMIT 20`
+			args = []interface{}{raceType}
+		} else {
+			query = `SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps, COALESCE(race_type, 'season') FROM race_history ORDER BY race_date DESC LIMIT 20`
+		}
 	}
 
 	rows, err := db.Query(query, args...)
@@ -1021,7 +1040,7 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		} else {
-			rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps)
+			rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &h.RaceType)
 		}
 		history = append(history, h)
 	}
@@ -1033,17 +1052,18 @@ func saveRaceToHistory(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Name      string `json:"name"`
 		RaceDate  string `json:"race_date"`
-		Country   string `json:"country"`
-		Track     string `json:"track"`
-		TrackID   string `json:"track_id"`
+		Country  string `json:"country"`
+		Track    string `json:"track"`
+		TrackID  string `json:"track_id"`
 		TotalLaps int    `json:"total_laps"`
-		Results   []struct {
+		RaceType  string `json:"race_type"`
+		Results  []struct {
 			RacerID    int    `json:"racer_id"`
 			RacerName  string `json:"racer_name"`
-			Position   int    `json:"position"`
-			Points     int    `json:"points"`
-			FastestLap bool   `json:"fastest_lap"`
-			Finished   bool   `json:"finished"`
+			Position  int    `json:"position"`
+			Points    int    `json:"points"`
+			FastestLap bool  `json:"fastest_lap"`
+			Finished  bool   `json:"finished"`
 		} `json:"results"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -1057,9 +1077,12 @@ func saveRaceToHistory(w http.ResponseWriter, r *http.Request) {
 	if input.Name == "" {
 		input.Name = input.RaceDate
 	}
+	if input.RaceType == "" {
+		input.RaceType = "season"
+	}
 
-	result, err := db.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps) VALUES (?, ?, ?, ?, ?, ?)",
-		input.Name, input.RaceDate, input.Country, input.Track, input.TrackID, input.TotalLaps)
+	result, err := db.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps, race_type) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		input.Name, input.RaceDate, input.Country, input.Track, input.TrackID, input.TotalLaps, input.RaceType)
 	if err != nil {
 		log.Printf("[HISTORY] Insert failed: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1210,4 +1233,34 @@ func handleQuotes(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 	}
+}
+
+func getOneOffRaces(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query(`SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps, COALESCE(race_type, 'oneoff')
+					   FROM race_history WHERE race_type = 'oneoff' ORDER BY race_date DESC LIMIT 20`)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var history []RaceHistory
+	for rows.Next() {
+		var h RaceHistory
+		rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &h.RaceType)
+		history = append(history, h)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
+}
+
+func deleteOneOffRace(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "ID required", http.StatusBadRequest)
+		return
+	}
+	db.Exec("DELETE FROM race_results WHERE race_id = ?", id)
+	db.Exec("DELETE FROM race_history WHERE id = ? AND race_type = 'oneoff'", id)
+	w.WriteHeader(http.StatusOK)
 }
