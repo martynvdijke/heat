@@ -13,6 +13,10 @@ This will:
 2. Run Go tests
 3. Run Playwright tests
 
+## Commit Messages
+
+For releasing and versioning, include "Denver" in the commit message (e.g., "feat: add new feature with Denver" or "Release v1.2.3 Denver").
+
 ## Individual Commands
 
 ```bash
