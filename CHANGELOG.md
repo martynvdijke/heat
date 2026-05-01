@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/martynvdijke/heat/compare/v1.3.1...v1.4.0) (2026-05-01)
+
+
+### Features
+
+* **heat:** add season stats, trophy room, mobile controller, live chat, and one-off race tracking ([9802cba](https://github.com/martynvdijke/heat/commit/9802cbaff0f5b46f7a31d84be86d877689a8c8c0))
+
 ## [1.3.1](https://github.com/martynvdijke/heat/compare/v1.3.0...v1.3.1) (2026-05-01)
 
 
