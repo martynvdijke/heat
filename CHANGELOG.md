@@ -1,3 +1,17 @@
+## [1.3.1](https://github.com/martynvdijke/heat/compare/v1.3.0...v1.3.1) (2026-05-01)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/mattn/go-sqlite3 to v1.14.44 ([#15](https://github.com/martynvdijke/heat/issues/15)) ([6166469](https://github.com/martynvdijke/heat/commit/61664693a2bb44cddfc6602bc68d834bf7c19825))
+
+# [1.3.0](https://github.com/martynvdijke/heat/compare/v1.2.3...v1.3.0) (2026-04-30)
+
+
+### Features
+
+* add season stats, trophy room, mobile controller, live chat, and one-off race tracking ([5997ca8](https://github.com/martynvdijke/heat/commit/5997ca8a95fd78d64ef06004c48a3bfca03d8d55))
+
 ## [1.2.3](https://github.com/martynvdijke/heat/compare/v1.2.2...v1.2.3) (2026-04-29)
 
 ## [1.2.2](https://github.com/martynvdijke/heat/compare/v1.2.1...v1.2.2) (2026-04-22)

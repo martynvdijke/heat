@@ -92,7 +92,7 @@ type RaceHistory struct {
 }
 
 const currentSchemaVersion = 6
-const currentVersion = "1.2.3"
+const currentVersion = "1.3.1"
 
 type AdminUser struct {
 	ID       int    `json:"id"`
@@ -362,6 +362,22 @@ func main() {
 			return
 		}
 		http.ServeFile(w, r, filepath.Join(basePath, "static/setup.html"))
+	})
+
+	http.HandleFunc("/stats.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(basePath, "static/stats.html"))
+	})
+
+	http.HandleFunc("/trophies.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(basePath, "static/trophies.html"))
+	})
+
+	http.HandleFunc("/controller.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(basePath, "static/controller.html"))
+	})
+
+	http.HandleFunc("/chat.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(basePath, "static/chat.html"))
 	})
 
 	fs := http.FileServer(http.Dir(filepath.Join(basePath, "static")))
@@ -1019,8 +1035,10 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var h RaceHistory
 		var resultsStr string
+		var raceType string
 		if raceID != "" {
-			rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &resultsStr)
+			rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &raceType, &resultsStr)
+			h.RaceType = raceType
 			if resultsStr != "" {
 				for _, r := range strings.Split(resultsStr, "|") {
 					parts := strings.Split(r, ":")
