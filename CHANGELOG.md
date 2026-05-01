@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/martynvdijke/heat/compare/v1.4.0...v1.5.0) (2026-05-01)
+
+
+### Features
+
+* add admin stats, protect controller, remove chat, improve UI ([b8de591](https://github.com/martynvdijke/heat/commit/b8de591d51d8e93df8fd3fb9a4d0a2fd6fd0326b))
+
 # [1.4.0](https://github.com/martynvdijke/heat/compare/v1.3.1...v1.4.0) (2026-05-01)
 
 
