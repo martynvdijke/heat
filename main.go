@@ -277,7 +277,12 @@ func main() {
 	})
 
 	http.HandleFunc("/api/racer-stats", func(w http.ResponseWriter, r *http.Request) {
-		getRacerStats(w, r)
+		switch r.Method {
+		case "GET":
+			getRacerStats(w, r)
+		case "POST":
+			authMiddleware(updateRacerStats)(w, r)
+		}
 	})
 
 	http.HandleFunc("/api/oneoff-races", func(w http.ResponseWriter, r *http.Request) {
@@ -373,11 +378,20 @@ func main() {
 	})
 
 	http.HandleFunc("/controller.html", func(w http.ResponseWriter, r *http.Request) {
+		var validSession string
+		for _, c := range r.Cookies() {
+			if c.Name == "session" {
+				if _, ok := sessionStore[c.Value]; ok {
+					validSession = c.Value
+					break
+				}
+			}
+		}
+		if validSession == "" {
+			http.Redirect(w, r, "/login.html", http.StatusFound)
+			return
+		}
 		http.ServeFile(w, r, filepath.Join(basePath, "static/controller.html"))
-	})
-
-	http.HandleFunc("/chat.html", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(basePath, "static/chat.html"))
 	})
 
 	fs := http.FileServer(http.Dir(filepath.Join(basePath, "static")))
@@ -1163,6 +1177,33 @@ func getRacerStats(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"stats": s, "racer": rInfo})
+}
+
+func updateRacerStats(w http.ResponseWriter, r *http.Request) {
+	var stats RacerStats
+	if err := json.NewDecoder(r.Body).Decode(&stats); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if stats.ID == 0 {
+		_, err := db.Exec("INSERT INTO racer_stats (racer_id, races, wins, podiums, fastest_laps, dnf) VALUES (?, ?, ?, ?, ?, ?)",
+			stats.RacerID, stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF)
+		if err != nil {
+			log.Printf("[STATS] Insert failed: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		_, err := db.Exec("UPDATE racer_stats SET races = ?, wins = ?, podiums = ?, fastest_laps = ?, dnf = ? WHERE id = ?",
+			stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF, stats.ID)
+		if err != nil {
+			log.Printf("[STATS] Update failed: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func getQuotes(w http.ResponseWriter, r *http.Request) {
