@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/martynvdijke/heat/compare/v1.5.0...v1.6.0) (2026-05-02)
+
+
+### Features
+
+* add Gotify notification support ([6f0cf3c](https://github.com/martynvdijke/heat/commit/6f0cf3cbd5379e5b7f756fedfd5ea74cfda1262f))
+
 # [1.5.0](https://github.com/martynvdijke/heat/compare/v1.4.0...v1.5.0) (2026-05-01)
 
 
