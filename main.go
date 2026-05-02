@@ -91,8 +91,17 @@ type RaceHistory struct {
 	Results   []RaceResult `json:"results,omitempty"`
 }
 
-const currentSchemaVersion = 6
+const currentSchemaVersion = 7
 const currentVersion = "1.5.0"
+
+type NotificationSettings struct {
+	ID              int    `json:"id"`
+	GotiFyURL       string `json:"gotify_url"`
+	GotiFyToken     string `json:"gotify_token"`
+	NotifyWinner    bool   `json:"notify_winner"`
+	NotifyRaceStart bool   `json:"notify_race_start"`
+	NotifyPodium    bool   `json:"notify_podium"`
+}
 
 type AdminUser struct {
 	ID       int    `json:"id"`
@@ -284,6 +293,17 @@ func main() {
 			authMiddleware(updateRacerStats)(w, r)
 		}
 	})
+
+	http.HandleFunc("/api/notification-settings", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			getNotificationSettings(w, r)
+		case "POST", "PUT":
+			authMiddleware(saveNotificationSettings)(w, r)
+		}
+	})
+
+	http.HandleFunc("/api/test-notification", authMiddleware(testNotification))
 
 	http.HandleFunc("/api/oneoff-races", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -549,6 +569,16 @@ func runMigration(fromVersion int) {
 		_, _ = db.Exec("ALTER TABLE tracks ADD COLUMN refresh_geojson INTEGER DEFAULT 1")
 	case 5:
 		_, _ = db.Exec(`ALTER TABLE race_history ADD COLUMN race_type TEXT DEFAULT 'season'`)
+	case 6:
+		_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS notification_settings (
+			id INTEGER PRIMARY KEY,
+			gotify_url TEXT,
+			gotify_token TEXT,
+			notify_winner INTEGER DEFAULT 1,
+			notify_race_start INTEGER DEFAULT 0,
+			notify_podium INTEGER DEFAULT 0
+		)`)
+		_, _ = db.Exec("INSERT INTO notification_settings (id, notify_winner, notify_race_start, notify_podium) VALUES (1, 1, 0, 0)")
 	}
 }
 
@@ -1136,6 +1166,25 @@ func saveRaceToHistory(w http.ResponseWriter, r *http.Request) {
 			res.RacerID, boolToInt(res.Position == 1), boolToInt(res.Position <= 3), boolToInt(res.FastestLap), boolToInt(!res.Finished))
 	}
 
+	if len(input.Results) > 0 {
+		winner := ""
+		second := ""
+		third := ""
+		for _, res := range input.Results {
+			if res.Position == 1 {
+				winner = res.RacerName
+			} else if res.Position == 2 {
+				second = res.RacerName
+			} else if res.Position == 3 {
+				third = res.RacerName
+			}
+		}
+		notifyRaceWinner(winner, input.Track)
+		if second != "" && third != "" {
+			notifyRacePodium(winner, second, third, input.Track)
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]int64{"id": raceID})
 }
@@ -1322,4 +1371,107 @@ func deleteOneOffRace(w http.ResponseWriter, r *http.Request) {
 	db.Exec("DELETE FROM race_results WHERE race_id = ?", id)
 	db.Exec("DELETE FROM race_history WHERE id = ? AND race_type = 'oneoff'", id)
 	w.WriteHeader(http.StatusOK)
+}
+
+func getNotificationSettings(w http.ResponseWriter, r *http.Request) {
+	var s NotificationSettings
+	err := db.QueryRow("SELECT id, COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), COALESCE(notify_winner, 0), COALESCE(notify_race_start, 0), COALESCE(notify_podium, 0) FROM notification_settings WHERE id = 1").
+		Scan(&s.ID, &s.GotiFyURL, &s.GotiFyToken, &s.NotifyWinner, &s.NotifyRaceStart, &s.NotifyPodium)
+	if err != nil {
+		s = NotificationSettings{ID: 1, NotifyWinner: true, NotifyRaceStart: false, NotifyPodium: false}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s)
+}
+
+func saveNotificationSettings(w http.ResponseWriter, r *http.Request) {
+	var s NotificationSettings
+	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, err := db.Exec(`INSERT OR REPLACE INTO notification_settings (id, gotify_url, gotify_token, notify_winner, notify_race_start, notify_podium) VALUES (1, ?, ?, ?, ?, ?)`,
+		s.GotiFyURL, s.GotiFyToken, boolToInt(s.NotifyWinner), boolToInt(s.NotifyRaceStart), boolToInt(s.NotifyPodium))
+	if err != nil {
+		log.Printf("[NOTIFY] Save failed: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(s)
+}
+
+func testNotification(w http.ResponseWriter, r *http.Request) {
+	var s NotificationSettings
+	db.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, '') FROM notification_settings WHERE id = 1").
+		Scan(&s.GotiFyURL, &s.GotiFyToken)
+
+	if s.GotiFyURL == "" {
+		http.Error(w, "Gotify URL not configured", http.StatusBadRequest)
+		return
+	}
+
+	err := sendGotifyNotification("Test Notification", "HEAT notification test successful!", s.GotiFyURL, s.GotiFyToken)
+	if err != nil {
+		http.Error(w, "Failed to send test: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func sendGotifyNotification(title, message, gotifyURL, token string) error {
+	if gotifyURL == "" || token == "" {
+		return nil
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest("POST", gotifyURL+"/message", strings.NewReader(fmt.Sprintf(`{"title":"%s","message":"%s","priority":5}`, title, message)))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Token", token)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("gotify returned status %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func notifyRaceWinner(winnerName, trackName string) {
+	var s NotificationSettings
+	db.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), notify_winner FROM notification_settings WHERE id = 1").
+		Scan(&s.GotiFyURL, &s.GotiFyToken, &s.NotifyWinner)
+
+	if s.NotifyWinner && s.GotiFyURL != "" {
+		go sendGotifyNotification("🏆 Race Winner!", fmt.Sprintf("%s wins at %s!", winnerName, trackName), s.GotiFyURL, s.GotiFyToken)
+	}
+}
+
+func notifyRacePodium(first, second, third, trackName string) {
+	var s NotificationSettings
+	db.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), notify_podium FROM notification_settings WHERE id = 1").
+		Scan(&s.GotiFyURL, &s.GotiFyToken, &s.NotifyPodium)
+
+	if s.NotifyPodium && s.GotiFyURL != "" {
+		go sendGotifyNotification("🎉 Podium Result", fmt.Sprintf(" podium at %s: 1. %s  2. %s  3. %s", trackName, first, second, third), s.GotiFyURL, s.GotiFyToken)
+	}
+}
+
+func notifyRaceStart(trackName string) {
+	var s NotificationSettings
+	db.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), notify_race_start FROM notification_settings WHERE id = 1").
+		Scan(&s.GotiFyURL, &s.GotiFyToken, &s.NotifyRaceStart)
+
+	if s.NotifyRaceStart && s.GotiFyURL != "" {
+		go sendGotifyNotification("🏁 Race Starting!", fmt.Sprintf("The race at %s has begun!", trackName), s.GotiFyURL, s.GotiFyToken)
+	}
 }

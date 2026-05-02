@@ -1110,15 +1110,15 @@ func TestSchemaMigration(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs6", func(t *testing.T) {
+	t.Run("SchemaVersionIs7", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
 
-		if version != 6 {
-			t.Errorf("expected schema version 6, got %d", version)
+		if version != 7 {
+			t.Errorf("expected schema version 7, got %d", version)
 		}
 	})
 }
@@ -1756,15 +1756,23 @@ func TestSchemaMigrationToV6(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs6", func(t *testing.T) {
+	t.Run("NotificationSettingsExist", func(t *testing.T) {
+		var id int
+		err := db.QueryRow("SELECT id FROM notification_settings WHERE id = 1").Scan(&id)
+		if err != nil {
+			t.Errorf("notification_settings should exist: %v", err)
+		}
+	})
+
+	t.Run("SchemaVersionIs7", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
 
-		if version != 6 {
-			t.Errorf("expected schema version 6, got %d", version)
+		if version != 7 {
+			t.Errorf("expected schema version 7, got %d", version)
 		}
 	})
 }

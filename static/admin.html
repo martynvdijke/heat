@@ -222,6 +222,9 @@
             <li class="nav-item">
                 <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button"><i class="fa-solid fa-chart-bar me-2"></i>Stats</button>
             </li>
+            <li class="nav-item">
+                <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-pane" type="button"><i class="fa-solid fa-bell me-2"></i>Notifications</button>
+            </li>
         </ul>
         <div class="tab-content">
 <div class="mb-3">
@@ -324,6 +327,67 @@
                                 </thead>
                                 <tbody id="stats-list"></tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Pane -->
+            <div class="tab-pane fade" id="notify-pane">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><i class="fa-solid fa-bell me-2 text-danger"></i>Gotify Notifications</div>
+                            <div class="card-body">
+                                <form id="notify-form">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Gotify URL</label>
+                                        <input type="text" class="form-control" id="gotify-url" placeholder="https://your-gotify-instance.com">
+                                        <div class="form-text">Enter your Gotify server URL</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Gotify Token</label>
+                                        <input type="password" class="form-control" id="gotify-token" placeholder="Application token">
+                                        <div class="form-text">Your Gotify application token</div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">Save Settings</button>
+                                </form>
+                                <button class="btn btn-outline-secondary w-100 mt-2" onclick="testNotification()">
+                                    <i class="fa-solid fa-paper-plane me-1"></i> Send Test Notification
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><i class="fa-solid fa-sliders me-2 text-danger"></i>Notification Triggers</div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="notify-winner">
+                                    <label class="form-check-label" for="notify-winner">
+                                        <i class="fa-solid fa-trophy me-1 text-warning"></i> Notify on Race Winner
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="notify-podium">
+                                    <label class="form-check-label" for="notify-podium">
+                                        <i class="fa-solid fa-medal me-1 text-secondary"></i> Notify on Podium Results
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="notify-race-start">
+                                    <label class="form-check-label" for="notify-race-start">
+                                        <i class="fa-solid fa-flag me-1 text-success"></i> Notify on Race Start
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About Notifications</div>
+                            <div class="card-body">
+                                <p class="small text-muted mb-2">Notifications are sent via Gotify when race events occur. Make sure your Gotify server is accessible and the application token has permission to post messages.</p>
+                                <p class="small text-muted mb-0">Notifications are sent asynchronously and won't delay race operations.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -616,6 +680,7 @@ let racers = [];
             await loadAllTracks();
             await loadQuotes();
             await loadRacerStats();
+            await loadNotificationSettings();
             await loadHistory();
         }
 
@@ -749,6 +814,73 @@ let racers = [];
                 racerStats = data;
                 renderStatsList();
             } catch (e) { console.error('Failed to load racer stats', e); }
+        }
+
+        async function loadNotificationSettings() {
+            try {
+                const res = await fetch('/api/notification-settings');
+                const data = await res.json();
+                document.getElementById('gotify-url').value = data.gotify_url || '';
+                document.getElementById('gotify-token').value = data.gotify_token || '';
+                document.getElementById('notify-winner').checked = data.notify_winner;
+                document.getElementById('notify-podium').checked = data.notify_podium;
+                document.getElementById('notify-race-start').checked = data.notify_race_start;
+            } catch (e) { console.error('Failed to load notification settings', e); }
+        }
+
+        document.getElementById('notify-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                gotify_url: document.getElementById('gotify-url').value,
+                gotify_token: document.getElementById('gotify-token').value,
+                notify_winner: document.getElementById('notify-winner').checked,
+                notify_podium: document.getElementById('notify-podium').checked,
+                notify_race_start: document.getElementById('notify-race-start').checked
+            };
+            const res = await fetch('/api/notification-settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.ok) alert('Notification settings saved!');
+        });
+
+        document.getElementById('notify-winner').addEventListener('change', saveNotifyToggle);
+        document.getElementById('notify-podium').addEventListener('change', saveNotifyToggle);
+        document.getElementById('notify-race-start').addEventListener('change', saveNotifyToggle);
+
+        async function saveNotifyToggle() {
+            const data = {
+                gotify_url: document.getElementById('gotify-url').value,
+                gotify_token: document.getElementById('gotify-token').value,
+                notify_winner: document.getElementById('notify-winner').checked,
+                notify_podium: document.getElementById('notify-podium').checked,
+                notify_race_start: document.getElementById('notify-race-start').checked
+            };
+            await fetch('/api/notification-settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+        }
+
+        async function testNotification() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Sending...';
+            try {
+                const res = await fetch('/api/test-notification', { method: 'POST' });
+                if (res.ok) {
+                    alert('Test notification sent successfully!');
+                } else {
+                    const err = await res.text();
+                    alert('Failed to send: ' + err);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Send Test Notification';
         }
 
         function renderStatsList() {
