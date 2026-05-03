@@ -2,11 +2,15 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
+	"image/gif"
+	"image/jpeg"
 	"image/png"
 	"log"
 	"mime/multipart"
@@ -1017,6 +1021,335 @@ func TestUpload(t *testing.T) {
 
 		if status := rr.Code; status != http.StatusBadRequest {
 			t.Errorf("expected status 400, got %v", status)
+		}
+	})
+}
+
+func uploadTestImage(t *testing.T, sessionID string, imgBytes []byte, filename string) map[string]interface{} {
+	t.Helper()
+	r := gin.New()
+	r.POST("/api/upload", authMiddleware(), handleUpload)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, _ := writer.CreateFormFile("image", filename)
+	part.Write(imgBytes)
+	writer.Close()
+
+	req, _ := http.NewRequest("POST", "/api/upload", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	var resp map[string]interface{}
+	json.Unmarshal(rr.Body.Bytes(), &resp)
+	return resp
+}
+
+func cleanupUpload(t *testing.T, url string) {
+	t.Helper()
+	if url == "" {
+		return
+	}
+	baseName := strings.TrimPrefix(url, "/static/images/")
+	os.Remove(filepath.Join(imagesPath, baseName))
+	ext := filepath.Ext(baseName)
+	hashOnly := baseName[:len(baseName)-len(ext)]
+	os.Remove(filepath.Join(imagesPath, hashOnly+"_resized"+ext))
+	os.Remove(filepath.Join(imagesPath, hashOnly+"_thumb"+ext))
+}
+
+func encodePNG(w, h int) []byte {
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	var buf bytes.Buffer
+	png.Encode(&buf, img)
+	return buf.Bytes()
+}
+
+func encodeJPEG(w, h int) []byte {
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	var buf bytes.Buffer
+	jpeg.Encode(&buf, img, nil)
+	return buf.Bytes()
+}
+
+func encodeGIF(w, h int) []byte {
+	img := image.NewPaletted(image.Rect(0, 0, w, h), color.Palette{color.Black, color.White})
+	var buf bytes.Buffer
+	gif.Encode(&buf, img, nil)
+	return buf.Bytes()
+}
+
+func TestUploadAdvanced(t *testing.T) {
+	t.Run("UploadJPEGNormalizesExtension", func(t *testing.T) {
+		sessionID := "test-session-jpeg"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		resp := uploadTestImage(t, sessionID, encodeJPEG(100, 100), "photo.jpeg")
+		defer cleanupUpload(t, resp["url"].(string))
+
+		if resp["url"] == nil {
+			t.Fatal("expected url in response")
+		}
+		urlStr := resp["url"].(string)
+		if !strings.HasSuffix(urlStr, ".jpg") {
+			t.Errorf("expected .jpg extension after .jpeg normalization, got %s", urlStr)
+		}
+		if resp["resized_url"] == nil || resp["thumbnail_url"] == nil {
+			t.Error("expected resized_url and thumbnail_url for JPEG")
+		}
+		if resp["duplicate"] != nil {
+			t.Error("unexpected duplicate flag for new upload")
+		}
+	})
+
+	t.Run("UploadLargeImageResizedDimensions", func(t *testing.T) {
+		sessionID := "test-session-large"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		resp := uploadTestImage(t, sessionID, encodePNG(2000, 1000), "large.png")
+		defer cleanupUpload(t, resp["url"].(string))
+
+		if resp["url"] == nil {
+			t.Fatal("expected url in response")
+		}
+		urlStr := resp["url"].(string)
+		baseName := strings.TrimPrefix(urlStr, "/static/images/")
+		ext := filepath.Ext(baseName)
+		hashOnly := baseName[:len(baseName)-len(ext)]
+		resizedPath := filepath.Join(imagesPath, hashOnly+"_resized"+ext)
+
+		f, err := os.Open(resizedPath)
+		if err != nil {
+			t.Fatalf("resized file not found: %v", err)
+		}
+		defer f.Close()
+
+		resizedImg, _, err := image.Decode(f)
+		if err != nil {
+			t.Fatalf("failed to decode resized image: %v", err)
+		}
+		bounds := resizedImg.Bounds()
+		w, h := bounds.Dx(), bounds.Dy()
+		if w > 1200 || h > 1200 {
+			t.Errorf("resized dimensions %dx%d exceed 1200px limit", w, h)
+		}
+		aspect := float64(w) / float64(h)
+		if aspect < 1.6 || aspect > 2.1 {
+			t.Errorf("resized aspect ratio %.2f should be ~2.0 (2000x1000)", aspect)
+		}
+	})
+
+	t.Run("UploadThumbnailExactDimensions", func(t *testing.T) {
+		sessionID := "test-session-thumb"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		resp := uploadTestImage(t, sessionID, encodePNG(500, 300), "thumbtest.png")
+		defer cleanupUpload(t, resp["url"].(string))
+
+		if resp["url"] == nil {
+			t.Fatal("expected url in response")
+		}
+		urlStr := resp["url"].(string)
+		baseName := strings.TrimPrefix(urlStr, "/static/images/")
+		ext := filepath.Ext(baseName)
+		hashOnly := baseName[:len(baseName)-len(ext)]
+		thumbPath := filepath.Join(imagesPath, hashOnly+"_thumb"+ext)
+
+		f, err := os.Open(thumbPath)
+		if err != nil {
+			t.Fatalf("thumbnail file not found: %v", err)
+		}
+		defer f.Close()
+
+		thumbImg, _, err := image.Decode(f)
+		if err != nil {
+			t.Fatalf("failed to decode thumbnail: %v", err)
+		}
+		bounds := thumbImg.Bounds()
+		w, h := bounds.Dx(), bounds.Dy()
+		if w != 150 || h != 150 {
+			t.Errorf("expected thumbnail 150x150, got %dx%d", w, h)
+		}
+	})
+
+	t.Run("UploadGIF", func(t *testing.T) {
+		sessionID := "test-session-gif"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		resp := uploadTestImage(t, sessionID, encodeGIF(50, 50), "anim.gif")
+		defer cleanupUpload(t, resp["url"].(string))
+
+		if resp["url"] == nil {
+			t.Fatal("expected url in response")
+		}
+		if !strings.HasSuffix(resp["url"].(string), ".gif") {
+			t.Errorf("expected .gif extension, got %s", resp["url"].(string))
+		}
+		baseName := strings.TrimPrefix(resp["url"].(string), "/static/images/")
+		os.Remove(filepath.Join(imagesPath, baseName))
+	})
+
+	t.Run("UploadAllFilesExistOnDisk", func(t *testing.T) {
+		sessionID := "test-session-exist"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		resp := uploadTestImage(t, sessionID, encodePNG(300, 200), "exist.png")
+		defer cleanupUpload(t, resp["url"].(string))
+
+		if resp["url"] == nil || resp["resized_url"] == nil || resp["thumbnail_url"] == nil {
+			t.Fatal("all URLs must be present")
+		}
+
+		for _, key := range []string{"url", "resized_url", "thumbnail_url"} {
+			path := filepath.Join(imagesPath, strings.TrimPrefix(resp[key].(string), "/static/images/"))
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				t.Errorf("%s file does not exist on disk: %s", key, path)
+			}
+		}
+	})
+
+	t.Run("UploadStoresRecordInDatabase", func(t *testing.T) {
+		sessionID := "test-session-db"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+		img.Set(0, 0, color.RGBA{byte(time.Now().UnixNano()), 0, 0, 255})
+		var uniquePNG bytes.Buffer
+		png.Encode(&uniquePNG, img)
+
+		resp := uploadTestImage(t, sessionID, uniquePNG.Bytes(), "dbtest.png")
+		defer cleanupUpload(t, resp["url"].(string))
+
+		if resp["hash"] == nil {
+			t.Fatal("expected hash in response")
+		}
+		hashStr := resp["hash"].(string)
+
+		var url, resizedURL, thumbURL string
+		err := db.QueryRow("SELECT url, resized_url, thumbnail_url FROM uploads WHERE hash = ?", hashStr).
+			Scan(&url, &resizedURL, &thumbURL)
+		if err != nil {
+			t.Fatalf("upload record not found in database: %v", err)
+		}
+		if url != resp["url"] {
+			t.Errorf("db url %q != response url %q", url, resp["url"])
+		}
+		if resizedURL != resp["resized_url"] {
+			t.Errorf("db resized_url %q != response %q", resizedURL, resp["resized_url"])
+		}
+		if thumbURL != resp["thumbnail_url"] {
+			t.Errorf("db thumbnail_url %q != response %q", thumbURL, resp["thumbnail_url"])
+		}
+	})
+
+	t.Run("UploadHashMatchesContent", func(t *testing.T) {
+		sessionID := "test-session-hash"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		imgData := encodePNG(80, 60)
+
+		resp := uploadTestImage(t, sessionID, imgData, "hashcheck.png")
+		defer cleanupUpload(t, resp["url"].(string))
+
+		if resp["hash"] == nil {
+			t.Fatal("expected hash in response")
+		}
+		actualHash := resp["hash"].(string)
+
+		sum := sha256.Sum256(imgData)
+		expected := hex.EncodeToString(sum[:])
+		if actualHash != expected {
+			t.Errorf("hash mismatch: expected %s, got %s", expected, actualHash)
+		}
+	})
+
+	t.Run("UploadMissingFormFile", func(t *testing.T) {
+		sessionID := "test-session-missing"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		r := gin.New()
+		r.POST("/api/upload", authMiddleware(), handleUpload)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		fw, _ := writer.CreateFormField("not_image")
+		fw.Write([]byte("value"))
+		writer.Close()
+
+		req, _ := http.NewRequest("POST", "/api/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status 400 for missing form file, got %v", status)
+		}
+	})
+
+	t.Run("UploadNoExtension", func(t *testing.T) {
+		sessionID := "test-session-noext"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		r := gin.New()
+		r.POST("/api/upload", authMiddleware(), handleUpload)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("image", "noextension")
+		part.Write([]byte("some content"))
+		writer.Close()
+
+		req, _ := http.NewRequest("POST", "/api/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status 400 for no extension, got %v", status)
+		}
+	})
+
+	t.Run("UploadWebP", func(t *testing.T) {
+		sessionID := "test-session-webp"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		r := gin.New()
+		r.POST("/api/upload", authMiddleware(), handleUpload)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("image", "test.webp")
+		part.Write(encodePNG(50, 50))
+		writer.Close()
+
+		req, _ := http.NewRequest("POST", "/api/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200 for .webp extension, got %v", status)
+		}
+
+		var resp map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		if resp["url"] != nil {
+			os.Remove(filepath.Join(imagesPath, strings.TrimPrefix(resp["url"].(string), "/static/images/")))
 		}
 	})
 }
