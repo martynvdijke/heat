@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
@@ -91,7 +93,7 @@ type RaceHistory struct {
 	Results   []RaceResult `json:"results,omitempty"`
 }
 
-const currentSchemaVersion = 7
+const currentSchemaVersion = 8
 const currentVersion = "1.7.1"
 
 type NotificationSettings struct {
@@ -543,6 +545,16 @@ func runMigration(fromVersion int) {
 			notify_podium INTEGER DEFAULT 0
 		)`)
 		_, _ = db.Exec("INSERT INTO notification_settings (id, notify_winner, notify_race_start, notify_podium) VALUES (1, 1, 0, 0)")
+	case 7:
+		_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS uploads (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			hash TEXT UNIQUE,
+			ext TEXT,
+			url TEXT,
+			resized_url TEXT,
+			thumbnail_url TEXT,
+			created_at TEXT DEFAULT CURRENT_TIMESTAMP
+		)`)
 	}
 }
 
@@ -875,10 +887,6 @@ func handleUpload(c *gin.Context) {
 		return
 	}
 
-	filename := fmt.Sprintf("%d%s", time.Now().Unix(), ext)
-	uploadPath := filepath.Join(imagesPath, filename)
-	log.Printf("[UPLOAD] Saving to: %s", uploadPath)
-
 	file, err := header.Open()
 	if err != nil {
 		log.Printf("[UPLOAD] Failed to open uploaded file: %v", err)
@@ -887,21 +895,80 @@ func handleUpload(c *gin.Context) {
 	}
 	defer file.Close()
 
-	out, err := os.Create(uploadPath)
+	data, err := io.ReadAll(file)
 	if err != nil {
-		log.Printf("[UPLOAD] Failed to create file: %v", err)
+		log.Printf("[UPLOAD] Failed to read uploaded file: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer out.Close()
 
-	data, _ := io.ReadAll(file)
-	out.Write(data)
+	hash := sha256.Sum256(data)
+	hashStr := hex.EncodeToString(hash[:])
 
-	staticCache["/static/images/"+filename] = data
+	var existingURL string
+	err = db.QueryRow("SELECT url FROM uploads WHERE hash = ?", hashStr).Scan(&existingURL)
+	if err == nil {
+		log.Printf("[UPLOAD] Duplicate found: %s", hashStr)
+		c.JSON(http.StatusOK, gin.H{"url": existingURL, "duplicate": true})
+		return
+	}
 
-	log.Printf("[UPLOAD] Success! URL: /static/images/%s", filename)
-	c.JSON(http.StatusOK, gin.H{"url": "/static/images/" + filename})
+	saveExt := ext
+	if ext == ".jpeg" {
+		saveExt = ".jpg"
+	}
+
+	filename := hashStr + saveExt
+	uploadPath := filepath.Join(imagesPath, filename)
+
+	if err := os.WriteFile(uploadPath, data, 0644); err != nil {
+		log.Printf("[UPLOAD] Failed to save file: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	resizedFilename := hashStr + "_resized" + saveExt
+	thumbFilename := hashStr + "_thumb" + saveExt
+	resizedPath := filepath.Join(imagesPath, resizedFilename)
+	thumbPath := filepath.Join(imagesPath, thumbFilename)
+
+	src, err := imaging.Open(uploadPath)
+	if err == nil {
+		resized := imaging.Fit(src, 1200, 1200, imaging.Lanczos)
+		if err := imaging.Save(resized, resizedPath); err != nil {
+			log.Printf("[UPLOAD] Failed to save resized: %v", err)
+		} else {
+			resizedData, _ := os.ReadFile(resizedPath)
+			staticCache["/static/images/"+resizedFilename] = resizedData
+		}
+
+		thumb := imaging.Thumbnail(src, 150, 150, imaging.Lanczos)
+		if err := imaging.Save(thumb, thumbPath); err != nil {
+			log.Printf("[UPLOAD] Failed to save thumbnail: %v", err)
+		} else {
+			thumbData, _ := os.ReadFile(thumbPath)
+			staticCache["/static/images/"+thumbFilename] = thumbData
+		}
+	} else {
+		log.Printf("[UPLOAD] Failed to open image for processing: %v", err)
+	}
+
+	url := "/static/images/" + filename
+	resizedURL := "/static/images/" + resizedFilename
+	thumbURL := "/static/images/" + thumbFilename
+
+	db.Exec("INSERT INTO uploads (hash, ext, url, resized_url, thumbnail_url) VALUES (?, ?, ?, ?, ?)",
+		hashStr, ext, url, resizedURL, thumbURL)
+
+	staticCache[url] = data
+
+	log.Printf("[UPLOAD] Success! URL: %s", url)
+	c.JSON(http.StatusOK, gin.H{
+		"url":           url,
+		"resized_url":   resizedURL,
+		"thumbnail_url": thumbURL,
+		"hash":          hashStr,
+	})
 }
 
 func getTracks(c *gin.Context) {

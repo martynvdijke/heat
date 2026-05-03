@@ -5,7 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -843,7 +847,7 @@ func TestDeleteRaceHistory(t *testing.T) {
 	}
 }
 
-func TestUploadRequiresAuth(t *testing.T) {
+func TestUpload(t *testing.T) {
 	t.Run("UploadWithoutAuth", func(t *testing.T) {
 		r := gin.New()
 		r.POST("/api/upload", authMiddleware(), handleUpload)
@@ -854,6 +858,165 @@ func TestUploadRequiresAuth(t *testing.T) {
 
 		if status := rr.Code; status != http.StatusUnauthorized {
 			t.Errorf("expected status 401, got %v", status)
+		}
+	})
+
+	t.Run("UploadImageSuccessfully", func(t *testing.T) {
+		sessionID := "test-session-upload"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		r := gin.New()
+		r.POST("/api/upload", authMiddleware(), handleUpload)
+
+		img := image.NewRGBA(image.Rect(0, 0, 200, 200))
+		for y := 0; y < 200; y++ {
+			for x := 0; x < 200; x++ {
+				img.Set(x, y, color.RGBA{255, 0, 0, 255})
+			}
+		}
+
+		var buf bytes.Buffer
+		png.Encode(&buf, img)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("image", "test.png")
+		part.Write(buf.Bytes())
+		writer.Close()
+
+		req, _ := http.NewRequest("POST", "/api/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var resp map[string]interface{}
+		err := json.Unmarshal(rr.Body.Bytes(), &resp)
+		if err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if resp["url"] == nil {
+			t.Error("expected url in response")
+		}
+		if resp["resized_url"] == nil {
+			t.Error("expected resized_url in response")
+		}
+		if resp["thumbnail_url"] == nil {
+			t.Error("expected thumbnail_url in response")
+		}
+		if resp["hash"] == nil {
+			t.Error("expected hash in response")
+		}
+
+		urlStr, _ := resp["url"].(string)
+		if !strings.HasPrefix(urlStr, "/static/images/") {
+			t.Errorf("expected url to start with /static/images/, got %s", urlStr)
+		}
+
+		hashStr, _ := resp["hash"].(string)
+		if len(hashStr) != 64 {
+			t.Errorf("expected hash to be 64 hex chars, got %d", len(hashStr))
+		}
+
+		baseName := urlStr[len("/static/images/"):]
+		os.Remove(filepath.Join(imagesPath, baseName))
+		ext := filepath.Ext(baseName)
+		hashOnly := baseName[:len(baseName)-len(ext)]
+		os.Remove(filepath.Join(imagesPath, hashOnly+"_resized"+ext))
+		os.Remove(filepath.Join(imagesPath, hashOnly+"_thumb"+ext))
+	})
+
+	t.Run("UploadDuplicateImage", func(t *testing.T) {
+		sessionID := "test-session-upload-dup"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		r := gin.New()
+		r.POST("/api/upload", authMiddleware(), handleUpload)
+
+		img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+		var buf bytes.Buffer
+		png.Encode(&buf, img)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("image", "dup.png")
+		part.Write(buf.Bytes())
+		writer.Close()
+
+		req, _ := http.NewRequest("POST", "/api/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var resp map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+
+		firstURL, _ := resp["url"].(string)
+
+		body2 := &bytes.Buffer{}
+		writer2 := multipart.NewWriter(body2)
+		part2, _ := writer2.CreateFormFile("image", "dup2.png")
+		part2.Write(buf.Bytes())
+		writer2.Close()
+
+		req2, _ := http.NewRequest("POST", "/api/upload", body2)
+		req2.Header.Set("Content-Type", writer2.FormDataContentType())
+		req2.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr2 := httptest.NewRecorder()
+		r.ServeHTTP(rr2, req2)
+
+		var resp2 map[string]interface{}
+		json.Unmarshal(rr2.Body.Bytes(), &resp2)
+
+		if resp2["duplicate"] != true {
+			t.Errorf("expected duplicate to be true, got %v", resp2["duplicate"])
+		}
+		if resp2["url"] != firstURL {
+			t.Errorf("expected duplicate url %s to match %s", resp2["url"], firstURL)
+		}
+
+		baseName := firstURL[len("/static/images/"):]
+		os.Remove(filepath.Join(imagesPath, baseName))
+		ext := filepath.Ext(baseName)
+		hashOnly := baseName[:len(baseName)-len(ext)]
+		os.Remove(filepath.Join(imagesPath, hashOnly+"_resized"+ext))
+		os.Remove(filepath.Join(imagesPath, hashOnly+"_thumb"+ext))
+	})
+
+	t.Run("UploadInvalidFileType", func(t *testing.T) {
+		sessionID := "test-session-upload-invalid"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		r := gin.New()
+		r.POST("/api/upload", authMiddleware(), handleUpload)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("image", "test.txt")
+		part.Write([]byte("not an image"))
+		writer.Close()
+
+		req, _ := http.NewRequest("POST", "/api/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %v", status)
 		}
 	})
 }
@@ -1173,15 +1336,15 @@ func TestSchemaMigration(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs7", func(t *testing.T) {
+	t.Run("SchemaVersionIs8", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
 
-		if version != 7 {
-			t.Errorf("expected schema version 7, got %d", version)
+		if version != 8 {
+			t.Errorf("expected schema version 8, got %d", version)
 		}
 	})
 }
@@ -1915,15 +2078,15 @@ func TestSchemaMigrationToV6(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs7", func(t *testing.T) {
+	t.Run("SchemaVersionIs8", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
 
-		if version != 7 {
-			t.Errorf("expected schema version 7, got %d", version)
+		if version != 8 {
+			t.Errorf("expected schema version 8, got %d", version)
 		}
 	})
 }
