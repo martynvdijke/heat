@@ -33,7 +33,7 @@ CGO_ENABLED=1 go build -o heat-server .
 ./heat-server
 ```
 
-Open [http://localhost:8080](http://localhost:8080) in your browser.
+Open [http://localhost:6270](http://localhost:6270) in your browser.
 
 ## 📋 Prerequisites
 
@@ -107,7 +107,7 @@ docker-compose logs -f heat-server
 docker-compose down
 ```
 
-The application will be available at [http://localhost:8080](http://localhost:8080)
+The application will be available at [http://localhost:6270](http://localhost:6270)
 
 ### Data Persistence
 
@@ -142,7 +142,7 @@ docker-compose build && docker-compose up -d
 
 | Issue | Solution |
 |-------|----------|
-| Port 8080 in use | Change port in `docker-compose.yml` |
+| Port 6270 in use | Change port in `docker-compose.yml` |
 | Database locked | Ensure only one instance is running |
 
 ## 📄 License

@@ -9,6 +9,7 @@ task pre-push
 ```
 
 This will:
+
 1. Run Go formatting (`gofmt`)
 2. Run Go tests
 3. Run Playwright tests
@@ -29,7 +30,8 @@ task check          # Run tests only (no formatting)
 
 ## Installation
 
-Install task from https://taskfile.dev:
+Install task from <https://taskfile.dev>:
+
 ```bash
 go install github.com/go-task/task/v3/cmd/task@latest
 ```
@@ -37,11 +39,13 @@ go install github.com/go-task/task/v3/cmd/task@latest
 ## Running Tests Directly
 
 ### Go tests
+
 ```bash
 go test ./...
 ```
 
 ### Playwright tests
+
 ```bash
 npx playwright test
 ```

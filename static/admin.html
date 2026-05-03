@@ -34,7 +34,10 @@
             border: none; 
             border-radius: 10px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
-            margin-bottom: 25px; 
+            margin-bottom: 20px; 
+        }
+        .tab-pane {
+            padding: 1.5rem 0;
         }
         .card-header { 
             background: white; 
@@ -153,52 +156,13 @@
         <div class="container d-flex justify-content-between align-items-center">
             <h1 class="h4 mb-0"><i class="fa-solid fa-flag-checkered me-2"></i>HEAT RACE CONTROL <small class="ms-2 opacity-50 fw-normal">Board Game Companion</small></h1>
             <div>
+                <a href="/controller.html" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-mobile-screen me-2"></i>Controller</a>
                 <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-eye me-1"></i> Live Board</a>
                 <button class="btn btn-danger btn-sm" onclick="logout()"><i class="fa-solid fa-sign-out-alt me-1"></i> Logout</button>
             </div>
-
-            <!-- Qualification Pane -->
-            <div class="tab-pane fade" 
-            </div>
         </div>
     </header>
-    </div>
-                                    <hr>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small fw-bold">Country</label>
-                                            <input type="text" class="form-control" name="country" required>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small fw-bold">Track Name</label>
-                                            <input type="text" class="form-control" name="track" required>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small fw-bold">Laps</label>
-                                            <input type="number" class="form-control" name="laps" required>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small fw-bold">Internal ID</label>
-                                            <input type="text" class="form-control" name="track_id" required>
-                                        </div>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100 mt-2">Update Race Data</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-5">
-                        <div class="card">
-                            <div class="card-header"><i class="fa-solid fa-clock-rotate-left me-2 text-danger"></i>Archive Current Race</div>
-                            <div class="card-body">
-                                <p class="small text-muted mb-4">Finalize current results and save them to the history books. This will NOT reset points automatically.</p>
-                                <div class="mb-3">
-                                    <label class="form-label small fw-bold">Archive Name (e.g. 2024 Season)</label>
-                                    <input type="text" id="archive-name" class="form-control" placeholder="Enter archive name...">
-                                </div>
-                                
+
     <div class="container">
         <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
             <li class="nav-item">
@@ -227,15 +191,49 @@
             </li>
         </ul>
         <div class="tab-content">
-<div class="mb-3">
-                                    <label class="form-label small fw-bold">Archive Date</label>
-                                    <input type="date" id="archive-date" class="form-control">
-                                </div>
-                                <button class="btn btn-warning w-100" onclick="archiveRace()">
-                                    <i class="fa-solid fa-box-archive me-1"></i> Archive Results
-                                </button>
+            <!-- Race Setup Pane -->
+            <div class="tab-pane fade show active" id="race-pane">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header"><i class="fa-solid fa-gauge-high me-2 text-danger"></i>Race Information</div>
+                            <div class="card-body">
+                                <form id="race-form">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Track Selection</label>
+                                        <select class="form-select" id="track-select" onchange="applyTrackPreset(this.value)">
+                                            <option value="">Choose a circuit...</option>
+                                        </select>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small fw-bold">Country</label>
+                                            <input type="text" class="form-control" name="country" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small fw-bold">Track Name</label>
+                                            <input type="text" class="form-control" name="track" required>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small fw-bold">Laps</label>
+                                            <input type="number" class="form-control" name="laps" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small fw-bold">Internal ID</label>
+                                            <input type="text" class="form-control" name="track_id" required>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100 mt-2">Update Race Data</button>
+                                </form>
                             </div>
-            
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Qualification Pane -->
             <div class="tab-pane fade" id="qualification-pane">
                 <div class="row">
@@ -479,6 +477,27 @@
 
             <!-- Archive Pane -->
             <div class="tab-pane fade" id="archive-pane">
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card">
+                            <div class="card-header"><i class="fa-solid fa-clock-rotate-left me-2 text-danger"></i>Archive Current Race</div>
+                            <div class="card-body">
+                                <p class="small text-muted mb-4">Finalize current results and save them to the history books. This will NOT reset points automatically.</p>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Archive Name (e.g. 2024 Season)</label>
+                                    <input type="text" id="archive-name" class="form-control" placeholder="Enter archive name...">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Archive Date</label>
+                                    <input type="date" id="archive-date" class="form-control">
+                                </div>
+                                <button class="btn btn-warning w-100" onclick="archiveRace()">
+                                    <i class="fa-solid fa-box-archive me-1"></i> Archive Results
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="card">
                     <div class="card-header"><i class="fa-solid fa-history me-2 text-danger"></i>Race History</div>
                     <div class="card-body p-0">

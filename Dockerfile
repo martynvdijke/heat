@@ -25,6 +25,6 @@ COPY --from=builder /app/static/images ./images
 RUN mkdir -p /db && chmod 777 /db
 RUN mkdir -p /app/images && chmod 777 /app/images
 
-EXPOSE 8080
+EXPOSE 6270
 
 CMD ["./heat-server"]
