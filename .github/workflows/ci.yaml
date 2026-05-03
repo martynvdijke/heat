@@ -47,6 +47,9 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Build TypeScript
+        run: npm run build:ts
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
@@ -59,9 +62,6 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
-
-      - name: Build TypeScript
-        run: npm run build:ts
 
       - name: Build
         run: go build -o heat-server .
