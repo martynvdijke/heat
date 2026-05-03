@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/martynvdijke/heat/compare/v1.8.0...v1.9.0) (2026-05-03)
+
+
+### Features
+
+* add AI image-based track extraction with configurable endpoint ([1876054](https://github.com/martynvdijke/heat/commit/18760547428ee8490178b3e2fbc8955c9f806646))
+
 # [1.8.0](https://github.com/martynvdijke/heat/compare/v1.7.1...v1.8.0) (2026-05-03)
 
 

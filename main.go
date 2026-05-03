@@ -97,7 +97,7 @@ type RaceHistory struct {
 }
 
 const currentSchemaVersion = 9
-const currentVersion = "1.8.0"
+const currentVersion = "1.9.0"
 
 type NotificationSettings struct {
 	ID              int    `json:"id"`
