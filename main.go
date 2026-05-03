@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -93,7 +96,7 @@ type RaceHistory struct {
 	Results   []RaceResult `json:"results,omitempty"`
 }
 
-const currentSchemaVersion = 8
+const currentSchemaVersion = 9
 const currentVersion = "1.8.0"
 
 type NotificationSettings struct {
@@ -109,6 +112,13 @@ type AdminUser struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
 	Password string `json:"-"`
+}
+
+type AISettings struct {
+	ID              int    `json:"id"`
+	TrackExtractURL string `json:"track_extract_url"`
+	APIKey          string `json:"api_key"`
+	Enabled         bool   `json:"enabled"`
 }
 
 var (
@@ -260,6 +270,9 @@ func main() {
 	r.POST("/api/notification-settings", authMiddleware(), saveNotificationSettings)
 
 	r.POST("/api/test-notification", authMiddleware(), testNotification)
+
+	r.GET("/api/ai-settings", getAISettings)
+	r.POST("/api/ai-settings", authMiddleware(), saveAISettings)
 
 	r.GET("/api/oneoff-races", getOneOffRaces)
 	r.DELETE("/api/oneoff-races", authMiddleware(), deleteOneOffRace)
@@ -555,6 +568,14 @@ func runMigration(fromVersion int) {
 			thumbnail_url TEXT,
 			created_at TEXT DEFAULT CURRENT_TIMESTAMP
 		)`)
+	case 8:
+		_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS ai_settings (
+			id INTEGER PRIMARY KEY,
+			track_extract_url TEXT,
+			api_key TEXT,
+			enabled INTEGER DEFAULT 0
+		)`)
+		_, _ = db.Exec("INSERT INTO ai_settings (id, enabled) VALUES (1, 0)")
 	}
 }
 
@@ -1039,18 +1060,140 @@ func deleteTrack(c *gin.Context) {
 func handleAIExtract(c *gin.Context) {
 	log.Printf("[AI] Track extraction requested")
 
-	mockGeoJSON := `{
-		"type": "Feature",
-		"properties": {"name": "Extracted Track"},
-		"geometry": {
-			"type": "LineString",
-			"coordinates": [
-				[9.281, 45.621], [9.285, 45.625], [9.290, 45.620], [9.281, 45.621]
-			]
+	aiURL := os.Getenv("AI_TRACK_EXTRACT_URL")
+	if aiURL == "" {
+		var dbURL string
+		var enabled bool
+		err := db.QueryRow("SELECT track_extract_url, enabled FROM ai_settings WHERE id = 1").Scan(&dbURL, &enabled)
+		if err == nil && enabled && dbURL != "" {
+			aiURL = dbURL
 		}
-	}`
+	}
+	if aiURL == "" {
+		log.Printf("[AI] No endpoint configured")
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "AI endpoint not configured"})
+		return
+	}
 
-	c.Data(http.StatusOK, "application/json", []byte(mockGeoJSON))
+	var imageData []byte
+	var contentType string
+
+	file, header, err := c.Request.FormFile("image")
+	if err == nil {
+		defer file.Close()
+		imageData, err = io.ReadAll(file)
+		if err != nil {
+			log.Printf("[AI] Failed to read uploaded image: %v", err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to read image"})
+			return
+		}
+		contentType = header.Header.Get("Content-Type")
+		if contentType == "" {
+			contentType = "application/octet-stream"
+		}
+		log.Printf("[AI] Image received: %s, %d bytes", header.Filename, len(imageData))
+	} else {
+		var input struct {
+			ImageURL string `json:"image_url"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil || input.ImageURL == "" {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "No image provided. Send multipart form with 'image' field or JSON with 'image_url'"})
+			return
+		}
+		localPath := filepath.Join(basePath, input.ImageURL)
+		imageData, err = os.ReadFile(localPath)
+		if err != nil {
+			log.Printf("[AI] Failed to read image from path %s: %v", localPath, err)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid image URL"})
+			return
+		}
+		contentType = http.DetectContentType(imageData)
+		log.Printf("[AI] Image read from: %s, %d bytes", input.ImageURL, len(imageData))
+	}
+
+	reqBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(reqBody)
+	part, _ := writer.CreateFormFile("image", "track.png")
+	part.Write(imageData)
+	writer.Close()
+
+	client := &http.Client{Timeout: 60 * time.Second}
+	req, err := http.NewRequest("POST", aiURL, reqBody)
+	if err != nil {
+		log.Printf("[AI] Failed to create request: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create AI request"})
+		return
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// Add API key if available
+	var apiKey string
+	db.QueryRow("SELECT COALESCE(api_key, '') FROM ai_settings WHERE id = 1").Scan(&apiKey)
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("[AI] Request to %s failed: %v", aiURL, err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "AI request failed: " + err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("[AI] Failed to read AI response: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to read AI response"})
+		return
+	}
+
+	if resp.StatusCode >= 400 {
+		log.Printf("[AI] AI returned status %d: %s", resp.StatusCode, string(bodyBytes))
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("AI returned status %d", resp.StatusCode)})
+		return
+	}
+
+	var parsedResponse interface{}
+	if err := json.Unmarshal(bodyBytes, &parsedResponse); err != nil {
+		log.Printf("[AI] AI response is not valid JSON, returning raw")
+		c.Data(http.StatusOK, "application/json", bodyBytes)
+		return
+	}
+
+	log.Printf("[AI] Successfully extracted track data from AI")
+	c.Data(http.StatusOK, "application/json", bodyBytes)
+}
+
+func getAISettings(c *gin.Context) {
+	var s AISettings
+	var enabled int
+	err := db.QueryRow("SELECT id, COALESCE(track_extract_url, ''), COALESCE(api_key, ''), COALESCE(enabled, 0) FROM ai_settings WHERE id = 1").
+		Scan(&s.ID, &s.TrackExtractURL, &s.APIKey, &enabled)
+	if err != nil {
+		s = AISettings{ID: 1, Enabled: false}
+		c.JSON(http.StatusOK, s)
+		return
+	}
+	s.Enabled = enabled == 1
+	c.JSON(http.StatusOK, s)
+}
+
+func saveAISettings(c *gin.Context) {
+	var s AISettings
+	if err := c.ShouldBindJSON(&s); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err := db.Exec(`INSERT OR REPLACE INTO ai_settings (id, track_extract_url, api_key, enabled) VALUES (1, ?, ?, ?)`,
+		s.TrackExtractURL, s.APIKey, boolToInt(s.Enabled))
+	if err != nil {
+		log.Printf("[AI] Save settings failed: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, s)
 }
 
 func getRaceHistory(c *gin.Context) {

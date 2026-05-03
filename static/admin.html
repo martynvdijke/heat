@@ -518,6 +518,39 @@
                     </div>
                 </div>
             </div>
+
+            <!-- AI Settings -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header"><i class="fa-solid fa-wand-magic-sparkles me-2 text-danger"></i>AI Track Extraction</div>
+                        <div class="card-body">
+                            <p class="small text-muted mb-3">Configure an AI endpoint to extract track layouts from board game map images. When enabled, the "Extract Track with AI" button in the track editor will send the uploaded map image to this endpoint and parse the returned GeoJSON for visualization.</p>
+                            <form id="ai-settings-form">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">AI Endpoint URL</label>
+                                        <input type="text" class="form-control" id="ai-track-extract-url" placeholder="https://your-ai-service.com/extract-track">
+                                        <div class="form-text">Set <code>AI_TRACK_EXTRACT_URL</code> env var to override.</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">API Key (optional)</label>
+                                        <input type="password" class="form-control" id="ai-api-key" placeholder="Bearer token">
+                                        <div class="form-text">Sent as <code>Authorization: Bearer &lt;key&gt;</code></div>
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="ai-enabled">
+                                            <label class="form-check-label small fw-bold" for="ai-enabled">Enabled</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 mt-2">Save AI Settings</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

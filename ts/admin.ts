@@ -61,6 +61,7 @@ async function init(): Promise<void> {
     await loadRacerStats();
     await loadNotificationSettings();
     await loadHistory();
+    await loadAISettings();
 }
 
 async function loadTracks(): Promise<void> {
@@ -747,19 +748,61 @@ async function uploadMapImage(input: HTMLInputElement): Promise<void> {
     } catch (e) { alert('Upload failed'); }
 }
 
-async function extractTrackFromAI(this: HTMLButtonElement, event: MouseEvent): Promise<void> {
-    const btn = event.target as HTMLButtonElement;
+async function loadAISettings(): Promise<void> {
+    try {
+        const res = await fetch('/api/ai-settings');
+        const data = await res.json();
+        (document.getElementById('ai-track-extract-url') as HTMLInputElement).value = data.track_extract_url || '';
+        (document.getElementById('ai-api-key') as HTMLInputElement).value = data.api_key || '';
+        (document.getElementById('ai-enabled') as HTMLInputElement).checked = data.enabled;
+    } catch (e) { console.error('Failed to load AI settings', e); }
+}
+
+document.getElementById('ai-settings-form')!.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    const data = {
+        track_extract_url: (document.getElementById('ai-track-extract-url') as HTMLInputElement).value,
+        api_key: (document.getElementById('ai-api-key') as HTMLInputElement).value,
+        enabled: (document.getElementById('ai-enabled') as HTMLInputElement).checked
+    };
+    const res = await fetch('/api/ai-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (res.ok) alert('AI settings saved!');
+});
+
+async function extractTrackFromAI(): Promise<void> {
+    const btn = document.querySelector('[onclick="extractTrackFromAI()"]') as HTMLButtonElement;
+    if (!btn) return;
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Analyzing...';
     btn.disabled = true;
 
     try {
-        const res = await fetch('/api/tracks/ai-extract', { method: 'POST' });
+        const mapUrl = (document.getElementById('map-image-url') as HTMLInputElement).value;
+        if (!mapUrl) {
+            alert('Please upload a map image first!');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        const res = await fetch('/api/tracks/ai-extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_url: mapUrl })
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'AI extraction failed');
+        }
         const data = await res.json();
-        alert('AI successfully analyzed the track! GeoJSON has been generated.');
+        alert('AI successfully analyzed the track! GeoJSON has been generated. Save the track to apply it.');
         console.log('AI Extracted GeoJSON:', data);
-    } catch (e) {
-        alert('AI extraction failed');
+    } catch (e: any) {
+        alert('AI extraction failed: ' + e.message);
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;

@@ -1354,6 +1354,104 @@ func TestUploadAdvanced(t *testing.T) {
 	})
 }
 
+func TestAISettings(t *testing.T) {
+	t.Run("GetAISettingsUnauthenticated", func(t *testing.T) {
+		r := gin.New()
+		r.GET("/api/ai-settings", getAISettings)
+
+		req, _ := http.NewRequest("GET", "/api/ai-settings", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var s AISettings
+		if err := json.Unmarshal(rr.Body.Bytes(), &s); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+	})
+
+	t.Run("SaveAISettingsRequiresAuth", func(t *testing.T) {
+		r := gin.New()
+		r.POST("/api/ai-settings", authMiddleware(), saveAISettings)
+
+		req, _ := http.NewRequest("POST", "/api/ai-settings", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %v", status)
+		}
+	})
+
+	t.Run("SaveAndGetAISettings", func(t *testing.T) {
+		sessionID := "test-session-ai"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		r := gin.New()
+		r.POST("/api/ai-settings", authMiddleware(), saveAISettings)
+		r.GET("/api/ai-settings", getAISettings)
+
+		settings := AISettings{
+			TrackExtractURL: "https://ai.example.com/extract",
+			APIKey:          "sk-test-key",
+			Enabled:         true,
+		}
+		body, _ := json.Marshal(settings)
+		req, _ := http.NewRequest("POST", "/api/ai-settings", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		req, _ = http.NewRequest("GET", "/api/ai-settings", nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		var saved AISettings
+		if err := json.Unmarshal(rr.Body.Bytes(), &saved); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if saved.TrackExtractURL != "https://ai.example.com/extract" {
+			t.Errorf("expected URL %q, got %q", "https://ai.example.com/extract", saved.TrackExtractURL)
+		}
+		if !saved.Enabled {
+			t.Errorf("expected enabled to be true")
+		}
+	})
+
+	t.Run("AIExtractWithoutConfigReturnsError", func(t *testing.T) {
+		sessionID := "test-session-ai-extract"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		r := gin.New()
+		r.POST("/api/tracks/ai-extract", authMiddleware(), handleAIExtract)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		fw, _ := writer.CreateFormField("not_image")
+		fw.Write([]byte("value"))
+		writer.Close()
+
+		req, _ := http.NewRequest("POST", "/api/tracks/ai-extract", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status 400 when no AI endpoint configured, got %v", status)
+		}
+	})
+}
+
 func TestQuotes(t *testing.T) {
 	t.Run("GetAllQuotes", func(t *testing.T) {
 		r := gin.New()
@@ -1669,15 +1767,15 @@ func TestSchemaMigration(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs8", func(t *testing.T) {
+	t.Run("SchemaVersionIs9", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
 
-		if version != 8 {
-			t.Errorf("expected schema version 8, got %d", version)
+		if version != 9 {
+			t.Errorf("expected schema version 9, got %d", version)
 		}
 	})
 }
@@ -2411,15 +2509,26 @@ func TestSchemaMigrationToV6(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs8", func(t *testing.T) {
+	t.Run("SchemaVersionIs9", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
 
-		if version != 8 {
-			t.Errorf("expected schema version 8, got %d", version)
+		if version != 9 {
+			t.Errorf("expected schema version 9, got %d", version)
+		}
+	})
+
+	t.Run("AISettingsTableExists", func(t *testing.T) {
+		var id int
+		err := db.QueryRow("SELECT id FROM ai_settings WHERE id = 1").Scan(&id)
+		if err != nil {
+			t.Errorf("ai_settings should exist: %v", err)
+		}
+		if id != 1 {
+			t.Errorf("expected ai_settings id 1, got %d", id)
 		}
 	})
 }
