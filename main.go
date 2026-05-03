@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -87,7 +87,7 @@ type RaceHistory struct {
 	Track     string       `json:"track"`
 	TrackID   string       `json:"track_id"`
 	TotalLaps int          `json:"total_laps"`
-	RaceType  string       `json:"race_type,omitempty"` // "season" or "oneoff"
+	RaceType  string       `json:"race_type,omitempty"`
 	Results   []RaceResult `json:"results,omitempty"`
 }
 
@@ -123,8 +123,8 @@ var (
 	imagesPath = "/app/images"
 )
 
-func handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	ws, err := upgrader.Upgrade(w, r, nil)
+func handleWebSocket(c *gin.Context) {
+	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("error upgrading: %v", err)
 		return
@@ -186,6 +186,20 @@ func shorten(s string) string {
 	return s
 }
 
+func isAuthorized(c *gin.Context) bool {
+	for _, cookie := range c.Request.Cookies() {
+		if cookie.Name == "session" {
+			if expiry, ok := sessionStore[cookie.Value]; ok {
+				if time.Now().Unix() <= expiry {
+					return true
+				}
+				delete(sessionStore, cookie.Value)
+			}
+		}
+	}
+	return false
+}
+
 func main() {
 	if os.Getenv("DOCKER") != "true" {
 		basePath = "."
@@ -210,135 +224,63 @@ func main() {
 	initDB()
 	go broadcastManager()
 
-	http.HandleFunc("/ws", handleWebSocket)
-	http.HandleFunc("/api/login", handleLogin)
-	http.HandleFunc("/api/logout", handleLogout)
-	http.HandleFunc("/api/check-setup", handleCheckSetup)
+	r := gin.Default()
 
-	http.HandleFunc("/admin.html", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[ADMIN] Access attempt to admin.html")
+	r.GET("/ws", handleWebSocket)
 
-		// Find the session cookie that exists in our store
-		var validSession string
-		for _, c := range r.Cookies() {
-			if c.Name == "session" {
-				if _, ok := sessionStore[c.Value]; ok {
-					validSession = c.Value
-					break
-				}
-			}
-		}
+	r.POST("/api/login", handleLogin)
+	r.POST("/api/logout", handleLogout)
+	r.GET("/api/check-setup", handleCheckSetup)
 
-		if validSession == "" {
-			log.Printf("[ADMIN] No valid session, redirecting to login")
-			http.Redirect(w, r, "/login.html", http.StatusFound)
-			return
-		}
+	r.GET("/api/racers", getRacers)
+	r.POST("/api/racers", authMiddleware(), updateRacer)
+	r.DELETE("/api/racers", authMiddleware(), deleteRacer)
 
-		log.Printf("[ADMIN] Session valid: %s, serving admin.html", shorten(validSession))
-		http.ServeFile(w, r, filepath.Join(basePath, "static/admin.html"))
+	r.GET("/api/race-info", getRaceInfo)
+	r.POST("/api/race-info", authMiddleware(), updateRaceInfo)
+
+	r.POST("/api/upload", authMiddleware(), handleUpload)
+
+	r.GET("/api/tracks", getTracks)
+	r.POST("/api/tracks", authMiddleware(), saveTrack)
+	r.DELETE("/api/tracks", authMiddleware(), deleteTrack)
+
+	r.POST("/api/tracks/ai-extract", authMiddleware(), handleAIExtract)
+
+	r.GET("/api/race-history", getRaceHistory)
+	r.POST("/api/race-history", authMiddleware(), saveRaceToHistory)
+	r.DELETE("/api/race-history", authMiddleware(), deleteRaceHistory)
+
+	r.GET("/api/racer-stats", getRacerStats)
+	r.POST("/api/racer-stats", authMiddleware(), updateRacerStats)
+
+	r.GET("/api/notification-settings", getNotificationSettings)
+	r.POST("/api/notification-settings", authMiddleware(), saveNotificationSettings)
+
+	r.POST("/api/test-notification", authMiddleware(), testNotification)
+
+	r.GET("/api/oneoff-races", getOneOffRaces)
+	r.DELETE("/api/oneoff-races", authMiddleware(), deleteOneOffRace)
+
+	r.GET("/api/track-stats", getTrackStats)
+
+	r.GET("/api/quotes", getQuotes)
+	r.POST("/api/quotes", authMiddleware(), handleQuotes)
+	r.PUT("/api/quotes", authMiddleware(), handleQuotes)
+	r.DELETE("/api/quotes", authMiddleware(), handleQuotes)
+
+	r.GET("/api/quote/random", getRandomQuote)
+
+	r.GET("/api/version", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"version": currentVersion})
 	})
 
-	http.HandleFunc("/api/racers", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			getRacers(w, r)
-		case "POST":
-			authMiddleware(updateRacer)(w, r)
-		case "DELETE":
-			authMiddleware(deleteRacer)(w, r)
-		}
+	r.GET("/api-docs", func(c *gin.Context) {
+		c.File(filepath.Join(basePath, "static/swagger.json"))
 	})
 
-	http.HandleFunc("/api/race-info", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			getRaceInfo(w, r)
-		case "POST":
-			authMiddleware(updateRaceInfo)(w, r)
-		}
-	})
-
-	http.HandleFunc("/api/upload", authMiddleware(handleUpload))
-
-	http.HandleFunc("/api/tracks", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			getTracks(w, r)
-		case "POST":
-			authMiddleware(saveTrack)(w, r)
-		case "DELETE":
-			authMiddleware(deleteTrack)(w, r)
-		}
-	})
-
-	http.HandleFunc("/api/tracks/ai-extract", authMiddleware(handleAIExtract))
-
-	http.HandleFunc("/api/race-history", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			getRaceHistory(w, r)
-		case "POST":
-			authMiddleware(saveRaceToHistory)(w, r)
-		case "DELETE":
-			authMiddleware(deleteRaceHistory)(w, r)
-		}
-	})
-
-	http.HandleFunc("/api/racer-stats", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			getRacerStats(w, r)
-		case "POST":
-			authMiddleware(updateRacerStats)(w, r)
-		}
-	})
-
-	http.HandleFunc("/api/notification-settings", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			getNotificationSettings(w, r)
-		case "POST", "PUT":
-			authMiddleware(saveNotificationSettings)(w, r)
-		}
-	})
-
-	http.HandleFunc("/api/test-notification", authMiddleware(testNotification))
-
-	http.HandleFunc("/api/oneoff-races", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			getOneOffRaces(w, r)
-		case "DELETE":
-			authMiddleware(deleteOneOffRace)(w, r)
-		}
-	})
-
-	http.HandleFunc("/api/quotes", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			getQuotes(w, r)
-		case "POST", "PUT", "DELETE":
-			authMiddleware(handleQuotes)(w, r)
-		}
-	})
-
-	http.HandleFunc("/api/quote/random", func(w http.ResponseWriter, r *http.Request) {
-		getRandomQuote(w, r)
-	})
-
-	http.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"version": currentVersion})
-	})
-
-	http.HandleFunc("/api-docs", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(basePath, "static/swagger.json"))
-	})
-
-	http.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<!DOCTYPE html>
+	r.GET("/docs", func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`<!DOCTYPE html>
 <html>
 <head>
     <title>HEAT Racing API Documentation</title>
@@ -358,71 +300,94 @@ func main() {
         };
     </script>
 </body>
-</html>`)
+</html>`))
 	})
 
-	http.HandleFunc("/login.html", func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("session")
+	r.Static("/static", filepath.Join(basePath, "static"))
+	r.Static("/static/images", imagesPath)
+
+	r.GET("/admin.html", func(c *gin.Context) {
+		log.Printf("[ADMIN] Access attempt to admin.html")
+
+		var validSession string
+		for _, cookie := range c.Request.Cookies() {
+			if cookie.Name == "session" {
+				if _, ok := sessionStore[cookie.Value]; ok {
+					validSession = cookie.Value
+					break
+				}
+			}
+		}
+
+		if validSession == "" {
+			log.Printf("[ADMIN] No valid session, redirecting to login")
+			c.Redirect(http.StatusFound, "/login.html")
+			return
+		}
+
+		log.Printf("[ADMIN] Session valid: %s, serving admin.html", shorten(validSession))
+		c.File(filepath.Join(basePath, "static/admin.html"))
+	})
+
+	r.GET("/login.html", func(c *gin.Context) {
+		cookie, err := c.Request.Cookie("session")
 		if err == nil {
 			expiry, ok := sessionStore[cookie.Value]
 			if ok && time.Now().Unix() <= expiry {
-				http.Redirect(w, r, "/admin.html", http.StatusFound)
+				c.Redirect(http.StatusFound, "/admin.html")
 				return
 			}
 		}
 		var count int
 		db.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
 		if count == 0 {
-			http.Redirect(w, r, "/setup", http.StatusFound)
+			c.Redirect(http.StatusFound, "/setup")
 			return
 		}
-		http.ServeFile(w, r, filepath.Join(basePath, "static/login.html"))
+		c.File(filepath.Join(basePath, "static/login.html"))
 	})
 
-	http.HandleFunc("/setup", func(w http.ResponseWriter, r *http.Request) {
+	r.GET("/setup", func(c *gin.Context) {
 		var count int
 		db.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
 		if count > 0 {
-			http.Redirect(w, r, "/login.html", http.StatusFound)
+			c.Redirect(http.StatusFound, "/login.html")
 			return
 		}
-		http.ServeFile(w, r, filepath.Join(basePath, "static/setup.html"))
+		c.File(filepath.Join(basePath, "static/setup.html"))
 	})
 
-	http.HandleFunc("/stats.html", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(basePath, "static/stats.html"))
-	})
-
-	http.HandleFunc("/trophies.html", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(basePath, "static/trophies.html"))
-	})
-
-	http.HandleFunc("/controller.html", func(w http.ResponseWriter, r *http.Request) {
+	r.GET("/controller.html", func(c *gin.Context) {
 		var validSession string
-		for _, c := range r.Cookies() {
-			if c.Name == "session" {
-				if _, ok := sessionStore[c.Value]; ok {
-					validSession = c.Value
+		for _, cookie := range c.Request.Cookies() {
+			if cookie.Name == "session" {
+				if _, ok := sessionStore[cookie.Value]; ok {
+					validSession = cookie.Value
 					break
 				}
 			}
 		}
 		if validSession == "" {
-			http.Redirect(w, r, "/login.html", http.StatusFound)
+			c.Redirect(http.StatusFound, "/login.html")
 			return
 		}
-		http.ServeFile(w, r, filepath.Join(basePath, "static/controller.html"))
+		c.File(filepath.Join(basePath, "static/controller.html"))
 	})
 
-	fs := http.FileServer(http.Dir(filepath.Join(basePath, "static")))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	r.GET("/stats.html", func(c *gin.Context) {
+		c.File(filepath.Join(basePath, "static/stats.html"))
+	})
 
-	// Serve images from imagesPath (could be /app/images or static/images)
-	imgFs := http.FileServer(http.Dir(imagesPath))
-	http.Handle("/static/images/", http.StripPrefix("/static/images/", imgFs))
+	r.GET("/trophies.html", func(c *gin.Context) {
+		c.File(filepath.Join(basePath, "static/trophies.html"))
+	})
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(basePath, "static/index.html"))
+	r.GET("/chat.html", func(c *gin.Context) {
+		c.File(filepath.Join(basePath, "static/chat.html"))
+	})
+
+	r.GET("/", func(c *gin.Context) {
+		c.File(filepath.Join(basePath, "static/index.html"))
 	})
 
 	port := os.Getenv("PORT")
@@ -431,7 +396,7 @@ func main() {
 	}
 
 	log.Printf("Server starting on port %s...", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	r.Run(":" + port)
 }
 
 func initDB() {
@@ -548,7 +513,7 @@ func runMigration(fromVersion int) {
 			geojson TEXT,
 			length_km INTEGER,
 			lap_record TEXT
-		)		`)
+		)`)
 		seedTracks()
 	case 2:
 		_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS quotes (
@@ -647,166 +612,153 @@ func hashPassword(password string) string {
 	return base64.StdEncoding.EncodeToString(hash[:])
 }
 
-func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[AUTH] Checking session for: %s", r.URL.Path)
+func authMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Printf("[AUTH] Checking session for: %s", c.Request.URL.Path)
 
-		// Get all cookies and find the valid session one
-		cookies := r.Cookies()
+		cookies := c.Request.Cookies()
 		log.Printf("[AUTH] All cookies: %v", cookies)
 
-		// Find the session cookie that exists in our store
-		var sessionCookie *http.Cookie
-		for _, c := range cookies {
-			if c.Name == "session" {
-				// Check if this session exists in our store
-				if _, ok := sessionStore[c.Value]; ok {
-					sessionCookie = c
-					log.Printf("[AUTH] Found valid session in store: %s", shorten(c.Value))
+		var sessionCookie string
+		for _, cookie := range cookies {
+			if cookie.Name == "session" {
+				if _, ok := sessionStore[cookie.Value]; ok {
+					sessionCookie = cookie.Value
+					log.Printf("[AUTH] Found valid session in store: %s", shorten(cookie.Value))
 					break
 				}
 			}
 		}
 
-		if sessionCookie == nil {
+		if sessionCookie == "" {
 			log.Printf("[AUTH] No valid session cookie found")
 			log.Printf("[AUTH] Stored sessions:")
 			for k, v := range sessionStore {
 				log.Printf("[AUTH]   - %s (expires: %d)", shorten(k), v)
 			}
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
 
-		log.Printf("[AUTH] Using session: %s", shorten(sessionCookie.Value))
+		log.Printf("[AUTH] Using session: %s", shorten(sessionCookie))
 
-		expiry, ok := sessionStore[sessionCookie.Value]
+		expiry, ok := sessionStore[sessionCookie]
 		if !ok {
 			log.Printf("[AUTH] Session not found in store!")
-			http.Error(w, "Session expired", http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
 			return
 		}
 		if time.Now().Unix() > expiry {
 			log.Printf("[AUTH] Session expired")
-			delete(sessionStore, sessionCookie.Value)
-			http.Error(w, "Session expired", http.StatusUnauthorized)
+			delete(sessionStore, sessionCookie)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
 			return
 		}
 
-		log.Printf("[AUTH] Session valid, allowing: %s", r.URL.Path)
-		next.ServeHTTP(w, r)
+		log.Printf("[AUTH] Session valid, allowing: %s", c.Request.URL.Path)
+		c.Next()
 	}
 }
 
-func handleCheckSetup(w http.ResponseWriter, r *http.Request) {
+func handleCheckSetup(c *gin.Context) {
 	var count int
 	db.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
-	json.NewEncoder(w).Encode(map[string]bool{"setup": count > 0})
+	c.JSON(http.StatusOK, gin.H{"setup": count > 0})
 }
 
-func handleLogin(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		var input struct {
-			Username string `json:"username"`
-			Password string `json:"password"`
-			Setup    bool   `json:"setup"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-			log.Printf("[LOGIN] Failed to decode JSON: %v", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+func handleLogin(c *gin.Context) {
+	var input struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Setup    bool   `json:"setup"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		log.Printf("[LOGIN] Failed to decode JSON: %v", err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-		log.Printf("[LOGIN] Attempting login for user: %s", input.Username)
+	log.Printf("[LOGIN] Attempting login for user: %s", input.Username)
 
-		var count int
-		db.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
-		log.Printf("[LOGIN] Admin users in DB: %d", count)
+	var count int
+	db.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
+	log.Printf("[LOGIN] Admin users in DB: %d", count)
 
-		if input.Setup && count > 0 {
-			log.Printf("[LOGIN] Setup attempt blocked: Admin user already exists")
-			http.Error(w, "Setup already completed", http.StatusForbidden)
-			return
-		}
+	if input.Setup && count > 0 {
+		log.Printf("[LOGIN] Setup attempt blocked: Admin user already exists")
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Setup already completed"})
+		return
+	}
 
-		if count == 0 {
-			log.Printf("[LOGIN] No admin users, creating new user: %s", input.Username)
-			hashed := hashPassword(input.Password)
-			log.Printf("[LOGIN] Password hash: %s", hashed)
-			_, err := db.Exec("INSERT INTO admin_users (username, password) VALUES (?, ?)", input.Username, hashed)
-			if err != nil {
-				log.Printf("[LOGIN] Failed to insert user: %v", err)
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			var user AdminUser
-			db.QueryRow("SELECT id, username FROM admin_users WHERE username = ?", input.Username).Scan(&user.ID, &user.Username)
-			log.Printf("[LOGIN] Created user with ID: %d", user.ID)
-
-			sessionID := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d-%s-%d", user.ID, user.Username, time.Now().Unix()))))
-			sessionStore[sessionID] = time.Now().Add(24 * time.Hour).Unix()
-			log.Printf("[LOGIN] Session created: %s", shorten(sessionID))
-
-			cookie := &http.Cookie{Name: "session", Value: sessionID, HttpOnly: true, Path: "/"}
-			http.SetCookie(w, cookie)
-			log.Printf("[LOGIN] Cookie set: session=%s", shorten(sessionID))
-
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-			return
-		}
-
-		log.Printf("[LOGIN] Looking up user: %s", input.Username)
-		var user AdminUser
-		err := db.QueryRow("SELECT id, username, password FROM admin_users WHERE username = ?", input.Username).Scan(&user.ID, &user.Username, &user.Password)
+	if count == 0 {
+		log.Printf("[LOGIN] No admin users, creating new user: %s", input.Username)
+		hashed := hashPassword(input.Password)
+		log.Printf("[LOGIN] Password hash: %s", hashed)
+		_, err := db.Exec("INSERT INTO admin_users (username, password) VALUES (?, ?)", input.Username, hashed)
 		if err != nil {
-			log.Printf("[LOGIN] User not found: %v", err)
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-			return
-		}
-		log.Printf("[LOGIN] Found user ID: %d, stored password hash: %s", user.ID, shorten(user.Password))
-
-		inputHash := hashPassword(input.Password)
-		log.Printf("[LOGIN] Input password hash: %s", shorten(inputHash))
-
-		if inputHash != user.Password {
-			log.Printf("[LOGIN] Password mismatch!")
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+			log.Printf("[LOGIN] Failed to insert user: %v", err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		log.Printf("[LOGIN] Password verified successfully")
+		var user AdminUser
+		db.QueryRow("SELECT id, username FROM admin_users WHERE username = ?", input.Username).Scan(&user.ID, &user.Username)
+		log.Printf("[LOGIN] Created user with ID: %d", user.ID)
+
 		sessionID := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d-%s-%d", user.ID, user.Username, time.Now().Unix()))))
 		sessionStore[sessionID] = time.Now().Add(24 * time.Hour).Unix()
 		log.Printf("[LOGIN] Session created: %s", shorten(sessionID))
 
-		cookie := &http.Cookie{Name: "session", Value: sessionID, HttpOnly: true, Path: "/"}
-		http.SetCookie(w, cookie)
+		http.SetCookie(c.Writer, &http.Cookie{Name: "session", Value: sessionID, HttpOnly: true, Path: "/"})
 		log.Printf("[LOGIN] Cookie set: session=%s", shorten(sessionID))
 
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		return
 	}
 
-	http.ServeFile(w, r, "/app/static/login.html")
+	log.Printf("[LOGIN] Looking up user: %s", input.Username)
+	var user AdminUser
+	err := db.QueryRow("SELECT id, username, password FROM admin_users WHERE username = ?", input.Username).Scan(&user.ID, &user.Username, &user.Password)
+	if err != nil {
+		log.Printf("[LOGIN] User not found: %v", err)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
+	log.Printf("[LOGIN] Found user ID: %d, stored password hash: %s", user.ID, shorten(user.Password))
+
+	inputHash := hashPassword(input.Password)
+	log.Printf("[LOGIN] Input password hash: %s", shorten(inputHash))
+
+	if inputHash != user.Password {
+		log.Printf("[LOGIN] Password mismatch!")
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
+
+	log.Printf("[LOGIN] Password verified successfully")
+	sessionID := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d-%s-%d", user.ID, user.Username, time.Now().Unix()))))
+	sessionStore[sessionID] = time.Now().Add(24 * time.Hour).Unix()
+	log.Printf("[LOGIN] Session created: %s", shorten(sessionID))
+
+	http.SetCookie(c.Writer, &http.Cookie{Name: "session", Value: sessionID, HttpOnly: true, Path: "/"})
+	log.Printf("[LOGIN] Cookie set: session=%s", shorten(sessionID))
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func handleLogout(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
+func handleLogout(c *gin.Context) {
+	cookie, err := c.Request.Cookie("session")
 	if err == nil {
 		delete(sessionStore, cookie.Value)
 	}
-	http.SetCookie(w, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	http.SetCookie(c.Writer, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func getRacers(w http.ResponseWriter, r *http.Request) {
+func getRacers(c *gin.Context) {
 	rows, err := db.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position FROM racers ORDER BY rank ASC")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
@@ -816,21 +768,20 @@ func getRacers(w http.ResponseWriter, r *http.Request) {
 		var r Racer
 		err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		racers = append(racers, r)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(racers)
+	c.JSON(http.StatusOK, racers)
 }
 
-func updateRacer(w http.ResponseWriter, r *http.Request) {
+func updateRacer(c *gin.Context) {
 	var racer Racer
-	if err := json.NewDecoder(r.Body).Decode(&racer); err != nil {
+	if err := c.ShouldBindJSON(&racer); err != nil {
 		log.Printf("[RACER] Failed to decode: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -842,7 +793,7 @@ func updateRacer(w http.ResponseWriter, r *http.Request) {
 			racer.Name, racer.ProfilePicture, racer.CarColor, racer.CarName, racer.Points, racer.Rank, racer.Position)
 		if err != nil {
 			log.Printf("[RACER] Insert failed: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		log.Printf("[RACER] Created new racer")
@@ -851,46 +802,45 @@ func updateRacer(w http.ResponseWriter, r *http.Request) {
 			racer.Name, racer.ProfilePicture, racer.CarColor, racer.CarName, racer.Points, racer.Rank, racer.Position, racer.ID)
 		if err != nil {
 			log.Printf("[RACER] Update failed: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		log.Printf("[RACER] Updated racer ID=%d", racer.ID)
 	}
 	broadcastRacers()
-	w.WriteHeader(http.StatusOK)
+	c.Status(http.StatusOK)
 }
 
-func deleteRacer(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
+func deleteRacer(c *gin.Context) {
+	idStr := c.Query("id")
 	id, _ := strconv.Atoi(idStr)
 	log.Printf("[RACER] Deleting racer ID=%d", id)
 	_, err := db.Exec("DELETE FROM racers WHERE id=?", id)
 	if err != nil {
 		log.Printf("[RACER] Delete failed: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	log.Printf("[RACER] Deleted racer ID=%d", id)
 	broadcastRacers()
-	w.WriteHeader(http.StatusOK)
+	c.Status(http.StatusOK)
 }
 
-func getRaceInfo(w http.ResponseWriter, r *http.Request) {
+func getRaceInfo(c *gin.Context) {
 	var ri RaceInfo
 	err := db.QueryRow("SELECT country, track, COALESCE(track_id, 'monza'), laps FROM race_info ORDER BY id DESC LIMIT 1").
 		Scan(&ri.Country, &ri.Track, &ri.TrackID, &ri.Laps)
 	if err != nil {
 		ri = RaceInfo{Country: "Italy", Track: "Monza", TrackID: "monza", Laps: 53}
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ri)
+	c.JSON(http.StatusOK, ri)
 }
 
-func updateRaceInfo(w http.ResponseWriter, r *http.Request) {
+func updateRaceInfo(c *gin.Context) {
 	var ri RaceInfo
-	if err := json.NewDecoder(r.Body).Decode(&ri); err != nil {
+	if err := c.ShouldBindJSON(&ri); err != nil {
 		log.Printf("[RACEINFO] Failed to decode: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -902,33 +852,27 @@ func updateRaceInfo(w http.ResponseWriter, r *http.Request) {
 		ri.Country, ri.Track, ri.TrackID, ri.Laps)
 	if err != nil {
 		log.Printf("[RACEINFO] Insert failed: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	c.Status(http.StatusOK)
 }
 
-func handleUpload(w http.ResponseWriter, r *http.Request) {
+func handleUpload(c *gin.Context) {
 	log.Printf("[UPLOAD] Upload request received")
-	if r.Method != "POST" {
-		log.Printf("[UPLOAD] Wrong method: %s", r.Method)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 
-	file, header, err := r.FormFile("image")
+	header, err := c.FormFile("image")
 	if err != nil {
 		log.Printf("[UPLOAD] Failed to get form file: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	defer file.Close()
 	log.Printf("[UPLOAD] File received: %s, size: %d", header.Filename, header.Size)
 
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" && ext != ".webp" {
 		log.Printf("[UPLOAD] Invalid file type: %s", ext)
-		http.Error(w, "Invalid file type", http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid file type"})
 		return
 	}
 
@@ -936,10 +880,18 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	uploadPath := filepath.Join(imagesPath, filename)
 	log.Printf("[UPLOAD] Saving to: %s", uploadPath)
 
+	file, err := header.Open()
+	if err != nil {
+		log.Printf("[UPLOAD] Failed to open uploaded file: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer file.Close()
+
 	out, err := os.Create(uploadPath)
 	if err != nil {
 		log.Printf("[UPLOAD] Failed to create file: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer out.Close()
@@ -950,14 +902,13 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	staticCache["/static/images/"+filename] = data
 
 	log.Printf("[UPLOAD] Success! URL: /static/images/%s", filename)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"url": "/static/images/" + filename})
+	c.JSON(http.StatusOK, gin.H{"url": "/static/images/" + filename})
 }
 
-func getTracks(w http.ResponseWriter, r *http.Request) {
+func getTracks(c *gin.Context) {
 	rows, err := db.Query("SELECT id, name, country, geojson, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks ORDER BY name")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
@@ -974,14 +925,13 @@ func getTracks(w http.ResponseWriter, r *http.Request) {
 		t.RefreshGeoJSON = refreshGeoJSON == 1
 		tracks = append(tracks, t)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tracks)
+	c.JSON(http.StatusOK, tracks)
 }
 
-func saveTrack(w http.ResponseWriter, r *http.Request) {
+func saveTrack(c *gin.Context) {
 	var t Track
-	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&t); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -989,12 +939,11 @@ func saveTrack(w http.ResponseWriter, r *http.Request) {
 		t.ID, t.Name, t.Country, t.ID, t.Length, t.LapRecord, boolToInt(t.UseMapImage), t.MapImageURL, boolToInt(t.RefreshGeoJSON))
 	if err != nil {
 		log.Printf("[TRACK] Failed to save track: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(t)
+	c.JSON(http.StatusOK, t)
 }
 
 func boolToInt(b bool) int {
@@ -1004,30 +953,26 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-func deleteTrack(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
+func deleteTrack(c *gin.Context) {
+	id := c.Query("id")
 	if id == "" {
-		http.Error(w, "ID required", http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID required"})
 		return
 	}
 
 	_, err := db.Exec("DELETE FROM tracks WHERE id = ?", id)
 	if err != nil {
 		log.Printf("[TRACK] Failed to delete track: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	c.Status(http.StatusOK)
 }
 
-func handleAIExtract(w http.ResponseWriter, r *http.Request) {
+func handleAIExtract(c *gin.Context) {
 	log.Printf("[AI] Track extraction requested")
-	
-	// This is a placeholder for AI extraction logic.
-	// In a real implementation, this would use a vision AI to trace the track.
-	
-	// Mock GeoJSON response
+
 	mockGeoJSON := `{
 		"type": "Feature",
 		"properties": {"name": "Extracted Track"},
@@ -1038,14 +983,13 @@ func handleAIExtract(w http.ResponseWriter, r *http.Request) {
 			]
 		}
 	}`
-	
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(mockGeoJSON))
+
+	c.Data(http.StatusOK, "application/json", []byte(mockGeoJSON))
 }
 
-func getRaceHistory(w http.ResponseWriter, r *http.Request) {
-	raceID := r.URL.Query().Get("id")
-	raceType := r.URL.Query().Get("type")
+func getRaceHistory(c *gin.Context) {
+	raceID := c.Query("id")
+	raceType := c.Query("type")
 
 	var query string
 	var args []interface{}
@@ -1070,7 +1014,7 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
@@ -1106,30 +1050,29 @@ func getRaceHistory(w http.ResponseWriter, r *http.Request) {
 		}
 		history = append(history, h)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(history)
+	c.JSON(http.StatusOK, history)
 }
 
-func saveRaceToHistory(w http.ResponseWriter, r *http.Request) {
+func saveRaceToHistory(c *gin.Context) {
 	var input struct {
 		Name      string `json:"name"`
 		RaceDate  string `json:"race_date"`
-		Country  string `json:"country"`
-		Track    string `json:"track"`
-		TrackID  string `json:"track_id"`
+		Country   string `json:"country"`
+		Track     string `json:"track"`
+		TrackID   string `json:"track_id"`
 		TotalLaps int    `json:"total_laps"`
 		RaceType  string `json:"race_type"`
-		Results  []struct {
+		Results   []struct {
 			RacerID    int    `json:"racer_id"`
 			RacerName  string `json:"racer_name"`
-			Position  int    `json:"position"`
-			Points    int    `json:"points"`
-			FastestLap bool  `json:"fastest_lap"`
-			Finished  bool   `json:"finished"`
+			Position   int    `json:"position"`
+			Points     int    `json:"points"`
+			FastestLap bool   `json:"fastest_lap"`
+			Finished   bool   `json:"finished"`
 		} `json:"results"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -1143,11 +1086,13 @@ func saveRaceToHistory(w http.ResponseWriter, r *http.Request) {
 		input.RaceType = "season"
 	}
 
+	isOneOff := input.RaceType == "oneoff"
+
 	result, err := db.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps, race_type) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		input.Name, input.RaceDate, input.Country, input.Track, input.TrackID, input.TotalLaps, input.RaceType)
 	if err != nil {
 		log.Printf("[HISTORY] Insert failed: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	raceID, _ := result.LastInsertId()
@@ -1156,17 +1101,21 @@ func saveRaceToHistory(w http.ResponseWriter, r *http.Request) {
 		db.Exec("INSERT INTO race_results (race_id, racer_id, racer_name, position, points, fastest_lap) VALUES (?, ?, ?, ?, ?, ?)",
 			raceID, res.RacerID, res.RacerName, res.Position, res.Points, boolToInt(res.FastestLap))
 
-		db.Exec(`INSERT INTO racer_stats (racer_id, races, wins, podiums, fastest_laps, dnf) VALUES (?, 1, ?, ?, ?, ?)
-				 ON CONFLICT(racer_id) DO UPDATE SET
-				 races = races + 1,
-				 wins = wins + excluded.wins,
-				 podiums = podiums + excluded.podiums,
-				 fastest_laps = fastest_laps + excluded.fastest_laps,
-				 dnf = dnf + excluded.dnf`,
-			res.RacerID, boolToInt(res.Position == 1), boolToInt(res.Position <= 3), boolToInt(res.FastestLap), boolToInt(!res.Finished))
+		// Only accumulate stats for season races, not one-off races
+		if !isOneOff {
+			db.Exec(`INSERT INTO racer_stats (racer_id, races, wins, podiums, fastest_laps, dnf) VALUES (?, 1, ?, ?, ?, ?)
+					 ON CONFLICT(racer_id) DO UPDATE SET
+					 races = races + 1,
+					 wins = wins + excluded.wins,
+					 podiums = podiums + excluded.podiums,
+					 fastest_laps = fastest_laps + excluded.fastest_laps,
+					 dnf = dnf + excluded.dnf`,
+				res.RacerID, boolToInt(res.Position == 1), boolToInt(res.Position <= 3), boolToInt(res.FastestLap), boolToInt(!res.Finished))
+		}
 	}
 
-	if len(input.Results) > 0 {
+	// Only send notifications for season races
+	if !isOneOff && len(input.Results) > 0 {
 		winner := ""
 		second := ""
 		third := ""
@@ -1185,33 +1134,34 @@ func saveRaceToHistory(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]int64{"id": raceID})
+	c.JSON(http.StatusOK, gin.H{"id": raceID})
 }
 
-func deleteRaceHistory(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
+func deleteRaceHistory(c *gin.Context) {
+	id := c.Query("id")
 	if id == "" {
-		http.Error(w, "ID required", http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID required"})
 		return
 	}
 	db.Exec("DELETE FROM race_results WHERE race_id = ?", id)
 	db.Exec("DELETE FROM race_history WHERE id = ?", id)
-	w.WriteHeader(http.StatusOK)
+	c.Status(http.StatusOK)
 }
 
-func getRacerStats(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
+func getRacerStats(c *gin.Context) {
+	id := c.Query("id")
 	if id == "" {
 		var stats []RacerStats
 		rows, _ := db.Query("SELECT id, racer_id, races, wins, podiums, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf FROM racer_stats")
-		for rows.Next() {
-			var s RacerStats
-			rows.Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Podiums, &s.FastestLaps, &s.Points, &s.DNF)
-			stats = append(stats, s)
+		if rows != nil {
+			for rows.Next() {
+				var s RacerStats
+				rows.Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Podiums, &s.FastestLaps, &s.Points, &s.DNF)
+				stats = append(stats, s)
+			}
+			rows.Close()
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(stats)
+		c.JSON(http.StatusOK, stats)
 		return
 	}
 
@@ -1224,14 +1174,13 @@ func getRacerStats(w http.ResponseWriter, r *http.Request) {
 	var rInfo Racer
 	db.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points FROM racers WHERE id = ?", id).Scan(&rInfo.ID, &rInfo.Name, &rInfo.ProfilePicture, &rInfo.CarColor, &rInfo.CarName, &rInfo.Points)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"stats": s, "racer": rInfo})
+	c.JSON(http.StatusOK, gin.H{"stats": s, "racer": rInfo})
 }
 
-func updateRacerStats(w http.ResponseWriter, r *http.Request) {
+func updateRacerStats(c *gin.Context) {
 	var stats RacerStats
-	if err := json.NewDecoder(r.Body).Decode(&stats); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&stats); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -1240,7 +1189,7 @@ func updateRacerStats(w http.ResponseWriter, r *http.Request) {
 			stats.RacerID, stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF)
 		if err != nil {
 			log.Printf("[STATS] Insert failed: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
@@ -1248,17 +1197,17 @@ func updateRacerStats(w http.ResponseWriter, r *http.Request) {
 			stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF, stats.ID)
 		if err != nil {
 			log.Printf("[STATS] Update failed: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	}
-	w.WriteHeader(http.StatusOK)
+	c.Status(http.StatusOK)
 }
 
-func getQuotes(w http.ResponseWriter, r *http.Request) {
+func getQuotes(c *gin.Context) {
 	rows, err := db.Query("SELECT id, text, author, created_at FROM quotes ORDER BY id")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
@@ -1271,32 +1220,30 @@ func getQuotes(w http.ResponseWriter, r *http.Request) {
 		}
 		quotes = append(quotes, q)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(quotes)
+	c.JSON(http.StatusOK, quotes)
 }
 
-func getRandomQuote(w http.ResponseWriter, r *http.Request) {
+func getRandomQuote(c *gin.Context) {
 	var q Quote
 	err := db.QueryRow("SELECT id, text, author, created_at FROM quotes ORDER BY RANDOM() LIMIT 1").Scan(&q.ID, &q.Text, &q.Author, &q.CreatedAt)
 	if err != nil {
 		q = Quote{Text: "The engines roar as these legends battle for glory!", Author: "Commentator"}
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(q)
+	c.JSON(http.StatusOK, q)
 }
 
-func handleQuotes(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
+func handleQuotes(c *gin.Context) {
+	switch c.Request.Method {
 	case "GET":
-		getQuotes(w, r)
+		getQuotes(c)
 	case "POST":
 		var q Quote
-		if err := json.NewDecoder(r.Body).Decode(&q); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		if err := c.ShouldBindJSON(&q); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		if q.Text == "" {
-			http.Error(w, "Quote text is required", http.StatusBadRequest)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Quote text is required"})
 			return
 		}
 		if q.Author == "" {
@@ -1304,50 +1251,48 @@ func handleQuotes(w http.ResponseWriter, r *http.Request) {
 		}
 		result, err := db.Exec("INSERT INTO quotes (text, author) VALUES (?, ?)", q.Text, q.Author)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		id, _ := result.LastInsertId()
 		q.ID = int(id)
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(q)
+		c.JSON(http.StatusCreated, q)
 	case "PUT":
 		var q Quote
-		if err := json.NewDecoder(r.Body).Decode(&q); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		if err := c.ShouldBindJSON(&q); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		if q.ID == 0 {
-			http.Error(w, "Quote ID is required", http.StatusBadRequest)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Quote ID is required"})
 			return
 		}
 		_, err := db.Exec("UPDATE quotes SET text = ?, author = ? WHERE id = ?", q.Text, q.Author, q.ID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(q)
+		c.JSON(http.StatusOK, q)
 	case "DELETE":
-		id := r.URL.Query().Get("id")
+		id := c.Query("id")
 		if id == "" {
-			http.Error(w, "Quote ID is required", http.StatusBadRequest)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Quote ID is required"})
 			return
 		}
 		_, err := db.Exec("DELETE FROM quotes WHERE id = ?", id)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		w.WriteHeader(http.StatusOK)
+		c.Status(http.StatusOK)
 	}
 }
 
-func getOneOffRaces(w http.ResponseWriter, r *http.Request) {
+func getOneOffRaces(c *gin.Context) {
 	rows, err := db.Query(`SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps, COALESCE(race_type, 'oneoff')
 					   FROM race_history WHERE race_type = 'oneoff' ORDER BY race_date DESC LIMIT 20`)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
@@ -1358,36 +1303,34 @@ func getOneOffRaces(w http.ResponseWriter, r *http.Request) {
 		rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &h.RaceType)
 		history = append(history, h)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(history)
+	c.JSON(http.StatusOK, history)
 }
 
-func deleteOneOffRace(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
+func deleteOneOffRace(c *gin.Context) {
+	id := c.Query("id")
 	if id == "" {
-		http.Error(w, "ID required", http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID required"})
 		return
 	}
 	db.Exec("DELETE FROM race_results WHERE race_id = ?", id)
 	db.Exec("DELETE FROM race_history WHERE id = ? AND race_type = 'oneoff'", id)
-	w.WriteHeader(http.StatusOK)
+	c.Status(http.StatusOK)
 }
 
-func getNotificationSettings(w http.ResponseWriter, r *http.Request) {
+func getNotificationSettings(c *gin.Context) {
 	var s NotificationSettings
 	err := db.QueryRow("SELECT id, COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), COALESCE(notify_winner, 0), COALESCE(notify_race_start, 0), COALESCE(notify_podium, 0) FROM notification_settings WHERE id = 1").
 		Scan(&s.ID, &s.GotiFyURL, &s.GotiFyToken, &s.NotifyWinner, &s.NotifyRaceStart, &s.NotifyPodium)
 	if err != nil {
 		s = NotificationSettings{ID: 1, NotifyWinner: true, NotifyRaceStart: false, NotifyPodium: false}
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(s)
+	c.JSON(http.StatusOK, s)
 }
 
-func saveNotificationSettings(w http.ResponseWriter, r *http.Request) {
+func saveNotificationSettings(c *gin.Context) {
 	var s NotificationSettings
-	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&s); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -1395,30 +1338,67 @@ func saveNotificationSettings(w http.ResponseWriter, r *http.Request) {
 		s.GotiFyURL, s.GotiFyToken, boolToInt(s.NotifyWinner), boolToInt(s.NotifyRaceStart), boolToInt(s.NotifyPodium))
 	if err != nil {
 		log.Printf("[NOTIFY] Save failed: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(s)
+	c.JSON(http.StatusOK, s)
 }
 
-func testNotification(w http.ResponseWriter, r *http.Request) {
+func testNotification(c *gin.Context) {
 	var s NotificationSettings
 	db.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, '') FROM notification_settings WHERE id = 1").
 		Scan(&s.GotiFyURL, &s.GotiFyToken)
 
 	if s.GotiFyURL == "" {
-		http.Error(w, "Gotify URL not configured", http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Gotify URL not configured"})
 		return
 	}
 
 	err := sendGotifyNotification("Test Notification", "HEAT notification test successful!", s.GotiFyURL, s.GotiFyToken)
 	if err != nil {
-		http.Error(w, "Failed to send test: "+err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to send test: " + err.Error()})
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+type TrackStats struct {
+	TrackID    string `json:"track_id"`
+	TrackName  string `json:"track_name"`
+	Country    string `json:"country"`
+	RacesCount int    `json:"races_count"`
+	Winner     string `json:"winner"`
+	FastestLap string `json:"fastest_lap"`
+}
+
+func getTrackStats(c *gin.Context) {
+	rows, err := db.Query(`
+		SELECT rh.track_id, rh.track, rh.country, COUNT(*) as races_count,
+			COALESCE((SELECT rr.racer_name FROM race_results rr WHERE rr.race_id = rh2.id AND rr.position = 1 LIMIT 1), '') as winner,
+			COALESCE((SELECT rr.racer_name FROM race_results rr WHERE rr.race_id = rh3.id AND rr.fastest_lap = 1 LIMIT 1), '') as fastest_lap
+		FROM race_history rh
+		LEFT JOIN race_history rh2 ON rh2.id = rh.id
+		LEFT JOIN race_history rh3 ON rh3.id = rh.id
+		WHERE rh.race_type = 'season'
+		GROUP BY rh.track_id
+		ORDER BY races_count DESC
+	`)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var stats []TrackStats
+	for rows.Next() {
+		var s TrackStats
+		if err := rows.Scan(&s.TrackID, &s.TrackName, &s.Country, &s.RacesCount, &s.Winner, &s.FastestLap); err != nil {
+			log.Printf("[TRACK STATS] Scan error: %v", err)
+			continue
+		}
+		stats = append(stats, s)
+	}
+	c.JSON(http.StatusOK, stats)
 }
 
 func sendGotifyNotification(title, message, gotifyURL, token string) error {

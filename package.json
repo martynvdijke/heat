@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "go test ./...",
-    "test:e2e": "npx playwright test"
+    "test:e2e": "npx playwright test",
+    "build:ts": "tsc"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,7 @@
   "homepage": "https://github.com/martynvdijke/heat#readme",
   "devDependencies": {
     "@playwright/test": "^1.59.1",
-    "@types/node": "^25.6.0"
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
   }
 }

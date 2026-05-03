@@ -60,6 +60,9 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
+      - name: Build TypeScript
+        run: npm run build:ts
+
       - name: Build
         run: go build -o heat-server .
 

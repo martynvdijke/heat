@@ -10,7 +10,7 @@ func TestPathsConfiguration(t *testing.T) {
 	t.Run("LocalPaths", func(t *testing.T) {
 		// Ensure DOCKER is not set
 		os.Unsetenv("DOCKER")
-		
+
 		// Reset paths to simulate fresh start
 		basePath = "/app"
 		dbPath = "/db/heat.db"

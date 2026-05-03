@@ -1,6 +1,7 @@
 heat
 heat.db
 heat-server
+static/js/
 vendor/
 *.exe
 *.test

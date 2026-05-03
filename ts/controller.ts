@@ -1,0 +1,252 @@
+interface ControllerRacer {
+    id: number;
+    name: string;
+    profile_picture: string;
+    car_color: string;
+    car_name: string;
+    points: number;
+    rank: number;
+    position: number;
+}
+
+let raceState = 'stopped';
+let raceTimer: ReturnType<typeof setInterval> | null = null;
+let raceSeconds = 0;
+let racers: ControllerRacer[] = [];
+let currentLap = 0;
+
+async function loadData(): Promise<void> {
+    const [racersRes, tracksRes] = await Promise.all([
+        fetch('/api/racers'),
+        fetch('/api/tracks')
+    ]);
+    racers = await racersRes.json();
+    const tracks = await tracksRes.json();
+    renderStandings();
+    const trackSelect = document.getElementById('track-select') as HTMLSelectElement;
+    tracks.forEach((t: any) => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = `${t.country} - ${t.name}`;
+        trackSelect.appendChild(opt);
+    });
+}
+
+function renderStandings(): void {
+    const sorted = [...racers].sort((a, b) => a.position - b.position);
+    document.getElementById('standings-list')!.innerHTML = sorted.map((r, i) => `
+        <div class="driver-row ${i === 0 ? 'active' : ''}">
+            <div class="position-btn btn ${r.position === 1 ? 'btn-warning' : r.position <= 3 ? 'btn-secondary' : 'btn-outline-light'} me-2">
+                ${r.position}
+            </div>
+            <img src="${r.profile_picture}" class="rounded-circle me-2" width="32" height="32" onerror="this.style.display='none'">
+            <div class="flex-grow-1">
+                <div class="fw-bold small">${r.name}</div>
+                <small class="opacity-50">${r.car_name}</small>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="moveUp(${r.id})">
+                <i class="fa-solid fa-chevron-up"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary ms-1" onclick="moveDown(${r.id})">
+                <i class="fa-solid fa-chevron-down"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+function startRace(): void {
+    if (raceState === 'stopped') {
+        raceState = 'racing';
+        raceSeconds = 0;
+        currentLap = 1;
+        updateStatus();
+        raceTimer = setInterval(() => {
+            raceSeconds++;
+            const mins = Math.floor(raceSeconds / 60);
+            const secs = raceSeconds % 60;
+            document.getElementById('race-timer')!.textContent =
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+}
+
+function pauseRace(): void {
+    if (raceState === 'racing') {
+        raceState = 'paused';
+        clearInterval(raceTimer!);
+        updateStatus();
+    } else if (raceState === 'paused') {
+        raceState = 'racing';
+        raceTimer = setInterval(() => {
+            raceSeconds++;
+            const mins = Math.floor(raceSeconds / 60);
+            const secs = raceSeconds % 60;
+            document.getElementById('race-timer')!.textContent =
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }, 1000);
+        updateStatus();
+    }
+}
+
+function stopRace(): void {
+    raceState = 'stopped';
+    clearInterval(raceTimer!);
+    raceTimer = null;
+    currentLap = 0;
+    updateStatus();
+}
+
+function updateStatus(): void {
+    const dot = document.getElementById('status-dot')!;
+    const status = document.getElementById('race-status')!;
+    const state = document.getElementById('race-state')!;
+    dot.className = 'status-indicator';
+    switch (raceState) {
+        case 'racing':
+            dot.classList.add('racing');
+            status.textContent = 'RACING';
+            state.textContent = 'GREEN FLAG';
+            break;
+        case 'paused':
+            dot.classList.add('ready');
+            status.textContent = 'PAUSED';
+            state.textContent = 'YELLOW FLAG';
+            break;
+        default:
+            dot.classList.add('stopped');
+            status.textContent = 'STOPPED';
+            state.textContent = 'READY';
+    }
+    document.getElementById('current-lap')!.textContent = String(currentLap);
+}
+
+function shuffleGrid(): void {
+    const shuffled = [...racers].sort(() => Math.random() - 0.5);
+    shuffled.forEach((r, i) => {
+        r.rank = i + 1;
+        r.position = 100 - i;
+    });
+    fetch('/api/racers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(racers)
+    }).then(() => renderStandings());
+}
+
+function moveUp(id: number): void {
+    const r = racers.find(r => r.id === id);
+    if (r && r.position > 1) {
+        r.position--;
+        const other = racers.find(r => r.position === r.position);
+        if (other) other.position++;
+        savePositions();
+    }
+}
+
+function moveDown(id: number): void {
+    const r = racers.find(r => r.id === id);
+    if (r) {
+        r.position++;
+        const other = racers.find(r => r.position === r.position);
+        if (other) other.position--;
+        savePositions();
+    }
+}
+
+function savePositions(): void {
+    fetch('/api/racers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(racers)
+    }).then(() => renderStandings());
+}
+
+function triggerYellowFlag(): void {
+    broadcastMessage({ type: 'flag', flag: 'yellow' });
+}
+
+function triggerSafetyCar(): void {
+    broadcastMessage({ type: 'flag', flag: 'safety' });
+}
+
+function triggerChequeredFlag(): void {
+    broadcastMessage({ type: 'flag', flag: 'chequered' });
+}
+
+function sendCommentary(): void {
+    const input = document.getElementById('commentary-input') as HTMLInputElement;
+    if (input.value.trim()) {
+        broadcastMessage({ type: 'commentary', text: input.value.trim() });
+        input.value = '';
+    }
+}
+
+function saveRaceSettings(): void {
+    const track = (document.getElementById('track-select') as HTMLSelectElement).value;
+    const laps = parseInt((document.getElementById('race-laps') as HTMLInputElement).value) || 53;
+    const name = (document.getElementById('race-name') as HTMLInputElement).value;
+    fetch('/api/race-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            track_id: track || 'monza',
+            laps: laps,
+            name: name,
+            is_oneoff: (document.getElementById('race-type') as HTMLSelectElement).value === 'oneoff'
+        })
+    });
+}
+
+function saveRaceResult(): void {
+    const raceType = (document.getElementById('race-type') as HTMLSelectElement).value;
+    const results = racers.map(r => ({
+        racer_id: r.id,
+        racer_name: r.name,
+        position: r.position,
+        points: getPointsForPosition(r.position),
+        fastestLap: r.position === 1,
+        finished: true
+    }));
+    fetch('/api/race-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: (document.getElementById('race-name') as HTMLInputElement).value || `Race ${new Date().toLocaleDateString()}`,
+            race_date: new Date().toISOString().split('T')[0],
+            country: ((document.getElementById('track-select') as HTMLSelectElement).selectedOptions[0]?.text?.split(' - ')[0]) || 'Unknown',
+            track: ((document.getElementById('track-select') as HTMLSelectElement).selectedOptions[0]?.text?.split(' - ')[1]) || 'Unknown',
+            track_id: (document.getElementById('track-select') as HTMLSelectElement).value || 'monza',
+            total_laps: parseInt((document.getElementById('race-laps') as HTMLInputElement).value) || 53,
+            race_type: raceType,
+            results: results
+        })
+    }).then(() => {
+        alert('Race saved to history!');
+        stopRace();
+    });
+}
+
+function discardRace(): void {
+    if (confirm('Discard this race? All progress will be lost.')) {
+        stopRace();
+    }
+}
+
+function getPointsForPosition(pos: number): number {
+    const points = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+    return points[pos - 1] || 0;
+}
+
+function broadcastMessage(msg: Record<string, unknown>): void {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    ws.onopen = () => ws.send(JSON.stringify(msg));
+}
+
+document.getElementById('commentary-input')!.addEventListener('keypress', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') sendCommentary();
+});
+
+loadData();
+
+export {};

@@ -12,6 +12,7 @@ tasks:
       - go mod download
       - npm install
       - npx playwright install --with-deps chromium
+      - task: build:ts
 
   fmt:
     desc: Format code (Go)
@@ -28,10 +29,24 @@ tasks:
     cmds:
       - npx playwright test
 
+  build:ts:
+    desc: Compile TypeScript to JavaScript
+    cmds:
+      - npm run build:ts
+
   build:
     desc: Build the Go binary
     cmds:
+      - task: build:ts
       - go build -o heat-server .
+
+  pre-push:
+    desc: Run all checks before pushing
+    cmds:
+      - task: fmt
+      - task: test
+      - task: build:ts
+      - task: build
 
   run:
     desc: Run the application locally

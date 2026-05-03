@@ -1,3 +1,10 @@
+FROM node:24-alpine AS ts-builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tsconfig.json ts/ ./
+RUN mkdir -p static/js && npx tsc
+
 FROM golang:1.26.2-alpine AS builder
 
 RUN apk add --no-cache gcc musl-dev sqlite-dev
@@ -8,6 +15,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+COPY --from=ts-builder /app/static/js ./static/js
 
 RUN CGO_ENABLED=1 GOOS=linux go build -o heat-server .
 
