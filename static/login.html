@@ -39,7 +39,7 @@
             const res = await fetch('/api/check-setup');
             const data = await res.json();
             if (!data.setup) {
-                window.location.href = '/setup.html';
+                window.location.href = '/setup';
             }
         })();
 
