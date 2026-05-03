@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/martynvdijke/heat/compare/v1.6.0...v1.6.1) (2026-05-03)
+
+
+### Bug Fixes
+
+* ui fixes and dev improvment ([9a3f2b2](https://github.com/martynvdijke/heat/commit/9a3f2b2123e5ba19378900ba61c7bc0a912ec8a1))
+
 # [1.6.0](https://github.com/martynvdijke/heat/compare/v1.5.0...v1.6.0) (2026-05-02)
 
 
