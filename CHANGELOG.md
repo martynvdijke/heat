@@ -1,3 +1,18 @@
+# [1.7.0](https://github.com/martynvdijke/heat/compare/v1.6.1...v1.7.0) (2026-05-03)
+
+
+### Bug Fixes
+
+* build TypeScript before Playwright tests in CI with Denver ([cd7c338](https://github.com/martynvdijke/heat/commit/cd7c3387ad77678e0ee208f33e3496cf7461a9b1))
+* preserve ts/ subdirectory in Docker build with Denver ([e47b4f3](https://github.com/martynvdijke/heat/commit/e47b4f3f24815a582269a29276610ae8ef0a9195))
+* resolve Gin static route conflict with Denver ([f7adbc3](https://github.com/martynvdijke/heat/commit/f7adbc39c54e789d926e338b0383e6cadd9a6692))
+* strip TypeScript export declarations from compiled JS with Denver ([9beb9e6](https://github.com/martynvdijke/heat/commit/9beb9e69df49fe502c49c42b960005c472104d8d))
+
+
+### Features
+
+* migrate to Gin framework and TypeScript with Denver ([8f5ae33](https://github.com/martynvdijke/heat/commit/8f5ae335931c3e117c6a59ac4dedd48a9a4323ba))
+
 ## [1.6.1](https://github.com/martynvdijke/heat/compare/v1.6.0...v1.6.1) (2026-05-03)
 
 
