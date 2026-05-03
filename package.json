@@ -6,7 +6,7 @@
   "scripts": {
     "test": "go test ./...",
     "test:e2e": "npx playwright test",
-    "build:ts": "tsc"
+    "build:ts": "tsc && sed -i '/^export {};$/d' static/js/*.js"
   },
   "repository": {
     "type": "git",
