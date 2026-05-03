@@ -204,8 +204,8 @@ func main() {
 	if os.Getenv("DOCKER") != "true" {
 		basePath = "."
 		dbPath = "./heat.db"
-		imagesPath = filepath.Join(basePath, "static/images")
 	}
+	imagesPath = filepath.Join(basePath, "static/images")
 
 	if err := os.MkdirAll(imagesPath, 0755); err != nil {
 		log.Printf("Warning: could not create images directory: %v", err)
@@ -304,7 +304,6 @@ func main() {
 	})
 
 	r.Static("/static", filepath.Join(basePath, "static"))
-	r.Static("/static/images", imagesPath)
 
 	r.GET("/admin.html", func(c *gin.Context) {
 		log.Printf("[ADMIN] Access attempt to admin.html")
