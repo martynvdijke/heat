@@ -2,7 +2,8 @@ FROM node:24-alpine AS ts-builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY tsconfig.json ts/ ./
+COPY tsconfig.json ./
+COPY ts/ ts/
 RUN mkdir -p static/js && npx tsc
 
 FROM golang:1.26.2-alpine AS builder
