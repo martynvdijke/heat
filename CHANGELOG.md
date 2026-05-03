@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/martynvdijke/heat/compare/v1.7.0...v1.7.1) (2026-05-03)
+
+
+### Bug Fixes
+
+* bootstrap load order, login redirect, and add admin CRUD tests ([c76d412](https://github.com/martynvdijke/heat/commit/c76d412d1d82adc35cf8e21e66ecdc5865817591))
+
 # [1.7.0](https://github.com/martynvdijke/heat/compare/v1.6.1...v1.7.0) (2026-05-03)
 
 
