@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/martynvdijke/heat/compare/v1.7.1...v1.8.0) (2026-05-03)
+
+
+### Features
+
+* add file upload with hashing, resizing, and thumbnailing ([ca135fd](https://github.com/martynvdijke/heat/commit/ca135fdddd5522579b206926030fcc992916c664))
+
 ## [1.7.1](https://github.com/martynvdijke/heat/compare/v1.7.0...v1.7.1) (2026-05-03)
 
 
