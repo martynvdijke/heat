@@ -16,7 +16,7 @@ This will:
 
 ## Commit Messages
 
-For releasing and versioning, include "Denver" in the commit message (e.g., "feat: add new feature with Denver" or "Release v1.2.3 Denver").
+Use conventional commits with semver (e.g., "feat: add new feature", "fix: resolve crash", "chore: bump deps").
 
 ## Individual Commands
 
