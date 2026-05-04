@@ -40,6 +40,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("failed to open in-memory db: %v", err)
 	}
+	db.SetMaxOpenConns(1)
 	defer db.Close()
 
 	initDB()
@@ -511,10 +512,13 @@ func TestRaceInfoWithTrackID(t *testing.T) {
 }
 
 func TestRaceHistory(t *testing.T) {
+	// Clean up any data from previous tests for isolation
+	db.Exec("DELETE FROM race_results")
+	db.Exec("DELETE FROM race_history")
+
 	t.Run("GetRaceHistoryEmpty", func(t *testing.T) {
 		r := gin.New()
 		r.GET("/api/race-history", getRaceHistory)
-
 		req, _ := http.NewRequest("GET", "/api/race-history", nil)
 		rr := httptest.NewRecorder()
 		r.ServeHTTP(rr, req)

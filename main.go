@@ -248,6 +248,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	db.SetMaxOpenConns(1)
 	defer db.Close()
 
 	initDB()
