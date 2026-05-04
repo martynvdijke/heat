@@ -1,3 +1,15 @@
+# [1.11.0](https://github.com/martynvdijke/heat/compare/v1.10.0...v1.11.0) (2026-05-04)
+
+
+### Bug Fixes
+
+* resolve database test isolation and compile errors with Denver ([d4cf3d6](https://github.com/martynvdijke/heat/commit/d4cf3d62c2d31f51c1972eed61f4c30e3380519f))
+
+
+### Features
+
+* add email support for race result overview emails ([9069be4](https://github.com/martynvdijke/heat/commit/9069be4851a7f226eb44bee714155a9f13036cfd))
+
 # [1.10.0](https://github.com/martynvdijke/heat/compare/v1.9.1...v1.10.0) (2026-05-04)
 
 
