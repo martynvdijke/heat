@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/martynvdijke/heat/compare/v1.11.1...v1.12.0) (2026-05-04)
+
+
+### Features
+
+* add Umami analytics and fix security issues with Denver ([c28fa66](https://github.com/martynvdijke/heat/commit/c28fa66d755aa93cf5a2f42310b18c6910e2ce2a))
+
 ## [1.11.1](https://github.com/martynvdijke/heat/compare/v1.11.0...v1.11.1) (2026-05-04)
 
 
