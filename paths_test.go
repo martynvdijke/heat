@@ -4,30 +4,32 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"heat/app"
 )
 
 func TestPathsConfiguration(t *testing.T) {
 	t.Run("LocalPaths", func(t *testing.T) {
 		os.Unsetenv("DOCKER")
 
-		basePath = "/app"
-		dbPath = "/db/heat.db"
-		imagesPath = "/app/images"
+		app.BasePath = "/app"
+		app.DBPath = "/db/heat.db"
+		app.ImagesPath = "/app/images"
 
 		if os.Getenv("DOCKER") != "true" {
-			basePath = "."
-			dbPath = "./heat.db"
+			app.BasePath = "."
+			app.DBPath = "./heat.db"
 		}
-		imagesPath = filepath.Join(basePath, "static/images")
+		app.ImagesPath = filepath.Join(app.BasePath, "static/images")
 
-		if basePath != "." {
-			t.Errorf("expected local basePath '.', got %s", basePath)
+		if app.BasePath != "." {
+			t.Errorf("expected local basePath '.', got %s", app.BasePath)
 		}
-		if dbPath != "./heat.db" {
-			t.Errorf("expected local dbPath './heat.db', got %s", dbPath)
+		if app.DBPath != "./heat.db" {
+			t.Errorf("expected local dbPath './heat.db', got %s", app.DBPath)
 		}
-		if imagesPath != "static/images" {
-			t.Errorf("expected imagesPath 'static/images', got %s", imagesPath)
+		if app.ImagesPath != "static/images" {
+			t.Errorf("expected imagesPath 'static/images', got %s", app.ImagesPath)
 		}
 	})
 
@@ -35,24 +37,24 @@ func TestPathsConfiguration(t *testing.T) {
 		os.Setenv("DOCKER", "true")
 		defer os.Unsetenv("DOCKER")
 
-		basePath = "/app"
-		dbPath = "/db/heat.db"
-		imagesPath = "/app/images"
+		app.BasePath = "/app"
+		app.DBPath = "/db/heat.db"
+		app.ImagesPath = "/app/images"
 
 		if os.Getenv("DOCKER") != "true" {
-			basePath = "."
-			dbPath = "./heat.db"
+			app.BasePath = "."
+			app.DBPath = "./heat.db"
 		}
-		imagesPath = filepath.Join(basePath, "static/images")
+		app.ImagesPath = filepath.Join(app.BasePath, "static/images")
 
-		if basePath != "/app" {
-			t.Errorf("expected Docker basePath '/app', got %s", basePath)
+		if app.BasePath != "/app" {
+			t.Errorf("expected Docker basePath '/app', got %s", app.BasePath)
 		}
-		if dbPath != "/db/heat.db" {
-			t.Errorf("expected Docker dbPath '/db/heat.db', got %s", dbPath)
+		if app.DBPath != "/db/heat.db" {
+			t.Errorf("expected Docker dbPath '/db/heat.db', got %s", app.DBPath)
 		}
-		if imagesPath != "/app/static/images" {
-			t.Errorf("expected Docker imagesPath '/app/static/images', got %s", imagesPath)
+		if app.ImagesPath != "/app/static/images" {
+			t.Errorf("expected Docker imagesPath '/app/static/images', got %s", app.ImagesPath)
 		}
 	})
 }
