@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/martynvdijke/heat/compare/v1.11.0...v1.11.1) (2026-05-04)
+
+
+### Bug Fixes
+
+* remove export hack, drop uploads tab, fix stats, add regression tests ([6836691](https://github.com/martynvdijke/heat/commit/68366913b335981ae44e4016526473ec79d16234))
+
 # [1.11.0](https://github.com/martynvdijke/heat/compare/v1.10.0...v1.11.0) (2026-05-04)
 
 
