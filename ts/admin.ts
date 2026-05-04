@@ -924,6 +924,116 @@ function escapeHtml(text: string): string {
     return div.innerHTML;
 }
 
+interface AdminUpload {
+    id: number;
+    hash: string;
+    ext: string;
+    url: string;
+    resized_url: string;
+    thumbnail_url: string;
+    created_at: string;
+}
+
+async function loadUploads(): Promise<void> {
+    try {
+        const res = await fetch('/api/uploads');
+        if (!res.ok) throw new Error('Failed to load uploads');
+        const uploads: AdminUpload[] = await res.json();
+        const list = document.getElementById('uploads-list')!;
+        if (uploads.length === 0) {
+            list.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No uploads yet. Use the file picker above.</td></tr>';
+            return;
+        }
+        list.innerHTML = uploads.map(u => `
+            <tr>
+                <td class="ps-4">
+                    <img src="${escapeHtml(u.thumbnail_url || u.resized_url || u.url)}" class="rounded" width="60" height="60" style="object-fit: cover" onerror="this.src='/static/images/helmet.svg'">
+                </td>
+                <td class="small"><code class="text-break">${escapeHtml(u.url)}</code></td>
+                <td class="small text-muted">${escapeHtml(u.created_at ? u.created_at.substring(0, 10) : '')}</td>
+                <td class="text-end pe-4">
+                    <button class="btn btn-sm btn-outline-secondary me-1" onclick="copyToClipboard('${escapeHtml(u.url)}')" title="Copy URL"><i class="fa-solid fa-copy"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUpload(${u.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Failed to load uploads', e);
+    }
+}
+
+function copyToClipboard(text: string): void {
+    navigator.clipboard.writeText(text).then(() => {
+        alert('URL copied to clipboard!');
+    }).catch(() => {
+        prompt('Copy URL:', text);
+    });
+}
+
+let uploadPreviewUrl = '';
+
+function handleUploadDropzone(input: HTMLInputElement): void {
+    const file = input.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('image', file);
+    fetch('/api/upload', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.url) {
+                uploadPreviewUrl = data.url;
+                const preview = document.getElementById('upload-preview')!;
+                const img = document.getElementById('upload-preview-img') as HTMLImageElement;
+                img.src = data.url;
+                preview.style.display = 'block';
+                loadUploads();
+            }
+        })
+        .catch(e => alert('Upload failed'));
+}
+
+function copyUploadUrl(): void {
+    if (uploadPreviewUrl) {
+        copyToClipboard(uploadPreviewUrl);
+    }
+}
+
+function deleteUpload(id: number): void {
+    alert('Delete not yet implemented for uploads');
+}
+
+// Setup upload dropzone
+(function setupDropzone() {
+    const dropzone = document.getElementById('upload-dropzone');
+    const fileInput = document.getElementById('upload-file-input') as HTMLInputElement;
+    if (!dropzone || !fileInput) return;
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-primary');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('border-primary');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-primary');
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+            fileInput.files = files;
+            handleUploadDropzone(fileInput);
+        }
+    });
+
+    document.getElementById('uploads-tab')?.addEventListener('shown.bs.tab', () => {
+        loadUploads();
+    });
+})();
+
 init();
 
 export {};

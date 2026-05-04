@@ -251,6 +251,7 @@ func main() {
 	r.GET("/api/race-info", getRaceInfo)
 	r.POST("/api/race-info", authMiddleware(), updateRaceInfo)
 
+	r.GET("/api/uploads", getUploads)
 	r.POST("/api/upload", authMiddleware(), handleUpload)
 
 	r.GET("/api/tracks", getTracks)
@@ -990,6 +991,35 @@ func handleUpload(c *gin.Context) {
 		"thumbnail_url": thumbURL,
 		"hash":          hashStr,
 	})
+}
+
+type Upload struct {
+	ID           int    `json:"id"`
+	Hash         string `json:"hash"`
+	Ext          string `json:"ext"`
+	URL          string `json:"url"`
+	ResizedURL   string `json:"resized_url"`
+	ThumbnailURL string `json:"thumbnail_url"`
+	CreatedAt    string `json:"created_at"`
+}
+
+func getUploads(c *gin.Context) {
+	rows, err := db.Query("SELECT id, hash, ext, url, resized_url, thumbnail_url, COALESCE(created_at, '') FROM uploads ORDER BY created_at DESC LIMIT 50")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var uploads []Upload
+	for rows.Next() {
+		var u Upload
+		if err := rows.Scan(&u.ID, &u.Hash, &u.Ext, &u.URL, &u.ResizedURL, &u.ThumbnailURL, &u.CreatedAt); err != nil {
+			continue
+		}
+		uploads = append(uploads, u)
+	}
+	c.JSON(http.StatusOK, uploads)
 }
 
 func getTracks(c *gin.Context) {

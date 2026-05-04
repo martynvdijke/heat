@@ -2648,3 +2648,82 @@ func TestTrackSaveAndRetrieve(t *testing.T) {
 		db.Exec("DELETE FROM tracks WHERE id='test-track'")
 	})
 }
+
+func TestUploadsList(t *testing.T) {
+	t.Run("ListUploadsEmpty", func(t *testing.T) {
+		r := gin.New()
+		r.GET("/api/uploads", getUploads)
+
+		req, _ := http.NewRequest("GET", "/api/uploads", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var uploads []Upload
+		if err := json.Unmarshal(rr.Body.Bytes(), &uploads); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+	})
+
+	t.Run("ListUploadsHasEntries", func(t *testing.T) {
+		sessionID := "test-session-uploads-list"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		// Upload a test image first
+		r := gin.New()
+		r.POST("/api/upload", authMiddleware(), handleUpload)
+
+		img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+		var buf bytes.Buffer
+		png.Encode(&buf, img)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("image", "listtest.png")
+		part.Write(buf.Bytes())
+		writer.Close()
+
+		req, _ := http.NewRequest("POST", "/api/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		var uploadResp map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &uploadResp)
+
+		// Now list uploads
+		r2 := gin.New()
+		r2.GET("/api/uploads", getUploads)
+
+		req2, _ := http.NewRequest("GET", "/api/uploads", nil)
+		rr2 := httptest.NewRecorder()
+		r2.ServeHTTP(rr2, req2)
+
+		if status := rr2.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var uploads []Upload
+		if err := json.Unmarshal(rr2.Body.Bytes(), &uploads); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if len(uploads) == 0 {
+			t.Error("expected at least 1 upload in list")
+		}
+
+		// Cleanup
+		if url, ok := uploadResp["url"].(string); ok {
+			baseName := strings.TrimPrefix(url, "/static/images/")
+			os.Remove(filepath.Join(imagesPath, baseName))
+			ext := filepath.Ext(baseName)
+			hashOnly := baseName[:len(baseName)-len(ext)]
+			os.Remove(filepath.Join(imagesPath, hashOnly+"_resized"+ext))
+			os.Remove(filepath.Join(imagesPath, hashOnly+"_thumb"+ext))
+		}
+	})
+}
