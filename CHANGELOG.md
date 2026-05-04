@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/martynvdijke/heat/compare/v1.9.1...v1.10.0) (2026-05-04)
+
+
+### Features
+
+* add uploads tab with file picker and gallery to admin panel ([ab1ca5f](https://github.com/martynvdijke/heat/commit/ab1ca5f64d9a7f0d3db97d26a3024bf1f74d84a7))
+
 ## [1.9.1](https://github.com/martynvdijke/heat/compare/v1.9.0...v1.9.1) (2026-05-04)
 
 
