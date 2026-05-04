@@ -101,4 +101,41 @@ test.describe('Index Page', () => {
       await expect(modal).toHaveClass(/show/);
     }
   });
+
+  test('compiled JS should not contain export keyword', async ({ page, request }) => {
+    const resp = await request.get('/static/js/index.js');
+    const body = await resp.text();
+    expect(body).not.toContain('export');
+  });
+
+  test('avatar-sm CSS class should constrain standings images', async ({ page }) => {
+    await page.goto('/');
+    const hasAvatarSmStyle = await page.evaluate(() => {
+      for (const sheet of document.styleSheets) {
+        try {
+          for (const rule of sheet.cssRules) {
+            if (rule instanceof CSSStyleRule && rule.selectorText.includes('avatar-sm')) {
+              return rule.style.width === '32px' && rule.style.height === '32px';
+            }
+          }
+        } catch (e) { /* cross-origin stylesheets may throw */ }
+      }
+      const testEl = document.createElement('div');
+      testEl.className = 'avatar-sm';
+      document.body.appendChild(testEl);
+      const computed = getComputedStyle(testEl);
+      document.body.removeChild(testEl);
+      return computed.width === '32px' && computed.height === '32px';
+    });
+    expect(hasAvatarSmStyle).toBe(true);
+  });
+
+  test('standings container should not be oversized', async ({ page }) => {
+    await page.goto('/');
+    const box = await page.locator('#standings-container').boundingBox();
+    expect(box).not.toBeNull();
+    if (box) {
+      expect(box.width).toBeLessThan(600);
+    }
+  });
 });

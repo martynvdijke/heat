@@ -208,6 +208,15 @@ h2::before {
     filter: grayscale(0.4) contrast(1.1);
 }
 
+.avatar-sm {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    margin-right: 10px;
+    filter: grayscale(0.4) contrast(1.1);
+    object-fit: cover;
+}
+
 .color-indicator {
     display: inline-block;
     width: 12px;

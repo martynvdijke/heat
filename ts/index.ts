@@ -542,4 +542,3 @@ fetch('/api/version').then(r => r.json()).then((d: {version: string}) => {
 
 (window as any).showDriverStats = showDriverStats;
 
-export {};

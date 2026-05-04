@@ -130,4 +130,3 @@ if ('Notification' in window && Notification.permission === 'default') {
 
 connect();
 
-export {};

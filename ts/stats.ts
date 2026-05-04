@@ -210,4 +210,3 @@ function renderBattleChart(driverData: any[]): void {
 
 loadSeasonStats();
 
-export {};

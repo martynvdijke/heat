@@ -134,4 +134,3 @@ document.getElementById('driver-select')!.addEventListener('change', (e: Event) 
 
 loadDrivers();
 
-export {};

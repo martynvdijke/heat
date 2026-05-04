@@ -12,15 +12,15 @@ interface ControllerRacer {
 let raceState = 'stopped';
 let raceTimer: ReturnType<typeof setInterval> | null = null;
 let raceSeconds = 0;
-let racers: ControllerRacer[] = [];
+let controllerRacers: ControllerRacer[] = [];
 let currentLap = 0;
 
-async function loadData(): Promise<void> {
+async function loadControllerData(): Promise<void> {
     const [racersRes, tracksRes] = await Promise.all([
         fetch('/api/racers'),
         fetch('/api/tracks')
     ]);
-    racers = await racersRes.json();
+    controllerRacers = await racersRes.json();
     const tracks = await tracksRes.json();
     renderStandings();
     const trackSelect = document.getElementById('track-select') as HTMLSelectElement;
@@ -33,7 +33,7 @@ async function loadData(): Promise<void> {
 }
 
 function renderStandings(): void {
-    const sorted = [...racers].sort((a, b) => a.position - b.position);
+    const sorted = [...controllerRacers].sort((a, b) => a.position - b.position);
     document.getElementById('standings-list')!.innerHTML = sorted.map((r, i) => `
         <div class="driver-row ${i === 0 ? 'active' : ''}">
             <div class="position-btn btn ${r.position === 1 ? 'btn-warning' : r.position <= 3 ? 'btn-secondary' : 'btn-outline-light'} me-2">
@@ -121,7 +121,7 @@ function updateStatus(): void {
 }
 
 function shuffleGrid(): void {
-    const shuffled = [...racers].sort(() => Math.random() - 0.5);
+    const shuffled = [...controllerRacers].sort(() => Math.random() - 0.5);
     shuffled.forEach((r, i) => {
         r.rank = i + 1;
         r.position = 100 - i;
@@ -129,25 +129,25 @@ function shuffleGrid(): void {
     fetch('/api/racers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(racers)
+        body: JSON.stringify(controllerRacers)
     }).then(() => renderStandings());
 }
 
 function moveUp(id: number): void {
-    const r = racers.find(r => r.id === id);
+    const r = controllerRacers.find(r => r.id === id);
     if (r && r.position > 1) {
         r.position--;
-        const other = racers.find(r => r.position === r.position);
+        const other = controllerRacers.find(r => r.position === r.position);
         if (other) other.position++;
         savePositions();
     }
 }
 
 function moveDown(id: number): void {
-    const r = racers.find(r => r.id === id);
+    const r = controllerRacers.find(r => r.id === id);
     if (r) {
         r.position++;
-        const other = racers.find(r => r.position === r.position);
+        const other = controllerRacers.find(r => r.position === r.position);
         if (other) other.position--;
         savePositions();
     }
@@ -157,7 +157,7 @@ function savePositions(): void {
     fetch('/api/racers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(racers)
+        body: JSON.stringify(controllerRacers)
     }).then(() => renderStandings());
 }
 
@@ -199,7 +199,7 @@ function saveRaceSettings(): void {
 
 function saveRaceResult(): void {
     const raceType = (document.getElementById('race-type') as HTMLSelectElement).value;
-    const results = racers.map(r => ({
+    const results = controllerRacers.map(r => ({
         racer_id: r.id,
         racer_name: r.name,
         position: r.position,
@@ -247,6 +247,5 @@ document.getElementById('commentary-input')!.addEventListener('keypress', (e: Ke
     if (e.key === 'Enter') sendCommentary();
 });
 
-loadData();
+loadControllerData();
 
-export {};

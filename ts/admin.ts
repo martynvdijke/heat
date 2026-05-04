@@ -39,8 +39,8 @@ interface AdminHistory {
     track_id: string;
 }
 
-let racers: AdminRacer[] = [];
-let tracks: AdminTrack[] = [];
+let adminRacers: AdminRacer[] = [];
+let adminTracks: AdminTrack[] = [];
 let allTracks: AdminTrack[] = [];
 let qualificationOrder: AdminRacer[] = [];
 let shuffleInterval: ReturnType<typeof setInterval> | null = null;
@@ -53,7 +53,7 @@ const trackModal = new bootstrap.Modal(document.getElementById('trackModal')!);
 
 async function init(): Promise<void> {
     (document.getElementById('archive-date') as HTMLInputElement).valueAsDate = new Date();
-    await loadTracks();
+    await loadAdminTracks();
     await loadRaceInfo();
     await loadRacers();
     await loadAllTracks();
@@ -64,13 +64,13 @@ async function init(): Promise<void> {
     await loadAISettings();
 }
 
-async function loadTracks(): Promise<void> {
+async function loadAdminTracks(): Promise<void> {
     try {
         const res = await fetch('/api/tracks');
-        tracks = await res.json();
+        adminTracks = await res.json();
         const selector = document.getElementById('track-select') as HTMLSelectElement;
         selector.innerHTML = '<option value="">Choose a circuit...</option>' +
-            tracks.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('');
+            adminTracks.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('');
     } catch (e) { console.error('Failed to load tracks', e); }
 }
 
@@ -103,7 +103,7 @@ function renderTrackList(): void {
 }
 
 function applyTrackPreset(id: string): void {
-    const t = tracks.find(x => x.id === id);
+    const t = adminTracks.find(x => x.id === id);
     if (!t) return;
     const form = document.getElementById('race-form') as HTMLFormElement;
     (form.elements.namedItem('country') as HTMLInputElement).value = t.country;
@@ -127,9 +127,9 @@ async function loadRaceInfo(): Promise<void> {
 async function loadRacers(): Promise<void> {
     try {
         const res = await fetch('/api/racers');
-        racers = await res.json();
+        adminRacers = await res.json();
         const list = document.getElementById('racer-list')!;
-        list.innerHTML = racers.map(r => `
+        list.innerHTML = adminRacers.map(r => `
             <tr>
                 <td class="ps-4 fw-bold">#${r.rank}</td>
                 <td>
@@ -269,15 +269,20 @@ async function testNotification(this: HTMLButtonElement, event: MouseEvent): Pro
     btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Send Test Notification';
 }
 
+function racerNameById(id: number): string {
+    const r = adminRacers.find(r => r.id === id);
+    return r ? r.name : `Racer #${id}`;
+}
+
 function renderStatsList(): void {
     const list = document.getElementById('stats-list')!;
     if (racerStats.length === 0) {
-        list.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No stats yet. Run some races to generate stats!</td></tr>';
+        list.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No stats yet. <button class="btn btn-sm btn-outline-primary ms-2" onclick="addStats()"><i class="fa-solid fa-plus me-1"></i>Create Stats</button></td></tr>';
         return;
     }
     list.innerHTML = racerStats.map(s => `
         <tr>
-            <td class="ps-4 fw-bold">${s.racer_id}</td>
+            <td class="ps-4 fw-bold">${racerNameById(s.racer_id)}</td>
             <td>${s.races}</td>
             <td><span class="badge bg-warning text-dark">${s.wins}</span></td>
             <td><span class="badge bg-secondary">${s.podiums}</span></td>
@@ -288,6 +293,35 @@ function renderStatsList(): void {
             </td>
         </tr>
     `).join('');
+}
+
+function addStats(): void {
+    const racerId = prompt('Racer ID (check Racers tab for ID):');
+    if (!racerId) return;
+    const races = prompt('Races:', '0');
+    if (races === null) return;
+    const wins = prompt('Wins:', '0');
+    if (wins === null) return;
+    const podiums = prompt('Podiums:', '0');
+    if (podiums === null) return;
+    const fastestLaps = prompt('Fastest Laps:', '0');
+    if (fastestLaps === null) return;
+    const dnf = prompt('DNF:', '0');
+    if (dnf === null) return;
+
+    fetch('/api/racer-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id: 0,
+            racer_id: parseInt(racerId),
+            races: parseInt(races),
+            wins: parseInt(wins),
+            podiums: parseInt(podiums),
+            fastest_laps: parseInt(fastestLaps),
+            dnf: parseInt(dnf)
+        })
+    }).then(() => loadRacerStats());
 }
 
 function editStats(id: number, racerId: number, races: number, wins: number, podiums: number, fastestLaps: number, dnf: number): void {
@@ -402,7 +436,7 @@ document.getElementById('track-form')!.addEventListener('submit', async (e: Even
     });
     if (res.ok) {
         trackModal.hide();
-        loadTracks();
+        loadAdminTracks();
         loadAllTracks();
     }
 });
@@ -646,7 +680,7 @@ function openRacerModal(): void {
 }
 
 function editRacer(id: number): void {
-    const r = racers.find(x => x.id === id);
+    const r = adminRacers.find(x => x.id === id);
     if (!r) return;
     const form = document.getElementById('racer-form') as HTMLFormElement;
     (form.elements.namedItem('id') as HTMLInputElement).value = String(r.id);
@@ -897,7 +931,7 @@ async function saveExtractedTrack(): Promise<void> {
     });
     if (res.ok) {
         alert('Track saved!');
-        loadTracks();
+        loadAdminTracks();
         loadAllTracks();
     } else {
         const err = await res.json();
@@ -908,7 +942,7 @@ async function saveExtractedTrack(): Promise<void> {
 async function deleteTrack(id: string): Promise<void> {
     if (confirm('Delete this track?')) {
         await fetch(`/api/tracks?id=${id}`, { method: 'DELETE' });
-        loadTracks();
+        loadAdminTracks();
         loadAllTracks();
     }
 }
@@ -922,84 +956,6 @@ function escapeHtml(text: string): string {
     const div = document.createElement('div');
     div.textContent = text || '';
     return div.innerHTML;
-}
-
-interface AdminUpload {
-    id: number;
-    hash: string;
-    ext: string;
-    url: string;
-    resized_url: string;
-    thumbnail_url: string;
-    created_at: string;
-}
-
-async function loadUploads(): Promise<void> {
-    try {
-        const res = await fetch('/api/uploads');
-        if (!res.ok) throw new Error('Failed to load uploads');
-        const uploads: AdminUpload[] = await res.json();
-        const list = document.getElementById('uploads-list')!;
-        if (uploads.length === 0) {
-            list.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No uploads yet. Use the file picker above.</td></tr>';
-            return;
-        }
-        list.innerHTML = uploads.map(u => `
-            <tr>
-                <td class="ps-4">
-                    <img src="${escapeHtml(u.thumbnail_url || u.resized_url || u.url)}" class="rounded" width="60" height="60" style="object-fit: cover" onerror="this.src='/static/images/helmet.svg'">
-                </td>
-                <td class="small"><code class="text-break">${escapeHtml(u.url)}</code></td>
-                <td class="small text-muted">${escapeHtml(u.created_at ? u.created_at.substring(0, 10) : '')}</td>
-                <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-secondary me-1" onclick="copyToClipboard('${escapeHtml(u.url)}')" title="Copy URL"><i class="fa-solid fa-copy"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUpload(${u.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (e) {
-        console.error('Failed to load uploads', e);
-    }
-}
-
-function copyToClipboard(text: string): void {
-    navigator.clipboard.writeText(text).then(() => {
-        alert('URL copied to clipboard!');
-    }).catch(() => {
-        prompt('Copy URL:', text);
-    });
-}
-
-let uploadPreviewUrl = '';
-
-function handleUploadDropzone(input: HTMLInputElement): void {
-    const file = input.files?.[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.append('image', file);
-    fetch('/api/upload', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(data => {
-            if (data.url) {
-                uploadPreviewUrl = data.url;
-                const preview = document.getElementById('upload-preview')!;
-                const img = document.getElementById('upload-preview-img') as HTMLImageElement;
-                img.src = data.url;
-                preview.style.display = 'block';
-                loadUploads();
-            }
-        })
-        .catch(e => alert('Upload failed'));
-}
-
-function copyUploadUrl(): void {
-    if (uploadPreviewUrl) {
-        copyToClipboard(uploadPreviewUrl);
-    }
-}
-
-function deleteUpload(id: number): void {
-    alert('Delete not yet implemented for uploads');
 }
 
 // Email settings
@@ -1079,38 +1035,5 @@ document.getElementById('email-tab')?.addEventListener('shown.bs.tab', () => {
     loadRacerEmails();
 });
 
-// Setup upload dropzone
-(function setupDropzone() {
-    const dropzone = document.getElementById('upload-dropzone');
-    const fileInput = document.getElementById('upload-file-input') as HTMLInputElement;
-    if (!dropzone || !fileInput) return;
-
-    dropzone.addEventListener('click', () => fileInput.click());
-
-    dropzone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropzone.classList.add('border-primary');
-    });
-
-    dropzone.addEventListener('dragleave', () => {
-        dropzone.classList.remove('border-primary');
-    });
-
-    dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('border-primary');
-        const files = e.dataTransfer?.files;
-        if (files && files.length > 0) {
-            fileInput.files = files;
-            handleUploadDropzone(fileInput);
-        }
-    });
-
-    document.getElementById('uploads-tab')?.addEventListener('shown.bs.tab', () => {
-        loadUploads();
-    });
-})();
-
 init();
 
-export {};
