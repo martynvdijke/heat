@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/martynvdijke/heat/compare/v1.9.0...v1.9.1) (2026-05-04)
+
+
+### Bug Fixes
+
+* separate AI tab, fix racer creation, fix default images and GeoJSON loading ([9e7f31d](https://github.com/martynvdijke/heat/commit/9e7f31d684d18c98156c893291249cd86f7e9cc0))
+
 # [1.9.0](https://github.com/martynvdijke/heat/compare/v1.8.0...v1.9.0) (2026-05-03)
 
 
