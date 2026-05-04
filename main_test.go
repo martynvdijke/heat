@@ -300,7 +300,7 @@ func TestWebSocketBroadcast(t *testing.T) {
 	}
 	defer ws.Close()
 
-	racer := Racer{ID: 1, Name: "A. PROST", Points: 100, Rank: 1, Position: 10}
+	racer := Racer{ID: 1, Name: "A. PROST", ProfilePicture: "/static/images/helmet.svg", Points: 100, Rank: 1, Position: 10}
 	body, _ := json.Marshal(racer)
 	req, _ := http.NewRequest("POST", "/api/racers", bytes.NewBuffer(body))
 
@@ -2241,13 +2241,14 @@ func TestMultipleRacerOperations(t *testing.T) {
 
 		for i, r := range racers {
 			updated := Racer{
-				ID:       r.ID,
-				Name:     r.Name,
-				CarColor: r.CarColor,
-				CarName:  r.CarName,
-				Points:   (i + 1) * 10,
-				Rank:     i + 1,
-				Position: (i + 1) * 10,
+				ID:             r.ID,
+				Name:           r.Name,
+				ProfilePicture: r.ProfilePicture,
+				CarColor:       r.CarColor,
+				CarName:        r.CarName,
+				Points:         (i + 1) * 10,
+				Rank:           i + 1,
+				Position:       (i + 1) * 10,
 			}
 			body, _ := json.Marshal(updated)
 			req, _ := http.NewRequest("POST", "/api/racers", bytes.NewBuffer(body))
@@ -2530,5 +2531,120 @@ func TestSchemaMigrationToV6(t *testing.T) {
 		if id != 1 {
 			t.Errorf("expected ai_settings id 1, got %d", id)
 		}
+	})
+}
+
+func TestDefaultRacerProfilePictures(t *testing.T) {
+	t.Run("DefaultRacersHaveProfilePicture", func(t *testing.T) {
+		r := gin.New()
+		r.GET("/api/racers", getRacers)
+
+		req, _ := http.NewRequest("GET", "/api/racers", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Fatalf("expected status 200, got %v", status)
+		}
+
+		var racers []Racer
+		json.Unmarshal(rr.Body.Bytes(), &racers)
+
+		if len(racers) < 5 {
+			t.Fatalf("expected at least 5 racers, got %d", len(racers))
+		}
+
+		// Check that the first 5 default racers have profile pictures
+		defaultNames := []string{"A. PROST", "M. SCHUMACHER", "A. SENNA", "N. LAUDA", "J. STEWART"}
+		for _, name := range defaultNames {
+			found := false
+			for _, r := range racers {
+				if r.Name == name && r.ProfilePicture != "" {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("default racer %s should have a profile picture", name)
+			}
+		}
+	})
+}
+
+func TestRacerCreationWithoutProfilePicture(t *testing.T) {
+	sessionID := "test-session-no-pic"
+	sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+	defer delete(sessionStore, sessionID)
+
+	r := gin.New()
+	r.POST("/api/racers", authMiddleware(), updateRacer)
+
+	newRacer := Racer{
+		Name:     "NO PIC RACER",
+		CarColor: "black",
+		CarName:  "Stealth",
+		Points:   0,
+		Rank:     20,
+		Position: 0,
+	}
+	body, _ := json.Marshal(newRacer)
+	req, _ := http.NewRequest("POST", "/api/racers", bytes.NewBuffer(body))
+	req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("failed to add racer without profile picture: %d", rr.Code)
+	}
+
+	var name string
+	err := db.QueryRow("SELECT name FROM racers WHERE name='NO PIC RACER'").Scan(&name)
+	if err != nil {
+		t.Fatalf("racer not found in database: %v", err)
+	}
+	if name != "NO PIC RACER" {
+		t.Errorf("expected 'NO PIC RACER', got '%s'", name)
+	}
+}
+
+func TestTrackSaveAndRetrieve(t *testing.T) {
+	t.Run("SaveTrackWithMapImage", func(t *testing.T) {
+		sessionID := "test-session-track-map"
+		sessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		defer delete(sessionStore, sessionID)
+
+		r := gin.New()
+		r.POST("/api/tracks", authMiddleware(), saveTrack)
+		r.GET("/api/tracks", getTracks)
+
+		track := Track{
+			ID:          "test-track",
+			Name:        "Test Track",
+			Country:     "Test Land",
+			Length:      5,
+			LapRecord:   "1:00.000",
+			UseMapImage: true,
+			MapImageURL: "/static/images/helmet.svg",
+		}
+		body, _ := json.Marshal(track)
+		req, _ := http.NewRequest("POST", "/api/tracks", bytes.NewBuffer(body))
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var dbName string
+		err := db.QueryRow("SELECT name FROM tracks WHERE id='test-track'").Scan(&dbName)
+		if err != nil {
+			t.Fatalf("track not found in DB: %v", err)
+		}
+		if dbName != "Test Track" {
+			t.Errorf("expected 'Test Track', got '%s'", dbName)
+		}
+
+		db.Exec("DELETE FROM tracks WHERE id='test-track'")
 	})
 }

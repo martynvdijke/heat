@@ -207,39 +207,62 @@ function getPointAtDistance(lineString: GeoJSONFeature, percentage: number): [nu
 }
 
 function initMap(): void {
-    if (map) {
-        map.remove();
-        racerMarkers = {};
+    try {
+        if (typeof L === 'undefined') {
+            console.warn('Leaflet is not loaded');
+            return;
+        }
+        if (map) {
+            map.remove();
+            racerMarkers = {};
+        }
+        const mapEl = document.getElementById('circuit-map');
+        if (!mapEl) return;
+        map = L.map('circuit-map', { zoomControl: false, attributionControl: false }).setView([45.621, 9.288], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+        updateMap(currentTrack);
+    } catch (e) {
+        console.error('Error initializing map:', e);
     }
-    map = L.map('circuit-map', { zoomControl: false, attributionControl: false }).setView([45.621, 9.288], 14);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
-    updateMap(currentTrack);
 }
 
 function updateMap(trackId: string): void {
+    if (!map) {
+        try { initMap(); } catch (e) { return; }
+    }
     if (!map) return;
-    Object.values(racerMarkers).forEach((m: any) => map.removeLayer(m));
-    racerMarkers = {};
-    map.eachLayer((layer: any) => {
-        if (layer instanceof L.GeoJSON || layer instanceof L.ImageOverlay) {
-            map.removeLayer(layer);
+    try {
+        Object.values(racerMarkers).forEach((m: any) => map.removeLayer(m));
+        racerMarkers = {};
+        map.eachLayer((layer: any) => {
+            if (layer instanceof L.GeoJSON || layer instanceof L.ImageOverlay) {
+                map.removeLayer(layer);
+            }
+        });
+        const t = tracks.find(x => x.id === trackId) || { id: 'monza', use_map_image: false } as TrackInfo;
+        const geojson = trackGeoJSON[trackId] || trackGeoJSON.monza;
+        if (!geojson) {
+            console.warn('No GeoJSON data found for track:', trackId);
+            return;
         }
-    });
-    const t = tracks.find(x => x.id === trackId) || { id: 'monza', use_map_image: false } as TrackInfo;
-    const geojson = trackGeoJSON[trackId] || trackGeoJSON.monza;
-    if (t.use_map_image && t.map_image_url) {
-        const tempLayer = L.geoJSON(geojson);
-        const bounds = tempLayer.getBounds();
-        L.imageOverlay(t.map_image_url, bounds, { opacity: 0.8 }).addTo(map);
-        map.fitBounds(bounds, { padding: [20, 20] });
-    } else {
-        L.geoJSON(geojson, {
-            style: { color: '#d40000', weight: 5, opacity: 0.8 }
-        }).addTo(map);
-        setTimeout(() => {
-            const layer = L.geoJSON(geojson);
-            map.fitBounds(layer.getBounds(), { padding: [20, 20] });
-        }, 100);
+        if (t.use_map_image && t.map_image_url) {
+            const tempLayer = L.geoJSON(geojson);
+            const bounds = tempLayer.getBounds();
+            if (bounds.isValid()) {
+                L.imageOverlay(t.map_image_url, bounds, { opacity: 0.8 }).addTo(map);
+                map.fitBounds(bounds, { padding: [20, 20] });
+            }
+        } else {
+            const layer = L.geoJSON(geojson, {
+                style: { color: '#d40000', weight: 5, opacity: 0.8 }
+            }).addTo(map);
+            const bounds = layer.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [20, 20] });
+            }
+        }
+    } catch (e) {
+        console.error('Error updating map:', e);
     }
 }
 
@@ -325,7 +348,7 @@ function renderRacers(): void {
                 <td class="ps-4">${r.rank}</td>
                 <td>
                     <div class="driver-info">
-                        <img src="${r.profile_picture}" class="avatar" alt="${r.name}" onerror="this.style.display='none'">
+                        <img src="${r.profile_picture}" class="avatar" alt="${r.name}" onerror="this.src='/static/images/helmet.svg'">
                         <span class="driver-name"><span class="color-indicator ${r.car_color} me-2"></span>${r.name}</span>
                     </div>
                 </td>
@@ -339,7 +362,7 @@ function renderRacers(): void {
     document.getElementById('standings-container')!.innerHTML = standings.map((r, i) => `
         <div class="standing-item" style="cursor:pointer" onclick="showDriverStats(${r.id})">
             <span class="rank">${i + 1}</span>
-            <img src="${r.profile_picture}" class="avatar-sm" alt="${r.name}" onerror="this.style.display='none'">
+            <img src="${r.profile_picture}" class="avatar-sm" alt="${r.name}" onerror="this.src='/static/images/helmet.svg'">
             <span class="driver text-uppercase fw-bold">${r.name}</span>
             <span class="points ms-auto">${r.points} PTS</span>
         </div>
@@ -437,10 +460,18 @@ async function loadRaceHistory(): Promise<void> {
 }
 
 async function loadTracks(): Promise<void> {
-    const res = await fetch('/api/tracks');
-    tracks = await res.json();
-    document.getElementById('total-tracks')!.textContent = String(tracks.length);
+    try {
+        const res = await fetch('/api/tracks');
+        if (!res.ok) throw new Error('Failed to load tracks: ' + res.status);
+        tracks = await res.json();
+        document.getElementById('total-tracks')!.textContent = String(tracks.length);
+    } catch (e) {
+        console.error('Failed to load tracks', e);
+        document.getElementById('total-tracks')!.textContent = '5';
+    }
 }
+
+loadTracks().then(() => loadData());
 
 let quoteInterval: number | undefined;
 async function loadRandomQuote(): Promise<void> {
@@ -502,8 +533,6 @@ async function loadData(): Promise<void> {
         console.error("Failed to load data:", err);
     }
 }
-
-loadTracks().then(() => loadData());
 
 fetch('/api/version').then(r => r.json()).then((d: {version: string}) => {
     document.getElementById('version-display')!.textContent = `v${d.version}`;

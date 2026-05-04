@@ -134,7 +134,7 @@ async function loadRacers(): Promise<void> {
                 <td class="ps-4 fw-bold">#${r.rank}</td>
                 <td>
                     <div class="d-flex align-items-center">
-                        <img src="${r.profile_picture}" class="rounded-circle me-3" width="32" height="32" style="object-fit: cover" onerror="this.src='https://via.placeholder.com/32'">
+                        <img src="${r.profile_picture}" class="rounded-circle me-3" width="32" height="32" style="object-fit: cover" onerror="this.src='/static/images/helmet.svg'">
                         <div><div class="fw-bold">${escapeHtml(r.name)}</div></div>
                     </div>
                 </td>
@@ -341,9 +341,12 @@ document.getElementById('racer-form')!.addEventListener('submit', async (e: Even
         data[pair[0] as string] = pair[1];
     }
     data.id = data.id ? parseInt(data.id) : 0;
-    data.points = parseInt(data.points);
-    data.rank = parseInt(data.rank);
-    data.position = parseInt(data.position);
+    data.points = parseInt(data.points) || 0;
+    data.rank = parseInt(data.rank) || 0;
+    data.position = parseInt(data.position) || 0;
+    if (!data.profile_picture) {
+        data.profile_picture = '/static/images/helmet.svg';
+    }
 
     const res = await fetch('/api/racers', {
         method: 'POST',
@@ -353,6 +356,9 @@ document.getElementById('racer-form')!.addEventListener('submit', async (e: Even
     if (res.ok) {
         racerModal.hide();
         loadRacers();
+    } else {
+        const err = await res.json();
+        alert('Failed to save racer: ' + (err.error || 'Unknown error'));
     }
 });
 
@@ -470,7 +476,7 @@ function renderQualificationGrid(order: AdminRacer[], locked: number): void {
                         <span class="badge ${isLocked ? 'bg-warning' : 'bg-secondary'} text-dark me-2">
                             ${isLocked ? '<i class="fa-solid fa-lock me-1"></i>' : ''}P${i + 1}
                         </span>
-                        <img src="${r.profile_picture}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover" onerror="this.src='https://via.placeholder.com/32'">
+                        <img src="${r.profile_picture}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover" onerror="this.src='/static/images/helmet.svg'">
                         <div class="flex-grow-1">
                             <div class="fw-bold small">${escapeHtml(r.name)}</div>
                             <div class="small opacity-75"><span class="color-dot bg-${r.car_color}"></span>${escapeHtml(r.car_name)}</div>
@@ -504,7 +510,7 @@ function renderFinalGrid(order: AdminRacer[]): void {
     finalDiv.innerHTML = order.map((r, i) => `
         <div class="d-flex align-items-center p-2 mb-2 border rounded ${i === 0 ? 'border-warning bg-warning bg-opacity-10' : ''}" style="animation: lockFlash 0.5s ease-in-out ${i * 0.1}s">
             <span class="badge ${i === 0 ? 'bg-warning text-dark' : 'bg-secondary'} me-2" style="width: 40px">P${i + 1}</span>
-            <img src="${r.profile_picture}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover" onerror="this.src='https://via.placeholder.com/32'">
+            <img src="${r.profile_picture}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover" onerror="this.src='/static/images/helmet.svg'">
             <div class="flex-grow-1">
                 <div class="fw-bold small">${escapeHtml(r.name)}</div>
                 <div class="small text-muted"><span class="color-dot bg-${r.car_color}"></span>${escapeHtml(r.car_name)}</div>
@@ -806,6 +812,96 @@ async function extractTrackFromAI(): Promise<void> {
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
+    }
+}
+
+async function uploadAIImage(input: HTMLInputElement): Promise<void> {
+    if (!input.files || !input.files[0]) return;
+    const formData = new FormData();
+    formData.append('image', input.files[0]);
+    try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        (document.getElementById('ai-extract-map-url') as HTMLInputElement).value = data.url;
+        const preview = document.getElementById('ai-extract-preview')!;
+        const img = document.getElementById('ai-extract-preview-img') as HTMLImageElement;
+        img.src = data.url;
+        preview.style.display = 'block';
+    } catch (e) { alert('Upload failed'); }
+}
+
+let extractedGeoJSON: any = null;
+
+async function extractTrackFromAIStandalone(): Promise<void> {
+    const btn = document.querySelector('[onclick="extractTrackFromAIStandalone()"]') as HTMLButtonElement;
+    if (!btn) return;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Analyzing...';
+    btn.disabled = true;
+
+    try {
+        const mapUrl = (document.getElementById('ai-extract-map-url') as HTMLInputElement).value;
+        if (!mapUrl) {
+            alert('Please upload a map image first!');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        const res = await fetch('/api/tracks/ai-extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_url: mapUrl })
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'AI extraction failed');
+        }
+        const data = await res.json();
+        extractedGeoJSON = data;
+        const result = document.getElementById('ai-extract-result')!;
+        const pre = document.getElementById('ai-extract-geojson')!;
+        pre.textContent = JSON.stringify(data, null, 2);
+        result.style.display = 'block';
+    } catch (e: any) {
+        alert('AI extraction failed: ' + e.message);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function saveExtractedTrack(): Promise<void> {
+    if (!extractedGeoJSON) {
+        alert('Please extract a track first!');
+        return;
+    }
+    const trackId = (document.getElementById('ai-extract-track-id') as HTMLInputElement).value;
+    if (!trackId) {
+        alert('Please enter a track ID!');
+        return;
+    }
+    const res = await fetch('/api/tracks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id: trackId,
+            name: trackId,
+            country: 'Unknown',
+            length_km: 5,
+            lap_record: '--',
+            use_map_image: true,
+            map_image_url: (document.getElementById('ai-extract-map-url') as HTMLInputElement).value,
+            refresh_geojson: true
+        })
+    });
+    if (res.ok) {
+        alert('Track saved!');
+        loadTracks();
+        loadAllTracks();
+    } else {
+        const err = await res.json();
+        alert('Failed to save track: ' + (err.error || 'Unknown error'));
     }
 }
 

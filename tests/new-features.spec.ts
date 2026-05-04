@@ -83,7 +83,7 @@ test.describe.serial('Admin Panel', () => {
     await page.waitForSelector('#racerModal.show');
 
     await page.fill('form#racer-form input[name="name"]', 'Test Racer');
-    await page.fill('form#racer-form input[name="profile_picture"]', '/static/images/prost.png');
+    await page.fill('form#racer-form input[name="profile_picture"]', '/static/images/helmet.svg');
     await page.fill('form#racer-form input[name="car_name"]', 'Test Car');
     await page.selectOption('form#racer-form select[name="car_color"]', 'purple');
     await page.fill('form#racer-form input[name="points"]', '42');
@@ -163,6 +163,92 @@ test.describe.serial('Admin Panel', () => {
     await page.click('#notify-tab');
     await expect(page.locator('#notify-form')).toBeVisible();
     await expect(page.locator('#gotify-url')).toBeVisible();
+  });
+
+  test('should show AI tab', async ({ page }) => {
+    await page.click('#ai-tab');
+    await expect(page.locator('#ai-pane')).toBeVisible();
+    await expect(page.locator('#ai-settings-form')).toBeVisible();
+    await expect(page.locator('#ai-track-extract-url')).toBeVisible();
+  });
+
+  test('should add a racer without profile picture', async ({ page }) => {
+    await page.click('#racers-tab');
+    await page.click('[onclick="openRacerModal()"]');
+    await page.waitForSelector('#racerModal.show');
+
+    await page.fill('form#racer-form input[name="name"]', 'No Pic Racer');
+    await page.fill('form#racer-form input[name="profile_picture"]', '');
+    await page.fill('form#racer-form input[name="car_name"]', 'Shadow');
+    await page.selectOption('form#racer-form select[name="car_color"]', 'black');
+    await page.fill('form#racer-form input[name="points"]', '10');
+    await page.fill('form#racer-form input[name="rank"]', '20');
+    await page.fill('form#racer-form input[name="position"]', '0');
+
+    await page.click('form#racer-form button[type="submit"]');
+    await page.waitForTimeout(500);
+
+    await expect(page.locator('#racer-list')).toContainText('No Pic Racer');
+  });
+
+  test('should validate racer form with only name and car', async ({ page }) => {
+    await page.click('#racers-tab');
+    await page.click('[onclick="openRacerModal()"]');
+    await page.waitForSelector('#racerModal.show');
+
+    await page.fill('form#racer-form input[name="name"]', 'Min Racer');
+    await page.fill('form#racer-form input[name="profile_picture"]', '');
+    await page.fill('form#racer-form input[name="car_name"]', 'Basic');
+    await page.selectOption('form#racer-form select[name="car_color"]', 'red');
+    await page.fill('form#racer-form input[name="points"]', '0');
+    await page.fill('form#racer-form input[name="rank"]', '99');
+    await page.fill('form#racer-form input[name="position"]', '0');
+
+    await page.click('form#racer-form button[type="submit"]');
+    await page.waitForTimeout(500);
+
+    await expect(page.locator('#racer-list')).toContainText('Min Racer');
+  });
+});
+
+test.describe('Index Page - GeoJSON and Racers', () => {
+  test('should display racers with helmet fallback images', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const rows = page.locator('#leaderboard-body tr');
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
+
+    const firstImage = rows.first().locator('img');
+    if (await firstImage.count() > 0) {
+      await expect(firstImage).toBeVisible();
+    }
+  });
+
+  test('should render circuit map with GeoJSON', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const map = page.locator('#circuit-map');
+    await expect(map).toBeVisible();
+    await expect(map).toHaveClass(/leaflet-container/);
+
+    const mapPath = page.locator('#circuit-map path');
+    await expect(mapPath.first()).toBeAttached({ timeout: 10000 });
+  });
+
+  test('should display race info with country, track and laps', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const raceCountry = page.locator('#race-country');
+    await expect(raceCountry).toBeVisible();
+    await expect(raceCountry).toContainText('Italy');
+
+    const raceTrack = page.locator('#race-track');
+    await expect(raceTrack).toBeVisible();
+    await expect(raceTrack).toContainText('Monza');
   });
 });
 

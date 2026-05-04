@@ -623,11 +623,11 @@ func seedQuotes() {
 
 func seedData() {
 	racers := []Racer{
-		{Name: "A. PROST", ProfilePicture: "/static/images/prost.png", CarColor: "red", CarName: "Red Beast", Points: 78, Rank: 1},
-		{Name: "M. SCHUMACHER", ProfilePicture: "/static/images/schumacher.png", CarColor: "blue", CarName: "Blue Bolt", Points: 62, Rank: 2},
-		{Name: "A. SENNA", ProfilePicture: "/static/images/senna.png", CarColor: "green", CarName: "Green Machine", Points: 85, Rank: 3},
-		{Name: "N. LAUDA", ProfilePicture: "/static/images/lauda.png", CarColor: "yellow", CarName: "Yellow Flash", Points: 45, Rank: 4},
-		{Name: "J. STEWART", ProfilePicture: "/static/images/stewart.png", CarColor: "grey", CarName: "Grey Ghost", Points: 38, Rank: 5},
+		{Name: "A. PROST", ProfilePicture: "/static/images/helmet.svg", CarColor: "red", CarName: "Red Beast", Points: 78, Rank: 1},
+		{Name: "M. SCHUMACHER", ProfilePicture: "/static/images/helmet.svg", CarColor: "blue", CarName: "Blue Bolt", Points: 62, Rank: 2},
+		{Name: "A. SENNA", ProfilePicture: "/static/images/helmet.svg", CarColor: "green", CarName: "Green Machine", Points: 85, Rank: 3},
+		{Name: "N. LAUDA", ProfilePicture: "/static/images/helmet.svg", CarColor: "yellow", CarName: "Yellow Flash", Points: 45, Rank: 4},
+		{Name: "J. STEWART", ProfilePicture: "/static/images/helmet.svg", CarColor: "grey", CarName: "Grey Ghost", Points: 38, Rank: 5},
 	}
 
 	for _, r := range racers {

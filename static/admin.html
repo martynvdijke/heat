@@ -189,6 +189,9 @@
             <li class="nav-item">
                 <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-pane" type="button"><i class="fa-solid fa-bell me-2"></i>Notifications</button>
             </li>
+            <li class="nav-item">
+                <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>AI</button>
+            </li>
         </ul>
         <div class="tab-content">
             <!-- Race Setup Pane -->
@@ -519,34 +522,67 @@
                 </div>
             </div>
 
-            <!-- AI Settings -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header"><i class="fa-solid fa-wand-magic-sparkles me-2 text-danger"></i>AI Track Extraction</div>
-                        <div class="card-body">
-                            <p class="small text-muted mb-3">Configure an AI endpoint to extract track layouts from board game map images. When enabled, the "Extract Track with AI" button in the track editor will send the uploaded map image to this endpoint and parse the returned GeoJSON for visualization.</p>
-                            <form id="ai-settings-form">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label small fw-bold">AI Endpoint URL</label>
-                                        <input type="text" class="form-control" id="ai-track-extract-url" placeholder="https://your-ai-service.com/extract-track">
-                                        <div class="form-text">Set <code>AI_TRACK_EXTRACT_URL</code> env var to override.</div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">API Key (optional)</label>
-                                        <input type="password" class="form-control" id="ai-api-key" placeholder="Bearer token">
-                                        <div class="form-text">Sent as <code>Authorization: Bearer &lt;key&gt;</code></div>
-                                    </div>
-                                    <div class="col-md-2 d-flex align-items-end">
-                                        <div class="form-check form-switch mb-3">
-                                            <input class="form-check-input" type="checkbox" id="ai-enabled">
-                                            <label class="form-check-label small fw-bold" for="ai-enabled">Enabled</label>
+            <!-- AI Pane -->
+            <div class="tab-pane fade" id="ai-pane">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-4">
+                            <div class="card-header"><i class="fa-solid fa-wand-magic-sparkles me-2 text-danger"></i>AI Track Extraction Settings</div>
+                            <div class="card-body">
+                                <p class="small text-muted mb-3">Configure an AI endpoint to extract track layouts from board game map images. When enabled, the "Extract Track with AI" button in the track editor will send the uploaded map image to this endpoint and parse the returned GeoJSON for visualization.</p>
+                                <form id="ai-settings-form">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">AI Endpoint URL</label>
+                                            <input type="text" class="form-control" id="ai-track-extract-url" placeholder="https://your-ai-service.com/extract-track">
+                                            <div class="form-text">Set <code>AI_TRACK_EXTRACT_URL</code> env var to override.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">API Key (optional)</label>
+                                            <input type="password" class="form-control" id="ai-api-key" placeholder="Bearer token">
+                                            <div class="form-text">Sent as <code>Authorization: Bearer &lt;key&gt;</code></div>
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="ai-enabled">
+                                                <label class="form-check-label small fw-bold" for="ai-enabled">Enabled</label>
+                                            </div>
                                         </div>
                                     </div>
+                                    <button type="submit" class="btn btn-primary w-100 mt-2">Save AI Settings</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="fa-solid fa-road me-2 text-info"></i>Track Extraction Tool</div>
+                            <div class="card-body">
+                                <p class="small text-muted mb-3">Upload a board game map image and extract the track layout using the configured AI endpoint. The extracted GeoJSON can then be saved to a track.</p>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Map Image</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="ai-extract-map-url" placeholder="Upload or paste image URL...">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('ai-extract-image-upload').click()">Upload</button>
+                                    </div>
+                                    <input type="file" id="ai-extract-image-upload" style="display:none" accept="image/*" onchange="uploadAIImage(this)">
+                                    <div id="ai-extract-preview" class="mt-2" style="display:none">
+                                        <img src="" id="ai-extract-preview-img" class="img-fluid rounded border" style="max-height:200px">
+                                    </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100 mt-2">Save AI Settings</button>
-                            </form>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Enter Track ID to save to:</label>
+                                    <input type="text" class="form-control" id="ai-extract-track-id" placeholder="e.g. zandvoort">
+                                </div>
+                                <button class="btn btn-info w-100" onclick="extractTrackFromAIStandalone()">
+                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Extract Track Layout
+                                </button>
+                                <div id="ai-extract-result" class="mt-3" style="display:none">
+                                    <label class="form-label small fw-bold">Extracted GeoJSON</label>
+                                    <pre class="border rounded p-3 bg-dark text-light small" style="max-height:300px; overflow:auto" id="ai-extract-geojson"></pre>
+                                    <button class="btn btn-sm btn-success w-100 mt-2" onclick="saveExtractedTrack()">
+                                        <i class="fa-solid fa-save me-1"></i> Save Extracted Track
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -575,7 +611,7 @@
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Profile Picture</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="profile_picture" id="profile_picture" required>
+                                <input type="text" class="form-control" name="profile_picture" id="profile_picture" placeholder="Default avatar will be used if empty">
                                 <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('imageInput').click()">
                                     <i class="fa-solid fa-upload"></i>
                                 </button>
