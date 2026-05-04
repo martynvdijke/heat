@@ -60,6 +60,7 @@ async function init(): Promise<void> {
     await loadQuotes();
     await loadRacerStats();
     await loadNotificationSettings();
+    await loadUmamiSettings();
     await loadHistory();
     await loadAISettings();
 }
@@ -201,6 +202,31 @@ async function loadRacerStats(): Promise<void> {
         renderStatsList();
     } catch (e) { console.error('Failed to load racer stats', e); }
 }
+
+async function loadUmamiSettings(): Promise<void> {
+    try {
+        const res = await fetch('/api/umami-settings');
+        const data = await res.json();
+        (document.getElementById('umami-url') as HTMLInputElement).value = data.url || '';
+        (document.getElementById('umami-website-id') as HTMLInputElement).value = data.website_id || '';
+        (document.getElementById('umami-enabled') as HTMLInputElement).checked = data.enabled;
+    } catch (e) { console.error('Failed to load umami settings', e); }
+}
+
+document.getElementById('umami-form')!.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    const data = {
+        url: (document.getElementById('umami-url') as HTMLInputElement).value,
+        website_id: (document.getElementById('umami-website-id') as HTMLInputElement).value,
+        enabled: (document.getElementById('umami-enabled') as HTMLInputElement).checked
+    };
+    const res = await fetch('/api/umami-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (res.ok) alert('Analytics settings saved!');
+});
 
 async function loadNotificationSettings(): Promise<void> {
     try {

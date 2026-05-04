@@ -195,6 +195,9 @@
             <li class="nav-item">
                 <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button"><i class="fa-solid fa-envelope me-2"></i>Email</button>
             </li>
+            <li class="nav-item">
+                <button class="nav-link" id="umami-tab" data-bs-toggle="tab" data-bs-target="#umami-pane" type="button"><i class="fa-solid fa-chart-simple me-2"></i>Analytics</button>
+            </li>
         </ul>
         <div class="tab-content">
             <!-- Race Setup Pane -->
@@ -647,6 +650,47 @@
                     <div class="card-body">
                         <p class="small text-muted mb-3">Assign email addresses to racers so they receive race result emails.</p>
                         <div id="racer-email-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Pane -->
+    <div class="tab-pane fade" id="umami-pane">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header"><i class="fa-solid fa-chart-simple me-2 text-danger"></i>Umami Analytics</div>
+                    <div class="card-body">
+                        <form id="umami-form">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Umami URL</label>
+                                <input type="text" class="form-control" id="umami-url" placeholder="https://your-umami-instance.com">
+                                <div class="form-text">Your self-hosted Umami server URL</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Website ID</label>
+                                <input type="text" class="form-control" id="umami-website-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                                <div class="form-text">The tracking website ID from Umami</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="umami-enabled">
+                                    <label class="form-check-label small fw-bold" for="umami-enabled">Enable Tracking</label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Save Analytics Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About Umami</div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-2">Umami is a simple, fast, privacy-focused alternative to Google Analytics. It is self-hosted and does not track cookies or collect personal data.</p>
+                        <p class="small text-muted mb-0">The tracking script is automatically injected into all pages when enabled.</p>
                     </div>
                 </div>
             </div>

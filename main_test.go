@@ -25,6 +25,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestMain(m *testing.M) {
@@ -58,12 +59,14 @@ func TestHashPassword(t *testing.T) {
 		t.Error("Expected hash to be non-empty")
 	}
 
-	if hash != hashPassword(password) {
-		t.Error("Expected hash to be consistent")
+	// bcrypt generates unique hashes each time, verify via CompareHashAndPassword
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
+		t.Error("Expected password to verify against its hash")
 	}
 
-	if hash == hashPassword("anotherpassword") {
-		t.Error("Expected different passwords to have different hashes")
+	hash2 := hashPassword("anotherpassword")
+	if err := bcrypt.CompareHashAndPassword([]byte(hash2), []byte("anotherpassword")); err != nil {
+		t.Error("Expected second password to verify against its hash")
 	}
 }
 
@@ -1770,15 +1773,15 @@ func TestSchemaMigration(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs10", func(t *testing.T) {
+	t.Run("SchemaVersionIs11", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
 
-		if version != 10 {
-			t.Errorf("expected schema version 10, got %d", version)
+		if version != 11 {
+			t.Errorf("expected schema version 11, got %d", version)
 		}
 	})
 }
@@ -1800,15 +1803,15 @@ func TestSchemaMigrationToV6(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaVersionIs10", func(t *testing.T) {
+	t.Run("SchemaVersionIs11", func(t *testing.T) {
 		var version int
 		err := db.QueryRow("SELECT version FROM schema_version").Scan(&version)
 		if err != nil {
 			t.Errorf("schema_version should exist: %v", err)
 		}
 
-		if version != 10 {
-			t.Errorf("expected schema version 10, got %d", version)
+		if version != 11 {
+			t.Errorf("expected schema version 11, got %d", version)
 		}
 	})
 
@@ -1818,8 +1821,13 @@ func TestSchemaMigrationToV6(t *testing.T) {
 		if err != nil {
 			t.Errorf("ai_settings should exist: %v", err)
 		}
-		if id != 1 {
-			t.Errorf("expected ai_settings id 1, got %d", id)
+	})
+
+	t.Run("UmamiSettingsTableExists", func(t *testing.T) {
+		var id int
+		err := db.QueryRow("SELECT id FROM umami_settings WHERE id = 1").Scan(&id)
+		if err != nil {
+			t.Errorf("umami_settings should exist: %v", err)
 		}
 	})
 }

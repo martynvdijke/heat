@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -17,12 +17,15 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/time/rate"
 )
 
 type Racer struct {
@@ -97,8 +100,15 @@ type RaceHistory struct {
 	Results   []RaceResult `json:"results,omitempty"`
 }
 
-const currentSchemaVersion = 10
-const currentVersion = "1.11.1"
+var currentSchemaVersion = 11
+var currentVersion = "1.11.1"
+
+type UmamiSettings struct {
+	ID        int    `json:"id"`
+	URL       string `json:"url"`
+	WebsiteID string `json:"website_id"`
+	Enabled   bool   `json:"enabled"`
+}
 
 type NotificationSettings struct {
 	ID              int    `json:"id"`
@@ -142,8 +152,14 @@ var (
 	db           *sql.DB
 	sessionStore = make(map[string]int64)
 	staticCache  = make(map[string][]byte)
-	upgrader     = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool { return true },
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			if origin == "" || strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+				return true
+			}
+			return true // allow all in this single-binary app
+		},
 	}
 	clients    = make(map[*websocket.Conn]bool)
 	broadcast  = make(chan []Racer)
@@ -229,6 +245,75 @@ func isAuthorized(c *gin.Context) bool {
 	return false
 }
 
+var (
+	loginLimiter = rate.NewLimiter(rate.Limit(5), 10) // 5 requests/sec, burst 10
+)
+
+func rateLimitMiddleware() gin.HandlerFunc {
+	var mu sync.Mutex
+	clients := make(map[string]*rate.Limiter)
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		mu.Lock()
+		limiter, exists := clients[ip]
+		if !exists {
+			limiter = rate.NewLimiter(rate.Limit(5), 10)
+			clients[ip] = limiter
+		}
+		mu.Unlock()
+		if !limiter.Allow() {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
+			return
+		}
+		c.Next()
+	}
+}
+
+func securityHeaders() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("X-XSS-Protection", "1; mode=block")
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+		c.Next()
+	}
+}
+
+type umamiResponseWriter struct {
+	gin.ResponseWriter
+	body bytes.Buffer
+}
+
+func (w *umamiResponseWriter) Write(b []byte) (int, error) {
+	return w.body.Write(b)
+}
+
+func umamiMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		w := &umamiResponseWriter{ResponseWriter: c.Writer}
+		c.Writer = w
+		c.Next()
+
+		ct := w.Header().Get("Content-Type")
+		if strings.Contains(ct, "text/html") && w.body.Len() > 0 {
+			html := w.body.String()
+			var s UmamiSettings
+			err := db.QueryRow("SELECT COALESCE(url, ''), COALESCE(website_id, ''), COALESCE(enabled, 0) FROM umami_settings WHERE id = 1").
+				Scan(&s.URL, &s.WebsiteID, &s.Enabled)
+			if err == nil && s.Enabled && s.URL != "" && s.WebsiteID != "" {
+				script := fmt.Sprintf(`<script defer src="%s/script.js" data-website-id="%s"></script>`, s.URL, s.WebsiteID)
+				html = strings.Replace(html, "</head>", script+"\n</head>", 1)
+			}
+			w.ResponseWriter.WriteHeader(w.Status())
+			w.ResponseWriter.Write([]byte(html))
+		} else {
+			w.ResponseWriter.WriteHeader(w.Status())
+			w.ResponseWriter.Write(w.body.Bytes())
+		}
+	}
+}
+
 func main() {
 	if os.Getenv("DOCKER") != "true" {
 		basePath = "."
@@ -254,11 +339,13 @@ func main() {
 	initDB()
 	go broadcastManager()
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(securityHeaders())
 
 	r.GET("/ws", handleWebSocket)
 
-	r.POST("/api/login", handleLogin)
+	r.POST("/api/login", rateLimitMiddleware(), handleLogin)
 	r.POST("/api/logout", handleLogout)
 	r.GET("/api/check-setup", handleCheckSetup)
 
@@ -285,17 +372,17 @@ func main() {
 	r.GET("/api/racer-stats", getRacerStats)
 	r.POST("/api/racer-stats", authMiddleware(), updateRacerStats)
 
-	r.GET("/api/notification-settings", getNotificationSettings)
+	r.GET("/api/notification-settings", authMiddleware(), getNotificationSettings)
 	r.POST("/api/notification-settings", authMiddleware(), saveNotificationSettings)
 
 	r.POST("/api/test-notification", authMiddleware(), testNotification)
 
-	r.GET("/api/ai-settings", getAISettings)
+	r.GET("/api/ai-settings", authMiddleware(), getAISettings)
 	r.POST("/api/ai-settings", authMiddleware(), saveAISettings)
 
-	r.GET("/api/email-settings", getEmailSettings)
+	r.GET("/api/email-settings", authMiddleware(), getEmailSettings)
 	r.POST("/api/email-settings", authMiddleware(), saveEmailSettings)
-	r.GET("/api/racer-emails", getRacerEmails)
+	r.GET("/api/racer-emails", authMiddleware(), getRacerEmails)
 	r.POST("/api/racer-emails", authMiddleware(), saveRacerEmail)
 	r.POST("/api/send-race-email", authMiddleware(), sendRaceEmailManual)
 
@@ -303,6 +390,9 @@ func main() {
 	r.DELETE("/api/oneoff-races", authMiddleware(), deleteOneOffRace)
 
 	r.GET("/api/track-stats", getTrackStats)
+
+	r.GET("/api/umami-settings", authMiddleware(), getUmamiSettings)
+	r.POST("/api/umami-settings", authMiddleware(), saveUmamiSettings)
 
 	r.GET("/api/quotes", getQuotes)
 	r.POST("/api/quotes", authMiddleware(), handleQuotes)
@@ -345,7 +435,10 @@ func main() {
 
 	r.Static("/static", filepath.Join(basePath, "static"))
 
-	r.GET("/admin.html", func(c *gin.Context) {
+	pages := r.Group("")
+	pages.Use(umamiMiddleware())
+	{
+		pages.GET("/admin.html", func(c *gin.Context) {
 		log.Printf("[ADMIN] Access attempt to admin.html")
 
 		var validSession string
@@ -428,6 +521,7 @@ func main() {
 	r.GET("/", func(c *gin.Context) {
 		c.File(filepath.Join(basePath, "static/index.html"))
 	})
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -618,6 +712,14 @@ func runMigration(fromVersion int) {
 			FOREIGN KEY (racer_id) REFERENCES racers(id)
 		)`)
 		_, _ = db.Exec("INSERT OR IGNORE INTO email_settings (id, enabled) VALUES (1, 0)")
+	case 10:
+		_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS umami_settings (
+			id INTEGER PRIMARY KEY,
+			url TEXT,
+			website_id TEXT,
+			enabled INTEGER DEFAULT 0
+		)`)
+		_, _ = db.Exec("INSERT OR IGNORE INTO umami_settings (id, enabled) VALUES (1, 0)")
 	}
 }
 
@@ -682,8 +784,12 @@ func seedData() {
 }
 
 func hashPassword(password string) string {
-	hash := sha256.Sum256([]byte(password))
-	return base64.StdEncoding.EncodeToString(hash[:])
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("[AUTH] Failed to hash password: %v", err)
+		return ""
+	}
+	return string(hash)
 }
 
 func authMiddleware() gin.HandlerFunc {
@@ -779,13 +885,10 @@ func handleLogin(c *gin.Context) {
 		db.QueryRow("SELECT id, username FROM admin_users WHERE username = ?", input.Username).Scan(&user.ID, &user.Username)
 		log.Printf("[LOGIN] Created user with ID: %d", user.ID)
 
-		sessionID := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d-%s-%d", user.ID, user.Username, time.Now().Unix()))))
+		sessionID := generateSessionID()
 		sessionStore[sessionID] = time.Now().Add(24 * time.Hour).Unix()
-		log.Printf("[LOGIN] Session created: %s", shorten(sessionID))
 
-		http.SetCookie(c.Writer, &http.Cookie{Name: "session", Value: sessionID, HttpOnly: true, Path: "/"})
-		log.Printf("[LOGIN] Cookie set: session=%s", shorten(sessionID))
-
+		setSessionCookie(c, sessionID)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		return
 	}
@@ -800,24 +903,31 @@ func handleLogin(c *gin.Context) {
 	}
 	log.Printf("[LOGIN] Found user ID: %d, stored password hash: %s", user.ID, shorten(user.Password))
 
-	inputHash := hashPassword(input.Password)
-	log.Printf("[LOGIN] Input password hash: %s", shorten(inputHash))
-
-	if inputHash != user.Password {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		log.Printf("[LOGIN] Password mismatch!")
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
 	log.Printf("[LOGIN] Password verified successfully")
-	sessionID := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d-%s-%d", user.ID, user.Username, time.Now().Unix()))))
+	sessionID := generateSessionID()
 	sessionStore[sessionID] = time.Now().Add(24 * time.Hour).Unix()
-	log.Printf("[LOGIN] Session created: %s", shorten(sessionID))
 
-	http.SetCookie(c.Writer, &http.Cookie{Name: "session", Value: sessionID, HttpOnly: true, Path: "/"})
-	log.Printf("[LOGIN] Cookie set: session=%s", shorten(sessionID))
-
+	setSessionCookie(c, sessionID)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func generateSessionID() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		log.Printf("[AUTH] Failed to generate session ID: %v", err)
+		return fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d", time.Now().UnixNano()))))
+	}
+	return hex.EncodeToString(b)
+}
+
+func setSessionCookie(c *gin.Context, sessionID string) {
+	c.SetCookie("session", sessionID, 86400, "/", "", false, true)
 }
 
 func handleLogout(c *gin.Context) {
@@ -825,7 +935,7 @@ func handleLogout(c *gin.Context) {
 	if err == nil {
 		delete(sessionStore, cookie.Value)
 	}
-	http.SetCookie(c.Writer, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
+	c.SetCookie("session", "", -1, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
@@ -887,9 +997,13 @@ func updateRacer(c *gin.Context) {
 
 func deleteRacer(c *gin.Context) {
 	idStr := c.Query("id")
-	id, _ := strconv.Atoi(idStr)
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid racer ID"})
+		return
+	}
 	log.Printf("[RACER] Deleting racer ID=%d", id)
-	_, err := db.Exec("DELETE FROM racers WHERE id=?", id)
+	_, err = db.Exec("DELETE FROM racers WHERE id=?", id)
 	if err != nil {
 		log.Printf("[RACER] Delete failed: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -934,6 +1048,8 @@ func updateRaceInfo(c *gin.Context) {
 
 func handleUpload(c *gin.Context) {
 	log.Printf("[UPLOAD] Upload request received")
+
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10<<20) // 10MB limit
 
 	header, err := c.FormFile("image")
 	if err != nil {
@@ -1171,7 +1287,16 @@ func handleAIExtract(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "No image provided. Send multipart form with 'image' field or JSON with 'image_url'"})
 			return
 		}
-		localPath := filepath.Join(basePath, input.ImageURL)
+		cleanPath := filepath.Clean(input.ImageURL)
+		if strings.Contains(cleanPath, "..") || strings.HasPrefix(cleanPath, "/") {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid image URL"})
+			return
+		}
+		localPath := filepath.Join(imagesPath, cleanPath)
+		if !strings.HasPrefix(localPath, filepath.Clean(imagesPath)+string(filepath.Separator)) && localPath != filepath.Clean(imagesPath) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid image URL"})
+			return
+		}
 		imageData, err = os.ReadFile(localPath)
 		if err != nil {
 			log.Printf("[AI] Failed to read image from path %s: %v", localPath, err)
@@ -1893,7 +2018,12 @@ func sendGotifyNotification(title, message, gotifyURL, token string) error {
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest("POST", gotifyURL+"/message", strings.NewReader(fmt.Sprintf(`{"title":"%s","message":"%s","priority":5}`, title, message)))
+	payload, _ := json.Marshal(map[string]interface{}{
+		"title":    title,
+		"message":  message,
+		"priority": 5,
+	})
+	req, err := http.NewRequest("POST", gotifyURL+"/message", bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
@@ -1940,4 +2070,31 @@ func notifyRaceStart(trackName string) {
 	if s.NotifyRaceStart && s.GotiFyURL != "" {
 		go sendGotifyNotification("🏁 Race Starting!", fmt.Sprintf("The race at %s has begun!", trackName), s.GotiFyURL, s.GotiFyToken)
 	}
+}
+
+func getUmamiSettings(c *gin.Context) {
+	var s UmamiSettings
+	err := db.QueryRow("SELECT id, COALESCE(url, ''), COALESCE(website_id, ''), COALESCE(enabled, 0) FROM umami_settings WHERE id = 1").
+		Scan(&s.ID, &s.URL, &s.WebsiteID, &s.Enabled)
+	if err != nil {
+		s = UmamiSettings{ID: 1, Enabled: false}
+	}
+	c.JSON(http.StatusOK, s)
+}
+
+func saveUmamiSettings(c *gin.Context) {
+	var s UmamiSettings
+	if err := c.ShouldBindJSON(&s); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err := db.Exec(`INSERT OR REPLACE INTO umami_settings (id, url, website_id, enabled) VALUES (1, ?, ?, ?)`,
+		s.URL, s.WebsiteID, boolToInt(s.Enabled))
+	if err != nil {
+		log.Printf("[UMAMI] Save failed: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, s)
 }
