@@ -195,6 +195,9 @@
             <li class="nav-item">
                 <button class="nav-link" id="uploads-tab" data-bs-toggle="tab" data-bs-target="#uploads-pane" type="button"><i class="fa-solid fa-images me-2"></i>Uploads</button>
             </li>
+            <li class="nav-item">
+                <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button"><i class="fa-solid fa-envelope me-2"></i>Email</button>
+            </li>
         </ul>
         <div class="tab-content">
             <!-- Race Setup Pane -->
@@ -641,6 +644,66 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Pane -->
+    <div class="tab-pane fade" id="email-pane">
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header"><i class="fa-solid fa-envelope me-2 text-danger"></i>SMTP Settings</div>
+                    <div class="card-body">
+                        <form id="email-settings-form">
+                            <div class="row g-3 mb-3">
+                                <div class="col-7">
+                                    <label class="form-label small fw-bold">SMTP Host</label>
+                                    <input type="text" class="form-control" id="smtp-host" placeholder="smtp.gmail.com">
+                                </div>
+                                <div class="col-3">
+                                    <label class="form-label small fw-bold">Port</label>
+                                    <input type="number" class="form-control" id="smtp-port" value="587">
+                                </div>
+                                <div class="col-2 d-flex align-items-end">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="email-enabled">
+                                        <label class="form-check-label small fw-bold" for="email-enabled">Enabled</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Username</label>
+                                <input type="text" class="form-control" id="smtp-username" placeholder="user@gmail.com">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Password / App Password</label>
+                                <input type="password" class="form-control" id="smtp-password" placeholder="App password">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">From Address</label>
+                                <input type="email" class="form-control" id="smtp-from" placeholder="heat@example.com">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Save Email Settings</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card mt-4">
+                    <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>How It Works</div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-2">After each race is saved to history, an email with the full results will be sent to all racers who have an email address configured.</p>
+                        <p class="small text-muted mb-0">The email includes each driver's position, points, and fastest lap status in an HTML table.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header"><i class="fa-solid fa-address-card me-2 text-danger"></i>Racer Email Addresses</div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-3">Assign email addresses to racers so they receive race result emails.</p>
+                        <div id="racer-email-list"></div>
                     </div>
                 </div>
             </div>

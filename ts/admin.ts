@@ -1002,6 +1002,83 @@ function deleteUpload(id: number): void {
     alert('Delete not yet implemented for uploads');
 }
 
+// Email settings
+interface RacerEmail {
+    id: number;
+    racer_id: number;
+    email: string;
+}
+
+async function loadEmailSettings(): Promise<void> {
+    try {
+        const res = await fetch('/api/email-settings');
+        const data = await res.json();
+        (document.getElementById('smtp-host') as HTMLInputElement).value = data.smtp_host || '';
+        (document.getElementById('smtp-port') as HTMLInputElement).value = String(data.smtp_port || 587);
+        (document.getElementById('smtp-username') as HTMLInputElement).value = data.username || '';
+        (document.getElementById('smtp-password') as HTMLInputElement).value = data.password || '';
+        (document.getElementById('smtp-from') as HTMLInputElement).value = data.from_addr || '';
+        (document.getElementById('email-enabled') as HTMLInputElement).checked = data.enabled;
+    } catch (e) { console.error('Failed to load email settings', e); }
+}
+
+document.getElementById('email-settings-form')!.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    const data = {
+        smtp_host: (document.getElementById('smtp-host') as HTMLInputElement).value,
+        smtp_port: parseInt((document.getElementById('smtp-port') as HTMLInputElement).value) || 587,
+        username: (document.getElementById('smtp-username') as HTMLInputElement).value,
+        password: (document.getElementById('smtp-password') as HTMLInputElement).value,
+        from_addr: (document.getElementById('smtp-from') as HTMLInputElement).value,
+        enabled: (document.getElementById('email-enabled') as HTMLInputElement).checked
+    };
+    const res = await fetch('/api/email-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (res.ok) alert('Email settings saved!');
+    else alert('Failed to save email settings');
+});
+
+async function loadRacerEmails(): Promise<void> {
+    try {
+        const [racersRes, emailsRes] = await Promise.all([
+            fetch('/api/racers'),
+            fetch('/api/racer-emails')
+        ]);
+        const racers: AdminRacer[] = await racersRes.json();
+        const emails: RacerEmail[] = await emailsRes.json();
+        const container = document.getElementById('racer-email-list')!;
+        container.innerHTML = racers.map(r => {
+            const match = emails.find(e => e.racer_id === r.id);
+            return `
+                <div class="d-flex align-items-center mb-2 p-2 border rounded">
+                    <img src="${escapeHtml(r.profile_picture)}" class="rounded-circle me-2" width="28" height="28" style="object-fit:cover" onerror="this.src='/static/images/helmet.svg'">
+                    <span class="fw-bold me-auto small">${escapeHtml(r.name)}</span>
+                    <input type="email" class="form-control form-control-sm" style="width:200px" placeholder="email@example.com" value="${escapeHtml(match?.email || '')}" data-racer-id="${r.id}" onchange="saveRacerEmailField(this)">
+                </div>
+            `;
+        }).join('');
+    } catch (e) { console.error('Failed to load racer emails', e); }
+}
+
+async function saveRacerEmailField(input: HTMLInputElement): Promise<void> {
+    const racerId = parseInt(input.dataset.racerId || '0');
+    if (!racerId) return;
+    const email = input.value.trim();
+    await fetch('/api/racer-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ racer_id: racerId, email: email })
+    });
+}
+
+document.getElementById('email-tab')?.addEventListener('shown.bs.tab', () => {
+    loadEmailSettings();
+    loadRacerEmails();
+});
+
 // Setup upload dropzone
 (function setupDropzone() {
     const dropzone = document.getElementById('upload-dropzone');

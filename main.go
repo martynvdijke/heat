@@ -12,6 +12,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/smtp"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -96,7 +97,7 @@ type RaceHistory struct {
 	Results   []RaceResult `json:"results,omitempty"`
 }
 
-const currentSchemaVersion = 9
+const currentSchemaVersion = 10
 const currentVersion = "1.10.0"
 
 type NotificationSettings struct {
@@ -119,6 +120,22 @@ type AISettings struct {
 	TrackExtractURL string `json:"track_extract_url"`
 	APIKey          string `json:"api_key"`
 	Enabled         bool   `json:"enabled"`
+}
+
+type EmailSettings struct {
+	ID       int    `json:"id"`
+	SMTPHost string `json:"smtp_host"`
+	SMTPPort int    `json:"smtp_port"`
+	Username string `json:"username"`
+	Password string `json:"password,omitempty"`
+	FromAddr string `json:"from_addr"`
+	Enabled  bool   `json:"enabled"`
+}
+
+type RacerEmail struct {
+	ID      int    `json:"id"`
+	RacerID int    `json:"racer_id"`
+	Email   string `json:"email"`
 }
 
 var (
@@ -274,6 +291,12 @@ func main() {
 
 	r.GET("/api/ai-settings", getAISettings)
 	r.POST("/api/ai-settings", authMiddleware(), saveAISettings)
+
+	r.GET("/api/email-settings", getEmailSettings)
+	r.POST("/api/email-settings", authMiddleware(), saveEmailSettings)
+	r.GET("/api/racer-emails", getRacerEmails)
+	r.POST("/api/racer-emails", authMiddleware(), saveRacerEmail)
+	r.POST("/api/send-race-email", authMiddleware(), sendRaceEmailManual)
 
 	r.GET("/api/oneoff-races", getOneOffRaces)
 	r.DELETE("/api/oneoff-races", authMiddleware(), deleteOneOffRace)
@@ -577,6 +600,23 @@ func runMigration(fromVersion int) {
 			enabled INTEGER DEFAULT 0
 		)`)
 		_, _ = db.Exec("INSERT INTO ai_settings (id, enabled) VALUES (1, 0)")
+	case 9:
+		_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS email_settings (
+			id INTEGER PRIMARY KEY,
+			smtp_host TEXT,
+			smtp_port INTEGER DEFAULT 587,
+			username TEXT,
+			password TEXT,
+			from_addr TEXT,
+			enabled INTEGER DEFAULT 0
+		)`)
+		_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS racer_emails (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			racer_id INTEGER UNIQUE,
+			email TEXT,
+			FOREIGN KEY (racer_id) REFERENCES racers(id)
+		)`)
+		_, _ = db.Exec("INSERT OR IGNORE INTO email_settings (id, enabled) VALUES (1, 0)")
 	}
 }
 
@@ -1226,6 +1266,200 @@ func saveAISettings(c *gin.Context) {
 	c.JSON(http.StatusOK, s)
 }
 
+func getEmailSettings(c *gin.Context) {
+	var s EmailSettings
+	var enabled int
+	err := db.QueryRow("SELECT id, COALESCE(smtp_host, ''), COALESCE(smtp_port, 587), COALESCE(username, ''), COALESCE(from_addr, ''), COALESCE(enabled, 0) FROM email_settings WHERE id = 1").
+		Scan(&s.ID, &s.SMTPHost, &s.SMTPPort, &s.Username, &s.FromAddr, &enabled)
+	if err != nil {
+		s = EmailSettings{ID: 1, SMTPPort: 587, Enabled: false}
+		c.JSON(http.StatusOK, s)
+		return
+	}
+	s.Enabled = enabled == 1
+	c.JSON(http.StatusOK, s)
+}
+
+func saveEmailSettings(c *gin.Context) {
+	var s EmailSettings
+	if err := c.ShouldBindJSON(&s); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	_, err := db.Exec(`INSERT OR REPLACE INTO email_settings (id, smtp_host, smtp_port, username, password, from_addr, enabled) VALUES (1, ?, ?, ?, ?, ?, ?)`,
+		s.SMTPHost, s.SMTPPort, s.Username, s.Password, s.FromAddr, boolToInt(s.Enabled))
+	if err != nil {
+		log.Printf("[EMAIL] Save settings failed: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func getRacerEmails(c *gin.Context) {
+	rows, err := db.Query("SELECT id, racer_id, COALESCE(email, '') FROM racer_emails ORDER BY racer_id")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+	var emails []RacerEmail
+	for rows.Next() {
+		var e RacerEmail
+		if err := rows.Scan(&e.ID, &e.RacerID, &e.Email); err != nil {
+			continue
+		}
+		emails = append(emails, e)
+	}
+	c.JSON(http.StatusOK, emails)
+}
+
+func saveRacerEmail(c *gin.Context) {
+	var e RacerEmail
+	if err := c.ShouldBindJSON(&e); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	_, err := db.Exec("INSERT OR REPLACE INTO racer_emails (id, racer_id, email) VALUES ((SELECT id FROM racer_emails WHERE racer_id = ?), ?, ?)",
+		e.RacerID, e.RacerID, e.Email)
+	if err != nil {
+		log.Printf("[EMAIL] Save racer email failed: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func buildRaceEmailContent(raceName, country, track string, totalLaps int, results []RaceResult) string {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("Subject: HEAT Race Results - %s\n", raceName))
+	b.WriteString("MIME-Version: 1.0\n")
+	b.WriteString("Content-Type: text/html; charset=\"UTF-8\"\n\n")
+	b.WriteString("<!DOCTYPE html><html><head><style>")
+	b.WriteString("body{font-family:Arial,sans-serif;background:#111;color:#eee;padding:20px}")
+	b.WriteString("h1{color:#d40000;border-bottom:3px solid #d40000;padding-bottom:10px}")
+	b.WriteString("table{width:100%%;border-collapse:collapse;margin:20px 0}")
+	b.WriteString("th{background:#d40000;color:#fff;padding:10px;text-align:left}")
+	b.WriteString("td{padding:10px;border-bottom:1px solid #333}")
+	b.WriteString("tr:nth-child(even){background:#1a1a1a}")
+	b.WriteString(".gold{color:#ffd700}.silver{color:#c0c0c0}.bronze{color:#cd7f32}")
+	b.WriteString("</style></head><body>")
+	b.WriteString(fmt.Sprintf("<h1>🏁 %s</h1>", escapeHTML(raceName)))
+	b.WriteString(fmt.Sprintf("<p><strong>Location:</strong> %s &mdash; %s</p>", escapeHTML(country), escapeHTML(track)))
+	b.WriteString(fmt.Sprintf("<p><strong>Laps:</strong> %d</p>", totalLaps))
+	b.WriteString("<h2>Final Standings</h2><table><thead><tr><th>Pos</th><th>Driver</th><th>Points</th><th>Fastest Lap</th></tr></thead><tbody>")
+	for _, r := range results {
+		cls := ""
+		if r.Position == 1 {
+			cls = "gold"
+		} else if r.Position == 2 {
+			cls = "silver"
+		} else if r.Position == 3 {
+			cls = "bronze"
+		}
+		fl := ""
+		if r.FastestLap {
+			fl = "🏆"
+		}
+		b.WriteString(fmt.Sprintf("<tr><td class=\"%s\">#%d</td><td class=\"%s\">%s</td><td>%d pts</td><td>%s</td></tr>",
+			cls, r.Position, cls, escapeHTML(r.RacerName), r.Points, fl))
+	}
+	b.WriteString("</tbody></table>")
+	b.WriteString("<p style=\"color:#666;font-size:12px;margin-top:30px\">HEAT: Pedal to the Metal &mdash; Board Game Companion</p>")
+	b.WriteString("</body></html>")
+	return b.String()
+}
+
+func escapeHTML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	return s
+}
+
+func sendRaceEmail(raceName, country, track string, totalLaps int, results []RaceResult) {
+	var s EmailSettings
+	var enabled int
+	err := db.QueryRow("SELECT smtp_host, COALESCE(smtp_port, 587), username, password, from_addr, COALESCE(enabled, 0) FROM email_settings WHERE id = 1").
+		Scan(&s.SMTPHost, &s.SMTPPort, &s.Username, &s.Password, &s.FromAddr, &enabled)
+	if err != nil || enabled == 0 || s.SMTPHost == "" || s.FromAddr == "" {
+		return
+	}
+
+	content := buildRaceEmailContent(raceName, country, track, totalLaps, results)
+
+	rows, err := db.Query(`SELECT re.email, r.name FROM racer_emails re JOIN racers r ON r.id = re.racer_id WHERE re.email != ''`)
+	if err != nil {
+		log.Printf("[EMAIL] Failed to fetch racer emails: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var email, name string
+		if err := rows.Scan(&email, &name); err != nil {
+			continue
+		}
+		go func(to, racerName, content string) {
+			if err := sendSMTP(s, to, content); err != nil {
+				log.Printf("[EMAIL] Failed to send to %s: %v", to, err)
+			} else {
+				log.Printf("[EMAIL] Sent race results to %s (%s)", racerName, to)
+			}
+		}(email, name, content)
+	}
+}
+
+func sendSMTP(s EmailSettings, to, content string) error {
+	addr := fmt.Sprintf("%s:%d", s.SMTPHost, s.SMTPPort)
+	auth := smtp.PlainAuth("", s.Username, s.Password, s.SMTPHost)
+	msg := []byte(content)
+	return smtp.SendMail(addr, auth, s.FromAddr, []string{to}, msg)
+}
+
+func sendRaceEmailManual(c *gin.Context) {
+	raceIDStr := c.Query("race_id")
+	raceID := 0
+	if raceIDStr != "" {
+		raceID, _ = strconv.Atoi(raceIDStr)
+	}
+	if raceID == 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "race_id required"})
+		return
+	}
+
+	var raceName, raceDate, country, track, trackID, raceType string
+	var totalLaps int
+	err := db.QueryRow("SELECT COALESCE(name,''), race_date, country, track, track_id, total_laps, COALESCE(race_type,'season') FROM race_history WHERE id = ?", raceID).
+		Scan(&raceName, &raceDate, &country, &track, &trackID, &totalLaps, &raceType)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Race not found"})
+		return
+	}
+
+	rRows, err := db.Query("SELECT racer_id, racer_name, position, points, fastest_lap FROM race_results WHERE race_id = ? ORDER BY position", raceID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rRows.Close()
+
+	var results []RaceResult
+	for rRows.Next() {
+		var res RaceResult
+		var fl int
+		if err := rRows.Scan(&res.RacerID, &res.RacerName, &res.Position, &res.Points, &fl); err != nil {
+			continue
+		}
+		res.FastestLap = fl == 1
+		results = append(results, res)
+	}
+
+	sendRaceEmail(raceName, country, track, totalLaps, results)
+	c.JSON(http.StatusOK, gin.H{"status": "email sending initiated"})
+}
+
 func getRaceHistory(c *gin.Context) {
 	raceID := c.Query("id")
 	raceType := c.Query("type")
@@ -1372,6 +1606,18 @@ func saveRaceToHistory(c *gin.Context) {
 			notifyRacePodium(winner, second, third, input.Track)
 		}
 	}
+
+	results := make([]RaceResult, len(input.Results))
+	for i, res := range input.Results {
+		results[i] = RaceResult{
+			RacerID:    res.RacerID,
+			RacerName:  res.RacerName,
+			Position:   res.Position,
+			Points:     res.Points,
+			FastestLap: res.FastestLap,
+		}
+	}
+	go sendRaceEmail(input.Name, input.Country, input.Track, input.TotalLaps, results)
 
 	c.JSON(http.StatusOK, gin.H{"id": raceID})
 }
