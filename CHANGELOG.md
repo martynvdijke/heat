@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/martynvdijke/heat/compare/v1.15.0...v1.15.1) (2026-05-05)
+
+
+### Bug Fixes
+
+* remove strict Origin/Host check from CSRF middleware to fix admin POST requests behind reverse proxy ([c015a01](https://github.com/martynvdijke/heat/commit/c015a01cacb6c97cb82b6dcc78b690a7e560a1e2))
+
 # [1.15.0](https://github.com/martynvdijke/heat/compare/v1.14.0...v1.15.0) (2026-05-05)
 
 
