@@ -3,6 +3,9 @@ package db
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"time"
 
 	"heat/app"
 	"heat/models"
@@ -259,6 +262,19 @@ func SeedData() {
 
 	app.DB.Exec("INSERT INTO race_info (country, track, track_id, laps) VALUES (?, ?, ?, ?)",
 		"Italy", "Monza", "monza", 53)
+}
+
+func CreateBackup() error {
+	backupDir := filepath.Join(filepath.Dir(app.DBPath), "backups")
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return err
+	}
+	backupPath := filepath.Join(backupDir, "heat_backup_"+time.Now().Format("20060102_150405")+".db")
+	_, err := app.DB.Exec("VACUUM INTO ?", backupPath)
+	if err != nil {
+		_, err = app.DB.Exec(fmt.Sprintf("VACUUM INTO %q", backupPath))
+	}
+	return err
 }
 
 func BoolToInt(b bool) int {

@@ -2,10 +2,8 @@ package handlers
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -44,6 +42,10 @@ func HandleLogin(c *gin.Context) {
 	}
 
 	if count == 0 {
+		if len(input.Password) < 8 {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 8 characters"})
+			return
+		}
 		hashed := hashPassword(input.Password)
 		_, err := app.DB.Exec("INSERT INTO admin_users (username, password) VALUES (?, ?)", input.Username, hashed)
 		if err != nil {
@@ -52,7 +54,7 @@ func HandleLogin(c *gin.Context) {
 		}
 
 		sessionID := generateSessionID()
-		app.SessionStore[sessionID] = time.Now().Add(24 * time.Hour).Unix()
+		app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
 		setSessionCookie(c, sessionID)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		return
@@ -75,7 +77,7 @@ func HandleLogin(c *gin.Context) {
 	}
 
 	sessionID := generateSessionID()
-	app.SessionStore[sessionID] = time.Now().Add(24 * time.Hour).Unix()
+	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
 	setSessionCookie(c, sessionID)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
@@ -92,13 +94,14 @@ func HandleLogout(c *gin.Context) {
 func generateSessionID() string {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		return fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d", time.Now().UnixNano()))))
+		return ""
 	}
 	return hex.EncodeToString(b)
 }
 
 func setSessionCookie(c *gin.Context, sessionID string) {
-	c.SetCookie("session", sessionID, 86400, "/", "", false, true)
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie("session", sessionID, 86400, "/", "", app.SecureCookies, true)
 }
 
 func hashPassword(password string) string {

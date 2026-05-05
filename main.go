@@ -42,70 +42,70 @@ func main() {
 
 	db.Init()
 	go ws.BroadcastManager()
+	go func() {
+		for {
+			time.Sleep(15 * time.Minute)
+			now := time.Now().Unix()
+			for k, v := range app.SessionStore {
+				if now > v.Expiry {
+					delete(app.SessionStore, k)
+				}
+			}
+		}
+	}()
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.SecurityHeaders())
 
 	r.GET("/ws", ws.HandleWebSocket)
 
 	r.POST("/api/login", middleware.RateLimitMiddleware(), handlers.HandleLogin)
-	r.POST("/api/logout", handlers.HandleLogout)
+	r.POST("/api/logout", middleware.CSRFMiddleware(), handlers.HandleLogout)
 	r.GET("/api/check-setup", handlers.HandleCheckSetup)
 
 	r.GET("/api/racers", handlers.GetRacers)
-	r.POST("/api/racers", middleware.AuthMiddleware(), handlers.UpdateRacer)
-	r.DELETE("/api/racers", middleware.AuthMiddleware(), handlers.DeleteRacer)
-
-	r.GET("/api/race-info", handlers.GetRaceInfo)
-	r.POST("/api/race-info", middleware.AuthMiddleware(), handlers.UpdateRaceInfo)
+	admin := r.Group("/api")
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+	{
+		admin.POST("/racers", handlers.UpdateRacer)
+		admin.DELETE("/racers", handlers.DeleteRacer)
+		admin.POST("/race-info", handlers.UpdateRaceInfo)
+		admin.POST("/upload", handlers.HandleUpload)
+		admin.POST("/tracks", handlers.SaveTrack)
+		admin.DELETE("/tracks", handlers.DeleteTrack)
+		admin.POST("/tracks/ai-extract", handlers.HandleAIExtract)
+		admin.POST("/race-history", handlers.SaveRaceToHistory)
+		admin.DELETE("/race-history", handlers.DeleteRaceHistory)
+		admin.POST("/racer-stats", handlers.UpdateRacerStats)
+		admin.GET("/notification-settings", handlers.GetNotificationSettings)
+		admin.POST("/notification-settings", handlers.SaveNotificationSettings)
+		admin.POST("/test-notification", handlers.TestNotification)
+		admin.GET("/ai-settings", handlers.GetAISettings)
+		admin.POST("/ai-settings", handlers.SaveAISettings)
+		admin.GET("/email-settings", handlers.GetEmailSettings)
+		admin.POST("/email-settings", handlers.SaveEmailSettings)
+		admin.GET("/racer-emails", handlers.GetRacerEmails)
+		admin.POST("/racer-emails", handlers.SaveRacerEmail)
+		admin.POST("/send-race-email", handlers.SendRaceEmailManual)
+		admin.DELETE("/oneoff-races", handlers.DeleteOneOffRace)
+		admin.GET("/umami-settings", handlers.GetUmamiSettings)
+		admin.POST("/umami-settings", handlers.SaveUmamiSettings)
+		admin.POST("/quotes", handlers.HandleQuotes)
+		admin.PUT("/quotes", handlers.HandleQuotes)
+		admin.DELETE("/quotes", handlers.HandleQuotes)
+	}
 
 	r.GET("/api/uploads", handlers.GetUploads)
-	r.POST("/api/upload", middleware.AuthMiddleware(), handlers.HandleUpload)
-
+	r.GET("/api/race-info", handlers.GetRaceInfo)
 	r.GET("/api/tracks", handlers.GetTracks)
-	r.POST("/api/tracks", middleware.AuthMiddleware(), handlers.SaveTrack)
-	r.DELETE("/api/tracks", middleware.AuthMiddleware(), handlers.DeleteTrack)
-
-	r.POST("/api/tracks/ai-extract", middleware.AuthMiddleware(), handlers.HandleAIExtract)
-
 	r.GET("/api/race-history", handlers.GetRaceHistory)
-	r.POST("/api/race-history", middleware.AuthMiddleware(), handlers.SaveRaceToHistory)
-	r.DELETE("/api/race-history", middleware.AuthMiddleware(), handlers.DeleteRaceHistory)
-
 	r.GET("/api/racer-stats", handlers.GetRacerStats)
-	r.POST("/api/racer-stats", middleware.AuthMiddleware(), handlers.UpdateRacerStats)
-
-	r.GET("/api/notification-settings", middleware.AuthMiddleware(), handlers.GetNotificationSettings)
-	r.POST("/api/notification-settings", middleware.AuthMiddleware(), handlers.SaveNotificationSettings)
-
-	r.POST("/api/test-notification", middleware.AuthMiddleware(), handlers.TestNotification)
-
-	r.GET("/api/ai-settings", middleware.AuthMiddleware(), handlers.GetAISettings)
-	r.POST("/api/ai-settings", middleware.AuthMiddleware(), handlers.SaveAISettings)
-
-	r.GET("/api/email-settings", middleware.AuthMiddleware(), handlers.GetEmailSettings)
-	r.POST("/api/email-settings", middleware.AuthMiddleware(), handlers.SaveEmailSettings)
-	r.GET("/api/racer-emails", middleware.AuthMiddleware(), handlers.GetRacerEmails)
-	r.POST("/api/racer-emails", middleware.AuthMiddleware(), handlers.SaveRacerEmail)
-	r.POST("/api/send-race-email", middleware.AuthMiddleware(), handlers.SendRaceEmailManual)
-
 	r.GET("/api/oneoff-races", handlers.GetOneOffRaces)
-	r.DELETE("/api/oneoff-races", middleware.AuthMiddleware(), handlers.DeleteOneOffRace)
-
 	r.GET("/api/track-stats", handlers.GetTrackStats)
-
-	r.GET("/api/umami-settings", middleware.AuthMiddleware(), handlers.GetUmamiSettings)
-	r.POST("/api/umami-settings", middleware.AuthMiddleware(), handlers.SaveUmamiSettings)
-
 	r.GET("/api/quotes", handlers.GetQuotes)
-	r.POST("/api/quotes", middleware.AuthMiddleware(), handlers.HandleQuotes)
-	r.PUT("/api/quotes", middleware.AuthMiddleware(), handlers.HandleQuotes)
-	r.DELETE("/api/quotes", middleware.AuthMiddleware(), handlers.HandleQuotes)
-
 	r.GET("/api/quote/random", handlers.GetRandomQuote)
-
-	// New Statistics & Analytics endpoints
 	r.GET("/api/stats/head-to-head", handlers.GetHeadToHead)
 	r.GET("/api/stats/points-progression", handlers.GetPointsProgression)
 	r.GET("/api/stats/streaks", handlers.GetStreaks)
@@ -115,6 +115,14 @@ func main() {
 
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
+	})
+
+	r.GET("/api/admin/backup", middleware.CSRFMiddleware(), middleware.AuthMiddleware(), func(c *gin.Context) {
+		if err := db.CreateBackup(); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Backup failed"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
 	r.GET("/api-docs", func(c *gin.Context) {
@@ -172,8 +180,8 @@ func main() {
 		r.GET("/login.html", func(c *gin.Context) {
 			cookie, err := c.Request.Cookie("session")
 			if err == nil {
-				expiry, ok := app.SessionStore[cookie.Value]
-				if ok && time.Now().Unix() <= expiry {
+				info, ok := app.SessionStore[cookie.Value]
+				if ok && time.Now().Unix() <= info.Expiry {
 					c.Redirect(http.StatusFound, "/admin.html")
 					return
 				}

@@ -138,7 +138,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 	t.Run("Authorized", func(t *testing.T) {
 		sessionID := "test-session"
-		app.SessionStore[sessionID] = time.Now().Add(1 * time.Hour).Unix()
+		app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
 		defer delete(app.SessionStore, sessionID)
 
 		req, _ := http.NewRequest("GET", "/api/test", nil)
