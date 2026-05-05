@@ -20,7 +20,7 @@ var (
 	BasePath       = "/app"
 	DBPath         = "/db/heat.db"
 	MediaPath      = "/app/media"
-	CurrentVersion = "1.11.1"
+	CurrentVersion = "1.12.2"
 	LoginLimiter   = rate.NewLimiter(rate.Limit(5), 10)
 
 	Upgrader = websocket.Upgrader{
