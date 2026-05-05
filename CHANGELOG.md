@@ -1,3 +1,15 @@
+# [1.13.0](https://github.com/martynvdijke/heat/compare/v1.12.4...v1.13.0) (2026-05-05)
+
+
+### Bug Fixes
+
+* Playwright test failures from CSP and stale DB ([b2cd28d](https://github.com/martynvdijke/heat/commit/b2cd28d4006da7c2a1bbedd3d34b1bdeb363994e))
+
+
+### Features
+
+* implement security hardening (Phase 1 + Phase 4) ([306156d](https://github.com/martynvdijke/heat/commit/306156d434de83ba36b0ed7b9f84375381943539))
+
 ## [1.12.4](https://github.com/martynvdijke/heat/compare/v1.12.3...v1.12.4) (2026-05-05)
 
 
