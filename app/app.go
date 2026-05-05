@@ -28,7 +28,7 @@ var (
 	BasePath       = "/app"
 	DBPath         = "/db/heat.db"
 	MediaPath      = "/app/media"
-	CurrentVersion = "1.14.0"
+	CurrentVersion = "1.15.0"
 	LoginLimiter   = rate.NewLimiter(rate.Limit(5), 10)
 	SecureCookies  = os.Getenv("DOCKER") == "true"
 

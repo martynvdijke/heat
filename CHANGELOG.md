@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/martynvdijke/heat/compare/v1.14.0...v1.15.0) (2026-05-05)
+
+
+### Features
+
+* add DNS (did not start) tracking to racer stats and enhance race deletion ([f17bea2](https://github.com/martynvdijke/heat/commit/f17bea25ecb4c72a2b861a476b85cc9534f09729))
+
 # [1.14.0](https://github.com/martynvdijke/heat/compare/v1.13.4...v1.14.0) (2026-05-05)
 
 
