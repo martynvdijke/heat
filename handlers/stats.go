@@ -15,7 +15,7 @@ import (
 func GetRacerStats(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
-		var stats []models.RacerStats
+		stats := make([]models.RacerStats, 0)
 		rows, _ := app.DB.Query("SELECT id, racer_id, races, wins, podiums, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf FROM racer_stats")
 		if rows != nil {
 			for rows.Next() {

@@ -68,6 +68,7 @@ func main() {
 	}()
 
 	r := gin.New()
+	r.MaxMultipartMemory = 32 << 20
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.SecurityHeaders())
