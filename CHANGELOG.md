@@ -1,3 +1,11 @@
+## [1.13.3](https://github.com/martynvdijke/heat/compare/v1.13.2...v1.13.3) (2026-05-05)
+
+
+### Bug Fixes
+
+* add error handling to upload functions matching traces pattern ([4249b86](https://github.com/martynvdijke/heat/commit/4249b865692a708e2953f263508c66afbe7d3aec))
+* trigger ci ([f9016da](https://github.com/martynvdijke/heat/commit/f9016dade3b725b7d52041c8f72012cded2bf3f6))
+
 ## [1.13.2](https://github.com/martynvdijke/heat/compare/v1.13.1...v1.13.2) (2026-05-05)
 
 
