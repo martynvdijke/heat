@@ -11,4 +11,5 @@ test-results/*
 playwright-report/*
 playwright-report/*
 tmp/*
-media/
+media/backups/
+backups/

@@ -1081,5 +1081,88 @@ document.getElementById('email-tab')?.addEventListener('shown.bs.tab', () => {
     loadRacerEmails();
 });
 
+// Backup settings
+interface BackupInfo {
+    name: string;
+    size: number;
+    time: string;
+}
+
+async function loadBackupSettings(): Promise<void> {
+    try {
+        const res = await fetch('/api/backup-settings');
+        const data = await res.json();
+        (document.getElementById('backup-enabled') as HTMLInputElement).checked = data.enabled;
+        (document.getElementById('backup-interval') as HTMLSelectElement).value = String(data.interval_hrs || 24);
+    } catch (e) { console.error('Failed to load backup settings', e); }
+}
+
+async function loadBackupList(): Promise<void> {
+    try {
+        const res = await fetch('/api/backup/list');
+        const backups: BackupInfo[] = await res.json();
+        const list = document.getElementById('backup-list')!;
+        if (backups.length === 0) {
+            list.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No backups found.</td></tr>';
+            return;
+        }
+        list.innerHTML = backups.slice().reverse().map(b => `
+            <tr>
+                <td class="ps-4"><code>${escapeHtml(b.name)}</code></td>
+                <td>${(b.size / 1024).toFixed(1)} KB</td>
+                <td class="text-end pe-4 small text-muted">${escapeHtml(b.time)}</td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('Failed to load backup list', e); }
+}
+
+async function triggerManualBackup(): Promise<void> {
+    const btn = document.getElementById('backup-manual-btn') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Backing up...';
+    try {
+        const res = await fetch('/api/backup/manual', { method: 'POST' });
+        const result = document.getElementById('backup-result')!;
+        result.classList.remove('d-none', 'alert-success', 'alert-danger');
+        if (res.ok) {
+            result.classList.add('alert-success');
+            result.textContent = 'Backup created successfully!';
+            loadBackupList();
+        } else {
+            const err = await res.json();
+            result.classList.add('alert-danger');
+            result.textContent = 'Backup failed: ' + (err.error || 'Unknown error');
+        }
+    } catch (e: any) {
+        const result = document.getElementById('backup-result')!;
+        result.classList.remove('d-none', 'alert-success', 'alert-danger');
+        result.classList.add('alert-danger');
+        result.textContent = 'Error: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play me-1"></i> Backup Now';
+    }
+}
+
+document.getElementById('backup-form')!.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    const data = {
+        enabled: (document.getElementById('backup-enabled') as HTMLInputElement).checked,
+        interval_hrs: parseInt((document.getElementById('backup-interval') as HTMLSelectElement).value) || 24
+    };
+    const res = await fetch('/api/backup-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (res.ok) alert('Backup settings saved!');
+    else alert('Failed to save backup settings');
+});
+
+document.getElementById('backup-tab')?.addEventListener('shown.bs.tab', () => {
+    loadBackupSettings();
+    loadBackupList();
+});
+
 init();
 

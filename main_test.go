@@ -1021,6 +1021,88 @@ func TestGetUmamiSettings(t *testing.T) {
 	})
 }
 
+func TestBackupSettings(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/backup-settings", handlers.GetBackupSettings)
+	r.POST("/api/backup-settings", handlers.SaveBackupSettings)
+	r.POST("/api/backup/manual", handlers.TriggerManualBackup)
+	r.GET("/api/backup/list", handlers.ListBackups)
+
+	t.Run("GetSettings", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/backup-settings", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var s models.BackupSettings
+		json.Unmarshal(rr.Body.Bytes(), &s)
+		if s.ID != 1 {
+			t.Errorf("expected id 1, got %d", s.ID)
+		}
+	})
+
+	t.Run("SaveSettings", func(t *testing.T) {
+		body, _ := json.Marshal(models.BackupSettings{Enabled: false, IntervalHrs: 12})
+		req, _ := http.NewRequest("POST", "/api/backup-settings", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		req, _ = http.NewRequest("GET", "/api/backup-settings", nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		var s models.BackupSettings
+		json.Unmarshal(rr.Body.Bytes(), &s)
+		if s.Enabled != false || s.IntervalHrs != 12 {
+			t.Errorf("expected enabled=false interval=12, got enabled=%v interval=%d", s.Enabled, s.IntervalHrs)
+		}
+	})
+
+	t.Run("ManualBackup", func(t *testing.T) {
+		req, _ := http.NewRequest("POST", "/api/backup/manual", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v: %s", status, rr.Body.String())
+		}
+	})
+
+	t.Run("ListBackups", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/backup/list", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+
+		var backups []map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &backups)
+		if backups == nil {
+			t.Errorf("expected backups array, got nil")
+		}
+	})
+
+	// Reset settings back for other tests
+	body, _ := json.Marshal(models.BackupSettings{Enabled: true, IntervalHrs: 24})
+	req, _ := http.NewRequest("POST", "/api/backup-settings", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("reset: expected status 200, got %v", rr.Code)
+	}
+}
+
 // Helper functions kept for tests
 func hashPassword(password string) string {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

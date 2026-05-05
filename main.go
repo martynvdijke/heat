@@ -66,6 +66,25 @@ func main() {
 			app.SessionStoreMu.Unlock()
 		}
 	}()
+	go func() {
+		for {
+			var enabled int
+			var intervalHrs int
+			app.DB.QueryRow("SELECT enabled, interval_hrs FROM backup_settings WHERE id = 1").Scan(&enabled, &intervalHrs)
+			if enabled == 1 && intervalHrs > 0 {
+				if err := db.CreateBackup(); err != nil {
+					log.Printf("[BACKUP] Periodic backup failed: %v", err)
+				} else {
+					log.Printf("[BACKUP] Periodic backup completed (interval: %dh)", intervalHrs)
+				}
+			}
+			interval := 24
+			if intervalHrs > 0 {
+				interval = intervalHrs
+			}
+			time.Sleep(time.Duration(interval) * time.Hour)
+		}
+	}()
 
 	r := gin.New()
 	r.MaxMultipartMemory = 32 << 20
@@ -109,6 +128,10 @@ func main() {
 		admin.POST("/quotes", handlers.HandleQuotes)
 		admin.PUT("/quotes", handlers.HandleQuotes)
 		admin.DELETE("/quotes", handlers.HandleQuotes)
+		admin.GET("/backup-settings", handlers.GetBackupSettings)
+		admin.POST("/backup-settings", handlers.SaveBackupSettings)
+		admin.POST("/backup/manual", handlers.TriggerManualBackup)
+		admin.GET("/backup/list", handlers.ListBackups)
 	}
 
 	r.GET("/api/uploads", handlers.GetUploads)
@@ -131,13 +154,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
 	})
 
-	r.GET("/api/admin/backup", middleware.CSRFMiddleware(), middleware.AuthMiddleware(), func(c *gin.Context) {
-		if err := db.CreateBackup(); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Backup failed"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	r.GET("/api/admin/backup", middleware.CSRFMiddleware(), middleware.AuthMiddleware(), handlers.TriggerManualBackup)
 
 	r.GET("/api-docs", func(c *gin.Context) {
 		c.File(filepath.Join(app.BasePath, "static/swagger.json"))

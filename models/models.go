@@ -168,3 +168,9 @@ type ELORating struct {
 	Rating    float64 `json:"rating"`
 	Races     int     `json:"races"`
 }
+
+type BackupSettings struct {
+	ID          int  `json:"id"`
+	Enabled     bool `json:"enabled"`
+	IntervalHrs int  `json:"interval_hrs"`
+}

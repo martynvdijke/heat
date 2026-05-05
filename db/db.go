@@ -11,7 +11,7 @@ import (
 	"heat/models"
 )
 
-var currentSchemaVersion = 11
+var currentSchemaVersion = 12
 
 func Init() {
 	_, _ = app.DB.Exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
@@ -201,6 +201,13 @@ func runMigration(fromVersion int) {
 			enabled INTEGER DEFAULT 0
 		)`)
 		_, _ = app.DB.Exec("INSERT OR IGNORE INTO umami_settings (id, enabled) VALUES (1, 0)")
+	case 11:
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS backup_settings (
+			id INTEGER PRIMARY KEY,
+			enabled INTEGER DEFAULT 1,
+			interval_hrs INTEGER DEFAULT 24
+		)`)
+		_, _ = app.DB.Exec("INSERT OR IGNORE INTO backup_settings (id, enabled, interval_hrs) VALUES (1, 1, 24)")
 	}
 }
 
