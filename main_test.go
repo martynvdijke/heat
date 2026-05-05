@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	os.Unsetenv("DOCKER")
 	app.BasePath = "."
 	app.DBPath = ":memory:"
-	app.ImagesPath = filepath.Join(app.BasePath, "static/images")
+	app.MediaPath = filepath.Join(app.BasePath, "media")
 
 	var err error
 	app.DB, err = sql.Open("sqlite3", app.DBPath)

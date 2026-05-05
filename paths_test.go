@@ -14,13 +14,13 @@ func TestPathsConfiguration(t *testing.T) {
 
 		app.BasePath = "/app"
 		app.DBPath = "/db/heat.db"
-		app.ImagesPath = "/app/images"
+		app.MediaPath = "/app/media"
 
 		if os.Getenv("DOCKER") != "true" {
 			app.BasePath = "."
 			app.DBPath = "./heat.db"
 		}
-		app.ImagesPath = filepath.Join(app.BasePath, "static/images")
+		app.MediaPath = filepath.Join(app.BasePath, "media")
 
 		if app.BasePath != "." {
 			t.Errorf("expected local basePath '.', got %s", app.BasePath)
@@ -28,8 +28,8 @@ func TestPathsConfiguration(t *testing.T) {
 		if app.DBPath != "./heat.db" {
 			t.Errorf("expected local dbPath './heat.db', got %s", app.DBPath)
 		}
-		if app.ImagesPath != "static/images" {
-			t.Errorf("expected imagesPath 'static/images', got %s", app.ImagesPath)
+		if app.MediaPath != "media" {
+			t.Errorf("expected mediaPath 'media', got %s", app.MediaPath)
 		}
 	})
 
@@ -39,13 +39,13 @@ func TestPathsConfiguration(t *testing.T) {
 
 		app.BasePath = "/app"
 		app.DBPath = "/db/heat.db"
-		app.ImagesPath = "/app/images"
+		app.MediaPath = "/app/media"
 
 		if os.Getenv("DOCKER") != "true" {
 			app.BasePath = "."
 			app.DBPath = "./heat.db"
 		}
-		app.ImagesPath = filepath.Join(app.BasePath, "static/images")
+		app.MediaPath = filepath.Join(app.BasePath, "media")
 
 		if app.BasePath != "/app" {
 			t.Errorf("expected Docker basePath '/app', got %s", app.BasePath)
@@ -53,8 +53,8 @@ func TestPathsConfiguration(t *testing.T) {
 		if app.DBPath != "/db/heat.db" {
 			t.Errorf("expected Docker dbPath '/db/heat.db', got %s", app.DBPath)
 		}
-		if app.ImagesPath != "/app/static/images" {
-			t.Errorf("expected Docker imagesPath '/app/static/images', got %s", app.ImagesPath)
+		if app.MediaPath != "/app/media" {
+			t.Errorf("expected Docker mediaPath '/app/media', got %s", app.MediaPath)
 		}
 	})
 }

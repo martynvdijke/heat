@@ -19,7 +19,7 @@ var (
 	Broadcast      = make(chan []models.Racer)
 	BasePath       = "/app"
 	DBPath         = "/db/heat.db"
-	ImagesPath     = "/app/images"
+	MediaPath      = "/app/media"
 	CurrentVersion = "1.11.1"
 	LoginLimiter   = rate.NewLimiter(rate.Limit(5), 10)
 

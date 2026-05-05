@@ -23,10 +23,10 @@ func main() {
 		app.BasePath = "."
 		app.DBPath = "./heat.db"
 	}
-	app.ImagesPath = filepath.Join(app.BasePath, "static/images")
+	app.MediaPath = filepath.Join(app.BasePath, "media")
 
-	if err := os.MkdirAll(app.ImagesPath, 0755); err != nil {
-		log.Printf("Warning: could not create images directory: %v", err)
+	if err := os.MkdirAll(app.MediaPath, 0755); err != nil {
+		log.Printf("Warning: could not create media directory: %v", err)
 	}
 	if err := os.MkdirAll(filepath.Dir(app.DBPath), 0755); err != nil {
 		log.Printf("Warning: could not create database directory: %v", err)
@@ -145,6 +145,7 @@ func main() {
 </html>`))
 	})
 
+	r.Static("/media", app.MediaPath)
 	r.Static("/static", filepath.Join(app.BasePath, "static"))
 
 	pages := r.Group("")

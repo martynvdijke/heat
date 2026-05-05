@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -60,8 +61,21 @@ func HandleUpload(c *gin.Context) {
 		saveExt = ".jpg"
 	}
 
+	// Use first 2 hex chars as subdirectory (like traces)
+	subDir := hashStr[:2]
+	dir := filepath.Join(app.MediaPath, subDir)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create media directory"})
+		return
+	}
+
 	filename := hashStr + saveExt
-	uploadPath := filepath.Join(app.ImagesPath, filename)
+	uploadPath := filepath.Join(dir, filename)
+	url := fmt.Sprintf("/media/%s/%s", subDir, filename)
+
+	thumbFilename := hashStr + "_thumb" + saveExt
+	thumbPath := filepath.Join(dir, thumbFilename)
+	thumbURL := fmt.Sprintf("/media/%s/%s", subDir, thumbFilename)
 
 	if err := os.WriteFile(uploadPath, data, 0644); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -69,37 +83,26 @@ func HandleUpload(c *gin.Context) {
 	}
 
 	resizedFilename := hashStr + "_resized" + saveExt
-	thumbFilename := hashStr + "_thumb" + saveExt
-	resizedPath := filepath.Join(app.ImagesPath, resizedFilename)
-	thumbPath := filepath.Join(app.ImagesPath, thumbFilename)
+	resizedPath := filepath.Join(dir, resizedFilename)
+	resizedURL := fmt.Sprintf("/media/%s/%s", subDir, resizedFilename)
 
 	src, err := imaging.Open(uploadPath)
 	if err == nil {
 		resized := imaging.Fit(src, 1200, 1200, imaging.Lanczos)
 		if err := imaging.Save(resized, resizedPath); err != nil {
 			log.Printf("[UPLOAD] Failed to save resized: %v", err)
-		} else {
-			resizedData, _ := os.ReadFile(resizedPath)
-			app.StaticCache["/static/images/"+resizedFilename] = resizedData
 		}
 
 		thumb := imaging.Thumbnail(src, 150, 150, imaging.Lanczos)
 		if err := imaging.Save(thumb, thumbPath); err != nil {
 			log.Printf("[UPLOAD] Failed to save thumbnail: %v", err)
-		} else {
-			thumbData, _ := os.ReadFile(thumbPath)
-			app.StaticCache["/static/images/"+thumbFilename] = thumbData
 		}
+	} else {
+		log.Printf("[UPLOAD] Failed to open image for processing: %v", err)
 	}
-
-	url := "/static/images/" + filename
-	resizedURL := "/static/images/" + resizedFilename
-	thumbURL := "/static/images/" + thumbFilename
 
 	app.DB.Exec("INSERT INTO uploads (hash, ext, url, resized_url, thumbnail_url) VALUES (?, ?, ?, ?, ?)",
 		hashStr, ext, url, resizedURL, thumbURL)
-
-	app.StaticCache[url] = data
 
 	c.JSON(http.StatusOK, gin.H{
 		"url":           url,

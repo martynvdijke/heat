@@ -115,8 +115,8 @@ func HandleAIExtract(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid image URL"})
 			return
 		}
-		localPath := filepath.Join(app.ImagesPath, cleanPath)
-		if !strings.HasPrefix(localPath, filepath.Clean(app.ImagesPath)+string(filepath.Separator)) && localPath != filepath.Clean(app.ImagesPath) {
+		localPath := filepath.Join(app.MediaPath, cleanPath)
+		if !strings.HasPrefix(localPath, filepath.Clean(app.MediaPath)+string(filepath.Separator)) && localPath != filepath.Clean(app.MediaPath) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid image URL"})
 			return
 		}

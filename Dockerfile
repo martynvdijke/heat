@@ -30,7 +30,7 @@ ENV DOCKER=true
 COPY --from=builder /app/heat-server .
 COPY --from=builder /app/static ./static
 
-RUN mkdir -p /db && chmod 777 /db
+RUN mkdir -p /db /app/media && chmod 777 /db /app/media
 
 EXPOSE 6270
 

@@ -11,5 +11,4 @@ test-results/*
 playwright-report/*
 playwright-report/*
 tmp/*
-static/images/*_resized.*
-static/images/*_thumb.*
+media/
