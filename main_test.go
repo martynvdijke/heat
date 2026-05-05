@@ -729,6 +729,27 @@ func TestGetRacerEmails(t *testing.T) {
 	})
 }
 
+func TestVersion(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/version", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
+	})
+
+	req, _ := http.NewRequest("GET", "/api/version", nil)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("expected status 200, got %v", status)
+	}
+
+	var resp map[string]string
+	json.Unmarshal(rr.Body.Bytes(), &resp)
+	if resp["version"] != app.CurrentVersion {
+		t.Errorf("expected version %q, got %q", app.CurrentVersion, resp["version"])
+	}
+}
+
 func TestGetUmamiSettings(t *testing.T) {
 	r := gin.New()
 	r.GET("/api/umami-settings", middleware.AuthMiddleware(), handlers.GetUmamiSettings)
