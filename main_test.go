@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -42,6 +43,10 @@ func TestMain(m *testing.M) {
 
 	db.Init()
 	go ws.BroadcastManager()
+
+	if err := os.MkdirAll(app.MediaPath, 0755); err != nil {
+		log.Fatalf("failed to create media directory: %v", err)
+	}
 
 	os.Exit(m.Run())
 }
@@ -394,6 +399,192 @@ func TestGetUploads(t *testing.T) {
 	if uploads == nil {
 		t.Errorf("expected uploads array, got nil")
 	}
+}
+
+func TestHandleUpload(t *testing.T) {
+	// Create test routes with CSRF + Auth middleware
+	r := gin.New()
+	admin := r.Group("/api")
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+	admin.POST("/upload", handlers.HandleUpload)
+	r.GET("/api/racers", handlers.GetRacers)
+
+	// Create a valid session for auth
+	sessionID := "upload-test-session"
+	app.SessionStoreMu.Lock()
+	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
+	app.SessionStoreMu.Unlock()
+	defer func() {
+		app.SessionStoreMu.Lock()
+		delete(app.SessionStore, sessionID)
+		app.SessionStoreMu.Unlock()
+	}()
+
+	// Create a minimal valid PNG for testing
+	pngData := []byte{
+		0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+		0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+		0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+		0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+		0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, // IDAT chunk
+		0x54, 0x78, 0x9C, 0x63, 0xF8, 0x0F, 0x00, 0x00,
+		0x01, 0x01, 0x00, 0x05, 0x18, 0xD8, 0x4E, 0x00,
+		0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, // IEND chunk
+		0x42, 0x60, 0x82,
+	}
+
+	t.Run("UploadSuccess", func(t *testing.T) {
+		body := new(bytes.Buffer)
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("image", "test_racer.png")
+		if err != nil {
+			t.Fatal(err)
+		}
+		part.Write(pngData)
+		writer.Close()
+
+		req, err := http.NewRequest("POST", "/api/upload", body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Origin", "http://127.0.0.1:6270")
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		req.Host = "127.0.0.1:6270"
+
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Fatalf("expected status 200, got %v: %s", status, rr.Body.String())
+		}
+
+		var resp map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to parse response: %v", err)
+		}
+
+		url, ok := resp["url"].(string)
+		if !ok {
+			t.Fatalf("expected url in response, got %v", resp)
+		}
+
+		// Verify URL starts with /media/ (new media path)
+		if !strings.HasPrefix(url, "/media/") {
+			t.Errorf("expected URL to start with /media/, got %q", url)
+		}
+
+		// Verify the URL contains a hash subdirectory (2 chars)
+		parts := strings.Split(strings.TrimPrefix(url, "/media/"), "/")
+		if len(parts) != 2 {
+			t.Errorf("expected URL format /media/<hash2>/<filename>, got %q", url)
+		} else if len(parts[0]) != 2 {
+			t.Errorf("expected 2-char hash subdirectory, got %q", parts[0])
+		}
+
+		// Verify file exists on disk
+		filePath := filepath.Join(app.MediaPath, parts[0], parts[1])
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			t.Errorf("uploaded file not found at %s", filePath)
+		} else {
+			// Clean up test file
+			defer os.RemoveAll(filepath.Join(app.MediaPath, parts[0]))
+		}
+
+		// Verify upload is stored in DB
+		hash, ok := resp["hash"].(string)
+		if !ok {
+			t.Fatal("expected hash in response")
+		}
+		var storedURL string
+		err = app.DB.QueryRow("SELECT url FROM uploads WHERE hash = ?", hash).Scan(&storedURL)
+		if err != nil {
+			t.Errorf("upload not found in database: %v", err)
+		} else if storedURL != url {
+			t.Errorf("stored URL %q doesn't match response %q", storedURL, url)
+		}
+	})
+
+	t.Run("UploadAndUpdateRacer", func(t *testing.T) {
+		// Need a separate router with racer POST route for this test
+		r2 := gin.New()
+		admin2 := r2.Group("/api")
+		admin2.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+		admin2.POST("/upload", handlers.HandleUpload)
+		admin2.POST("/racers", handlers.UpdateRacer)
+
+		body := new(bytes.Buffer)
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("image", "racer_pic.png")
+		if err != nil {
+			t.Fatal(err)
+		}
+		part.Write(pngData)
+		writer.Close()
+
+		req, err := http.NewRequest("POST", "/api/upload", body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Origin", "http://127.0.0.1:6270")
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		req.Host = "127.0.0.1:6270"
+
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Fatalf("upload failed: %v: %s", status, rr.Body.String())
+		}
+
+		var uploadResp map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &uploadResp)
+		uploadURL := uploadResp["url"].(string)
+
+		// Update racer with uploaded image URL
+		racerURL := "/api/racers"
+		racerBody := map[string]interface{}{
+			"id":              1,
+			"name":            "Upload Test Racer",
+			"profile_picture": uploadURL,
+			"car_color":       "red",
+			"car_name":        "Upload Test Car",
+			"points":          99,
+			"rank":            1,
+			"position":        0,
+		}
+		racerJSON, _ := json.Marshal(racerBody)
+
+		req2, _ := http.NewRequest("POST", racerURL, bytes.NewBuffer(racerJSON))
+		req2.Header.Set("Content-Type", "application/json")
+		req2.Header.Set("Origin", "http://127.0.0.1:6270")
+		req2.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		req2.Host = "127.0.0.1:6270"
+
+		rr2 := httptest.NewRecorder()
+		r2.ServeHTTP(rr2, req2)
+
+		if status := rr2.Code; status != http.StatusOK {
+			t.Fatalf("update racer failed: %v: %s", status, rr2.Body.String())
+		}
+
+		// Verify racer's profile_picture in DB
+		var profilePicture string
+		err = app.DB.QueryRow("SELECT profile_picture FROM racers WHERE id = 1").Scan(&profilePicture)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if profilePicture != uploadURL {
+			t.Errorf("expected profile_picture %q, got %q", uploadURL, profilePicture)
+		}
+
+		// Clean up uploaded file
+		parts := strings.Split(strings.TrimPrefix(uploadURL, "/media/"), "/")
+		if len(parts) == 2 {
+			os.RemoveAll(filepath.Join(app.MediaPath, parts[0]))
+		}
+	})
 }
 
 func TestSecurityHeaders(t *testing.T) {
