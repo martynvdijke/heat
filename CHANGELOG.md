@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/martynvdijke/heat/compare/v1.13.0...v1.13.1) (2026-05-05)
+
+
+### Bug Fixes
+
+* protect SessionStore from concurrent map access and fix logout cookie Secure flag ([f575e0c](https://github.com/martynvdijke/heat/commit/f575e0cb1f3fa69cc7dc8141c896494021a0f6ad))
+
 # [1.13.0](https://github.com/martynvdijke/heat/compare/v1.12.4...v1.13.0) (2026-05-05)
 
 
