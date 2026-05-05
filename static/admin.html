@@ -337,6 +337,7 @@
                                         <th>Podiums</th>
                                         <th>Fastest Laps</th>
                                         <th>DNF</th>
+                                        <th>DNS</th>
                                         <th class="text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>
@@ -971,6 +972,10 @@
                             <div class="col-4">
                                 <label class="form-label small fw-bold">DNF</label>
                                 <input type="number" class="form-control" name="dnf" id="stats-dnf" min="0" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-bold">DNS</label>
+                                <input type="number" class="form-control" name="dns" id="stats-dns" min="0" required>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Save Stats</button>

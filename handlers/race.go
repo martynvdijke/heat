@@ -52,12 +52,13 @@ func SaveRaceToHistory(c *gin.Context) {
 		TotalLaps int    `json:"total_laps"`
 		RaceType  string `json:"race_type"`
 		Results   []struct {
-			RacerID    int    `json:"racer_id"`
-			RacerName  string `json:"racer_name"`
-			Position   int    `json:"position"`
-			Points     int    `json:"points"`
-			FastestLap bool   `json:"fastest_lap"`
-			Finished   bool   `json:"finished"`
+			RacerID     int    `json:"racer_id"`
+			RacerName   string `json:"racer_name"`
+			Position    int    `json:"position"`
+			Points      int    `json:"points"`
+			FastestLap  bool   `json:"fastest_lap"`
+			Finished    bool   `json:"finished"`
+			DidNotStart bool   `json:"did_not_start"`
 		} `json:"results"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -90,14 +91,15 @@ func SaveRaceToHistory(c *gin.Context) {
 			raceID, res.RacerID, res.RacerName, res.Position, res.Points, boolToInt(res.FastestLap))
 
 		if !isOneOff {
-			app.DB.Exec(`INSERT INTO racer_stats (racer_id, races, wins, podiums, fastest_laps, dnf) VALUES (?, 1, ?, ?, ?, ?)
+			app.DB.Exec(`INSERT INTO racer_stats (racer_id, races, wins, podiums, fastest_laps, dnf, dns) VALUES (?, 1, ?, ?, ?, ?, ?)
 					 ON CONFLICT(racer_id) DO UPDATE SET
 					 races = races + 1,
 					 wins = wins + excluded.wins,
 					 podiums = podiums + excluded.podiums,
 					 fastest_laps = fastest_laps + excluded.fastest_laps,
-					 dnf = dnf + excluded.dnf`,
-				res.RacerID, boolToInt(res.Position == 1), boolToInt(res.Position <= 3), boolToInt(res.FastestLap), boolToInt(!res.Finished))
+					 dnf = dnf + excluded.dnf,
+					 dns = dns + excluded.dns`,
+				res.RacerID, boolToInt(res.Position == 1), boolToInt(res.Position <= 3), boolToInt(res.FastestLap), boolToInt(!res.Finished && !res.DidNotStart), boolToInt(res.DidNotStart))
 		}
 	}
 

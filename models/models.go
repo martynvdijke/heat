@@ -51,6 +51,7 @@ type RacerStats struct {
 	FastestLaps int `json:"fastest_laps"`
 	Points      int `json:"points"`
 	DNF         int `json:"dnf"`
+	DNS         int `json:"dns"`
 }
 
 type Quote struct {

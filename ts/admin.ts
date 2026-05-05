@@ -28,6 +28,7 @@ interface AdminStats {
     podiums: number;
     fastest_laps: number;
     dnf: number;
+    dns: number;
 }
 
 interface AdminHistory {
@@ -304,7 +305,7 @@ function racerNameById(id: number): string {
 function renderStatsList(): void {
     const list = document.getElementById('stats-list')!;
     if (racerStats.length === 0) {
-        list.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No stats yet. <button class="btn btn-sm btn-outline-primary ms-2" onclick="openStatsModal()"><i class="fa-solid fa-plus me-1"></i>Create Stats</button></td></tr>';
+        list.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No stats yet. <button class="btn btn-sm btn-outline-primary ms-2" onclick="openStatsModal()"><i class="fa-solid fa-plus me-1"></i>Create Stats</button></td></tr>';
         return;
     }
     list.innerHTML = racerStats.map(s => `
@@ -315,6 +316,7 @@ function renderStatsList(): void {
             <td><span class="badge bg-secondary">${s.podiums}</span></td>
             <td><span class="badge bg-info">${s.fastest_laps}</span></td>
             <td><span class="badge bg-danger">${s.dnf}</span></td>
+            <td><span class="badge bg-dark">${s.dns}</span></td>
             <td class="text-end pe-4">
                 <button class="btn btn-sm btn-outline-primary" onclick="editStats(${s.id})"><i class="fa-solid fa-pen"></i></button>
             </td>
@@ -339,6 +341,7 @@ function openStatsModal(stat?: AdminStats): void {
         (document.getElementById('stats-podiums') as HTMLInputElement).value = String(stat.podiums);
         (document.getElementById('stats-fastest-laps') as HTMLInputElement).value = String(stat.fastest_laps);
         (document.getElementById('stats-dnf') as HTMLInputElement).value = String(stat.dnf);
+        (document.getElementById('stats-dns') as HTMLInputElement).value = String(stat.dns);
         (document.getElementById('statsModalLabel') as HTMLElement).textContent = 'Edit Stats: ' + racerNameById(stat.racer_id);
     } else {
         (document.getElementById('stats-form') as HTMLFormElement).reset();
@@ -372,7 +375,8 @@ document.getElementById('stats-form')!.addEventListener('submit', async (e: Even
         wins: parseInt((document.getElementById('stats-wins') as HTMLInputElement).value) || 0,
         podiums: parseInt((document.getElementById('stats-podiums') as HTMLInputElement).value) || 0,
         fastest_laps: parseInt((document.getElementById('stats-fastest-laps') as HTMLInputElement).value) || 0,
-        dnf: parseInt((document.getElementById('stats-dnf') as HTMLInputElement).value) || 0
+        dnf: parseInt((document.getElementById('stats-dnf') as HTMLInputElement).value) || 0,
+        dns: parseInt((document.getElementById('stats-dns') as HTMLInputElement).value) || 0
     };
 
     const res = await fetch('/api/racer-stats', {

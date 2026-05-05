@@ -16,11 +16,11 @@ func GetRacerStats(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
 		stats := make([]models.RacerStats, 0)
-		rows, _ := app.DB.Query("SELECT id, racer_id, races, wins, podiums, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf FROM racer_stats")
+		rows, _ := app.DB.Query("SELECT id, racer_id, races, wins, podiums, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf, dns FROM racer_stats")
 		if rows != nil {
 			for rows.Next() {
 				var s models.RacerStats
-				rows.Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Podiums, &s.FastestLaps, &s.Points, &s.DNF)
+				rows.Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Podiums, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 				stats = append(stats, s)
 			}
 			rows.Close()
@@ -30,9 +30,9 @@ func GetRacerStats(c *gin.Context) {
 	}
 
 	var s models.RacerStats
-	err := app.DB.QueryRow("SELECT id, racer_id, races, wins, podiums, fastest_laps, COALESCE((SELECT SUM(points) FROM racers WHERE id = racer_id), 0) as pts, dnf FROM racer_stats WHERE racer_id = ?", id).Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Podiums, &s.FastestLaps, &s.Points, &s.DNF)
+	err := app.DB.QueryRow("SELECT id, racer_id, races, wins, podiums, fastest_laps, COALESCE((SELECT SUM(points) FROM racers WHERE id = racer_id), 0) as pts, dnf, dns FROM racer_stats WHERE racer_id = ?", id).Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Podiums, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 	if err != nil {
-		s = models.RacerStats{RacerID: 0, Races: 0, Wins: 0, Podiums: 0, FastestLaps: 0, Points: 0, DNF: 0}
+		s = models.RacerStats{RacerID: 0, Races: 0, Wins: 0, Podiums: 0, FastestLaps: 0, Points: 0, DNF: 0, DNS: 0}
 	}
 
 	var rInfo models.Racer
@@ -49,15 +49,15 @@ func UpdateRacerStats(c *gin.Context) {
 	}
 
 	if stats.ID == 0 {
-		_, err := app.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, podiums, fastest_laps, dnf) VALUES (?, ?, ?, ?, ?, ?)",
-			stats.RacerID, stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF)
+		_, err := app.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, podiums, fastest_laps, dnf, dns) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			stats.RacerID, stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF, stats.DNS)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
-		_, err := app.DB.Exec("UPDATE racer_stats SET races = ?, wins = ?, podiums = ?, fastest_laps = ?, dnf = ? WHERE id = ?",
-			stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF, stats.ID)
+		_, err := app.DB.Exec("UPDATE racer_stats SET races = ?, wins = ?, podiums = ?, fastest_laps = ?, dnf = ?, dns = ? WHERE id = ?",
+			stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF, stats.DNS, stats.ID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -430,7 +430,7 @@ func ExportStatsCSV(c *gin.Context) {
 		format = "csv"
 	}
 
-	rows, err := app.DB.Query("SELECT r.id, r.name, r.car_name, r.points, r.rank, COALESCE(rs.races, 0), COALESCE(rs.wins, 0), COALESCE(rs.podiums, 0), COALESCE(rs.fastest_laps, 0), COALESCE(rs.dnf, 0) FROM racers r LEFT JOIN racer_stats rs ON rs.racer_id = r.id ORDER BY r.rank")
+	rows, err := app.DB.Query("SELECT r.id, r.name, r.car_name, r.points, r.rank, COALESCE(rs.races, 0), COALESCE(rs.wins, 0), COALESCE(rs.podiums, 0), COALESCE(rs.fastest_laps, 0), COALESCE(rs.dnf, 0), COALESCE(rs.dns, 0) FROM racers r LEFT JOIN racer_stats rs ON rs.racer_id = r.id ORDER BY r.rank")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -441,17 +441,17 @@ func ExportStatsCSV(c *gin.Context) {
 	c.Header("Content-Disposition", "attachment; filename=heat_racer_stats.csv")
 
 	writer := csv.NewWriter(c.Writer)
-	writer.Write([]string{"ID", "Name", "Car", "Points", "Rank", "Races", "Wins", "Podiums", "Fastest Laps", "DNF"})
+	writer.Write([]string{"ID", "Name", "Car", "Points", "Rank", "Races", "Wins", "Podiums", "Fastest Laps", "DNF", "DNS"})
 
 	for rows.Next() {
-		var id, points, rank, races, wins, podiums, fl, dnf int
+		var id, points, rank, races, wins, podiums, fl, dnf, dns int
 		var name, carName string
-		rows.Scan(&id, &name, &carName, &points, &rank, &races, &wins, &podiums, &fl, &dnf)
+		rows.Scan(&id, &name, &carName, &points, &rank, &races, &wins, &podiums, &fl, &dnf, &dns)
 		writer.Write([]string{
 			strconv.Itoa(id), name, carName,
 			strconv.Itoa(points), strconv.Itoa(rank),
 			strconv.Itoa(races), strconv.Itoa(wins),
-			strconv.Itoa(podiums), strconv.Itoa(fl), strconv.Itoa(dnf),
+			strconv.Itoa(podiums), strconv.Itoa(fl), strconv.Itoa(dnf), strconv.Itoa(dns),
 		})
 	}
 	writer.Flush()

@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -332,7 +333,7 @@ func TestUpdateRacerStats(t *testing.T) {
 
 	// Create new stats for racer 3 (no existing stats yet)
 	createBody, _ := json.Marshal(models.RacerStats{
-		RacerID: 3, Races: 10, Wins: 4, Podiums: 7, FastestLaps: 3, DNF: 1,
+		RacerID: 3, Races: 10, Wins: 4, Podiums: 7, FastestLaps: 3, DNF: 1, DNS: 2,
 	})
 	req, _ := http.NewRequest("POST", "/api/racer-stats", bytes.NewBuffer(createBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -353,8 +354,8 @@ func TestUpdateRacerStats(t *testing.T) {
 	json.Unmarshal(rr.Body.Bytes(), &result)
 	var s models.RacerStats
 	json.Unmarshal(result["stats"], &s)
-	if s.Races != 10 || s.Wins != 4 || s.Podiums != 7 || s.FastestLaps != 3 || s.DNF != 1 {
-		t.Errorf("expected stats (10,4,7,3,1), got (%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Podiums, s.FastestLaps, s.DNF)
+	if s.Races != 10 || s.Wins != 4 || s.Podiums != 7 || s.FastestLaps != 3 || s.DNF != 1 || s.DNS != 2 {
+		t.Errorf("expected stats (10,4,7,3,1,2), got (%d,%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Podiums, s.FastestLaps, s.DNF, s.DNS)
 	}
 
 	// Find the actual DB id for the update
@@ -363,7 +364,7 @@ func TestUpdateRacerStats(t *testing.T) {
 
 	// Update existing stats
 	updateBody, _ := json.Marshal(models.RacerStats{
-		ID: statsID, RacerID: 3, Races: 20, Wins: 8, Podiums: 15, FastestLaps: 6, DNF: 2,
+		ID: statsID, RacerID: 3, Races: 20, Wins: 8, Podiums: 15, FastestLaps: 6, DNF: 2, DNS: 1,
 	})
 	req, _ = http.NewRequest("POST", "/api/racer-stats", bytes.NewBuffer(updateBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -379,9 +380,73 @@ func TestUpdateRacerStats(t *testing.T) {
 	r.ServeHTTP(rr, req)
 	json.Unmarshal(rr.Body.Bytes(), &result)
 	json.Unmarshal(result["stats"], &s)
-	if s.Races != 20 || s.Wins != 8 || s.Podiums != 15 || s.FastestLaps != 6 || s.DNF != 2 {
-		t.Errorf("expected updated stats (20,8,15,6,2), got (%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Podiums, s.FastestLaps, s.DNF)
+	if s.Races != 20 || s.Wins != 8 || s.Podiums != 15 || s.FastestLaps != 6 || s.DNF != 2 || s.DNS != 1 {
+		t.Errorf("expected updated stats (20,8,15,6,2,1), got (%d,%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Podiums, s.FastestLaps, s.DNF, s.DNS)
 	}
+}
+
+func TestRaceHistoryWithDNS(t *testing.T) {
+	r := gin.New()
+	r.POST("/api/race-history", handlers.SaveRaceToHistory)
+	r.GET("/api/racer-stats", handlers.GetRacerStats)
+
+	// Save a race with one DNF and one DNS
+	payload := map[string]interface{}{
+		"name":       "DNS Test Race",
+		"race_date":  "2025-06-01",
+		"country":    "Italy",
+		"track":      "Monza",
+		"track_id":   "monza",
+		"total_laps": 53,
+		"race_type":  "season",
+		"results": []map[string]interface{}{
+			{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true, "finished": true},
+			{"racer_id": 2, "racer_name": "M. SCHUMACHER", "position": 2, "points": 18, "fastest_lap": false, "finished": true},
+			{"racer_id": 5, "racer_name": "J. STEWART", "position": 999, "points": 0, "fastest_lap": false, "finished": false, "did_not_start": false},
+			{"racer_id": 4, "racer_name": "N. LAUDA", "position": 0, "points": 0, "fastest_lap": false, "finished": false, "did_not_start": true},
+		},
+	}
+	body, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("expected status 200, got %v: %s", status, rr.Body.String())
+	}
+
+	// Check racer 5 has DNF=1, DNS=0
+	req, _ = http.NewRequest("GET", "/api/racer-stats?id=5", nil)
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	var result map[string]json.RawMessage
+	json.Unmarshal(rr.Body.Bytes(), &result)
+	var s5 models.RacerStats
+	json.Unmarshal(result["stats"], &s5)
+	if s5.DNF != 1 {
+		t.Errorf("racer 5: expected DNF=1, got %d", s5.DNF)
+	}
+	if s5.DNS != 0 {
+		t.Errorf("racer 5: expected DNS=0, got %d", s5.DNS)
+	}
+
+	// Check racer 4 has DNS=1, DNF=0
+	req, _ = http.NewRequest("GET", "/api/racer-stats?id=4", nil)
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	json.Unmarshal(rr.Body.Bytes(), &result)
+	var s4 models.RacerStats
+	json.Unmarshal(result["stats"], &s4)
+	if s4.DNF != 0 {
+		t.Errorf("racer 4: expected DNF=0, got %d", s4.DNF)
+	}
+	if s4.DNS != 1 {
+		t.Errorf("racer 4: expected DNS=1, got %d", s4.DNS)
+	}
+
+	// Cleanup: remove the test race
+	app.DB.Exec("DELETE FROM race_results WHERE race_id IN (SELECT id FROM race_history WHERE name = 'DNS Test Race')")
+	app.DB.Exec("DELETE FROM race_history WHERE name = 'DNS Test Race'")
 }
 
 func TestGetTracks(t *testing.T) {
@@ -850,15 +915,71 @@ func TestTrackPerformance(t *testing.T) {
 
 func TestDeleteRaceHistory(t *testing.T) {
 	r := gin.New()
+	r.POST("/api/race-history", handlers.SaveRaceToHistory)
 	r.DELETE("/api/race-history", handlers.DeleteRaceHistory)
+	r.GET("/api/race-history", handlers.GetRaceHistory)
 
-	req, _ := http.NewRequest("DELETE", "/api/race-history?id=999", nil)
-	rr := httptest.NewRecorder()
-	r.ServeHTTP(rr, req)
+	t.Run("DeleteNonExistent", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", "/api/race-history?id=999", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected status 200, got %v", status)
+		}
+	})
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("expected status 200, got %v", status)
-	}
+	t.Run("CreateAndDelete", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"name":       "Race To Delete",
+			"race_date":  "2025-07-01",
+			"country":    "Belgium",
+			"track":      "Spa",
+			"track_id":   "spa",
+			"total_laps": 44,
+			"race_type":  "season",
+			"results": []map[string]interface{}{
+				{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true, "finished": true},
+			},
+		}
+		body, _ := json.Marshal(payload)
+		req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if status := rr.Code; status != http.StatusOK {
+			t.Fatalf("save: expected status 200, got %v", status)
+		}
+		var result map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &result)
+		raceID := int(result["id"].(float64))
+
+		// Verify it exists
+		req, _ = http.NewRequest("GET", "/api/race-history?id="+strconv.Itoa(raceID), nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var history []models.RaceHistory
+		json.Unmarshal(rr.Body.Bytes(), &history)
+		if len(history) != 1 {
+			t.Fatalf("expected 1 race, got %d", len(history))
+		}
+
+		// Delete it
+		req, _ = http.NewRequest("DELETE", "/api/race-history?id="+strconv.Itoa(raceID), nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("delete: expected status 200, got %v", status)
+		}
+
+		// Verify it's gone
+		req, _ = http.NewRequest("GET", "/api/race-history?id="+strconv.Itoa(raceID), nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		json.Unmarshal(rr.Body.Bytes(), &history)
+		if len(history) != 0 {
+			t.Errorf("expected 0 races after delete, got %d", len(history))
+		}
+	})
 }
 
 func TestDeleteOneOffRace(t *testing.T) {
