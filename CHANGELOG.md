@@ -1,3 +1,10 @@
+## [1.13.2](https://github.com/martynvdijke/heat/compare/v1.13.1...v1.13.2) (2026-05-05)
+
+
+### Bug Fixes
+
+* support legacy SHA-256 password login and remove unused chat page ([0adf194](https://github.com/martynvdijke/heat/commit/0adf194c3e938301978db1b8ee493392ebfaceea))
+
 ## [1.13.1](https://github.com/martynvdijke/heat/compare/v1.13.0...v1.13.1) (2026-05-05)
 
 
