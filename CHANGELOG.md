@@ -1,3 +1,11 @@
+# [1.14.0](https://github.com/martynvdijke/heat/compare/v1.13.4...v1.14.0) (2026-05-05)
+
+
+### Features
+
+* add periodic database backup with admin panel management ([e07ea47](https://github.com/martynvdijke/heat/commit/e07ea4736f390f7ebb65fa2fb96634471144211c))
+* replace prompt-based stats editing with proper modal in admin panel ([923e7d8](https://github.com/martynvdijke/heat/commit/923e7d89b8bd046f899417c684180bc0fc083e09))
+
 ## [1.13.4](https://github.com/martynvdijke/heat/compare/v1.13.3...v1.13.4) (2026-05-05)
 
 
