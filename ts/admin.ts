@@ -772,6 +772,10 @@ async function uploadImage(input: HTMLInputElement): Promise<void> {
     fd.append('image', file);
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
     const data = await res.json();
+    if (!res.ok) {
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+        return;
+    }
     (document.getElementById('profile_picture') as HTMLInputElement).value = data.url;
     const preview = document.getElementById('racer-pic-preview') as HTMLImageElement;
     preview.src = data.url;
@@ -807,11 +811,13 @@ async function uploadMapImage(input: HTMLInputElement): Promise<void> {
     if (!input.files || !input.files[0]) return;
     const formData = new FormData();
     formData.append('image', input.files[0]);
-    try {
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        (document.getElementById('map-image-url') as HTMLInputElement).value = data.url;
-    } catch (e) { alert('Upload failed'); }
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) {
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+        return;
+    }
+    (document.getElementById('map-image-url') as HTMLInputElement).value = data.url;
 }
 
 async function loadAISettings(): Promise<void> {
@@ -879,15 +885,17 @@ async function uploadAIImage(input: HTMLInputElement): Promise<void> {
     if (!input.files || !input.files[0]) return;
     const formData = new FormData();
     formData.append('image', input.files[0]);
-    try {
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        (document.getElementById('ai-extract-map-url') as HTMLInputElement).value = data.url;
-        const preview = document.getElementById('ai-extract-preview')!;
-        const img = document.getElementById('ai-extract-preview-img') as HTMLImageElement;
-        img.src = data.url;
-        preview.style.display = 'block';
-    } catch (e) { alert('Upload failed'); }
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) {
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+        return;
+    }
+    (document.getElementById('ai-extract-map-url') as HTMLInputElement).value = data.url;
+    const preview = document.getElementById('ai-extract-preview')!;
+    const img = document.getElementById('ai-extract-preview-img') as HTMLImageElement;
+    img.src = data.url;
+    preview.style.display = 'block';
 }
 
 let extractedGeoJSON: any = null;
