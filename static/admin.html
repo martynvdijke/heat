@@ -96,11 +96,6 @@
         .nav-tabs .nav-link i {
             font-size: clamp(0.9rem, 2vw, 1.1rem);
         }
-        .nav-tabs .nav-link.disabled {
-            background: transparent !important;
-            pointer-events: none;
-            letter-spacing: 0.08em;
-        }
         .qualification-card {
             transition: all 0.3s ease;
         }
@@ -170,9 +165,6 @@
 
     <div class="container">
         <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-            <li class="nav-item w-100">
-                <span class="nav-link disabled small text-uppercase text-muted fw-bold px-2 py-1 border-0">Race</span>
-            </li>
             <li class="nav-item">
                 <button class="nav-link active" id="race-tab" data-bs-toggle="tab" data-bs-target="#race-pane" type="button"><i class="fa-solid fa-gauge-high me-2"></i>Race Setup</button>
             </li>
@@ -181,9 +173,6 @@
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="archive-tab" data-bs-toggle="tab" data-bs-target="#archive-pane" type="button"><i class="fa-solid fa-box-archive me-2"></i>Archive</button>
-            </li>
-            <li class="nav-item w-100">
-                <span class="nav-link disabled small text-uppercase text-muted fw-bold px-2 py-1 border-0 mt-2">Data</span>
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="racers-tab" data-bs-toggle="tab" data-bs-target="#racers-pane" type="button"><i class="fa-solid fa-users me-2"></i>Racers</button>
@@ -196,9 +185,6 @@
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button"><i class="fa-solid fa-comment me-2"></i>Quotes</button>
-            </li>
-            <li class="nav-item w-100">
-                <span class="nav-link disabled small text-uppercase text-muted fw-bold px-2 py-1 border-0 mt-2">Settings</span>
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-pane" type="button"><i class="fa-solid fa-bell me-2"></i>Notifications</button>
