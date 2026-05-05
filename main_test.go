@@ -325,6 +325,65 @@ func TestGetRacerStats(t *testing.T) {
 	}
 }
 
+func TestUpdateRacerStats(t *testing.T) {
+	r := gin.New()
+	r.POST("/api/racer-stats", handlers.UpdateRacerStats)
+	r.GET("/api/racer-stats", handlers.GetRacerStats)
+
+	// Create new stats for racer 3 (no existing stats yet)
+	createBody, _ := json.Marshal(models.RacerStats{
+		RacerID: 3, Races: 10, Wins: 4, Podiums: 7, FastestLaps: 3, DNF: 1,
+	})
+	req, _ := http.NewRequest("POST", "/api/racer-stats", bytes.NewBuffer(createBody))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("create: expected status 200, got %v: %s", status, rr.Body.String())
+	}
+
+	// Verify via GET with racer_id=3
+	req, _ = http.NewRequest("GET", "/api/racer-stats?id=3", nil)
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("get after create: expected status 200, got %v", status)
+	}
+	var result map[string]json.RawMessage
+	json.Unmarshal(rr.Body.Bytes(), &result)
+	var s models.RacerStats
+	json.Unmarshal(result["stats"], &s)
+	if s.Races != 10 || s.Wins != 4 || s.Podiums != 7 || s.FastestLaps != 3 || s.DNF != 1 {
+		t.Errorf("expected stats (10,4,7,3,1), got (%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Podiums, s.FastestLaps, s.DNF)
+	}
+
+	// Find the actual DB id for the update
+	var statsID int
+	app.DB.QueryRow("SELECT id FROM racer_stats WHERE racer_id = 3").Scan(&statsID)
+
+	// Update existing stats
+	updateBody, _ := json.Marshal(models.RacerStats{
+		ID: statsID, RacerID: 3, Races: 20, Wins: 8, Podiums: 15, FastestLaps: 6, DNF: 2,
+	})
+	req, _ = http.NewRequest("POST", "/api/racer-stats", bytes.NewBuffer(updateBody))
+	req.Header.Set("Content-Type", "application/json")
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("update: expected status 200, got %v: %s", status, rr.Body.String())
+	}
+
+	// Verify updated
+	req, _ = http.NewRequest("GET", "/api/racer-stats?id=3", nil)
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	json.Unmarshal(rr.Body.Bytes(), &result)
+	json.Unmarshal(result["stats"], &s)
+	if s.Races != 20 || s.Wins != 8 || s.Podiums != 15 || s.FastestLaps != 6 || s.DNF != 2 {
+		t.Errorf("expected updated stats (20,8,15,6,2), got (%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Podiums, s.FastestLaps, s.DNF)
+	}
+}
+
 func TestGetTracks(t *testing.T) {
 	r := gin.New()
 	r.GET("/api/tracks", handlers.GetTracks)

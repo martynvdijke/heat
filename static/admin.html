@@ -317,7 +317,12 @@
             <!-- Stats Pane -->
             <div class="tab-pane fade" id="stats-pane">
                 <div class="card">
-                    <div class="card-header"><i class="fa-solid fa-chart-bar me-2 text-danger"></i>Driver Statistics</div>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-chart-bar me-2 text-danger"></i>Driver Statistics</span>
+                        <button class="btn btn-sm btn-success" onclick="openStatsModal()">
+                            <i class="fa-solid fa-plus me-1"></i> Add Stats
+                        </button>
+                    </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
@@ -849,6 +854,55 @@
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Save Track</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div class="modal fade" id="statsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="statsModalLabel">Edit Driver Stats</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="stats-form">
+                        <input type="hidden" name="id" id="stats-id">
+                        <input type="hidden" name="racer_id" id="stats-racer-id">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Driver</label>
+                            <select class="form-select" id="stats-racer-select" required>
+                                <option value="">Select a driver...</option>
+                            </select>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Races</label>
+                                <input type="number" class="form-control" name="races" id="stats-races" min="0" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Wins</label>
+                                <input type="number" class="form-control" name="wins" id="stats-wins" min="0" required>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-4">
+                                <label class="form-label small fw-bold">Podiums</label>
+                                <input type="number" class="form-control" name="podiums" id="stats-podiums" min="0" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-bold">Fastest Laps</label>
+                                <input type="number" class="form-control" name="fastest_laps" id="stats-fastest-laps" min="0" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-bold">DNF</label>
+                                <input type="number" class="form-control" name="dnf" id="stats-dnf" min="0" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save Stats</button>
                     </form>
                 </div>
             </div>

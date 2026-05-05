@@ -50,6 +50,7 @@ declare const bootstrap: any;
 const racerModal = new bootstrap.Modal(document.getElementById('racerModal')!);
 const quoteModal = new bootstrap.Modal(document.getElementById('quoteModal')!);
 const trackModal = new bootstrap.Modal(document.getElementById('trackModal')!);
+const statsModal = new bootstrap.Modal(document.getElementById('statsModal')!);
 
 async function init(): Promise<void> {
     (document.getElementById('archive-date') as HTMLInputElement).valueAsDate = new Date();
@@ -303,7 +304,7 @@ function racerNameById(id: number): string {
 function renderStatsList(): void {
     const list = document.getElementById('stats-list')!;
     if (racerStats.length === 0) {
-        list.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No stats yet. <button class="btn btn-sm btn-outline-primary ms-2" onclick="addStats()"><i class="fa-solid fa-plus me-1"></i>Create Stats</button></td></tr>';
+        list.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No stats yet. <button class="btn btn-sm btn-outline-primary ms-2" onclick="openStatsModal()"><i class="fa-solid fa-plus me-1"></i>Create Stats</button></td></tr>';
         return;
     }
     list.innerHTML = racerStats.map(s => `
@@ -315,67 +316,78 @@ function renderStatsList(): void {
             <td><span class="badge bg-info">${s.fastest_laps}</span></td>
             <td><span class="badge bg-danger">${s.dnf}</span></td>
             <td class="text-end pe-4">
-                <button class="btn btn-sm btn-outline-primary" onclick="editStats(${s.id}, ${s.racer_id}, ${s.races}, ${s.wins}, ${s.podiums}, ${s.fastest_laps}, ${s.dnf})"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-sm btn-outline-primary" onclick="editStats(${s.id})"><i class="fa-solid fa-pen"></i></button>
             </td>
         </tr>
     `).join('');
 }
 
-function addStats(): void {
-    const racerId = prompt('Racer ID (check Racers tab for ID):');
-    if (!racerId) return;
-    const races = prompt('Races:', '0');
-    if (races === null) return;
-    const wins = prompt('Wins:', '0');
-    if (wins === null) return;
-    const podiums = prompt('Podiums:', '0');
-    if (podiums === null) return;
-    const fastestLaps = prompt('Fastest Laps:', '0');
-    if (fastestLaps === null) return;
-    const dnf = prompt('DNF:', '0');
-    if (dnf === null) return;
+function openStatsModal(stat?: AdminStats): void {
+    const select = document.getElementById('stats-racer-select') as HTMLSelectElement;
+    const currentRacerId = stat ? stat.racer_id : 0;
 
-    fetch('/api/racer-stats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            id: 0,
-            racer_id: parseInt(racerId),
-            races: parseInt(races),
-            wins: parseInt(wins),
-            podiums: parseInt(podiums),
-            fastest_laps: parseInt(fastestLaps),
-            dnf: parseInt(dnf)
-        })
-    }).then(() => loadRacerStats());
+    select.innerHTML = '<option value="">Select a driver...</option>' +
+        adminRacers.map(r =>
+            `<option value="${r.id}" ${r.id === currentRacerId ? 'selected' : ''}>${escapeHtml(r.name)}</option>`
+        ).join('');
+
+    if (stat) {
+        (document.getElementById('stats-id') as HTMLInputElement).value = String(stat.id);
+        (document.getElementById('stats-racer-id') as HTMLInputElement).value = String(stat.racer_id);
+        (document.getElementById('stats-races') as HTMLInputElement).value = String(stat.races);
+        (document.getElementById('stats-wins') as HTMLInputElement).value = String(stat.wins);
+        (document.getElementById('stats-podiums') as HTMLInputElement).value = String(stat.podiums);
+        (document.getElementById('stats-fastest-laps') as HTMLInputElement).value = String(stat.fastest_laps);
+        (document.getElementById('stats-dnf') as HTMLInputElement).value = String(stat.dnf);
+        (document.getElementById('statsModalLabel') as HTMLElement).textContent = 'Edit Stats: ' + racerNameById(stat.racer_id);
+    } else {
+        (document.getElementById('stats-form') as HTMLFormElement).reset();
+        (document.getElementById('stats-id') as HTMLInputElement).value = '';
+        (document.getElementById('stats-racer-id') as HTMLInputElement).value = '';
+        (document.getElementById('statsModalLabel') as HTMLElement).textContent = 'Add New Stats';
+    }
+
+    statsModal.show();
 }
 
-function editStats(id: number, racerId: number, races: number, wins: number, podiums: number, fastestLaps: number, dnf: number): void {
-    const newRaces = prompt('Races:', String(races))!;
-    if (newRaces === null) return;
-    const newWins = prompt('Wins:', String(wins))!;
-    if (newWins === null) return;
-    const newPodiums = prompt('Podiums:', String(podiums))!;
-    if (newPodiums === null) return;
-    const newFastestLaps = prompt('Fastest Laps:', String(fastestLaps))!;
-    if (newFastestLaps === null) return;
-    const newDnf = prompt('DNF:', String(dnf))!;
-    if (newDnf === null) return;
+function editStats(id: number): void {
+    const stat = racerStats.find(s => s.id === id);
+    if (!stat) return;
+    openStatsModal(stat);
+}
 
-    fetch('/api/racer-stats', {
+document.getElementById('stats-form')!.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    const select = document.getElementById('stats-racer-select') as HTMLSelectElement;
+    const racerId = parseInt(select.value);
+    if (!racerId) {
+        alert('Please select a driver');
+        return;
+    }
+
+    const data = {
+        id: parseInt((document.getElementById('stats-id') as HTMLInputElement).value) || 0,
+        racer_id: racerId,
+        races: parseInt((document.getElementById('stats-races') as HTMLInputElement).value) || 0,
+        wins: parseInt((document.getElementById('stats-wins') as HTMLInputElement).value) || 0,
+        podiums: parseInt((document.getElementById('stats-podiums') as HTMLInputElement).value) || 0,
+        fastest_laps: parseInt((document.getElementById('stats-fastest-laps') as HTMLInputElement).value) || 0,
+        dnf: parseInt((document.getElementById('stats-dnf') as HTMLInputElement).value) || 0
+    };
+
+    const res = await fetch('/api/racer-stats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            id: id,
-            racer_id: racerId,
-            races: parseInt(newRaces),
-            wins: parseInt(newWins),
-            podiums: parseInt(newPodiums),
-            fastest_laps: parseInt(newFastestLaps),
-            dnf: parseInt(newDnf)
-        })
-    }).then(() => loadRacerStats());
-}
+        body: JSON.stringify(data)
+    });
+    if (res.ok) {
+        statsModal.hide();
+        loadRacerStats();
+    } else {
+        const err = await res.json();
+        alert('Failed to save stats: ' + (err.error || 'Unknown error'));
+    }
+});
 
 document.getElementById('race-form')!.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
