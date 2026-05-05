@@ -1,3 +1,10 @@
+## [1.15.2](https://github.com/martynvdijke/heat/compare/v1.15.1...v1.15.2) (2026-05-05)
+
+
+### Bug Fixes
+
+* revert settings sidebar grouping and add profile picture upload tests ([56819ca](https://github.com/martynvdijke/heat/commit/56819ca9735bb11f5dbd0d93008c7dc909b3f327))
+
 ## [1.15.1](https://github.com/martynvdijke/heat/compare/v1.15.0...v1.15.1) (2026-05-05)
 
 
