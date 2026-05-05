@@ -12,7 +12,9 @@ This will:
 
 1. Run Go formatting (`gofmt`)
 2. Run Go tests
-3. Run Playwright tests
+3. Run Go vet + vulnerability scan (`govulncheck`)
+4. Compile TypeScript
+5. Build the Go binary
 
 ## Commit Messages
 
@@ -21,10 +23,11 @@ Use conventional commits with semver (e.g., "feat: add new feature", "fix: resol
 ## Individual Commands
 
 ```bash
-task test           # Run all tests (go + playwright)
-task test-go        # Run Go tests only
-task test-playwright # Run Playwright tests only
+task test           # Run Go unit tests only
+task test:e2e       # Run Playwright end-to-end tests only
 task fmt            # Run Go formatting only
+task vuln           # Run Go vet + govulncheck vulnerability scan
+task build          # Build the Go binary (compiles TS first)
 task check          # Run tests only (no formatting)
 ```
 
