@@ -138,8 +138,14 @@ func TestAuthMiddleware(t *testing.T) {
 
 	t.Run("Authorized", func(t *testing.T) {
 		sessionID := "test-session"
+		app.SessionStoreMu.Lock()
 		app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
-		defer delete(app.SessionStore, sessionID)
+		app.SessionStoreMu.Unlock()
+		defer func() {
+			app.SessionStoreMu.Lock()
+			delete(app.SessionStore, sessionID)
+			app.SessionStoreMu.Unlock()
+		}()
 
 		req, _ := http.NewRequest("GET", "/api/test", nil)
 		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})

@@ -102,19 +102,25 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		app.SessionStoreMu.RLock()
 		info, ok := app.SessionStore[sessionCookie]
+		app.SessionStoreMu.RUnlock()
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
 			return
 		}
 		if time.Now().Unix() > info.Expiry {
+			app.SessionStoreMu.Lock()
 			delete(app.SessionStore, sessionCookie)
+			app.SessionStoreMu.Unlock()
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
 			return
 		}
 
 		if info.IP != "" && c.ClientIP() != info.IP {
+			app.SessionStoreMu.Lock()
 			delete(app.SessionStore, sessionCookie)
+			app.SessionStoreMu.Unlock()
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session invalid"})
 			return
 		}

@@ -46,11 +46,13 @@ func main() {
 		for {
 			time.Sleep(15 * time.Minute)
 			now := time.Now().Unix()
+			app.SessionStoreMu.Lock()
 			for k, v := range app.SessionStore {
 				if now > v.Expiry {
 					delete(app.SessionStore, k)
 				}
 			}
+			app.SessionStoreMu.Unlock()
 		}
 	}()
 
@@ -163,7 +165,10 @@ func main() {
 			var validSession string
 			for _, cookie := range c.Request.Cookies() {
 				if cookie.Name == "session" {
-					if _, ok := app.SessionStore[cookie.Value]; ok {
+					app.SessionStoreMu.RLock()
+					_, ok := app.SessionStore[cookie.Value]
+					app.SessionStoreMu.RUnlock()
+					if ok {
 						validSession = cookie.Value
 						break
 					}
@@ -180,7 +185,9 @@ func main() {
 		r.GET("/login.html", func(c *gin.Context) {
 			cookie, err := c.Request.Cookie("session")
 			if err == nil {
+				app.SessionStoreMu.RLock()
 				info, ok := app.SessionStore[cookie.Value]
+				app.SessionStoreMu.RUnlock()
 				if ok && time.Now().Unix() <= info.Expiry {
 					c.Redirect(http.StatusFound, "/admin.html")
 					return
@@ -209,7 +216,10 @@ func main() {
 			var validSession string
 			for _, cookie := range c.Request.Cookies() {
 				if cookie.Name == "session" {
-					if _, ok := app.SessionStore[cookie.Value]; ok {
+					app.SessionStoreMu.RLock()
+					_, ok := app.SessionStore[cookie.Value]
+					app.SessionStoreMu.RUnlock()
+					if ok {
 						validSession = cookie.Value
 						break
 					}

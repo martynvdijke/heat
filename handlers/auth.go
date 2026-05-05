@@ -54,7 +54,9 @@ func HandleLogin(c *gin.Context) {
 		}
 
 		sessionID := generateSessionID()
+		app.SessionStoreMu.Lock()
 		app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
+		app.SessionStoreMu.Unlock()
 		setSessionCookie(c, sessionID)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		return
@@ -77,7 +79,9 @@ func HandleLogin(c *gin.Context) {
 	}
 
 	sessionID := generateSessionID()
+	app.SessionStoreMu.Lock()
 	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
+	app.SessionStoreMu.Unlock()
 	setSessionCookie(c, sessionID)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
@@ -85,9 +89,11 @@ func HandleLogin(c *gin.Context) {
 func HandleLogout(c *gin.Context) {
 	cookie, err := c.Request.Cookie("session")
 	if err == nil {
+		app.SessionStoreMu.Lock()
 		delete(app.SessionStore, cookie.Value)
+		app.SessionStoreMu.Unlock()
 	}
-	c.SetCookie("session", "", -1, "/", "", false, true)
+	c.SetCookie("session", "", -1, "/", "", app.SecureCookies, true)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
