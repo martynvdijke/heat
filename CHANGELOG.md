@@ -1,3 +1,10 @@
+## [1.12.4](https://github.com/martynvdijke/heat/compare/v1.12.3...v1.12.4) (2026-05-05)
+
+
+### Bug Fixes
+
+* bump hardcoded version from 1.11.1 to 1.12.2 to match releases ([6a23ef0](https://github.com/martynvdijke/heat/commit/6a23ef0ff1e707fc011723999428bfefc514e2b4))
+
 ## [1.12.3](https://github.com/martynvdijke/heat/compare/v1.12.2...v1.12.3) (2026-05-05)
 
 ## [1.12.2](https://github.com/martynvdijke/heat/compare/v1.12.1...v1.12.2) (2026-05-05)
