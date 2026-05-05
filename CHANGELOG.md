@@ -1,3 +1,10 @@
+## [1.13.4](https://github.com/martynvdijke/heat/compare/v1.13.3...v1.13.4) (2026-05-05)
+
+
+### Bug Fixes
+
+* remove MaxBytesReader breaking multipart uploads, fix null stats crash, fix CSP source maps ([1f65ca3](https://github.com/martynvdijke/heat/commit/1f65ca30938d5b51cf738ebb7c55526e3589a3b3))
+
 ## [1.13.3](https://github.com/martynvdijke/heat/compare/v1.13.2...v1.13.3) (2026-05-05)
 
 
