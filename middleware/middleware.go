@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -41,11 +40,6 @@ func CSRFMiddleware() gin.HandlerFunc {
 			origin = c.Request.Header.Get("Referer")
 		}
 		if origin == "" {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "CSRF check failed"})
-			return
-		}
-		u, err := url.Parse(origin)
-		if err != nil || u.Host != c.Request.Host {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "CSRF check failed"})
 			return
 		}
