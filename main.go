@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,16 @@ import (
 	"heat/middleware"
 	"heat/ws"
 )
+
+func servePage(c *gin.Context, path string) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	html := strings.Replace(string(content), "{{VERSION}}", app.CurrentVersion, 1)
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
 
 func main() {
 	if os.Getenv("DOCKER") != "true" {
@@ -233,19 +244,15 @@ func main() {
 		})
 
 		pages.GET("/stats.html", func(c *gin.Context) {
-			c.File(filepath.Join(app.BasePath, "static/stats.html"))
+			servePage(c, filepath.Join(app.BasePath, "static/stats.html"))
 		})
 
 		pages.GET("/trophies.html", func(c *gin.Context) {
-			c.File(filepath.Join(app.BasePath, "static/trophies.html"))
-		})
-
-		pages.GET("/chat.html", func(c *gin.Context) {
-			c.File(filepath.Join(app.BasePath, "static/chat.html"))
+			servePage(c, filepath.Join(app.BasePath, "static/trophies.html"))
 		})
 
 		pages.GET("/", func(c *gin.Context) {
-			c.File(filepath.Join(app.BasePath, "static/index.html"))
+			servePage(c, filepath.Join(app.BasePath, "static/index.html"))
 		})
 	}
 

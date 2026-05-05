@@ -534,11 +534,5 @@ async function loadData(): Promise<void> {
     }
 }
 
-fetch('/api/version').then(r => r.json()).then((d: {version: string}) => {
-    document.getElementById('version-display')!.textContent = `v${d.version}`;
-}).catch(() => {
-    document.getElementById('version-display')!.textContent = 'v1.0.0';
-});
-
 (window as any).showDriverStats = showDriverStats;
 

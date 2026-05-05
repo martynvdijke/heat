@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"log"
 	"net/http"
@@ -74,8 +76,11 @@ func HandleLogin(c *gin.Context) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-		return
+		if !checkLegacyPassword(user.Password, input.Password) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+			return
+		}
+		upgradePassword(user.ID, input.Password)
 	}
 
 	sessionID := generateSessionID()
@@ -116,4 +121,20 @@ func hashPassword(password string) string {
 		return ""
 	}
 	return string(hash)
+}
+
+func checkLegacyPassword(stored, input string) bool {
+	if len(stored) == 0 || stored[0] == '$' {
+		return false
+	}
+	hash := sha256.Sum256([]byte(input))
+	return base64.StdEncoding.EncodeToString(hash[:]) == stored
+}
+
+func upgradePassword(userID int, password string) {
+	newHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return
+	}
+	app.DB.Exec("UPDATE admin_users SET password = ? WHERE id = ?", string(newHash), userID)
 }
