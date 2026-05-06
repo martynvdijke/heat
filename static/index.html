@@ -16,8 +16,16 @@
 </head>
 <body>
     <div class="vintage-overlay"></div>
-    <div id="flag-overlay" class="flag-overlay d-none"></div>
     <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
+    <div class="modal fade" id="flagModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" style="pointer-events:none">
+        <div class="modal-dialog modal-fullscreen m-0">
+            <div class="modal-content border-0 rounded-0" id="flagModalContent" style="min-height:100vh;pointer-events:none">
+                <div class="modal-body d-flex flex-column align-items-center justify-content-center text-center" id="flagModalBody">
+                </div>
+            </div>
+        </div>
+    </div>
     
     <header class="py-4">
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center position-relative">

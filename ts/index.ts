@@ -495,40 +495,76 @@ async function loadRandomQuote(): Promise<void> {
     }
 }
 
+let activeFlags: Record<string, boolean> = {};
+
+function showFlagFullscreen(flagClass: string, icon: string, label: string, sub: string): void {
+    const el = document.getElementById('flagModal');
+    const body = document.getElementById('flagModalBody');
+    const content = document.getElementById('flagModalContent');
+    if (!el || !body || !content) return;
+    content.className = 'modal-content border-0 rounded-0 ' + flagClass;
+    body.innerHTML = `
+        <div style="animation:flagPulse 0.6s ease-in-out infinite">
+            <div style="font-size:8rem;margin-bottom:1.5rem"><i class="fa-solid ${icon}"></i></div>
+            <div style="font-size:6rem;font-weight:900;letter-spacing:12px;text-transform:uppercase;font-family:'Bebas Neue',sans-serif;line-height:1.1">${label}</div>
+            <div style="font-size:1.4rem;opacity:0.85;margin-top:1rem;letter-spacing:4px;text-transform:uppercase">${sub}</div>
+        </div>`;
+    el.style.display = 'block';
+    el.classList.add('show');
+    document.body.classList.add('modal-open');
+}
+
+function hideFlagFullscreen(): void {
+    const el = document.getElementById('flagModal');
+    if (!el) return;
+    el.style.display = 'none';
+    el.classList.remove('show');
+    document.body.classList.remove('modal-open');
+}
+
 function handleFlagCommand(cmd: any): void {
-    const overlay = document.getElementById('flag-overlay')!;
-    if (cmd.flag === 'safety') {
-        overlay.className = 'flag-overlay flag-safety d-flex';
-        overlay.innerHTML = '<div class="flag-content"><div class="flag-icon"><i class="fa-solid fa-car-side"></i></div><div class="flag-text">SAFETY CAR</div><div class="flag-sub">Yellow flag — no overtaking</div></div>';
-        clearFlagOverlay(8000);
-    } else if (cmd.flag === 'red') {
-        overlay.className = 'flag-overlay flag-red d-flex';
-        overlay.innerHTML = '<div class="flag-content"><div class="flag-icon"><i class="fa-solid fa-circle-exclamation"></i></div><div class="flag-text">RED FLAG</div><div class="flag-sub">Race suspended — return to pits</div></div>';
-        clearFlagOverlay(10000);
-    } else if (cmd.flag === 'yellow') {
-        overlay.className = 'flag-overlay flag-yellow d-flex';
-        overlay.innerHTML = '<div class="flag-content"><div class="flag-icon"><i class="fa-solid fa-flag"></i></div><div class="flag-text">YELLOW FLAG</div><div class="flag-sub">Caution — danger ahead</div></div>';
-        clearFlagOverlay(6000);
-    } else if (cmd.flag === 'chequered') {
-        overlay.className = 'flag-overlay flag-chequered d-flex';
-        overlay.innerHTML = '<div class="flag-content"><div class="flag-icon"><i class="fa-solid fa-flag-checkered"></i></div><div class="flag-text">CHEQUERED FLAG</div><div class="flag-sub">Race finished!</div></div>';
-        clearFlagOverlay(8000);
-    } else if (cmd.flag === 'blue') {
+    const isOn = cmd.state !== 'off';
+
+    if (cmd.flag === 'clear') {
+        activeFlags = {};
+        hideFlagFullscreen();
+        return;
+    }
+
+    if (cmd.flag === 'safety' || cmd.flag === 'red' || cmd.flag === 'chequered') {
+        if (isOn) {
+            activeFlags[cmd.flag] = true;
+            const map: Record<string, any> = {
+                safety: { cls: 'flag-safety', icon: 'fa-car-side', label: 'SAFETY CAR', sub: 'Yellow flag — no overtaking' },
+                red: { cls: 'flag-red', icon: 'fa-circle-exclamation', label: 'RED FLAG', sub: 'Race suspended — return to pits' },
+                chequered: { cls: 'flag-chequered', icon: 'fa-flag-checkered', label: 'CHEQUERED FLAG', sub: 'Race finished!' },
+            };
+            const m = map[cmd.flag];
+            showFlagFullscreen(m.cls, m.icon, m.label, m.sub);
+        } else {
+            delete activeFlags[cmd.flag];
+            if (Object.keys(activeFlags).length === 0) hideFlagFullscreen();
+        }
+        return;
+    }
+
+    if (cmd.flag === 'yellow') {
+        if (isOn) {
+            showFlagFullscreen('flag-yellow', 'fa-flag', 'YELLOW FLAG', 'Caution — danger ahead');
+            setTimeout(() => {
+                if (Object.keys(activeFlags).length === 0) hideFlagFullscreen();
+            }, 5000);
+        } else {
+            if (Object.keys(activeFlags).length === 0) hideFlagFullscreen();
+        }
+        return;
+    }
+
+    if (cmd.flag === 'blue') {
         showToast('warning', 'BLUE FLAG', `${cmd.racer_name} — let faster car through!`);
     } else if (cmd.flag === 'blackwhite') {
         showToast('secondary', 'BLACK & WHITE FLAG', `${cmd.racer_name} — unsportsmanlike conduct warning!`);
     }
-}
-
-let flagOverlayTimer: number | undefined;
-
-function clearFlagOverlay(delay: number): void {
-    if (flagOverlayTimer) clearTimeout(flagOverlayTimer);
-    flagOverlayTimer = window.setTimeout(() => {
-        const overlay = document.getElementById('flag-overlay')!;
-        overlay.className = 'flag-overlay d-none';
-        overlay.innerHTML = '';
-    }, delay);
 }
 
 function showToast(color: string, title: string, message: string): void {

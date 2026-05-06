@@ -470,57 +470,41 @@ footer {
     animation: quotePulse 0.5s ease-in-out;
 }
 
-.flag-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9998;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    pointer-events: none;
-}
-
-.flag-content {
-    text-align: center;
-    padding: 3rem 5rem;
-    border-radius: 24px;
-    background: rgba(0,0,0,0.85);
-    border: 4px solid;
-    animation: flagPulse 1s ease-in-out infinite;
-}
-
-.flag-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-}
-
-.flag-text {
-    font-size: 3rem;
-    font-weight: 900;
-    letter-spacing: 6px;
-    text-transform: uppercase;
-    font-family: 'Bebas Neue', sans-serif;
-}
-
-.flag-sub {
-    font-size: 1rem;
-    opacity: 0.8;
-    margin-top: 0.5rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-}
-
-.flag-safety .flag-content { border-color: #ffd700; color: #ffd700; }
-.flag-red .flag-content { border-color: #ff0000; color: #ff0000; }
-.flag-yellow .flag-content { border-color: #ffff00; color: #ffff00; }
-.flag-chequered .flag-content { border-color: #ffffff; color: #ffffff; }
-
-.flag-safety { background: rgba(255, 215, 0, 0.15); }
-.flag-red { background: rgba(255, 0, 0, 0.15); }
-.flag-yellow { background: rgba(255, 255, 0, 0.1); }
-.flag-chequered { background: rgba(255, 255, 255, 0.05); }
+.flag-safety { background: rgba(255, 215, 0, 0.95) !important; color: #1a1a00 !important; }
+.flag-red { background: rgba(180, 0, 0, 0.95) !important; color: #fff !important; animation: flagPulse 0.4s ease-in-out infinite, screenShake 0.15s ease-in-out infinite !important; }
+.flag-yellow { background: rgba(0, 30, 80, 0.95) !important; color: #ffdd00 !important; }
+.flag-chequered { background: rgba(0, 0, 0, 0.95) !important; color: #fff !important; }
 
 @keyframes flagPulse {
     0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.03); opacity: 0.9; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+@keyframes screenShake {
+    0%, 100% { transform: translate(0); }
+    25% { transform: translate(-4px, 2px); }
+    50% { transform: translate(4px, -2px); }
+    75% { transform: translate(-2px, 4px); }
+}
+
+.active-flag {
+    box-shadow: 0 0 25px currentColor !important;
+    transform: scale(1.05);
+    border-color: currentColor !important;
+}
+
+.btn-dark-blue {
+    background: #0a2a5e;
+    border-color: #0a2a5e;
+    color: #fff;
+}
+.btn-dark-blue:hover {
+    background: #0d3a7a;
+    border-color: #0d3a7a;
+    color: #fff;
+}
+.btn-dark-blue:active {
+    background: #071d40 !important;
+    border-color: #071d40 !important;
+    color: #fff !important;
 }

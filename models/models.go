@@ -181,6 +181,7 @@ type BackupSettings struct {
 type FlagCommand struct {
 	Type      string `json:"type"`
 	Flag      string `json:"flag"`
+	State     string `json:"state,omitempty"`
 	RacerID   int    `json:"racer_id,omitempty"`
 	RacerName string `json:"racer_name,omitempty"`
 }

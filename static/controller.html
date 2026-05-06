@@ -205,23 +205,40 @@
                             </button>
                         </div>
                         <div class="col-6">
-                            <button class="btn btn-info w-100 quick-action-btn" onclick="triggerYellowFlag()">
+                            <button class="btn btn-dark-blue w-100 quick-action-btn" onclick="triggerYellowFlag()">
                                 <i class="fa-solid fa-flag me-2"></i>Yellow
                             </button>
                         </div>
                         <div class="col-6">
-                            <button class="btn btn-warning w-100 quick-action-btn" onclick="triggerSafetyCar()">
-                                <i class="fa-solid fa-car me-2"></i>Safety
+                            <button class="btn btn-warning w-100 quick-action-btn" id="safety-btn" onclick="toggleSafetyCar(this)">
+                                <i class="fa-solid fa-car-side me-2"></i>Safety
                             </button>
                         </div>
                         <div class="col-6">
-                            <button class="btn btn-danger w-100 quick-action-btn" onclick="triggerRedFlag()">
+                            <button class="btn btn-danger w-100 quick-action-btn" id="redflag-btn" onclick="toggleRedFlag(this)">
                                 <i class="fa-solid fa-circle-exclamation me-2"></i>Red Flag
                             </button>
                         </div>
                         <div class="col-12">
                             <button class="btn btn-outline-light w-100 quick-action-btn" onclick="triggerChequeredFlag()">
                                 <i class="fa-solid fa-flag-checkered me-2"></i>Chequered Flag
+                            </button>
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <h5 class="mb-3"><i class="fa-solid fa-flag me-2"></i>Driver Flags</h5>
+                    <div class="row g-2 align-items-center">
+                        <div class="col-7">
+                            <select class="form-select" id="flag-driver-select">
+                                <option value="">Select driver...</option>
+                            </select>
+                        </div>
+                        <div class="col-5 d-flex gap-2">
+                            <button class="btn btn-dark-blue flex-fill quick-action-btn py-2" onclick="sendBlueFlag()" title="Blue Flag - let faster car through">
+                                <i class="fa-solid fa-flag"></i>
+                            </button>
+                            <button class="btn btn-secondary flex-fill quick-action-btn py-2" onclick="sendBlackWhiteFlag()" title="Black & White Flag - unsportsmanlike conduct">
+                                <i class="fa-solid fa-flag-checkered"></i>
                             </button>
                         </div>
                     </div>

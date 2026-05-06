@@ -23,6 +23,7 @@ async function loadControllerData(): Promise<void> {
     controllerRacers = await racersRes.json();
     const tracks = await tracksRes.json();
     renderStandings();
+    populateDriverSelect();
     const trackSelect = document.getElementById('track-select') as HTMLSelectElement;
     tracks.forEach((t: any) => {
         const opt = document.createElement('option');
@@ -167,20 +168,58 @@ function savePositions(): void {
     }).then(() => renderStandings());
 }
 
+let safetyActive = false;
+let redFlagActive = false;
+
+function toggleSafetyCar(btn: HTMLButtonElement): void {
+    safetyActive = !safetyActive;
+    btn.classList.toggle('active-flag', safetyActive);
+    btn.innerHTML = safetyActive
+        ? '<i class="fa-solid fa-car-side me-2"></i>Safety ON'
+        : '<i class="fa-solid fa-car-side me-2"></i>Safety OFF';
+    broadcastMessage({ type: 'flag', flag: safetyActive ? 'safety' : 'clear', state: safetyActive ? 'on' : 'off' });
+}
+
+function toggleRedFlag(btn: HTMLButtonElement): void {
+    redFlagActive = !redFlagActive;
+    btn.classList.toggle('active-flag', redFlagActive);
+    btn.innerHTML = redFlagActive
+        ? '<i class="fa-solid fa-circle-exclamation me-2"></i>Red Flag ON'
+        : '<i class="fa-solid fa-circle-exclamation me-2"></i>Red Flag OFF';
+    broadcastMessage({ type: 'flag', flag: redFlagActive ? 'red' : 'clear', state: redFlagActive ? 'on' : 'off' });
+}
+
 function triggerYellowFlag(): void {
-    broadcastMessage({ type: 'flag', flag: 'yellow' });
-}
-
-function triggerSafetyCar(): void {
-    broadcastMessage({ type: 'flag', flag: 'safety' });
-}
-
-function triggerRedFlag(): void {
-    broadcastMessage({ type: 'flag', flag: 'red' });
+    broadcastMessage({ type: 'flag', flag: 'yellow', state: 'on' });
+    setTimeout(() => broadcastMessage({ type: 'flag', flag: 'yellow', state: 'off' }), 5000);
 }
 
 function triggerChequeredFlag(): void {
-    broadcastMessage({ type: 'flag', flag: 'chequered' });
+    broadcastMessage({ type: 'flag', flag: 'chequered', state: 'on' });
+    setTimeout(() => broadcastMessage({ type: 'flag', flag: 'chequered', state: 'off' }), 8000);
+}
+
+function populateDriverSelect(): void {
+    const select = document.getElementById('flag-driver-select') as HTMLSelectElement;
+    if (!select) return;
+    select.innerHTML = '<option value="">Select driver...</option>' +
+        controllerRacers.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+}
+
+function sendBlueFlag(): void {
+    const select = document.getElementById('flag-driver-select') as HTMLSelectElement;
+    const id = parseInt(select.value);
+    if (!id) { alert('Select a driver first'); return; }
+    const name = select.options[select.selectedIndex]?.text || '';
+    broadcastMessage({ type: 'flag', flag: 'blue', racer_id: id, racer_name: name });
+}
+
+function sendBlackWhiteFlag(): void {
+    const select = document.getElementById('flag-driver-select') as HTMLSelectElement;
+    const id = parseInt(select.value);
+    if (!id) { alert('Select a driver first'); return; }
+    const name = select.options[select.selectedIndex]?.text || '';
+    broadcastMessage({ type: 'flag', flag: 'blackwhite', racer_id: id, racer_name: name });
 }
 
 function triggerBlueFlag(id: number, name: string): void {
@@ -256,9 +295,11 @@ function getPointsForPosition(pos: number): number {
 }
 
 function broadcastMessage(msg: Record<string, unknown>): void {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    ws.onopen = () => ws.send(JSON.stringify(msg));
+    fetch('/api/flags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(msg)
+    });
 }
 
 document.getElementById('commentary-input')!.addEventListener('keypress', (e: KeyboardEvent) => {

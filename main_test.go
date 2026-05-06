@@ -1163,6 +1163,9 @@ func TestExportStatsCSV(t *testing.T) {
 	if !strings.Contains(body, "Name") {
 		t.Errorf("expected CSV header 'Name' in output, got: %s", body)
 	}
+	if !strings.Contains(body, "Gold") || !strings.Contains(body, "Silver") || !strings.Contains(body, "Bronze") {
+		t.Errorf("CSV should contain Gold, Silver, Bronze headers: %s", body)
+	}
 }
 
 func TestTrackPerformance(t *testing.T) {
@@ -1535,3 +1538,205 @@ func shorten(s string) string {
 	}
 	return s
 }
+
+func TestFlagEndpoint(t *testing.T) {
+	r := gin.New()
+	r.POST("/api/flags", handlers.HandleFlag)
+
+	t.Run("valid safety car flag", func(t *testing.T) {
+		body, _ := json.Marshal(models.FlagCommand{Type: "flag", Flag: "safety"})
+		req, _ := http.NewRequest("POST", "/api/flags", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("valid red flag", func(t *testing.T) {
+		body, _ := json.Marshal(models.FlagCommand{Type: "flag", Flag: "red"})
+		req, _ := http.NewRequest("POST", "/api/flags", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("valid blue flag with racer info", func(t *testing.T) {
+		body, _ := json.Marshal(models.FlagCommand{Type: "flag", Flag: "blue", RacerID: 1, RacerName: "A. PROST"})
+		req, _ := http.NewRequest("POST", "/api/flags", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("valid blackwhite flag with racer info", func(t *testing.T) {
+		body, _ := json.Marshal(models.FlagCommand{Type: "flag", Flag: "blackwhite", RacerID: 2, RacerName: "M. SCHUMACHER"})
+		req, _ := http.NewRequest("POST", "/api/flags", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("invalid flag type", func(t *testing.T) {
+		body, _ := json.Marshal(models.FlagCommand{Type: "invalid", Flag: "safety"})
+		req, _ := http.NewRequest("POST", "/api/flags", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for invalid type, got %d", rr.Code)
+		}
+	})
+}
+
+func TestRaceHistoryWithGoldSilverBronze(t *testing.T) {
+	app.DB.Exec("DELETE FROM racer_stats")
+
+	r := gin.New()
+	r.POST("/api/race-history", handlers.SaveRaceToHistory)
+	r.GET("/api/racer-stats", handlers.GetRacerStats)
+
+	payload := map[string]interface{}{
+		"name":       "Gold Silver Bronze Test",
+		"race_date":  "2025-07-01",
+		"country":    "Italy",
+		"track":      "Monza",
+		"track_id":   "monza",
+		"total_laps": 53,
+		"race_type":  "season",
+		"results": []map[string]interface{}{
+			{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true, "finished": true},
+			{"racer_id": 2, "racer_name": "M. SCHUMACHER", "position": 2, "points": 18, "fastest_lap": false, "finished": true},
+			{"racer_id": 3, "racer_name": "A. SENNA", "position": 3, "points": 15, "fastest_lap": false, "finished": true},
+			{"racer_id": 4, "racer_name": "N. LAUDA", "position": 4, "points": 12, "fastest_lap": false, "finished": true},
+			{"racer_id": 5, "racer_name": "J. STEWART", "position": 5, "points": 10, "fastest_lap": false, "finished": true},
+		},
+	}
+	body, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+
+	checkStats := func(racerID int, expectedGold, expectedSilver, expectedBronze, expectedWins int) {
+		t.Helper()
+		req, _ = http.NewRequest("GET", "/api/racer-stats?id="+strconv.Itoa(racerID), nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var result map[string]json.RawMessage
+		json.Unmarshal(rr.Body.Bytes(), &result)
+		var s models.RacerStats
+		json.Unmarshal(result["stats"], &s)
+		if s.Gold != expectedGold {
+			t.Errorf("racer %d: expected gold=%d, got %d", racerID, expectedGold, s.Gold)
+		}
+		if s.Silver != expectedSilver {
+			t.Errorf("racer %d: expected silver=%d, got %d", racerID, expectedSilver, s.Silver)
+		}
+		if s.Bronze != expectedBronze {
+			t.Errorf("racer %d: expected bronze=%d, got %d", racerID, expectedBronze, s.Bronze)
+		}
+		if s.Wins != expectedWins {
+			t.Errorf("racer %d: expected wins=%d, got %d", racerID, expectedWins, s.Wins)
+		}
+	}
+
+	checkStats(1, 1, 0, 0, 1)
+	checkStats(2, 0, 1, 0, 0)
+	checkStats(3, 0, 0, 1, 0)
+	checkStats(4, 0, 0, 0, 0)
+
+	app.DB.Exec("DELETE FROM race_results WHERE race_id IN (SELECT id FROM race_history WHERE name = 'Gold Silver Bronze Test')")
+	app.DB.Exec("DELETE FROM race_history WHERE name = 'Gold Silver Bronze Test'")
+	app.DB.Exec("DELETE FROM racer_stats WHERE racer_id IN (1,2,3,4,5)")
+}
+
+func TestOneOffRaceDoesNotUpdateStats(t *testing.T) {
+	r := gin.New()
+	r.POST("/api/race-history", handlers.SaveRaceToHistory)
+	r.GET("/api/racer-stats", handlers.GetRacerStats)
+
+	payload := map[string]interface{}{
+		"name":       "One-Off Test",
+		"race_date":  "2025-08-01",
+		"country":    "France",
+		"track":      "Spa",
+		"track_id":   "spa",
+		"total_laps": 44,
+		"race_type":  "oneoff",
+		"results": []map[string]interface{}{
+			{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true, "finished": true},
+		},
+	}
+	body, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", "/api/race-history", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+
+	req, _ = http.NewRequest("GET", "/api/racer-stats?id=1", nil)
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	var result map[string]json.RawMessage
+	json.Unmarshal(rr.Body.Bytes(), &result)
+	var s models.RacerStats
+	json.Unmarshal(result["stats"], &s)
+	if s.Races != 0 {
+		t.Errorf("one-off race should not update stats, got races=%d", s.Races)
+	}
+
+	app.DB.Exec("DELETE FROM race_results WHERE race_id IN (SELECT id FROM race_history WHERE name = 'One-Off Test')")
+	app.DB.Exec("DELETE FROM race_history WHERE name = 'One-Off Test'")
+}
+
+func TestGetRacerStatsAll(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/racer-stats", handlers.GetRacerStats)
+
+	app.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (1, 5, 3, 3, 1, 0, 2, 0, 0)")
+
+	req, _ := http.NewRequest("GET", "/api/racer-stats", nil)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rr.Code)
+	}
+
+	var stats []models.RacerStats
+	json.Unmarshal(rr.Body.Bytes(), &stats)
+	if len(stats) < 1 {
+		t.Error("expected at least 1 stat entry")
+	}
+	found := false
+	for _, s := range stats {
+		if s.RacerID == 1 {
+			found = true
+			if s.Gold != 3 || s.Silver != 1 || s.Bronze != 0 || s.Wins != 3 {
+				t.Errorf("racer 1 stats mismatch: gold=%d silver=%d bronze=%d wins=%d", s.Gold, s.Silver, s.Bronze, s.Wins)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected racer 1 stats to be returned")
+	}
+
+	app.DB.Exec("DELETE FROM racer_stats WHERE racer_id = 1")
+}
+
+

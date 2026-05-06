@@ -150,6 +150,7 @@ func main() {
 	r.GET("/api/stats/elo", handlers.GetELORatings)
 	r.GET("/api/stats/export", handlers.ExportStatsCSV)
 	r.GET("/api/stats/track-performance", handlers.GetTrackPerformance)
+	r.POST("/api/flags", handlers.HandleFlag)
 
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
