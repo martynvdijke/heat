@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/martynvdijke/heat/compare/v1.16.1...v1.17.0) (2026-05-06)
+
+
+### Features
+
+* integrate swaggo/swag + gin-swagger for auto-generated OpenAPI docs ([1be2452](https://github.com/martynvdijke/heat/commit/1be2452a890dad50f5cf98ada186c8c2b0ecab89))
+
 ## [1.16.1](https://github.com/martynvdijke/heat/compare/v1.16.0...v1.16.1) (2026-05-06)
 
 
