@@ -1174,5 +1174,151 @@ document.getElementById('backup-tab')?.addEventListener('shown.bs.tab', () => {
     loadBackupList();
 });
 
+document.getElementById('rounds-tab')?.addEventListener('shown.bs.tab', () => {
+    loadRoundsList();
+});
+
+document.getElementById('seasons-tab')?.addEventListener('shown.bs.tab', () => {
+    loadSeasons();
+});
+
+async function loadRoundsList(): Promise<void> {
+    try {
+        const res = await fetch('/api/seasons');
+        const seasons = await res.json();
+        const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
+        const sid = active ? active.id : 1;
+        const roundsRes = await fetch(`/api/rounds?season_id=${sid}`);
+        const rounds = await roundsRes.json();
+        const list = document.getElementById('rounds-list')!;
+        if (!Array.isArray(rounds) || rounds.length === 0) {
+            list.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No rounds yet.</td></tr>';
+            return;
+        }
+        list.innerHTML = rounds.map((r: any) => `
+            <tr>
+                <td class="ps-4 fw-bold">#${r.round || r.id}</td>
+                <td>${r.race_name}</td>
+                <td>${r.race_date}</td>
+                <td class="text-end pe-4">
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRound(${r.id})"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Failed to load rounds', e);
+    }
+}
+
+async function takeAdminRoundSnapshot(): Promise<void> {
+    const name = prompt('Round name:', `Round ${new Date().toLocaleDateString()}`);
+    if (!name) return;
+    const seasonsRes = await fetch('/api/seasons');
+    const seasons = await seasonsRes.json();
+    const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
+    const res = await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ race_name: name, round: 0, season_id: active ? active.id : 1 })
+    });
+    if (res.ok) {
+        alert('Round snapshot saved!');
+        loadRoundsList();
+    } else {
+        const err = await res.json();
+        alert('Failed: ' + (err.error || 'Unknown error'));
+    }
+}
+
+async function deleteRound(id: number): Promise<void> {
+    if (!confirm('Delete this round snapshot?')) return;
+    await fetch(`/api/rounds?id=${id}`, { method: 'DELETE' });
+    loadRoundsList();
+}
+
+async function loadSeasons(): Promise<void> {
+    try {
+        const res = await fetch('/api/seasons');
+        const seasons = await res.json();
+        const list = document.getElementById('seasons-list')!;
+        if (!Array.isArray(seasons) || seasons.length === 0) {
+            list.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No seasons yet.</td></tr>';
+            return;
+        }
+        list.innerHTML = seasons.map((s: any) => `
+            <tr>
+                <td class="ps-4 fw-bold">${s.name}</td>
+                <td>${s.start_date}</td>
+                <td>${s.end_date || '-'}</td>
+                <td><span class="badge ${s.status === 'active' ? 'bg-success' : 'bg-secondary'}">${s.status}</span></td>
+                <td class="text-end pe-4">
+                    ${s.status === 'active'
+                        ? `<button class="btn btn-sm btn-outline-warning" onclick="archiveSeason(${s.id})"><i class="fa-solid fa-box-archive"></i></button>`
+                        : ''}
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSeason(${s.id})"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+
+        const select = document.getElementById('season-rounds-select') as HTMLSelectElement;
+        select.innerHTML = '<option value="">Select a season...</option>' +
+            seasons.map((s: any) => `<option value="${s.id}">${s.name} (${s.status})</option>`).join('');
+    } catch (e) {
+        console.error('Failed to load seasons', e);
+    }
+}
+
+async function createSeason(): Promise<void> {
+    const name = prompt('Season name:', `Season ${new Date().getFullYear()}`);
+    if (!name) return;
+    const res = await fetch('/api/seasons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    if (res.ok) {
+        alert('Season created!');
+        loadSeasons();
+    } else {
+        alert('Failed to create season');
+    }
+}
+
+async function archiveSeason(id: number): Promise<void> {
+    if (!confirm('Archive this season? This will end it.')) return;
+    const res = await fetch(`/api/seasons/archive?id=${id}`, { method: 'POST' });
+    if (res.ok) {
+        alert('Season archived!');
+        loadSeasons();
+    } else {
+        alert('Failed to archive season');
+    }
+}
+
+async function deleteSeason(id: number): Promise<void> {
+    if (!confirm('Delete this season? All associated rounds will also be deleted.')) return;
+    await fetch(`/api/rounds?season_id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/seasons?id=${id}`, { method: 'DELETE' });
+    loadSeasons();
+}
+
+async function loadSeasonRounds(seasonId: string): Promise<void> {
+    if (!seasonId) return;
+    const res = await fetch(`/api/rounds?season_id=${seasonId}`);
+    const rounds = await res.json();
+    const list = document.getElementById('season-rounds-list')!;
+    if (!Array.isArray(rounds) || rounds.length === 0) {
+        list.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No rounds in this season.</td></tr>';
+        return;
+    }
+    list.innerHTML = rounds.map((r: any) => `
+        <tr>
+            <td class="ps-4 fw-bold">#${r.round}</td>
+            <td>${r.race_name}</td>
+            <td>${r.race_date}</td>
+        </tr>
+    `).join('');
+}
+
 init();
 

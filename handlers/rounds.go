@@ -16,6 +16,7 @@ func TakeRoundSnapshot(c *gin.Context) {
 	var input struct {
 		RaceName string `json:"race_name"`
 		Round    int    `json:"round"`
+		SeasonID int    `json:"season_id"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -24,8 +25,17 @@ func TakeRoundSnapshot(c *gin.Context) {
 	if input.RaceName == "" {
 		input.RaceName = time.Now().Format("Round 2006-01-02")
 	}
+	if input.SeasonID == 0 {
+		input.SeasonID = 1
+	}
 
 	raceDate := time.Now().Format("2006-01-02")
+
+	var roundNum int
+	app.DB.QueryRow("SELECT COALESCE(MAX(round), 0) + 1 FROM round_snapshots WHERE season_id = ?", input.SeasonID).Scan(&roundNum)
+	if input.Round > 0 {
+		roundNum = input.Round
+	}
 
 	tx, err := app.DB.Begin()
 	if err != nil {
@@ -34,8 +44,8 @@ func TakeRoundSnapshot(c *gin.Context) {
 	}
 	defer tx.Rollback()
 
-	res, err := tx.Exec("INSERT INTO round_snapshots (race_name, race_date, round) VALUES (?, ?, ?)",
-		input.RaceName, raceDate, input.Round)
+	res, err := tx.Exec("INSERT INTO round_snapshots (season_id, race_name, race_date, round) VALUES (?, ?, ?, ?)",
+		input.SeasonID, input.RaceName, raceDate, roundNum)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -67,18 +77,18 @@ func TakeRoundSnapshot(c *gin.Context) {
 	}
 
 	ws.BroadcastRacers()
-
-	c.JSON(http.StatusOK, gin.H{"id": snapshotID})
+	c.JSON(http.StatusOK, gin.H{"id": snapshotID, "round": roundNum})
 }
 
 func GetRoundSnapshots(c *gin.Context) {
 	idStr := c.Query("id")
+	seasonIDStr := c.Query("season_id")
 
 	if idStr != "" {
 		id, _ := strconv.Atoi(idStr)
 		var s models.RoundSnapshot
-		err := app.DB.QueryRow("SELECT id, race_name, race_date, round, created_at FROM round_snapshots WHERE id = ?", id).
-			Scan(&s.ID, &s.RaceName, &s.RaceDate, &s.Round, &s.CreatedAt)
+		err := app.DB.QueryRow("SELECT id, season_id, race_name, race_date, round, created_at FROM round_snapshots WHERE id = ?", id).
+			Scan(&s.ID, &s.SeasonID, &s.RaceName, &s.RaceDate, &s.Round, &s.CreatedAt)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "snapshot not found"})
 			return
@@ -103,7 +113,14 @@ func GetRoundSnapshots(c *gin.Context) {
 		return
 	}
 
-	rows, err := app.DB.Query("SELECT id, race_name, race_date, round, created_at FROM round_snapshots ORDER BY round ASC")
+	query := "SELECT id, season_id, race_name, race_date, round, created_at FROM round_snapshots ORDER BY round ASC"
+	args := []interface{}{}
+	if seasonIDStr != "" {
+		query = "SELECT id, season_id, race_name, race_date, round, created_at FROM round_snapshots WHERE season_id = ? ORDER BY round ASC"
+		args = append(args, seasonIDStr)
+	}
+
+	rows, err := app.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -113,7 +130,7 @@ func GetRoundSnapshots(c *gin.Context) {
 	snapshots := make([]models.RoundSnapshot, 0)
 	for rows.Next() {
 		var s models.RoundSnapshot
-		if err := rows.Scan(&s.ID, &s.RaceName, &s.RaceDate, &s.Round, &s.CreatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.SeasonID, &s.RaceName, &s.RaceDate, &s.Round, &s.CreatedAt); err != nil {
 			continue
 		}
 		snapshots = append(snapshots, s)
@@ -129,5 +146,68 @@ func DeleteRoundSnapshot(c *gin.Context) {
 	}
 	app.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id = ?", id)
 	app.DB.Exec("DELETE FROM round_snapshots WHERE id = ?", id)
+	c.Status(http.StatusOK)
+}
+
+func GetSeasons(c *gin.Context) {
+	rows, err := app.DB.Query("SELECT id, name, start_date, COALESCE(end_date, ''), status, created_at FROM seasons ORDER BY id DESC")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	seasons := make([]models.Season, 0)
+	for rows.Next() {
+		var s models.Season
+		if err := rows.Scan(&s.ID, &s.Name, &s.StartDate, &s.EndDate, &s.Status, &s.CreatedAt); err != nil {
+			continue
+		}
+		seasons = append(seasons, s)
+	}
+	c.JSON(http.StatusOK, seasons)
+}
+
+func CreateSeason(c *gin.Context) {
+	var input struct {
+		Name string `json:"name"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil || input.Name == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "name required"})
+		return
+	}
+
+	res, err := app.DB.Exec("INSERT INTO seasons (name, start_date, status) VALUES (?, date('now'), 'active')", input.Name)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	id, _ := res.LastInsertId()
+	c.JSON(http.StatusOK, gin.H{"id": id})
+}
+
+func DeleteSeason(c *gin.Context) {
+	id := c.Query("id")
+	if id == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
+		return
+	}
+	app.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id IN (SELECT id FROM round_snapshots WHERE season_id = ?)", id)
+	app.DB.Exec("DELETE FROM round_snapshots WHERE season_id = ?", id)
+	app.DB.Exec("DELETE FROM seasons WHERE id = ?", id)
+	c.Status(http.StatusOK)
+}
+
+func ArchiveSeason(c *gin.Context) {
+	id := c.Query("id")
+	if id == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
+		return
+	}
+	_, err := app.DB.Exec("UPDATE seasons SET status = 'archived', end_date = date('now') WHERE id = ?", id)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.Status(http.StatusOK)
 }

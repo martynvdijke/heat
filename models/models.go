@@ -178,8 +178,18 @@ type BackupSettings struct {
 	IntervalHrs int  `json:"interval_hrs"`
 }
 
+type Season struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date,omitempty"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+}
+
 type RoundSnapshot struct {
 	ID        int                  `json:"id"`
+	SeasonID  int                  `json:"season_id"`
 	RaceName  string               `json:"race_name"`
 	RaceDate  string               `json:"race_date"`
 	Round     int                  `json:"round"`

@@ -6,12 +6,28 @@ function getCanvas(id: string): CanvasRenderingContext2D | null {
     return el?.getContext('2d') || null;
 }
 
-async function loadSeasonStats(): Promise<void> {
+async function loadSeasonStats(seasonId?: string): Promise<void> {
     try {
+        const seasonsRes = await fetch('/api/seasons');
+        const seasons = await seasonsRes.json();
+        const select = document.getElementById('stats-season-select') as HTMLSelectElement;
+        if (select.options.length <= 1) {
+            (Array.isArray(seasons) ? seasons : []).forEach((s: any) => {
+                const opt = document.createElement('option');
+                opt.value = String(s.id);
+                opt.textContent = `${s.name} (${s.status})`;
+                select.appendChild(opt);
+            });
+        }
+        const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
+        const sid = seasonId || (active ? String(active.id) : '');
+        if (sid && select) select.value = sid;
+        const roundsUrl = sid ? `/api/rounds?season_id=${sid}` : '/api/rounds';
+
         const [racersRes, statsRes, snapshotsRes] = await Promise.all([
             fetch('/api/racers'),
             fetch('/api/racer-stats'),
-            fetch('/api/rounds')
+            fetch(roundsUrl)
         ]);
 
         const racers = await racersRes.json();
@@ -27,24 +43,26 @@ async function loadSeasonStats(): Promise<void> {
         const totalFL = hasStats ? allStats.reduce((sum: number, s: any) => sum + (s.fastest_laps || 0), 0) : 0;
         document.getElementById('fastest-laps')!.textContent = String(totalFL);
 
+        const driverData = hasStats ? allStats.filter((s: any) => s.races > 0) : [];
+        const hasDrivers = driverData.length > 0;
+
         if (hasSnapshots) {
             const allScores = await Promise.all(
                 snapshots.map((s: any) => fetch(`/api/rounds?id=${s.id}`).then(r => r.json()))
             );
             renderPointsChart(snapshots, allScores);
             renderBattleChart(allScores);
-            renderDriverStatsTable(allStats, racers);
             renderTrackStatsTable(allScores);
         } else {
             document.getElementById('championships')!.textContent = '0';
-            document.querySelector('#driver-stats-table tbody')!.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No race data yet</td></tr>';
             document.querySelector('#track-stats-table tbody')!.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No round snapshots yet</td></tr>';
         }
-        if (hasStats) {
-            const driverData = allStats.filter((s: any) => s.races > 0);
-            if (driverData.length > 0) {
-                renderWinsChart(driverData);
-            }
+
+        if (hasDrivers) {
+            renderDriverStatsTable(allStats, racers);
+            renderWinsChart(driverData);
+        } else {
+            document.querySelector('#driver-stats-table tbody')!.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No driver stats yet</td></tr>';
         }
     } catch (err) {
         console.error('Failed to load stats:', err);

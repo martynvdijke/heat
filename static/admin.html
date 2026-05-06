@@ -184,6 +184,9 @@
                 <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button"><i class="fa-solid fa-chart-bar me-2"></i>Stats</button>
             </li>
             <li class="nav-item">
+                <button class="nav-link" id="rounds-tab" data-bs-toggle="tab" data-bs-target="#rounds-pane" type="button"><i class="fa-solid fa-layer-group me-2"></i>Rounds</button>
+            </li>
+            <li class="nav-item">
                 <button class="nav-link" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button"><i class="fa-solid fa-comment me-2"></i>Quotes</button>
             </li>
             <li class="nav-item">
@@ -191,6 +194,9 @@
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button"><i class="fa-solid fa-envelope me-2"></i>Email</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="seasons-tab" data-bs-toggle="tab" data-bs-target="#seasons-pane" type="button"><i class="fa-solid fa-calendar me-2"></i>Seasons</button>
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>AI</button>
@@ -343,6 +349,33 @@
                                     </tr>
                                 </thead>
                                 <tbody id="stats-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rounds Pane -->
+            <div class="tab-pane fade" id="rounds-pane">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-layer-group me-2 text-danger"></i>Round Snapshots</span>
+                        <button class="btn btn-sm btn-success" onclick="takeAdminRoundSnapshot()">
+                            <i class="fa-solid fa-camera me-1"></i> Take Snapshot
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">Round</th>
+                                        <th>Race Name</th>
+                                        <th>Date</th>
+                                        <th class="text-end pe-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rounds-list"></tbody>
                             </table>
                         </div>
                     </div>
@@ -533,6 +566,60 @@
                                 </thead>
                                 <tbody id="history-list"></tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seasons Pane -->
+            <div class="tab-pane fade" id="seasons-pane">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-calendar me-2 text-danger"></i>Seasons</span>
+                                <button class="btn btn-sm btn-success" onclick="createSeason()">
+                                    <i class="fa-solid fa-plus me-1"></i> New Season
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4">Name</th>
+                                                <th>Start</th>
+                                                <th>End</th>
+                                                <th>Status</th>
+                                                <th class="text-end pe-4">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="seasons-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><i class="fa-solid fa-layer-group me-2 text-info"></i>Season Rounds</div>
+                            <div class="card-body">
+                                <select class="form-select mb-3" id="season-rounds-select" onchange="loadSeasonRounds(this.value)">
+                                    <option value="">Select a season...</option>
+                                </select>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4">Round</th>
+                                                <th>Name</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="season-rounds-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

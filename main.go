@@ -154,6 +154,10 @@ func main() {
 	r.POST("/api/rounds", handlers.TakeRoundSnapshot)
 	r.GET("/api/rounds", handlers.GetRoundSnapshots)
 	r.DELETE("/api/rounds", handlers.DeleteRoundSnapshot)
+	r.GET("/api/seasons", handlers.GetSeasons)
+	r.POST("/api/seasons", handlers.CreateSeason)
+	r.POST("/api/seasons/archive", handlers.ArchiveSeason)
+	r.DELETE("/api/seasons", handlers.DeleteSeason)
 
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})

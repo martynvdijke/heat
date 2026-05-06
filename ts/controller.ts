@@ -230,14 +230,6 @@ function triggerBlackWhiteFlag(id: number, name: string): void {
     broadcastMessage({ type: 'flag', flag: 'blackwhite', racer_id: id, racer_name: name });
 }
 
-function sendCommentary(): void {
-    const input = document.getElementById('commentary-input') as HTMLInputElement;
-    if (input.value.trim()) {
-        broadcastMessage({ type: 'commentary', text: input.value.trim() });
-        input.value = '';
-    }
-}
-
 function saveRaceSettings(): void {
     const track = (document.getElementById('track-select') as HTMLSelectElement).value;
     const laps = parseInt((document.getElementById('race-laps') as HTMLInputElement).value) || 53;
@@ -289,6 +281,32 @@ function discardRace(): void {
     }
 }
 
+async function archiveCurrentSeason(): Promise<void> {
+    const res = await fetch('/api/seasons');
+    const seasons = await res.json();
+    const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
+    if (!active) {
+        if (!confirm('No active season found. Create a new one?')) return;
+        const name = prompt('Season name:', `Season ${new Date().getFullYear()}`);
+        if (!name) return;
+        const createRes = await fetch('/api/seasons', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        if (!createRes.ok) { alert('Failed to create season'); return; }
+        alert('Season created! You can now archive it when ready.');
+        return;
+    }
+    if (!confirm(`Archive "${active.name}"? This will end the season.`)) return;
+    const archiveRes = await fetch(`/api/seasons/archive?id=${active.id}`, { method: 'POST' });
+    if (archiveRes.ok) {
+        alert(`Season "${active.name}" archived!`);
+    } else {
+        alert('Failed to archive season');
+    }
+}
+
 async function takeRoundSnapshot(): Promise<void> {
     const name = (document.getElementById('race-name') as HTMLInputElement).value || `Round ${new Date().toLocaleDateString()}`;
     const res = await fetch('/api/rounds', {
@@ -316,10 +334,6 @@ function broadcastMessage(msg: Record<string, unknown>): void {
         body: JSON.stringify(msg)
     });
 }
-
-document.getElementById('commentary-input')!.addEventListener('keypress', (e: KeyboardEvent) => {
-    if (e.key === 'Enter') sendCommentary();
-});
 
 loadControllerData();
 
