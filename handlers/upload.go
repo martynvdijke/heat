@@ -29,16 +29,12 @@ func HandleUpload(c *gin.Context) {
 	}
 
 	ext := strings.ToLower(filepath.Ext(file.Filename))
-	allowedExts := []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg", ".bmp", ".tiff", ".tif"}
-
-	validExt := false
-	for _, e := range allowedExts {
-		if ext == e {
-			validExt = true
-			break
-		}
+	allowedExts := map[string]bool{
+		".jpg": true, ".jpeg": true, ".png": true, ".gif": true,
+		".webp": true, ".avif": true, ".svg": true, ".bmp": true,
+		".tiff": true, ".tif": true,
 	}
-	if !validExt {
+	if !allowedExts[ext] {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid file type"})
 		return
 	}
@@ -65,31 +61,46 @@ func HandleUpload(c *gin.Context) {
 	hash := sha256.Sum256(data)
 	hashStr := hex.EncodeToString(hash[:])
 
-	var existingURL string
-	err = app.DB.QueryRow("SELECT url FROM uploads WHERE hash = ?", hashStr).Scan(&existingURL)
-	if err == nil {
-		c.JSON(http.StatusOK, gin.H{"url": existingURL, "duplicate": true})
-		return
-	}
-
 	saveExt := ext
 	if ext == ".jpeg" {
 		saveExt = ".jpg"
 	}
+	if ext == ".tiff" {
+		saveExt = ".tif"
+	}
 
 	subDir := hashStr[:2]
 	dir := filepath.Join(app.MediaPath, subDir)
+
+	filename := hashStr + saveExt
+	url := fmt.Sprintf("/media/%s/%s", subDir, filename)
+	var thumbnailURL string
+
+	result, err := app.DB.Exec(
+		"INSERT OR IGNORE INTO uploads (hash, ext, url, resized_url, thumbnail_url) VALUES (?, ?, ?, ?, ?)",
+		hashStr, ext, url, url, thumbnailURL)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		var existingURL string
+		if err := app.DB.QueryRow("SELECT url FROM uploads WHERE hash = ?", hashStr).Scan(&existingURL); err == nil {
+			c.JSON(http.StatusOK, gin.H{"url": existingURL, "duplicate": true})
+			return
+		}
+	}
+
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
 		return
 	}
 
-	filename := hashStr + saveExt
 	uploadPath := filepath.Join(dir, filename)
-	url := fmt.Sprintf("/media/%s/%s", subDir, filename)
-	var thumbnailURL string
 
-	if ext != ".gif" && ext != ".svg" && ext != ".tiff" && ext != ".tif" {
+	if ext != ".gif" && ext != ".svg" && ext != ".tif" && ext != ".tiff" {
 		img, format, err := image.Decode(bytes.NewReader(data))
 		if err == nil {
 			size := img.Bounds().Size()
@@ -102,7 +113,10 @@ func HandleUpload(c *gin.Context) {
 			}
 
 			if err := saveImage(uploadPath, img, format); err != nil {
-				os.WriteFile(uploadPath, data, 0644)
+				if werr := os.WriteFile(uploadPath, data, 0644); werr != nil {
+					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+					return
+				}
 			}
 
 			thumb := resizeImage(img, 300)
@@ -111,7 +125,10 @@ func HandleUpload(c *gin.Context) {
 				thumbnailURL = fmt.Sprintf("/media/%s/%s", subDir, thumbFilename)
 			}
 		} else {
-			os.WriteFile(uploadPath, data, 0644)
+			if err := os.WriteFile(uploadPath, data, 0644); err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+				return
+			}
 		}
 	} else {
 		if err := os.WriteFile(uploadPath, data, 0644); err != nil {
@@ -120,8 +137,9 @@ func HandleUpload(c *gin.Context) {
 		}
 	}
 
-	app.DB.Exec("INSERT INTO uploads (hash, ext, url, resized_url, thumbnail_url) VALUES (?, ?, ?, ?, ?)",
-		hashStr, ext, url, url, thumbnailURL)
+	if thumbnailURL != "" {
+		app.DB.Exec("UPDATE uploads SET thumbnail_url = ? WHERE hash = ?", thumbnailURL, hashStr)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"url":           url,
