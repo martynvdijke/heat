@@ -1,46 +1,64 @@
 package handlers
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/image/draw"
 
 	"heat/app"
 	"heat/models"
 )
 
 func HandleUpload(c *gin.Context) {
-	header, err := c.FormFile("image")
+	file, err := c.FormFile("image")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ext := strings.ToLower(filepath.Ext(header.Filename))
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" && ext != ".webp" {
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowedExts := []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg", ".bmp", ".tiff", ".tif"}
+
+	validExt := false
+	for _, e := range allowedExts {
+		if ext == e {
+			validExt = true
+			break
+		}
+	}
+	if !validExt {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid file type"})
 		return
 	}
 
-	file, err := header.Open()
+	src, err := file.Open()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
 		return
 	}
-	defer file.Close()
+	defer src.Close()
 
-	data, err := io.ReadAll(file)
+	data, err := io.ReadAll(src)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+		return
+	}
+
+	mimeType := http.DetectContentType(data)
+	if !strings.HasPrefix(mimeType, "image/") {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "File content does not match image type"})
 		return
 	}
 
@@ -59,55 +77,92 @@ func HandleUpload(c *gin.Context) {
 		saveExt = ".jpg"
 	}
 
-	// Use first 2 hex chars as subdirectory (like traces)
 	subDir := hashStr[:2]
 	dir := filepath.Join(app.MediaPath, subDir)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create media directory"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
 		return
 	}
 
 	filename := hashStr + saveExt
 	uploadPath := filepath.Join(dir, filename)
 	url := fmt.Sprintf("/media/%s/%s", subDir, filename)
+	var thumbnailURL string
 
-	thumbFilename := hashStr + "_thumb" + saveExt
-	thumbPath := filepath.Join(dir, thumbFilename)
-	thumbURL := fmt.Sprintf("/media/%s/%s", subDir, thumbFilename)
+	if ext != ".gif" && ext != ".svg" && ext != ".tiff" && ext != ".tif" {
+		img, format, err := image.Decode(bytes.NewReader(data))
+		if err == nil {
+			size := img.Bounds().Size()
+			if size.X > 10000 || size.Y > 10000 {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Image dimensions too large (max 10000x10000)"})
+				return
+			}
+			if size.X > 1920 || size.Y > 1920 {
+				img = resizeImage(img, 1920)
+			}
 
-	if err := os.WriteFile(uploadPath, data, 0644); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+			if err := saveImage(uploadPath, img, format); err != nil {
+				os.WriteFile(uploadPath, data, 0644)
+			}
 
-	resizedFilename := hashStr + "_resized" + saveExt
-	resizedPath := filepath.Join(dir, resizedFilename)
-	resizedURL := fmt.Sprintf("/media/%s/%s", subDir, resizedFilename)
-
-	src, err := imaging.Open(uploadPath)
-	if err == nil {
-		resized := imaging.Fit(src, 1200, 1200, imaging.Lanczos)
-		if err := imaging.Save(resized, resizedPath); err != nil {
-			log.Printf("[UPLOAD] Failed to save resized: %v", err)
-		}
-
-		thumb := imaging.Thumbnail(src, 150, 150, imaging.Lanczos)
-		if err := imaging.Save(thumb, thumbPath); err != nil {
-			log.Printf("[UPLOAD] Failed to save thumbnail: %v", err)
+			thumb := resizeImage(img, 300)
+			thumbFilename := hashStr + "_thumb" + saveExt
+			if err := saveImage(filepath.Join(dir, thumbFilename), thumb, format); err == nil {
+				thumbnailURL = fmt.Sprintf("/media/%s/%s", subDir, thumbFilename)
+			}
+		} else {
+			os.WriteFile(uploadPath, data, 0644)
 		}
 	} else {
-		log.Printf("[UPLOAD] Failed to open image for processing: %v", err)
+		if err := os.WriteFile(uploadPath, data, 0644); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return
+		}
 	}
 
 	app.DB.Exec("INSERT INTO uploads (hash, ext, url, resized_url, thumbnail_url) VALUES (?, ?, ?, ?, ?)",
-		hashStr, ext, url, resizedURL, thumbURL)
+		hashStr, ext, url, url, thumbnailURL)
 
 	c.JSON(http.StatusOK, gin.H{
 		"url":           url,
-		"resized_url":   resizedURL,
-		"thumbnail_url": thumbURL,
+		"resized_url":   url,
+		"thumbnail_url": thumbnailURL,
 		"hash":          hashStr,
 	})
+}
+
+func resizeImage(img image.Image, maxDim int) image.Image {
+	bounds := img.Bounds()
+	w := bounds.Dx()
+	h := bounds.Dy()
+
+	if w <= maxDim && h <= maxDim {
+		return img
+	}
+
+	ratio := float64(maxDim) / float64(max(w, h))
+	newW := int(float64(w) * ratio)
+	newH := int(float64(h) * ratio)
+
+	dst := image.NewRGBA(image.Rect(0, 0, newW, newH))
+	draw.CatmullRom.Scale(dst, dst.Bounds(), img, bounds, draw.Over, nil)
+
+	return dst
+}
+
+func saveImage(path string, img image.Image, format string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	switch format {
+	case "png":
+		return png.Encode(f, img)
+	default:
+		return jpeg.Encode(f, img, &jpeg.Options{Quality: 85})
+	}
 }
 
 func GetUploads(c *gin.Context) {
