@@ -169,6 +169,30 @@ test.describe.serial('Admin Panel', () => {
     await expect(page.locator('#ai-settings-form')).toBeVisible();
     await expect(page.locator('#ai-track-extract-url')).toBeVisible();
   });
+
+  test('should show Email tab with settings form', async ({ page }) => {
+    await page.click('#email-tab');
+    await expect(page.locator('#email-pane')).toBeVisible();
+    await expect(page.locator('#email-settings-form')).toBeVisible();
+    await expect(page.locator('#smtp-host')).toBeVisible();
+    await expect(page.locator('#smtp-port')).toBeVisible();
+    await expect(page.locator('#racer-email-list')).toBeAttached();
+  });
+
+  test('should show Analytics tab with umami settings', async ({ page }) => {
+    await page.click('#umami-tab');
+    await expect(page.locator('#umami-pane')).toBeVisible();
+    await expect(page.locator('#umami-form')).toBeVisible();
+    await expect(page.locator('#umami-url')).toBeVisible();
+  });
+
+  test('should show Backup tab with settings and manual backup', async ({ page }) => {
+    await page.click('#backup-tab');
+    await expect(page.locator('#backup-pane')).toBeVisible();
+    await expect(page.locator('#backup-form')).toBeVisible();
+    await expect(page.locator('#backup-manual-btn')).toBeVisible();
+    await expect(page.locator('#backup-list')).toBeVisible();
+  });
 });
 
 async function loginAsAdmin(page: Page) {

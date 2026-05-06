@@ -601,172 +601,172 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Email Pane -->
-    <div class="tab-pane fade" id="email-pane">
-        <div class="row">
-            <div class="col-lg-6 mb-4">
-                <div class="card">
-                    <div class="card-header"><i class="fa-solid fa-envelope me-2 text-danger"></i>SMTP Settings</div>
-                    <div class="card-body">
-                        <form id="email-settings-form">
-                            <div class="row g-3 mb-3">
-                                <div class="col-7">
-                                    <label class="form-label small fw-bold">SMTP Host</label>
-                                    <input type="text" class="form-control" id="smtp-host" placeholder="smtp.gmail.com">
+                <!-- Email Pane -->
+                <div class="tab-pane fade" id="email-pane">
+                    <div class="row">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card">
+                                <div class="card-header"><i class="fa-solid fa-envelope me-2 text-danger"></i>SMTP Settings</div>
+                                <div class="card-body">
+                                    <form id="email-settings-form">
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-7">
+                                                <label class="form-label small fw-bold">SMTP Host</label>
+                                                <input type="text" class="form-control" id="smtp-host" placeholder="smtp.gmail.com">
+                                            </div>
+                                            <div class="col-3">
+                                                <label class="form-label small fw-bold">Port</label>
+                                                <input type="number" class="form-control" id="smtp-port" value="587">
+                                            </div>
+                                            <div class="col-2 d-flex align-items-end">
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="email-enabled">
+                                                    <label class="form-check-label small fw-bold" for="email-enabled">Enabled</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Username</label>
+                                            <input type="text" class="form-control" id="smtp-username" placeholder="user@gmail.com">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Password / App Password</label>
+                                            <input type="password" class="form-control" id="smtp-password" placeholder="App password">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">From Address</label>
+                                            <input type="email" class="form-control" id="smtp-from" placeholder="heat@example.com">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100">Save Email Settings</button>
+                                    </form>
                                 </div>
-                                <div class="col-3">
-                                    <label class="form-label small fw-bold">Port</label>
-                                    <input type="number" class="form-control" id="smtp-port" value="587">
+                            </div>
+                            <div class="card mt-4">
+                                <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>How It Works</div>
+                                <div class="card-body">
+                                    <p class="small text-muted mb-2">After each race is saved to history, an email with the full results will be sent to all racers who have an email address configured.</p>
+                                    <p class="small text-muted mb-0">The email includes each driver's position, points, and fastest lap status in an HTML table.</p>
                                 </div>
-                                <div class="col-2 d-flex align-items-end">
-                                    <div class="form-check form-switch mb-3">
-                                        <input class="form-check-input" type="checkbox" id="email-enabled">
-                                        <label class="form-check-label small fw-bold" for="email-enabled">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <div class="card">
+                                <div class="card-header"><i class="fa-solid fa-address-card me-2 text-danger"></i>Racer Email Addresses</div>
+                                <div class="card-body">
+                                    <p class="small text-muted mb-3">Assign email addresses to racers so they receive race result emails.</p>
+                                    <div id="racer-email-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Pane -->
+                <div class="tab-pane fade" id="umami-pane">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header"><i class="fa-solid fa-chart-simple me-2 text-danger"></i>Umami Analytics</div>
+                                <div class="card-body">
+                                    <form id="umami-form">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Umami URL</label>
+                                            <input type="text" class="form-control" id="umami-url" placeholder="https://your-umami-instance.com">
+                                            <div class="form-text">Your self-hosted Umami server URL</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Website ID</label>
+                                            <input type="text" class="form-control" id="umami-website-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                                            <div class="form-text">The tracking website ID from Umami</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="umami-enabled">
+                                                <label class="form-check-label small fw-bold" for="umami-enabled">Enable Tracking</label>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100">Save Analytics Settings</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About Umami</div>
+                                <div class="card-body">
+                                    <p class="small text-muted mb-2">Umami is a simple, fast, privacy-focused alternative to Google Analytics. It is self-hosted and does not track cookies or collect personal data.</p>
+                                    <p class="small text-muted mb-0">The tracking script is automatically injected into all pages when enabled.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Backup Pane -->
+                <div class="tab-pane fade" id="backup-pane">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header"><i class="fa-solid fa-gear me-2 text-danger"></i>Backup Settings</div>
+                                <div class="card-body">
+                                    <form id="backup-form">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="backup-enabled">
+                                                <label class="form-check-label small fw-bold" for="backup-enabled">Enable Periodic Backups</label>
+                                            </div>
+                                            <div class="form-text mt-1">Automatically create database backups on a schedule.</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Backup Interval (hours)</label>
+                                            <select class="form-select" id="backup-interval">
+                                                <option value="1">Every 1 hour</option>
+                                                <option value="6">Every 6 hours</option>
+                                                <option value="12">Every 12 hours</option>
+                                                <option value="24" selected>Every 24 hours</option>
+                                                <option value="48">Every 48 hours</option>
+                                                <option value="72">Every 72 hours</option>
+                                                <option value="168">Every 7 days</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100">Save Backup Settings</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span><i class="fa-solid fa-clock-rotate-left me-2 text-danger"></i>Manual Backup</span>
+                                    <button class="btn btn-sm btn-success" id="backup-manual-btn" onclick="triggerManualBackup()">
+                                        <i class="fa-solid fa-play me-1"></i> Backup Now
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small text-muted mb-3">Create an immediate backup of the database. Backups are stored in the <code>backups/</code> directory.</p>
+                                    <div id="backup-result" class="alert d-none mb-0"></div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header"><i class="fa-solid fa-list me-2 text-info"></i>Recent Backups</div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th class="ps-4">File</th>
+                                                    <th>Size</th>
+                                                    <th class="text-end pe-4">Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="backup-list">
+                                                <tr><td colspan="3" class="text-center text-muted py-4">No backups found.</td></tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Username</label>
-                                <input type="text" class="form-control" id="smtp-username" placeholder="user@gmail.com">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Password / App Password</label>
-                                <input type="password" class="form-control" id="smtp-password" placeholder="App password">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">From Address</label>
-                                <input type="email" class="form-control" id="smtp-from" placeholder="heat@example.com">
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Save Email Settings</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="card mt-4">
-                    <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>How It Works</div>
-                    <div class="card-body">
-                        <p class="small text-muted mb-2">After each race is saved to history, an email with the full results will be sent to all racers who have an email address configured.</p>
-                        <p class="small text-muted mb-0">The email includes each driver's position, points, and fastest lap status in an HTML table.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 mb-4">
-                <div class="card">
-                    <div class="card-header"><i class="fa-solid fa-address-card me-2 text-danger"></i>Racer Email Addresses</div>
-                    <div class="card-body">
-                        <p class="small text-muted mb-3">Assign email addresses to racers so they receive race result emails.</p>
-                        <div id="racer-email-list"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Analytics Pane -->
-    <div class="tab-pane fade" id="umami-pane">
-        <div class="row">
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header"><i class="fa-solid fa-chart-simple me-2 text-danger"></i>Umami Analytics</div>
-                    <div class="card-body">
-                        <form id="umami-form">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Umami URL</label>
-                                <input type="text" class="form-control" id="umami-url" placeholder="https://your-umami-instance.com">
-                                <div class="form-text">Your self-hosted Umami server URL</div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Website ID</label>
-                                <input type="text" class="form-control" id="umami-website-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-                                <div class="form-text">The tracking website ID from Umami</div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="umami-enabled">
-                                    <label class="form-check-label small fw-bold" for="umami-enabled">Enable Tracking</label>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Save Analytics Settings</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About Umami</div>
-                    <div class="card-body">
-                        <p class="small text-muted mb-2">Umami is a simple, fast, privacy-focused alternative to Google Analytics. It is self-hosted and does not track cookies or collect personal data.</p>
-                        <p class="small text-muted mb-0">The tracking script is automatically injected into all pages when enabled.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Backup Pane -->
-    <div class="tab-pane fade" id="backup-pane">
-        <div class="row">
-            <div class="col-lg-6">
-                <div class="card mb-4">
-                    <div class="card-header"><i class="fa-solid fa-gear me-2 text-danger"></i>Backup Settings</div>
-                    <div class="card-body">
-                        <form id="backup-form">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="backup-enabled">
-                                    <label class="form-check-label small fw-bold" for="backup-enabled">Enable Periodic Backups</label>
-                                </div>
-                                <div class="form-text mt-1">Automatically create database backups on a schedule.</div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Backup Interval (hours)</label>
-                                <select class="form-select" id="backup-interval">
-                                    <option value="1">Every 1 hour</option>
-                                    <option value="6">Every 6 hours</option>
-                                    <option value="12">Every 12 hours</option>
-                                    <option value="24" selected>Every 24 hours</option>
-                                    <option value="48">Every 48 hours</option>
-                                    <option value="72">Every 72 hours</option>
-                                    <option value="168">Every 7 days</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Save Backup Settings</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-clock-rotate-left me-2 text-danger"></i>Manual Backup</span>
-                        <button class="btn btn-sm btn-success" id="backup-manual-btn" onclick="triggerManualBackup()">
-                            <i class="fa-solid fa-play me-1"></i> Backup Now
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <p class="small text-muted mb-3">Create an immediate backup of the database. Backups are stored in the <code>backups/</code> directory.</p>
-                        <div id="backup-result" class="alert d-none mb-0"></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header"><i class="fa-solid fa-list me-2 text-info"></i>Recent Backups</div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-4">File</th>
-                                        <th>Size</th>
-                                        <th class="text-end pe-4">Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="backup-list">
-                                    <tr><td colspan="3" class="text-center text-muted py-4">No backups found.</td></tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
