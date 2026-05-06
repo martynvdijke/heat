@@ -1,3 +1,20 @@
+# [1.16.0](https://github.com/martynvdijke/heat/compare/v1.15.4...v1.16.0) (2026-05-06)
+
+
+### Bug Fixes
+
+* db connection deadlock in TakeRoundSnapshot, add season/round snapshot tests ([27f0c23](https://github.com/martynvdijke/heat/commit/27f0c23b69d8de1706282ada932d60beeeae3d00))
+* remove archive tab from admin, add seasons tab, fix 500 errors by rebuilding ([00fbf43](https://github.com/martynvdijke/heat/commit/00fbf432611d937ac8e126812ca660c886c22c5c))
+* v17 migration creates seasons table properly, fix round snapshot deadlock, add comprehensive tests ([4b5234b](https://github.com/martynvdijke/heat/commit/4b5234ba5a309561014bceeaddc854a729457310))
+
+
+### Features
+
+* add flag system with safety car/red flag overlay and per-driver flag toasts via WebSocket ([0447c7b](https://github.com/martynvdijke/heat/commit/0447c7bbe02a8d93d7ab96560fe41132704dfe0f))
+* Bootstrap modal-based fullscreen flags, stat form cleanup, persistent chequered flag toggle, thorough tests ([cbffc7d](https://github.com/martynvdijke/heat/commit/cbffc7dddfcc07f35dc9c66cc728bc10ce1c7072))
+* round snapshot system for points progression, fix trophies case bug, add round table to HTML ([2a7871d](https://github.com/martynvdijke/heat/commit/2a7871d153e342788c11b0269ba34df2aa46bb48))
+* seasons with round snapshots, admin seasons/rounds tabs, fix flag modal colors, remove commentary ([35ac957](https://github.com/martynvdijke/heat/commit/35ac957960f8f51243c47a15acdee716708aea77))
+
 ## [1.15.4](https://github.com/martynvdijke/heat/compare/v1.15.3...v1.15.4) (2026-05-06)
 
 
