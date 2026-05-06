@@ -9,6 +9,15 @@ import (
 	"heat/models"
 )
 
+// @Summary Send race flag command
+// @Description Send a flag command (safety car, red, blue, black/white)
+// @Tags Flags
+// @Accept json
+// @Produce json
+// @Param flag body models.FlagCommand true "Flag command"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Router /api/flags [post]
 func HandleFlag(c *gin.Context) {
 	var cmd models.FlagCommand
 	if err := c.ShouldBindJSON(&cmd); err != nil {

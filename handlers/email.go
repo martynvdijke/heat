@@ -17,6 +17,13 @@ import (
 	"heat/models"
 )
 
+// @Summary Get racer emails
+// @Description Get the list of racer email addresses
+// @Tags Email
+// @Produce json
+// @Success 200 {array} models.RacerEmail
+// @Security cookieAuth
+// @Router /api/racer-emails [get]
 func GetRacerEmails(c *gin.Context) {
 	rows, err := app.DB.Query("SELECT id, racer_id, COALESCE(email, '') FROM racer_emails ORDER BY racer_id")
 	if err != nil {
@@ -35,6 +42,15 @@ func GetRacerEmails(c *gin.Context) {
 	c.JSON(http.StatusOK, emails)
 }
 
+// @Summary Save racer email
+// @Description Save or update a racer's email address
+// @Tags Email
+// @Accept json
+// @Produce json
+// @Param email body models.RacerEmail true "Racer email"
+// @Success 200 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/racer-emails [post]
 func SaveRacerEmail(c *gin.Context) {
 	var e models.RacerEmail
 	if err := c.ShouldBindJSON(&e); err != nil {
@@ -50,6 +66,15 @@ func SaveRacerEmail(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// @Summary Send race email
+// @Description Manually send race result emails for a specific race
+// @Tags Email
+// @Produce json
+// @Param race_id query int true "Race ID"
+// @Success 200 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/send-race-email [post]
 func SendRaceEmailManual(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	raceID := 0
@@ -188,6 +213,14 @@ func sendSMTP(s models.EmailSettings, to, content string) error {
 	return smtp.SendMail(addr, auth, s.FromAddr, []string{to}, msg)
 }
 
+// @Summary Test notification
+// @Description Send a test notification via Gotify
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/test-notification [post]
 func TestNotification(c *gin.Context) {
 	var s models.NotificationSettings
 	app.DB.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, '') FROM notification_settings WHERE id = 1").

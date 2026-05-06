@@ -35,6 +35,12 @@ tasks:
     cmds:
       - npm run build:ts
 
+  generate-swagger:
+    desc: Generate Swagger/OpenAPI documentation from annotations
+    cmds:
+      - test -f $(go env GOPATH)/bin/swag || go install github.com/swaggo/swag/cmd/swag@latest
+      - $(go env GOPATH)/bin/swag init --parseDependency --parseInternal
+
   build:
     desc: Build the Go binary
     cmds:
@@ -52,6 +58,7 @@ tasks:
     desc: Run all checks before pushing
     cmds:
       - task: fmt
+      - task: generate-swagger
       - task: test
       - task: vuln
       - task: build:ts

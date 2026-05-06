@@ -12,6 +12,15 @@ import (
 	"heat/ws"
 )
 
+// @Summary Take round snapshot
+// @Description Take a snapshot of current racer standings for a season round
+// @Tags Seasons
+// @Accept json
+// @Produce json
+// @Param snapshot body object true "Round snapshot data (race_name, season_id, round)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /api/rounds [post]
 func TakeRoundSnapshot(c *gin.Context) {
 	var input struct {
 		RaceName string `json:"race_name"`
@@ -88,6 +97,14 @@ func TakeRoundSnapshot(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": snapshotID, "round": roundNum})
 }
 
+// @Summary Get round snapshots
+// @Description Get round snapshots, optionally filtered by ID or season_id
+// @Tags Seasons
+// @Produce json
+// @Param id query int false "Snapshot ID"
+// @Param season_id query int false "Season ID"
+// @Success 200 {array} models.RoundSnapshot
+// @Router /api/rounds [get]
 func GetRoundSnapshots(c *gin.Context) {
 	idStr := c.Query("id")
 	seasonIDStr := c.Query("season_id")
@@ -146,6 +163,14 @@ func GetRoundSnapshots(c *gin.Context) {
 	c.JSON(http.StatusOK, snapshots)
 }
 
+// @Summary Delete round snapshot
+// @Description Delete a round snapshot by ID
+// @Tags Seasons
+// @Produce json
+// @Param id query string true "Snapshot ID"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Router /api/rounds [delete]
 func DeleteRoundSnapshot(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
@@ -157,6 +182,12 @@ func DeleteRoundSnapshot(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// @Summary List seasons
+// @Description Get the list of all seasons
+// @Tags Seasons
+// @Produce json
+// @Success 200 {array} models.Season
+// @Router /api/seasons [get]
 func GetSeasons(c *gin.Context) {
 	rows, err := app.DB.Query("SELECT id, name, start_date, COALESCE(end_date, ''), status, created_at FROM seasons ORDER BY id DESC")
 	if err != nil {
@@ -176,6 +207,16 @@ func GetSeasons(c *gin.Context) {
 	c.JSON(http.StatusOK, seasons)
 }
 
+// @Summary Create season
+// @Description Create a new season
+// @Tags Seasons
+// @Accept json
+// @Produce json
+// @Param season body object true "Season data (name)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/seasons [post]
 func CreateSeason(c *gin.Context) {
 	var input struct {
 		Name string `json:"name"`
@@ -194,6 +235,14 @@ func CreateSeason(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }
 
+// @Summary Delete season
+// @Description Delete a season by ID
+// @Tags Seasons
+// @Produce json
+// @Param id query string true "Season ID"
+// @Success 200
+// @Security cookieAuth
+// @Router /api/seasons [delete]
 func DeleteSeason(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
@@ -206,6 +255,15 @@ func DeleteSeason(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// @Summary Archive season
+// @Description Archive a season by ID
+// @Tags Seasons
+// @Produce json
+// @Param id query string true "Season ID"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/seasons/archive [post]
 func ArchiveSeason(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {

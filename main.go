@@ -1,3 +1,26 @@
+// HEAT Racing API
+//
+// API for the HEAT: Pedal to the Metal racing championship management system.
+//
+//	Schemes: http
+//	Host: localhost:6270
+//	BasePath: /api
+//	Version: 1.16.0
+//
+//	Consumes:
+//	- application/json
+//	- multipart/form-data
+//
+//	Produces:
+//	- application/json
+//
+//	SecurityDefinitions:
+//	cookieAuth:
+//	  type: apiKey
+//	  in: cookie
+//	  name: session
+//
+// swagger:meta
 package main
 
 import (
@@ -11,6 +34,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	_ "heat/docs"
 
 	"heat/app"
 	"heat/db"
@@ -192,6 +219,8 @@ func main() {
 </body>
 </html>`))
 	})
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.Static("/media", app.MediaPath)
 	r.Static("/static", filepath.Join(app.BasePath, "static"))

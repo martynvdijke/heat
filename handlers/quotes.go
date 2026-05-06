@@ -9,6 +9,12 @@ import (
 	"heat/models"
 )
 
+// @Summary Get all quotes
+// @Description Get the list of all quotes
+// @Tags Quotes
+// @Produce json
+// @Success 200 {array} models.Quote
+// @Router /api/quotes [get]
 func GetQuotes(c *gin.Context) {
 	rows, err := app.DB.Query("SELECT id, text, author, created_at FROM quotes ORDER BY id")
 	if err != nil {
@@ -28,6 +34,12 @@ func GetQuotes(c *gin.Context) {
 	c.JSON(http.StatusOK, quotes)
 }
 
+// @Summary Get a random quote
+// @Description Get a random racing quote
+// @Tags Quotes
+// @Produce json
+// @Success 200 {object} models.Quote
+// @Router /api/quote/random [get]
 func GetRandomQuote(c *gin.Context) {
 	var q models.Quote
 	err := app.DB.QueryRow("SELECT id, text, author, created_at FROM quotes ORDER BY RANDOM() LIMIT 1").Scan(&q.ID, &q.Text, &q.Author, &q.CreatedAt)
@@ -37,6 +49,16 @@ func GetRandomQuote(c *gin.Context) {
 	c.JSON(http.StatusOK, q)
 }
 
+// @Summary Create a quote
+// @Description Create a new quote
+// @Tags Quotes
+// @Accept json
+// @Produce json
+// @Param quote body models.Quote true "Quote data"
+// @Success 201 {object} models.Quote
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/quotes [post]
 func HandleQuotes(c *gin.Context) {
 	switch c.Request.Method {
 	case "GET":

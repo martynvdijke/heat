@@ -17,12 +17,27 @@ import (
 	"heat/models"
 )
 
+// @Summary Check if admin is set up
+// @Description Returns whether an admin user has been created
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} map[string]bool
+// @Router /api/check-setup [get]
 func HandleCheckSetup(c *gin.Context) {
 	var count int
 	app.DB.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
 	c.JSON(http.StatusOK, gin.H{"setup": count > 0})
 }
 
+// @Summary Login or create admin account
+// @Description Login with existing credentials or create the first admin account during setup
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param credentials body object true "Login credentials"
+// @Success 200 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /api/login [post]
 func HandleLogin(c *gin.Context) {
 	var input struct {
 		Username string `json:"username"`
@@ -91,6 +106,13 @@ func HandleLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// @Summary Logout
+// @Description Clear the session cookie and logout
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/logout [post]
 func HandleLogout(c *gin.Context) {
 	cookie, err := c.Request.Cookie("session")
 	if err == nil {

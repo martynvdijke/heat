@@ -21,6 +21,17 @@ import (
 	"heat/models"
 )
 
+// HandleUpload godoc
+// @Summary Upload an image
+// @Description Upload an image file. Returns the URL and optional thumbnail URL.
+// @Tags Upload
+// @Accept mpfd
+// @Produce json
+// @Param image formData file true "Image file"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/upload [post]
 func HandleUpload(c *gin.Context) {
 	file, err := c.FormFile("image")
 	if err != nil {
@@ -183,6 +194,13 @@ func saveImage(path string, img image.Image, format string) error {
 	}
 }
 
+// GetUploads godoc
+// @Summary List recent uploads
+// @Description Get the 50 most recent uploads
+// @Tags Upload
+// @Produce json
+// @Success 200 {array} models.Upload
+// @Router /api/uploads [get]
 func GetUploads(c *gin.Context) {
 	rows, err := app.DB.Query("SELECT id, hash, ext, url, resized_url, thumbnail_url, COALESCE(created_at, '') FROM uploads ORDER BY created_at DESC LIMIT 50")
 	if err != nil {

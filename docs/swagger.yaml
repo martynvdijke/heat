@@ -1,0 +1,1544 @@
+definitions:
+  models.AISettings:
+    properties:
+      api_key:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      track_extract_url:
+        type: string
+    type: object
+  models.BackupSettings:
+    properties:
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      interval_hrs:
+        type: integer
+    type: object
+  models.ELORating:
+    properties:
+      racer_id:
+        type: integer
+      racer_name:
+        type: string
+      races:
+        type: integer
+      rating:
+        type: number
+    type: object
+  models.EmailSettings:
+    properties:
+      enabled:
+        type: boolean
+      from_addr:
+        type: string
+      id:
+        type: integer
+      password:
+        type: string
+      smtp_host:
+        type: string
+      smtp_port:
+        type: integer
+      username:
+        type: string
+    type: object
+  models.FlagCommand:
+    properties:
+      flag:
+        type: string
+      racer_id:
+        type: integer
+      racer_name:
+        type: string
+      state:
+        type: string
+      type:
+        type: string
+    type: object
+  models.HeadToHead:
+    properties:
+      racer1:
+        type: string
+      racer1_avg_position:
+        type: number
+      racer1_wins:
+        type: integer
+      racer2:
+        type: string
+      racer2_avg_position:
+        type: number
+      racer2_wins:
+        type: integer
+      races:
+        type: integer
+    type: object
+  models.NotificationSettings:
+    properties:
+      gotify_token:
+        type: string
+      gotify_url:
+        type: string
+      id:
+        type: integer
+      notify_podium:
+        type: boolean
+      notify_race_start:
+        type: boolean
+      notify_winner:
+        type: boolean
+    type: object
+  models.PointsProgression:
+    properties:
+      points:
+        type: integer
+      race_date:
+        type: string
+      race_id:
+        type: integer
+      race_name:
+        type: string
+    type: object
+  models.Quote:
+    properties:
+      author:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      text:
+        type: string
+    type: object
+  models.RaceHistory:
+    properties:
+      country:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      race_date:
+        type: string
+      race_type:
+        type: string
+      results:
+        items:
+          $ref: '#/definitions/models.RaceResult'
+        type: array
+      total_laps:
+        type: integer
+      track:
+        type: string
+      track_id:
+        type: string
+    type: object
+  models.RaceInfo:
+    properties:
+      country:
+        type: string
+      id:
+        type: integer
+      laps:
+        type: integer
+      track:
+        type: string
+      track_id:
+        type: string
+    type: object
+  models.RaceResult:
+    properties:
+      fastest_lap:
+        type: boolean
+      finished:
+        type: boolean
+      id:
+        type: integer
+      points:
+        type: integer
+      position:
+        type: integer
+      race_id:
+        type: integer
+      racer_id:
+        type: integer
+      racer_name:
+        type: string
+    type: object
+  models.Racer:
+    properties:
+      car_color:
+        type: string
+      car_name:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      points:
+        type: integer
+      position:
+        type: integer
+      profile_picture:
+        type: string
+      rank:
+        type: integer
+    type: object
+  models.RacerEmail:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      racer_id:
+        type: integer
+    type: object
+  models.RacerStats:
+    properties:
+      bronze:
+        type: integer
+      dnf:
+        type: integer
+      dns:
+        type: integer
+      fastest_laps:
+        type: integer
+      gold:
+        type: integer
+      id:
+        type: integer
+      points:
+        type: integer
+      racer_id:
+        type: integer
+      races:
+        type: integer
+      silver:
+        type: integer
+      wins:
+        type: integer
+    type: object
+  models.RoundSnapshot:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      race_date:
+        type: string
+      race_name:
+        type: string
+      round:
+        type: integer
+      scores:
+        items:
+          $ref: '#/definitions/models.RoundSnapshotScore'
+        type: array
+      season_id:
+        type: integer
+    type: object
+  models.RoundSnapshotScore:
+    properties:
+      id:
+        type: integer
+      points:
+        type: integer
+      position:
+        type: integer
+      racer_id:
+        type: integer
+      racer_name:
+        type: string
+      snapshot_id:
+        type: integer
+    type: object
+  models.Season:
+    properties:
+      created_at:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      start_date:
+        type: string
+      status:
+        type: string
+    type: object
+  models.StreakInfo:
+    properties:
+      best_end:
+        type: string
+      best_start:
+        type: string
+      best_value:
+        type: integer
+      current_value:
+        type: integer
+      racer_name:
+        type: string
+      streak_type:
+        type: string
+    type: object
+  models.Track:
+    properties:
+      country:
+        type: string
+      geojson:
+        type: string
+      id:
+        type: string
+      lap_record:
+        type: string
+      length_km:
+        type: integer
+      map_image_url:
+        type: string
+      name:
+        type: string
+      refresh_geojson:
+        type: boolean
+      use_map_image:
+        type: boolean
+    type: object
+  models.TrackStats:
+    properties:
+      country:
+        type: string
+      fastest_lap:
+        type: string
+      races_count:
+        type: integer
+      track_id:
+        type: string
+      track_name:
+        type: string
+      winner:
+        type: string
+    type: object
+  models.UmamiSettings:
+    properties:
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      url:
+        type: string
+      website_id:
+        type: string
+    type: object
+  models.Upload:
+    properties:
+      created_at:
+        type: string
+      ext:
+        type: string
+      hash:
+        type: string
+      id:
+        type: integer
+      resized_url:
+        type: string
+      thumbnail_url:
+        type: string
+      url:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/ai-settings:
+    get:
+      description: Get the AI track extraction settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Get AI settings
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: Save the AI track extraction settings
+      parameters:
+      - description: AI settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/models.AISettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Save AI settings
+      tags:
+      - Settings
+  /api/backup-settings:
+    get:
+      description: Get the backup configuration settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.BackupSettings'
+      summary: Get backup settings
+      tags:
+      - Backup
+    post:
+      consumes:
+      - application/json
+      description: Save the backup configuration settings
+      parameters:
+      - description: Backup settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/models.BackupSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Save backup settings
+      tags:
+      - Backup
+  /api/backup/list:
+    get:
+      description: List recent backup files
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: object
+            type: array
+      summary: List backups
+      tags:
+      - Backup
+  /api/backup/manual:
+    post:
+      description: Trigger a manual database backup
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Create manual backup
+      tags:
+      - Backup
+  /api/check-setup:
+    get:
+      description: Returns whether an admin user has been created
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      summary: Check if admin is set up
+      tags:
+      - Auth
+  /api/email-settings:
+    get:
+      description: Get SMTP email settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Get email settings
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: Save SMTP email settings
+      parameters:
+      - description: Email settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/models.EmailSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Save email settings
+      tags:
+      - Settings
+  /api/flags:
+    post:
+      consumes:
+      - application/json
+      description: Send a flag command (safety car, red, blue, black/white)
+      parameters:
+      - description: Flag command
+        in: body
+        name: flag
+        required: true
+        schema:
+          $ref: '#/definitions/models.FlagCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send race flag command
+      tags:
+      - Flags
+  /api/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with existing credentials or create the first admin account
+        during setup
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login or create admin account
+      tags:
+      - Auth
+  /api/logout:
+    post:
+      description: Clear the session cookie and logout
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Logout
+      tags:
+      - Auth
+  /api/notification-settings:
+    get:
+      description: Get Gotify notification settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Get notification settings
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: Save Gotify notification settings
+      parameters:
+      - description: Notification settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/models.NotificationSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Save notification settings
+      tags:
+      - Settings
+  /api/oneoff-races:
+    delete:
+      description: Delete a one-off race history entry by ID
+      parameters:
+      - description: Race ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Delete a one-off race
+      tags:
+      - Race
+    get:
+      description: Get the list of one-off race history entries
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RaceHistory'
+            type: array
+      summary: Get one-off races
+      tags:
+      - Race
+  /api/quote/random:
+    get:
+      description: Get a random racing quote
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Quote'
+      summary: Get a random quote
+      tags:
+      - Quotes
+  /api/quotes:
+    get:
+      description: Get the list of all quotes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Quote'
+            type: array
+      summary: Get all quotes
+      tags:
+      - Quotes
+    post:
+      consumes:
+      - application/json
+      description: Create a new quote
+      parameters:
+      - description: Quote data
+        in: body
+        name: quote
+        required: true
+        schema:
+          $ref: '#/definitions/models.Quote'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Quote'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Create a quote
+      tags:
+      - Quotes
+  /api/race-history:
+    delete:
+      description: Delete a race history entry by ID
+      parameters:
+      - description: Race ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Delete race from history
+      tags:
+      - Race
+    get:
+      description: Get race history entries, optionally filtered by ID or type
+      parameters:
+      - description: Race ID
+        in: query
+        name: id
+        type: integer
+      - description: Race type (season, oneoff)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RaceHistory'
+            type: array
+      summary: Get race history
+      tags:
+      - Race
+    post:
+      consumes:
+      - application/json
+      description: Archive a completed race to history with results
+      parameters:
+      - description: Race history data with results
+        in: body
+        name: race
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Save race to history
+      tags:
+      - Race
+  /api/race-info:
+    get:
+      description: Get the current race information (country, track, laps)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RaceInfo'
+      summary: Get current race info
+      tags:
+      - Race
+    post:
+      consumes:
+      - application/json
+      description: Update the current race information
+      parameters:
+      - description: Race info
+        in: body
+        name: raceInfo
+        required: true
+        schema:
+          $ref: '#/definitions/models.RaceInfo'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Update race info
+      tags:
+      - Race
+  /api/racer-emails:
+    get:
+      description: Get the list of racer email addresses
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RacerEmail'
+            type: array
+      security:
+      - cookieAuth: []
+      summary: Get racer emails
+      tags:
+      - Email
+    post:
+      consumes:
+      - application/json
+      description: Save or update a racer's email address
+      parameters:
+      - description: Racer email
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/models.RacerEmail'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Save racer email
+      tags:
+      - Email
+  /api/racer-stats:
+    get:
+      description: Get statistics for all racers or a specific racer by ID
+      parameters:
+      - description: Racer ID
+        in: query
+        name: id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get racer stats
+      tags:
+      - Stats
+    post:
+      consumes:
+      - application/json
+      description: Manually update a racer's statistics
+      parameters:
+      - description: Racer stats
+        in: body
+        name: stats
+        required: true
+        schema:
+          $ref: '#/definitions/models.RacerStats'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Update racer stats
+      tags:
+      - Stats
+  /api/racers:
+    delete:
+      description: Delete a racer by ID
+      parameters:
+      - description: Racer ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Delete a racer
+      tags:
+      - Racers
+    get:
+      description: Get the list of all racers sorted by rank
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Racer'
+            type: array
+      summary: Get all racers
+      tags:
+      - Racers
+    post:
+      consumes:
+      - application/json
+      description: Creates a new racer if ID is 0, otherwise updates the existing
+        racer
+      parameters:
+      - description: Racer data
+        in: body
+        name: racer
+        required: true
+        schema:
+          $ref: '#/definitions/models.Racer'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Create or update a racer
+      tags:
+      - Racers
+  /api/rounds:
+    delete:
+      description: Delete a round snapshot by ID
+      parameters:
+      - description: Snapshot ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete round snapshot
+      tags:
+      - Seasons
+    get:
+      description: Get round snapshots, optionally filtered by ID or season_id
+      parameters:
+      - description: Snapshot ID
+        in: query
+        name: id
+        type: integer
+      - description: Season ID
+        in: query
+        name: season_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RoundSnapshot'
+            type: array
+      summary: Get round snapshots
+      tags:
+      - Seasons
+    post:
+      consumes:
+      - application/json
+      description: Take a snapshot of current racer standings for a season round
+      parameters:
+      - description: Round snapshot data (race_name, season_id, round)
+        in: body
+        name: snapshot
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Take round snapshot
+      tags:
+      - Seasons
+  /api/seasons:
+    delete:
+      description: Delete a season by ID
+      parameters:
+      - description: Season ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - cookieAuth: []
+      summary: Delete season
+      tags:
+      - Seasons
+    get:
+      description: Get the list of all seasons
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Season'
+            type: array
+      summary: List seasons
+      tags:
+      - Seasons
+    post:
+      consumes:
+      - application/json
+      description: Create a new season
+      parameters:
+      - description: Season data (name)
+        in: body
+        name: season
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Create season
+      tags:
+      - Seasons
+  /api/seasons/archive:
+    post:
+      description: Archive a season by ID
+      parameters:
+      - description: Season ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Archive season
+      tags:
+      - Seasons
+  /api/send-race-email:
+    post:
+      description: Manually send race result emails for a specific race
+      parameters:
+      - description: Race ID
+        in: query
+        name: race_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Send race email
+      tags:
+      - Email
+  /api/stats/elo:
+    get:
+      description: Get ELO ratings for all racers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ELORating'
+            type: array
+      summary: ELO ratings
+      tags:
+      - Stats
+  /api/stats/export:
+    get:
+      description: Export racer statistics as a CSV file
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: Export stats as CSV
+      tags:
+      - Stats
+  /api/stats/head-to-head:
+    get:
+      description: Compare two racers head to head
+      parameters:
+      - description: First racer ID
+        in: query
+        name: racer1
+        required: true
+        type: integer
+      - description: Second racer ID
+        in: query
+        name: racer2
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.HeadToHead'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Head to head comparison
+      tags:
+      - Stats
+  /api/stats/points-progression:
+    get:
+      description: Get cumulative points progression for a racer
+      parameters:
+      - description: Racer ID
+        in: query
+        name: racer_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.PointsProgression'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Points progression
+      tags:
+      - Stats
+  /api/stats/streaks:
+    get:
+      description: Get win and podium streak information for all racers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.StreakInfo'
+            type: array
+      summary: Win/podium streaks
+      tags:
+      - Stats
+  /api/stats/track-performance:
+    get:
+      description: Get racer performance by track, optionally filtered by racer_id
+      parameters:
+      - description: Racer ID
+        in: query
+        name: racer_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: object
+            type: array
+      summary: Track performance
+      tags:
+      - Stats
+  /api/test-notification:
+    post:
+      description: Send a test notification via Gotify
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Test notification
+      tags:
+      - Settings
+  /api/track-stats:
+    get:
+      description: Get performance statistics grouped by track
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.TrackStats'
+            type: array
+      summary: Get track stats
+      tags:
+      - Stats
+  /api/tracks:
+    delete:
+      description: Delete a track by ID
+      parameters:
+      - description: Track ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Delete a track
+      tags:
+      - Tracks
+    get:
+      description: Get the list of all race tracks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Track'
+            type: array
+      summary: Get all tracks
+      tags:
+      - Tracks
+    post:
+      consumes:
+      - application/json
+      description: Creates a new track or updates an existing one
+      parameters:
+      - description: Track data
+        in: body
+        name: track
+        required: true
+        schema:
+          $ref: '#/definitions/models.Track'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Track'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Create or update a track
+      tags:
+      - Tracks
+  /api/tracks/ai-extract:
+    post:
+      consumes:
+      - application/json
+      - multipart/form-data
+      description: Analyzes a track image using AI to extract GeoJSON data
+      parameters:
+      - description: JSON with image_url field
+        in: body
+        name: image_url
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: AI Track Extraction
+      tags:
+      - Tracks
+  /api/umami-settings:
+    get:
+      description: Get Umami analytics settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UmamiSettings'
+      security:
+      - cookieAuth: []
+      summary: Get analytics settings
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: Save Umami analytics settings
+      parameters:
+      - description: Umami settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/models.UmamiSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UmamiSettings'
+      security:
+      - cookieAuth: []
+      summary: Save analytics settings
+      tags:
+      - Settings
+  /api/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an image file. Returns the URL and optional thumbnail URL.
+      parameters:
+      - description: Image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Upload an image
+      tags:
+      - Upload
+  /api/uploads:
+    get:
+      description: Get the 50 most recent uploads
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Upload'
+            type: array
+      summary: List recent uploads
+      tags:
+      - Upload
+swagger: "2.0"

@@ -1,0 +1,2408 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/api/ai-settings": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get the AI track extraction settings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Get AI settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Save the AI track extraction settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Save AI settings",
+                "parameters": [
+                    {
+                        "description": "AI settings",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AISettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/backup-settings": {
+            "get": {
+                "description": "Get the backup configuration settings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup"
+                ],
+                "summary": "Get backup settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.BackupSettings"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Save the backup configuration settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup"
+                ],
+                "summary": "Save backup settings",
+                "parameters": [
+                    {
+                        "description": "Backup settings",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.BackupSettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/backup/list": {
+            "get": {
+                "description": "List recent backup files",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup"
+                ],
+                "summary": "List backups",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/backup/manual": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Trigger a manual database backup",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup"
+                ],
+                "summary": "Create manual backup",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/check-setup": {
+            "get": {
+                "description": "Returns whether an admin user has been created",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Check if admin is set up",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/email-settings": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get SMTP email settings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Get email settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Save SMTP email settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Save email settings",
+                "parameters": [
+                    {
+                        "description": "Email settings",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.EmailSettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/flags": {
+            "post": {
+                "description": "Send a flag command (safety car, red, blue, black/white)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flags"
+                ],
+                "summary": "Send race flag command",
+                "parameters": [
+                    {
+                        "description": "Flag command",
+                        "name": "flag",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.FlagCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/login": {
+            "post": {
+                "description": "Login with existing credentials or create the first admin account during setup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login or create admin account",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/logout": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Clear the session cookie and logout",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notification-settings": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get Gotify notification settings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Get notification settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Save Gotify notification settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Save notification settings",
+                "parameters": [
+                    {
+                        "description": "Notification settings",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.NotificationSettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/oneoff-races": {
+            "get": {
+                "description": "Get the list of one-off race history entries",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Race"
+                ],
+                "summary": "Get one-off races",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RaceHistory"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Delete a one-off race history entry by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Race"
+                ],
+                "summary": "Delete a one-off race",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Race ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/quote/random": {
+            "get": {
+                "description": "Get a random racing quote",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Quotes"
+                ],
+                "summary": "Get a random quote",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Quote"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/quotes": {
+            "get": {
+                "description": "Get the list of all quotes",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Quotes"
+                ],
+                "summary": "Get all quotes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Quote"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Create a new quote",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Quotes"
+                ],
+                "summary": "Create a quote",
+                "parameters": [
+                    {
+                        "description": "Quote data",
+                        "name": "quote",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Quote"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Quote"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/race-history": {
+            "get": {
+                "description": "Get race history entries, optionally filtered by ID or type",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Race"
+                ],
+                "summary": "Get race history",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Race ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Race type (season, oneoff)",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RaceHistory"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Archive a completed race to history with results",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Race"
+                ],
+                "summary": "Save race to history",
+                "parameters": [
+                    {
+                        "description": "Race history data with results",
+                        "name": "race",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Delete a race history entry by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Race"
+                ],
+                "summary": "Delete race from history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Race ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/race-info": {
+            "get": {
+                "description": "Get the current race information (country, track, laps)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Race"
+                ],
+                "summary": "Get current race info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RaceInfo"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Update the current race information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Race"
+                ],
+                "summary": "Update race info",
+                "parameters": [
+                    {
+                        "description": "Race info",
+                        "name": "raceInfo",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RaceInfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/racer-emails": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get the list of racer email addresses",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Get racer emails",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RacerEmail"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Save or update a racer's email address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Save racer email",
+                "parameters": [
+                    {
+                        "description": "Racer email",
+                        "name": "email",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RacerEmail"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/racer-stats": {
+            "get": {
+                "description": "Get statistics for all racers or a specific racer by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Get racer stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Racer ID",
+                        "name": "id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Manually update a racer's statistics",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Update racer stats",
+                "parameters": [
+                    {
+                        "description": "Racer stats",
+                        "name": "stats",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RacerStats"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/racers": {
+            "get": {
+                "description": "Get the list of all racers sorted by rank",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Get all racers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Racer"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Creates a new racer if ID is 0, otherwise updates the existing racer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Create or update a racer",
+                "parameters": [
+                    {
+                        "description": "Racer data",
+                        "name": "racer",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Racer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Delete a racer by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Delete a racer",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Racer ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rounds": {
+            "get": {
+                "description": "Get round snapshots, optionally filtered by ID or season_id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Get round snapshots",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Snapshot ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season ID",
+                        "name": "season_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RoundSnapshot"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Take a snapshot of current racer standings for a season round",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Take round snapshot",
+                "parameters": [
+                    {
+                        "description": "Round snapshot data (race_name, season_id, round)",
+                        "name": "snapshot",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a round snapshot by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Delete round snapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Snapshot ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/seasons": {
+            "get": {
+                "description": "Get the list of all seasons",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "List seasons",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Season"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Create a new season",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Create season",
+                "parameters": [
+                    {
+                        "description": "Season data (name)",
+                        "name": "season",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Delete a season by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Delete season",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Season ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/seasons/archive": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Archive a season by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Archive season",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Season ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/send-race-email": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Manually send race result emails for a specific race",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Send race email",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Race ID",
+                        "name": "race_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats/elo": {
+            "get": {
+                "description": "Get ELO ratings for all racers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "ELO ratings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ELORating"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats/export": {
+            "get": {
+                "description": "Export racer statistics as a CSV file",
+                "produces": [
+                    "text/csv"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Export stats as CSV",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats/head-to-head": {
+            "get": {
+                "description": "Compare two racers head to head",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Head to head comparison",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "First racer ID",
+                        "name": "racer1",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Second racer ID",
+                        "name": "racer2",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.HeadToHead"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats/points-progression": {
+            "get": {
+                "description": "Get cumulative points progression for a racer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Points progression",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Racer ID",
+                        "name": "racer_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.PointsProgression"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats/streaks": {
+            "get": {
+                "description": "Get win and podium streak information for all racers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Win/podium streaks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.StreakInfo"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats/track-performance": {
+            "get": {
+                "description": "Get racer performance by track, optionally filtered by racer_id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Track performance",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Racer ID",
+                        "name": "racer_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/test-notification": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Send a test notification via Gotify",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Test notification",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/track-stats": {
+            "get": {
+                "description": "Get performance statistics grouped by track",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Get track stats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.TrackStats"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/tracks": {
+            "get": {
+                "description": "Get the list of all race tracks",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tracks"
+                ],
+                "summary": "Get all tracks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Track"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Creates a new track or updates an existing one",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tracks"
+                ],
+                "summary": "Create or update a track",
+                "parameters": [
+                    {
+                        "description": "Track data",
+                        "name": "track",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Track"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Track"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Delete a track by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tracks"
+                ],
+                "summary": "Delete a track",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Track ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/tracks/ai-extract": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Analyzes a track image using AI to extract GeoJSON data",
+                "consumes": [
+                    "application/json",
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tracks"
+                ],
+                "summary": "AI Track Extraction",
+                "parameters": [
+                    {
+                        "description": "JSON with image_url field",
+                        "name": "image_url",
+                        "in": "body",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/umami-settings": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get Umami analytics settings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Get analytics settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.UmamiSettings"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Save Umami analytics settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Save analytics settings",
+                "parameters": [
+                    {
+                        "description": "Umami settings",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UmamiSettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.UmamiSettings"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/upload": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Upload an image file. Returns the URL and optional thumbnail URL.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload"
+                ],
+                "summary": "Upload an image",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Image file",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/uploads": {
+            "get": {
+                "description": "Get the 50 most recent uploads",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload"
+                ],
+                "summary": "List recent uploads",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Upload"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.AISettings": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "track_extract_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.BackupSettings": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "interval_hrs": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ELORating": {
+            "type": "object",
+            "properties": {
+                "racer_id": {
+                    "type": "integer"
+                },
+                "racer_name": {
+                    "type": "string"
+                },
+                "races": {
+                    "type": "integer"
+                },
+                "rating": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.EmailSettings": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "from_addr": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "smtp_host": {
+                    "type": "string"
+                },
+                "smtp_port": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.FlagCommand": {
+            "type": "object",
+            "properties": {
+                "flag": {
+                    "type": "string"
+                },
+                "racer_id": {
+                    "type": "integer"
+                },
+                "racer_name": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.HeadToHead": {
+            "type": "object",
+            "properties": {
+                "racer1": {
+                    "type": "string"
+                },
+                "racer1_avg_position": {
+                    "type": "number"
+                },
+                "racer1_wins": {
+                    "type": "integer"
+                },
+                "racer2": {
+                    "type": "string"
+                },
+                "racer2_avg_position": {
+                    "type": "number"
+                },
+                "racer2_wins": {
+                    "type": "integer"
+                },
+                "races": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.NotificationSettings": {
+            "type": "object",
+            "properties": {
+                "gotify_token": {
+                    "type": "string"
+                },
+                "gotify_url": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "notify_podium": {
+                    "type": "boolean"
+                },
+                "notify_race_start": {
+                    "type": "boolean"
+                },
+                "notify_winner": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.PointsProgression": {
+            "type": "object",
+            "properties": {
+                "points": {
+                    "type": "integer"
+                },
+                "race_date": {
+                    "type": "string"
+                },
+                "race_id": {
+                    "type": "integer"
+                },
+                "race_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Quote": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RaceHistory": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "race_date": {
+                    "type": "string"
+                },
+                "race_type": {
+                    "type": "string"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RaceResult"
+                    }
+                },
+                "total_laps": {
+                    "type": "integer"
+                },
+                "track": {
+                    "type": "string"
+                },
+                "track_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RaceInfo": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "laps": {
+                    "type": "integer"
+                },
+                "track": {
+                    "type": "string"
+                },
+                "track_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RaceResult": {
+            "type": "object",
+            "properties": {
+                "fastest_lap": {
+                    "type": "boolean"
+                },
+                "finished": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "race_id": {
+                    "type": "integer"
+                },
+                "racer_id": {
+                    "type": "integer"
+                },
+                "racer_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Racer": {
+            "type": "object",
+            "properties": {
+                "car_color": {
+                    "type": "string"
+                },
+                "car_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "profile_picture": {
+                    "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.RacerEmail": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "racer_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.RacerStats": {
+            "type": "object",
+            "properties": {
+                "bronze": {
+                    "type": "integer"
+                },
+                "dnf": {
+                    "type": "integer"
+                },
+                "dns": {
+                    "type": "integer"
+                },
+                "fastest_laps": {
+                    "type": "integer"
+                },
+                "gold": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "racer_id": {
+                    "type": "integer"
+                },
+                "races": {
+                    "type": "integer"
+                },
+                "silver": {
+                    "type": "integer"
+                },
+                "wins": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.RoundSnapshot": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "race_date": {
+                    "type": "string"
+                },
+                "race_name": {
+                    "type": "string"
+                },
+                "round": {
+                    "type": "integer"
+                },
+                "scores": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RoundSnapshotScore"
+                    }
+                },
+                "season_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.RoundSnapshotScore": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "racer_id": {
+                    "type": "integer"
+                },
+                "racer_name": {
+                    "type": "string"
+                },
+                "snapshot_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Season": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.StreakInfo": {
+            "type": "object",
+            "properties": {
+                "best_end": {
+                    "type": "string"
+                },
+                "best_start": {
+                    "type": "string"
+                },
+                "best_value": {
+                    "type": "integer"
+                },
+                "current_value": {
+                    "type": "integer"
+                },
+                "racer_name": {
+                    "type": "string"
+                },
+                "streak_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Track": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "type": "string"
+                },
+                "geojson": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lap_record": {
+                    "type": "string"
+                },
+                "length_km": {
+                    "type": "integer"
+                },
+                "map_image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "refresh_geojson": {
+                    "type": "boolean"
+                },
+                "use_map_image": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.TrackStats": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "type": "string"
+                },
+                "fastest_lap": {
+                    "type": "string"
+                },
+                "races_count": {
+                    "type": "integer"
+                },
+                "track_id": {
+                    "type": "string"
+                },
+                "track_name": {
+                    "type": "string"
+                },
+                "winner": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UmamiSettings": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "website_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Upload": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "ext": {
+                    "type": "string"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "resized_url": {
+                    "type": "string"
+                },
+                "thumbnail_url": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

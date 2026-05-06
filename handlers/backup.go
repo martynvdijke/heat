@@ -12,6 +12,12 @@ import (
 	"heat/models"
 )
 
+// @Summary Get backup settings
+// @Description Get the backup configuration settings
+// @Tags Backup
+// @Produce json
+// @Success 200 {object} models.BackupSettings
+// @Router /api/backup-settings [get]
 func GetBackupSettings(c *gin.Context) {
 	var s models.BackupSettings
 	err := app.DB.QueryRow("SELECT id, enabled, interval_hrs FROM backup_settings WHERE id = 1").Scan(&s.ID, &s.Enabled, &s.IntervalHrs)
@@ -22,6 +28,15 @@ func GetBackupSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, s)
 }
 
+// @Summary Save backup settings
+// @Description Save the backup configuration settings
+// @Tags Backup
+// @Accept json
+// @Produce json
+// @Param settings body models.BackupSettings true "Backup settings"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Router /api/backup-settings [post]
 func SaveBackupSettings(c *gin.Context) {
 	var s models.BackupSettings
 	if err := c.ShouldBindJSON(&s); err != nil {
@@ -42,6 +57,14 @@ func SaveBackupSettings(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// @Summary Create manual backup
+// @Description Trigger a manual database backup
+// @Tags Backup
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/backup/manual [post]
 func TriggerManualBackup(c *gin.Context) {
 	if err := db.CreateBackup(); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -50,6 +73,12 @@ func TriggerManualBackup(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// @Summary List backups
+// @Description List recent backup files
+// @Tags Backup
+// @Produce json
+// @Success 200 {array} object
+// @Router /api/backup/list [get]
 func ListBackups(c *gin.Context) {
 	backupDir := filepath.Join(filepath.Dir(app.DBPath), "backups")
 	entries, err := os.ReadDir(backupDir)

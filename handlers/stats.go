@@ -12,6 +12,13 @@ import (
 	"heat/models"
 )
 
+// @Summary Get racer stats
+// @Description Get statistics for all racers or a specific racer by ID
+// @Tags Stats
+// @Produce json
+// @Param id query int false "Racer ID"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/racer-stats [get]
 func GetRacerStats(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
@@ -41,6 +48,16 @@ func GetRacerStats(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"stats": s, "racer": rInfo})
 }
 
+// @Summary Update racer stats
+// @Description Manually update a racer's statistics
+// @Tags Stats
+// @Accept json
+// @Produce json
+// @Param stats body models.RacerStats true "Racer stats"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/racer-stats [post]
 func UpdateRacerStats(c *gin.Context) {
 	var stats models.RacerStats
 	if err := c.ShouldBindJSON(&stats); err != nil {
@@ -66,6 +83,12 @@ func UpdateRacerStats(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// @Summary Get track stats
+// @Description Get performance statistics grouped by track
+// @Tags Stats
+// @Produce json
+// @Success 200 {array} models.TrackStats
+// @Router /api/track-stats [get]
 func GetTrackStats(c *gin.Context) {
 	rows, err := app.DB.Query(`
 		SELECT rh.track_id, rh.track, rh.country, COUNT(*) as races_count,
@@ -93,6 +116,15 @@ func GetTrackStats(c *gin.Context) {
 	c.JSON(http.StatusOK, stats)
 }
 
+// @Summary Head to head comparison
+// @Description Compare two racers head to head
+// @Tags Stats
+// @Produce json
+// @Param racer1 query int true "First racer ID"
+// @Param racer2 query int true "Second racer ID"
+// @Success 200 {object} models.HeadToHead
+// @Failure 400 {object} map[string]string
+// @Router /api/stats/head-to-head [get]
 func GetHeadToHead(c *gin.Context) {
 	racer1Str := c.Query("racer1")
 	racer2Str := c.Query("racer2")
@@ -156,6 +188,14 @@ func GetHeadToHead(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// @Summary Points progression
+// @Description Get cumulative points progression for a racer
+// @Tags Stats
+// @Produce json
+// @Param racer_id query int true "Racer ID"
+// @Success 200 {array} models.PointsProgression
+// @Failure 400 {object} map[string]string
+// @Router /api/stats/points-progression [get]
 func GetPointsProgression(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 	racerID, err := strconv.Atoi(racerIDStr)
@@ -191,6 +231,12 @@ func GetPointsProgression(c *gin.Context) {
 	c.JSON(http.StatusOK, progression)
 }
 
+// @Summary Win/podium streaks
+// @Description Get win and podium streak information for all racers
+// @Tags Stats
+// @Produce json
+// @Success 200 {array} models.StreakInfo
+// @Router /api/stats/streaks [get]
 func GetStreaks(c *gin.Context) {
 	rows, err := app.DB.Query("SELECT id, name FROM racers ORDER BY rank")
 	if err != nil {
@@ -313,6 +359,12 @@ func calcStreak(positions []struct {
 	}
 }
 
+// @Summary ELO ratings
+// @Description Get ELO ratings for all racers
+// @Tags Stats
+// @Produce json
+// @Success 200 {array} models.ELORating
+// @Router /api/stats/elo [get]
 func GetELORatings(c *gin.Context) {
 	type raceEntry struct {
 		RaceID   int
@@ -415,6 +467,12 @@ func GetELORatings(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// @Summary Export stats as CSV
+// @Description Export racer statistics as a CSV file
+// @Tags Stats
+// @Produce text/csv
+// @Success 200 {file} text/csv
+// @Router /api/stats/export [get]
 func ExportStatsCSV(c *gin.Context) {
 	format := c.Query("format")
 	if format == "" {
@@ -449,6 +507,13 @@ func ExportStatsCSV(c *gin.Context) {
 	writer.Flush()
 }
 
+// @Summary Track performance
+// @Description Get racer performance by track, optionally filtered by racer_id
+// @Tags Stats
+// @Produce json
+// @Param racer_id query int false "Racer ID"
+// @Success 200 {array} object
+// @Router /api/stats/track-performance [get]
 func GetTrackPerformance(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 

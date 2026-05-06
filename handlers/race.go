@@ -12,6 +12,12 @@ import (
 	"heat/models"
 )
 
+// @Summary Get current race info
+// @Description Get the current race information (country, track, laps)
+// @Tags Race
+// @Produce json
+// @Success 200 {object} models.RaceInfo
+// @Router /api/race-info [get]
 func GetRaceInfo(c *gin.Context) {
 	var ri models.RaceInfo
 	err := app.DB.QueryRow("SELECT country, track, COALESCE(track_id, 'monza'), laps FROM race_info ORDER BY id DESC LIMIT 1").
@@ -22,6 +28,16 @@ func GetRaceInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, ri)
 }
 
+// @Summary Update race info
+// @Description Update the current race information
+// @Tags Race
+// @Accept json
+// @Produce json
+// @Param raceInfo body models.RaceInfo true "Race info"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/race-info [post]
 func UpdateRaceInfo(c *gin.Context) {
 	var ri models.RaceInfo
 	if err := c.ShouldBindJSON(&ri); err != nil {
@@ -42,6 +58,16 @@ func UpdateRaceInfo(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// @Summary Save race to history
+// @Description Archive a completed race to history with results
+// @Tags Race
+// @Accept json
+// @Produce json
+// @Param race body object true "Race history data with results"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/race-history [post]
 func SaveRaceToHistory(c *gin.Context) {
 	var input struct {
 		Name      string `json:"name"`
@@ -146,6 +172,14 @@ func SaveRaceToHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": raceID})
 }
 
+// @Summary Get race history
+// @Description Get race history entries, optionally filtered by ID or type
+// @Tags Race
+// @Produce json
+// @Param id query int false "Race ID"
+// @Param type query string false "Race type (season, oneoff)"
+// @Success 200 {array} models.RaceHistory
+// @Router /api/race-history [get]
 func GetRaceHistory(c *gin.Context) {
 	raceID := c.Query("id")
 	raceType := c.Query("type")
@@ -212,6 +246,15 @@ func GetRaceHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, history)
 }
 
+// @Summary Delete race from history
+// @Description Delete a race history entry by ID
+// @Tags Race
+// @Produce json
+// @Param id query string true "Race ID"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/race-history [delete]
 func DeleteRaceHistory(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {

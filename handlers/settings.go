@@ -9,6 +9,13 @@ import (
 	"heat/models"
 )
 
+// @Summary Get AI settings
+// @Description Get the AI track extraction settings
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security cookieAuth
+// @Router /api/ai-settings [get]
 func GetAISettings(c *gin.Context) {
 	var s models.AISettings
 	var enabled int
@@ -25,6 +32,15 @@ func GetAISettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": s.ID, "track_extract_url": s.TrackExtractURL, "has_api_key": hasKey, "enabled": s.Enabled})
 }
 
+// @Summary Save AI settings
+// @Description Save the AI track extraction settings
+// @Tags Settings
+// @Accept json
+// @Produce json
+// @Param settings body models.AISettings true "AI settings"
+// @Success 200 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/ai-settings [post]
 func SaveAISettings(c *gin.Context) {
 	var s models.AISettings
 	if err := c.ShouldBindJSON(&s); err != nil {
@@ -47,6 +63,13 @@ func SaveAISettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// @Summary Get notification settings
+// @Description Get Gotify notification settings
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security cookieAuth
+// @Router /api/notification-settings [get]
 func GetNotificationSettings(c *gin.Context) {
 	var s models.NotificationSettings
 	err := app.DB.QueryRow("SELECT id, COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), COALESCE(notify_winner, 0), COALESCE(notify_race_start, 0), COALESCE(notify_podium, 0) FROM notification_settings WHERE id = 1").
@@ -59,6 +82,15 @@ func GetNotificationSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": s.ID, "gotify_url": s.GotiFyURL, "has_gotify_token": hasToken, "notify_winner": s.NotifyWinner, "notify_race_start": s.NotifyRaceStart, "notify_podium": s.NotifyPodium})
 }
 
+// @Summary Save notification settings
+// @Description Save Gotify notification settings
+// @Tags Settings
+// @Accept json
+// @Produce json
+// @Param settings body models.NotificationSettings true "Notification settings"
+// @Success 200 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/notification-settings [post]
 func SaveNotificationSettings(c *gin.Context) {
 	var s models.NotificationSettings
 	if err := c.ShouldBindJSON(&s); err != nil {
@@ -81,6 +113,13 @@ func SaveNotificationSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// @Summary Get email settings
+// @Description Get SMTP email settings
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security cookieAuth
+// @Router /api/email-settings [get]
 func GetEmailSettings(c *gin.Context) {
 	var s models.EmailSettings
 	var enabled int
@@ -96,6 +135,15 @@ func GetEmailSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": s.ID, "smtp_host": s.SMTPHost, "smtp_port": s.SMTPPort, "username": s.Username, "has_password": password != "", "from_addr": s.FromAddr, "enabled": s.Enabled})
 }
 
+// @Summary Save email settings
+// @Description Save SMTP email settings
+// @Tags Settings
+// @Accept json
+// @Produce json
+// @Param settings body models.EmailSettings true "Email settings"
+// @Success 200 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/email-settings [post]
 func SaveEmailSettings(c *gin.Context) {
 	var s models.EmailSettings
 	if err := c.ShouldBindJSON(&s); err != nil {
@@ -118,6 +166,13 @@ func SaveEmailSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// @Summary Get analytics settings
+// @Description Get Umami analytics settings
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} models.UmamiSettings
+// @Security cookieAuth
+// @Router /api/umami-settings [get]
 func GetUmamiSettings(c *gin.Context) {
 	var s models.UmamiSettings
 	err := app.DB.QueryRow("SELECT id, COALESCE(url, ''), COALESCE(website_id, ''), COALESCE(enabled, 0) FROM umami_settings WHERE id = 1").
@@ -128,6 +183,15 @@ func GetUmamiSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, s)
 }
 
+// @Summary Save analytics settings
+// @Description Save Umami analytics settings
+// @Tags Settings
+// @Accept json
+// @Produce json
+// @Param settings body models.UmamiSettings true "Umami settings"
+// @Success 200 {object} models.UmamiSettings
+// @Security cookieAuth
+// @Router /api/umami-settings [post]
 func SaveUmamiSettings(c *gin.Context) {
 	var s models.UmamiSettings
 	if err := c.ShouldBindJSON(&s); err != nil {
@@ -144,6 +208,12 @@ func SaveUmamiSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, s)
 }
 
+// @Summary Get one-off races
+// @Description Get the list of one-off race history entries
+// @Tags Race
+// @Produce json
+// @Success 200 {array} models.RaceHistory
+// @Router /api/oneoff-races [get]
 func GetOneOffRaces(c *gin.Context) {
 	rows, err := app.DB.Query(`SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps, COALESCE(race_type, 'oneoff')
 					   FROM race_history WHERE race_type = 'oneoff' ORDER BY race_date DESC LIMIT 20`)
@@ -162,6 +232,15 @@ func GetOneOffRaces(c *gin.Context) {
 	c.JSON(http.StatusOK, history)
 }
 
+// @Summary Delete a one-off race
+// @Description Delete a one-off race history entry by ID
+// @Tags Race
+// @Produce json
+// @Param id query string true "Race ID"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/oneoff-races [delete]
 func DeleteOneOffRace(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {

@@ -17,6 +17,12 @@ import (
 	"heat/models"
 )
 
+// @Summary Get all tracks
+// @Description Get the list of all race tracks
+// @Tags Tracks
+// @Produce json
+// @Success 200 {array} models.Track
+// @Router /api/tracks [get]
 func GetTracks(c *gin.Context) {
 	rows, err := app.DB.Query("SELECT id, name, country, geojson, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks ORDER BY name")
 	if err != nil {
@@ -39,6 +45,16 @@ func GetTracks(c *gin.Context) {
 	c.JSON(http.StatusOK, tracks)
 }
 
+// @Summary Create or update a track
+// @Description Creates a new track or updates an existing one
+// @Tags Tracks
+// @Accept json
+// @Produce json
+// @Param track body models.Track true "Track data"
+// @Success 200 {object} models.Track
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/tracks [post]
 func SaveTrack(c *gin.Context) {
 	var t models.Track
 	if err := c.ShouldBindJSON(&t); err != nil {
@@ -56,6 +72,15 @@ func SaveTrack(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
+// @Summary Delete a track
+// @Description Delete a track by ID
+// @Tags Tracks
+// @Produce json
+// @Param id query string true "Track ID"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/tracks [delete]
 func DeleteTrack(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
@@ -72,6 +97,17 @@ func DeleteTrack(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// @Summary AI Track Extraction
+// @Description Analyzes a track image using AI to extract GeoJSON data
+// @Tags Tracks
+// @Accept json
+// @Accept mpfd
+// @Produce json
+// @Param image_url body object false "JSON with image_url field"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/tracks/ai-extract [post]
 func HandleAIExtract(c *gin.Context) {
 	aiURL := os.Getenv("AI_TRACK_EXTRACT_URL")
 	if aiURL == "" {
