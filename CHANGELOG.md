@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/martynvdijke/heat/compare/v1.16.0...v1.16.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* race condition in upload handler, add try/catch to frontend uploads ([e89a6ef](https://github.com/martynvdijke/heat/commit/e89a6ef18b15cf3ec9cd9b5be83c6f31159ee112))
+
 # [1.16.0](https://github.com/martynvdijke/heat/compare/v1.15.4...v1.16.0) (2026-05-06)
 
 
