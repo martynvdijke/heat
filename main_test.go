@@ -1504,6 +1504,576 @@ func TestBackupSettings(t *testing.T) {
 	}
 }
 
+// session helper for authenticated admin tests
+func createAdminSession(t *testing.T) string {
+	t.Helper()
+	sessionID := "admin-session-" + strconv.FormatInt(time.Now().UnixNano(), 36)
+	app.SessionStoreMu.Lock()
+	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
+	app.SessionStoreMu.Unlock()
+	return sessionID
+}
+
+func removeAdminSession(sessionID string) {
+	app.SessionStoreMu.Lock()
+	delete(app.SessionStore, sessionID)
+	app.SessionStoreMu.Unlock()
+}
+
+func newAdminRequest(method, path string, body []byte, sessionID string) *http.Request {
+	req, _ := http.NewRequest(method, path, bytes.NewBuffer(body))
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Origin", "http://127.0.0.1:6270")
+	req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+	req.Host = "127.0.0.1:6270"
+	return req
+}
+
+func setupAdminRouter() (*gin.Engine, string) {
+	r := gin.New()
+	admin := r.Group("/api")
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+	r.GET("/api/racers", handlers.GetRacers)
+	return r, ""
+}
+
+func TestRacerCRUD(t *testing.T) {
+	r := gin.New()
+	admin := r.Group("/api")
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+	admin.POST("/racers", handlers.UpdateRacer)
+	admin.DELETE("/racers", handlers.DeleteRacer)
+	r.GET("/api/racers", handlers.GetRacers)
+
+	sessionID := createAdminSession(t)
+	defer removeAdminSession(sessionID)
+
+	t.Run("create racer", func(t *testing.T) {
+		racer := models.Racer{Name: "New Racer", CarColor: "red", CarName: "Red Bull", Points: 0, Rank: 99, Position: 0}
+		body, _ := json.Marshal(racer)
+		req := newAdminRequest("POST", "/api/racers", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("create: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		// verify it shows up in racers list
+		req, _ = http.NewRequest("GET", "/api/racers", nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var racers []models.Racer
+		json.Unmarshal(rr.Body.Bytes(), &racers)
+		found := false
+		for _, r := range racers {
+			if r.Name == "New Racer" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("new racer not found in list")
+		}
+	})
+
+	t.Run("create racer without auth", func(t *testing.T) {
+		racer := models.Racer{Name: "Unauth Racer", CarColor: "blue", CarName: "No Auth"}
+		body, _ := json.Marshal(racer)
+		req, _ := http.NewRequest("POST", "/api/racers", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Origin", "http://127.0.0.1:6270")
+		req.Host = "127.0.0.1:6270"
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401 without auth, got %d", rr.Code)
+		}
+	})
+
+	t.Run("update racer", func(t *testing.T) {
+		racer := models.Racer{ID: 1, Name: "Updated Racer", ProfilePicture: "/static/helmet.svg", CarColor: "purple", CarName: "Updated Car", Points: 100, Rank: 1, Position: 0}
+		body, _ := json.Marshal(racer)
+		req := newAdminRequest("POST", "/api/racers", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("update: expected 200, got %d", rr.Code)
+		}
+		var name string
+		app.DB.QueryRow("SELECT name FROM racers WHERE id = 1").Scan(&name)
+		if name != "Updated Racer" {
+			t.Errorf("expected name 'Updated Racer', got %q", name)
+		}
+	})
+
+	t.Run("delete racer", func(t *testing.T) {
+		req := newAdminRequest("DELETE", "/api/racers?id=2", nil, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("delete: expected 200, got %d", rr.Code)
+		}
+		var count int
+		app.DB.QueryRow("SELECT COUNT(*) FROM racers WHERE id = 2").Scan(&count)
+		if count != 0 {
+			t.Error("racer should be deleted")
+		}
+	})
+
+	t.Run("delete racer invalid id", func(t *testing.T) {
+		req := newAdminRequest("DELETE", "/api/racers?id=0", nil, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for invalid id, got %d", rr.Code)
+		}
+	})
+
+	t.Run("delete racer without auth", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", "/api/racers?id=1", nil)
+		req.Header.Set("Origin", "http://127.0.0.1:6270")
+		req.Host = "127.0.0.1:6270"
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401 without auth, got %d", rr.Code)
+		}
+	})
+
+	t.Run("create racer empty name", func(t *testing.T) {
+		racer := models.Racer{Name: "", CarColor: "red", CarName: "No Name"}
+		body, _ := json.Marshal(racer)
+		req := newAdminRequest("POST", "/api/racers", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		// Should still succeed (no name validation on server)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+	})
+}
+
+func TestTrackCRUD(t *testing.T) {
+	r := gin.New()
+	admin := r.Group("/api")
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+	admin.POST("/tracks", handlers.SaveTrack)
+	admin.DELETE("/tracks", handlers.DeleteTrack)
+	r.GET("/api/tracks", handlers.GetTracks)
+
+	sessionID := createAdminSession(t)
+	defer removeAdminSession(sessionID)
+
+	t.Run("save new track", func(t *testing.T) {
+		track := models.Track{ID: "test-track", Name: "Test Circuit", Country: "Testland", Length: 5, LapRecord: "1:30.000"}
+		body, _ := json.Marshal(track)
+		req := newAdminRequest("POST", "/api/tracks", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("save: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var name string
+		app.DB.QueryRow("SELECT name FROM tracks WHERE id = 'test-track'").Scan(&name)
+		if name != "Test Circuit" {
+			t.Errorf("expected track name 'Test Circuit', got %q", name)
+		}
+	})
+
+	t.Run("save track without auth", func(t *testing.T) {
+		track := models.Track{ID: "noauth", Name: "No Auth Track", Country: "Nowhere"}
+		body, _ := json.Marshal(track)
+		req, _ := http.NewRequest("POST", "/api/tracks", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Origin", "http://127.0.0.1:6270")
+		req.Host = "127.0.0.1:6270"
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401 without auth, got %d", rr.Code)
+		}
+	})
+
+	t.Run("delete track", func(t *testing.T) {
+		req := newAdminRequest("DELETE", "/api/tracks?id=test-track", nil, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("delete: expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("delete track without id", func(t *testing.T) {
+		req := newAdminRequest("DELETE", "/api/tracks", nil, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 without id, got %d", rr.Code)
+		}
+	})
+}
+
+func TestQuoteCRUD(t *testing.T) {
+	r := gin.New()
+	admin := r.Group("/api")
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+	admin.POST("/quotes", handlers.HandleQuotes)
+	admin.PUT("/quotes", handlers.HandleQuotes)
+	admin.DELETE("/quotes", handlers.HandleQuotes)
+	r.GET("/api/quotes", handlers.GetQuotes)
+
+	sessionID := createAdminSession(t)
+	defer removeAdminSession(sessionID)
+
+	t.Run("create quote", func(t *testing.T) {
+		q := models.Quote{Text: "Test quote text", Author: "Tester"}
+		body, _ := json.Marshal(q)
+		req := newAdminRequest("POST", "/api/quotes", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusCreated {
+			t.Fatalf("create: expected 201, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var created models.Quote
+		json.Unmarshal(rr.Body.Bytes(), &created)
+		if created.ID == 0 || created.Text != "Test quote text" {
+			t.Errorf("unexpected response: %+v", created)
+		}
+	})
+
+	t.Run("create quote without auth", func(t *testing.T) {
+		q := models.Quote{Text: "Unauth quote"}
+		body, _ := json.Marshal(q)
+		req, _ := http.NewRequest("POST", "/api/quotes", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Origin", "http://127.0.0.1:6270")
+		req.Host = "127.0.0.1:6270"
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401 without auth, got %d", rr.Code)
+		}
+	})
+
+	t.Run("create quote empty text", func(t *testing.T) {
+		q := models.Quote{Text: "", Author: "Empty"}
+		body, _ := json.Marshal(q)
+		req := newAdminRequest("POST", "/api/quotes", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for empty text, got %d", rr.Code)
+		}
+	})
+
+	t.Run("update quote", func(t *testing.T) {
+		q := models.Quote{ID: 1, Text: "Updated quote text", Author: "Updated Author"}
+		body, _ := json.Marshal(q)
+		req := newAdminRequest("PUT", "/api/quotes", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("update: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var text string
+		app.DB.QueryRow("SELECT text FROM quotes WHERE id = 1").Scan(&text)
+		if text != "Updated quote text" {
+			t.Errorf("expected text 'Updated quote text', got %q", text)
+		}
+	})
+
+	t.Run("update quote without id", func(t *testing.T) {
+		q := models.Quote{Text: "No ID"}
+		body, _ := json.Marshal(q)
+		req := newAdminRequest("PUT", "/api/quotes", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 without id, got %d", rr.Code)
+		}
+	})
+
+	t.Run("delete quote", func(t *testing.T) {
+		// First create one to delete
+		q := models.Quote{Text: "To be deleted", Author: "Temp"}
+		body, _ := json.Marshal(q)
+		req := newAdminRequest("POST", "/api/quotes", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var created models.Quote
+		json.Unmarshal(rr.Body.Bytes(), &created)
+
+		req = newAdminRequest("DELETE", "/api/quotes?id="+strconv.Itoa(created.ID), nil, sessionID)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("delete: expected 200, got %d", rr.Code)
+		}
+		var count int
+		app.DB.QueryRow("SELECT COUNT(*) FROM quotes WHERE id = ?", created.ID).Scan(&count)
+		if count != 0 {
+			t.Error("quote should be deleted")
+		}
+	})
+
+	t.Run("delete quote without id", func(t *testing.T) {
+		req := newAdminRequest("DELETE", "/api/quotes", nil, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 without id, got %d", rr.Code)
+		}
+	})
+}
+
+func TestSettingsSave(t *testing.T) {
+	sessionID := createAdminSession(t)
+	defer removeAdminSession(sessionID)
+
+	t.Run("save notification settings", func(t *testing.T) {
+		r := gin.New()
+		admin := r.Group("/api")
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+		admin.POST("/notification-settings", handlers.SaveNotificationSettings)
+		admin.GET("/notification-settings", handlers.GetNotificationSettings)
+
+		s := models.NotificationSettings{GotiFyURL: "https://gotify.example.com", GotiFyToken: "token123", NotifyWinner: true, NotifyPodium: true}
+		body, _ := json.Marshal(s)
+		req := newAdminRequest("POST", "/api/notification-settings", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("save: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		// verify saved (token should be hidden but settings should stick)
+		req, _ = http.NewRequest("GET", "/api/notification-settings", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("get: expected 200, got %d", rr.Code)
+		}
+		var resp map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		if resp["gotify_url"] != "https://gotify.example.com" {
+			t.Errorf("expected gotify_url saved, got %v", resp["gotify_url"])
+		}
+	})
+
+	t.Run("save AI settings", func(t *testing.T) {
+		r := gin.New()
+		admin := r.Group("/api")
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+		admin.POST("/ai-settings", handlers.SaveAISettings)
+		admin.GET("/ai-settings", handlers.GetAISettings)
+
+		s := models.AISettings{TrackExtractURL: "https://ai.example.com/extract", APIKey: "key123", Enabled: true}
+		body, _ := json.Marshal(s)
+		req := newAdminRequest("POST", "/api/ai-settings", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("save: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		// verify
+		req, _ = http.NewRequest("GET", "/api/ai-settings", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("get: expected 200, got %d", rr.Code)
+		}
+		var resp map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		if resp["track_extract_url"] != "https://ai.example.com/extract" {
+			t.Errorf("expected track_extract_url saved, got %v", resp["track_extract_url"])
+		}
+	})
+
+	t.Run("save email settings", func(t *testing.T) {
+		r := gin.New()
+		admin := r.Group("/api")
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+		admin.POST("/email-settings", handlers.SaveEmailSettings)
+		admin.GET("/email-settings", handlers.GetEmailSettings)
+
+		s := models.EmailSettings{SMTPHost: "smtp.example.com", SMTPPort: 587, Username: "user", Password: "pass123", FromAddr: "from@example.com", Enabled: true}
+		body, _ := json.Marshal(s)
+		req := newAdminRequest("POST", "/api/email-settings", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("save: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		// verify
+		req, _ = http.NewRequest("GET", "/api/email-settings", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("get: expected 200, got %d", rr.Code)
+		}
+		var resp map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		if resp["smtp_host"] != "smtp.example.com" {
+			t.Errorf("expected smtp_host saved, got %v", resp["smtp_host"])
+		}
+	})
+
+	t.Run("save umami settings", func(t *testing.T) {
+		r := gin.New()
+		admin := r.Group("/api")
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+		admin.POST("/umami-settings", handlers.SaveUmamiSettings)
+		admin.GET("/umami-settings", handlers.GetUmamiSettings)
+
+		s := models.UmamiSettings{URL: "https://analytics.example.com", WebsiteID: "abc-123", Enabled: true}
+		body, _ := json.Marshal(s)
+		req := newAdminRequest("POST", "/api/umami-settings", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("save: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		// verify
+		req, _ = http.NewRequest("GET", "/api/umami-settings", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("get: expected 200, got %d", rr.Code)
+		}
+		var resp map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		if resp["url"] != "https://analytics.example.com" {
+			t.Errorf("expected url saved, got %v", resp["url"])
+		}
+		if resp["website_id"] != "abc-123" {
+			t.Errorf("expected website_id saved, got %v", resp["website_id"])
+		}
+	})
+}
+
+func TestRacerEmailCRUD(t *testing.T) {
+	r := gin.New()
+	admin := r.Group("/api")
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+	admin.GET("/racer-emails", handlers.GetRacerEmails)
+	admin.POST("/racer-emails", handlers.SaveRacerEmail)
+
+	sessionID := createAdminSession(t)
+	defer removeAdminSession(sessionID)
+
+	t.Run("save racer email", func(t *testing.T) {
+		re := models.RacerEmail{RacerID: 1, Email: "test@example.com"}
+		body, _ := json.Marshal(re)
+		req := newAdminRequest("POST", "/api/racer-emails", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("save: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+	})
+
+	t.Run("get racer emails after save", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/racer-emails", nil)
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("get: expected 200, got %d", rr.Code)
+		}
+		var emails []models.RacerEmail
+		json.Unmarshal(rr.Body.Bytes(), &emails)
+		found := false
+		for _, e := range emails {
+			if e.RacerID == 1 && e.Email == "test@example.com" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("saved racer email not found in list")
+		}
+	})
+
+	t.Run("save racer email unauthorized", func(t *testing.T) {
+		re := models.RacerEmail{RacerID: 1, Email: "noauth@example.com"}
+		body, _ := json.Marshal(re)
+		req, _ := http.NewRequest("POST", "/api/racer-emails", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Origin", "http://127.0.0.1:6270")
+		req.Host = "127.0.0.1:6270"
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401 without auth, got %d", rr.Code)
+		}
+	})
+
+	// cleanup
+	app.DB.Exec("DELETE FROM racer_emails WHERE racer_id = 1 AND email = 'test@example.com'")
+}
+
+func TestDeleteSeason(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/seasons", handlers.GetSeasons)
+	r.POST("/api/seasons", handlers.CreateSeason)
+	r.DELETE("/api/seasons", handlers.DeleteSeason)
+
+	sessionID := createAdminSession(t)
+	defer removeAdminSession(sessionID)
+
+	// Create a season to delete
+	body, _ := json.Marshal(map[string]string{"name": "Season To Delete"})
+	req := newAdminRequest("POST", "/api/seasons", body, sessionID)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("create: expected 200, got %d", rr.Code)
+	}
+
+	// Find the season we just created
+	req, _ = http.NewRequest("GET", "/api/seasons", nil)
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	var seasons []models.Season
+	json.Unmarshal(rr.Body.Bytes(), &seasons)
+	var targetID int
+	for _, s := range seasons {
+		if s.Name == "Season To Delete" {
+			targetID = s.ID
+			break
+		}
+	}
+	if targetID == 0 {
+		t.Skip("could not find created season")
+	}
+
+	t.Run("delete season", func(t *testing.T) {
+		req := newAdminRequest("DELETE", "/api/seasons?id="+strconv.Itoa(targetID), nil, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("delete: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+	})
+
+	t.Run("verify season deleted", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/seasons", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var seasons []models.Season
+		json.Unmarshal(rr.Body.Bytes(), &seasons)
+		for _, s := range seasons {
+			if s.ID == targetID {
+				t.Error("season should be deleted but still found")
+			}
+		}
+	})
+}
+
 // Helper functions kept for tests
 func hashPassword(password string) string {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -1879,5 +2449,3 @@ func TestCreateRoundSnapshot(t *testing.T) {
 	app.DB.Exec("DELETE FROM round_snapshot_scores")
 	app.DB.Exec("DELETE FROM round_snapshots")
 }
-
-

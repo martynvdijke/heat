@@ -400,16 +400,234 @@
             "description": "Upload successful",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "url": { "type": "string", "example": "/static/images/12345.png" }
-                  }
-                }
+                "schema": { "$ref": "#/components/schemas/UploadResponse" }
               }
             }
-          }
+          },
+          "400": { "description": "Invalid file type" }
         }
+      }
+    },
+    "/api/oneoff-races": {
+      "get": {
+        "summary": "Get one-off race history",
+        "responses": { "200": { "description": "One-off races", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/RaceHistory" } } } } } }
+      },
+      "delete": {
+        "summary": "Delete a one-off race",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "query", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Deleted" }, "400": { "description": "ID required" } }
+      }
+    },
+    "/api/track-stats": {
+      "get": {
+        "summary": "Get track performance statistics",
+        "responses": { "200": { "description": "Track stats", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/TrackStats" } } } } } }
+      }
+    },
+    "/api/stats/head-to-head": {
+      "get": {
+        "summary": "Get head-to-head comparison",
+        "parameters": [
+          { "name": "racer1", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "racer2", "in": "query", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Head-to-head", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HeadToHead" } } } } }
+      }
+    },
+    "/api/stats/points-progression": {
+      "get": {
+        "summary": "Get points progression for a racer",
+        "parameters": [
+          { "name": "racer_id", "in": "query", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Points progression", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PointsProgression" } } } } } }
+      }
+    },
+    "/api/stats/streaks": {
+      "get": {
+        "summary": "Get win/podium streaks",
+        "responses": { "200": { "description": "Streaks", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/StreakInfo" } } } } } }
+      }
+    },
+    "/api/stats/elo": {
+      "get": {
+        "summary": "Get ELO ratings",
+        "responses": { "200": { "description": "ELO ratings", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ELORating" } } } } } }
+      }
+    },
+    "/api/stats/export": {
+      "get": {
+        "summary": "Export stats as CSV",
+        "responses": { "200": { "description": "CSV export", "content": { "text/csv": { "schema": { "type": "string" } } } } }
+      }
+    },
+    "/api/stats/track-performance": {
+      "get": {
+        "summary": "Get racer performance by track",
+        "parameters": [
+          { "name": "racer_id", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Track performance data" } }
+      }
+    },
+    "/api/notification-settings": {
+      "get": {
+        "summary": "Get notification settings",
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NotificationSettings" } } } } }
+      },
+      "post": {
+        "summary": "Save notification settings",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NotificationSettings" } } } },
+        "responses": { "200": { "description": "Saved" } }
+      }
+    },
+    "/api/ai-settings": {
+      "get": {
+        "summary": "Get AI settings",
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AISettings" } } } } }
+      },
+      "post": {
+        "summary": "Save AI settings",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AISettings" } } } },
+        "responses": { "200": { "description": "Saved" } }
+      }
+    },
+    "/api/email-settings": {
+      "get": {
+        "summary": "Get email settings",
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EmailSettings" } } } } }
+      },
+      "post": {
+        "summary": "Save email settings",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EmailSettings" } } } },
+        "responses": { "200": { "description": "Saved" } }
+      }
+    },
+    "/api/racer-emails": {
+      "get": {
+        "summary": "Get racer emails",
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Racer emails", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/RacerEmail" } } } } } }
+      },
+      "post": {
+        "summary": "Save racer email",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RacerEmail" } } } },
+        "responses": { "200": { "description": "Saved" } }
+      }
+    },
+    "/api/send-race-email": {
+      "post": {
+        "summary": "Send race result emails to racers",
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Emails sent" }, "400": { "description": "Email not configured" } }
+      }
+    },
+    "/api/test-notification": {
+      "post": {
+        "summary": "Send test notification via Gotify",
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Test notification sent" }, "400": { "description": "Gotify not configured" } }
+      }
+    },
+    "/api/umami-settings": {
+      "get": {
+        "summary": "Get analytics settings",
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UmamiSettings" } } } } }
+      },
+      "post": {
+        "summary": "Save analytics settings",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UmamiSettings" } } } },
+        "responses": { "200": { "description": "Saved" } }
+      }
+    },
+    "/api/backup-settings": {
+      "get": {
+        "summary": "Get backup settings",
+        "responses": { "200": { "description": "Settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BackupSettings" } } } } }
+      },
+      "post": {
+        "summary": "Save backup settings",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BackupSettings" } } } },
+        "responses": { "200": { "description": "Saved" } }
+      }
+    },
+    "/api/backup/manual": {
+      "post": {
+        "summary": "Create manual backup",
+        "responses": { "200": { "description": "Backup created" }, "500": { "description": "Backup failed" } }
+      }
+    },
+    "/api/backup/list": {
+      "get": {
+        "summary": "List recent backups",
+        "responses": { "200": { "description": "Backup list", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "size": { "type": "integer" }, "time": { "type": "string" } } } } } } } }
+      }
+    },
+    "/api/seasons": {
+      "get": {
+        "summary": "List all seasons",
+        "responses": { "200": { "description": "Seasons", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Season" } } } } } }
+      },
+      "post": {
+        "summary": "Create a new season",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } } } },
+        "responses": { "200": { "description": "Created" }, "400": { "description": "Name required" } }
+      },
+      "delete": {
+        "summary": "Delete a season",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "query", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Deleted" } }
+      }
+    },
+    "/api/seasons/archive": {
+      "post": {
+        "summary": "Archive a season",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "query", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Archived" }, "400": { "description": "ID required" } }
+      }
+    },
+    "/api/rounds": {
+      "post": {
+        "summary": "Take a round snapshot",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "race_name": { "type": "string" }, "season_id": { "type": "integer" } } } } } },
+        "responses": { "200": { "description": "Snapshot taken", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RoundSnapshot" } } } } }
+      },
+      "get": {
+        "summary": "Get round snapshots",
+        "parameters": [
+          { "name": "id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "season_id", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Snapshots", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/RoundSnapshot" } } } } } }
+      },
+      "delete": {
+        "summary": "Delete a round snapshot",
+        "parameters": [{ "name": "id", "in": "query", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Deleted" } }
+      }
+    },
+    "/api/flags": {
+      "post": {
+        "summary": "Send a race flag command",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FlagCommand" } } } },
+        "responses": { "200": { "description": "Flag sent" }, "400": { "description": "Invalid flag" } }
       }
     }
   },
@@ -491,6 +709,7 @@
           "track": { "type": "string" },
           "track_id": { "type": "string" },
           "total_laps": { "type": "integer" },
+          "race_type": { "type": "string", "example": "season" },
           "results": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/RaceResult" }
@@ -506,6 +725,7 @@
           "track": { "type": "string" },
           "track_id": { "type": "string" },
           "total_laps": { "type": "integer" },
+          "race_type": { "type": "string" },
           "results": {
             "type": "array",
             "items": {
@@ -515,7 +735,9 @@
                 "racer_name": { "type": "string" },
                 "position": { "type": "integer" },
                 "points": { "type": "integer" },
-                "fastest_lap": { "type": "boolean" }
+                "fastest_lap": { "type": "boolean" },
+                "finished": { "type": "boolean" },
+                "did_not_start": { "type": "boolean" }
               }
             }
           }
@@ -528,10 +750,14 @@
           "racer_id": { "type": "integer" },
           "races": { "type": "integer" },
           "wins": { "type": "integer" },
+          "gold": { "type": "integer" },
+          "silver": { "type": "integer" },
+          "bronze": { "type": "integer" },
           "podiums": { "type": "integer" },
           "fastest_laps": { "type": "integer" },
           "points": { "type": "integer" },
-          "dnf": { "type": "integer" }
+          "dnf": { "type": "integer" },
+          "dns": { "type": "integer" }
         }
       },
       "Quote": {
@@ -541,6 +767,172 @@
           "text": { "type": "string" },
           "author": { "type": "string" },
           "created_at": { "type": "string" }
+        }
+      },
+      "UploadResponse": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "example": "/media/ab/abc123.jpg" },
+          "resized_url": { "type": "string" },
+          "thumbnail_url": { "type": "string" },
+          "hash": { "type": "string" },
+          "duplicate": { "type": "boolean" }
+        }
+      },
+      "TrackStats": {
+        "type": "object",
+        "properties": {
+          "track_id": { "type": "string" },
+          "track_name": { "type": "string" },
+          "country": { "type": "string" },
+          "races_count": { "type": "integer" },
+          "winner": { "type": "string" },
+          "fastest_lap": { "type": "string" }
+        }
+      },
+      "HeadToHead": {
+        "type": "object",
+        "properties": {
+          "racer1": { "type": "string" },
+          "racer2": { "type": "string" },
+          "races": { "type": "integer" },
+          "racer1_wins": { "type": "integer" },
+          "racer2_wins": { "type": "integer" },
+          "racer1_avg_position": { "type": "number" },
+          "racer2_avg_position": { "type": "number" }
+        }
+      },
+      "PointsProgression": {
+        "type": "object",
+        "properties": {
+          "race_id": { "type": "integer" },
+          "race_name": { "type": "string" },
+          "race_date": { "type": "string" },
+          "points": { "type": "integer" }
+        }
+      },
+      "StreakInfo": {
+        "type": "object",
+        "properties": {
+          "racer_name": { "type": "string" },
+          "streak_type": { "type": "string" },
+          "current_value": { "type": "integer" },
+          "best_value": { "type": "integer" },
+          "best_start": { "type": "string" },
+          "best_end": { "type": "string" }
+        }
+      },
+      "ELORating": {
+        "type": "object",
+        "properties": {
+          "racer_id": { "type": "integer" },
+          "racer_name": { "type": "string" },
+          "rating": { "type": "number" },
+          "races": { "type": "integer" }
+        }
+      },
+      "UmamiSettings": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "url": { "type": "string" },
+          "website_id": { "type": "string" },
+          "enabled": { "type": "boolean" }
+        }
+      },
+      "NotificationSettings": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "gotify_url": { "type": "string" },
+          "gotify_token": { "type": "string" },
+          "notify_winner": { "type": "boolean" },
+          "notify_race_start": { "type": "boolean" },
+          "notify_podium": { "type": "boolean" }
+        }
+      },
+      "AISettings": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "track_extract_url": { "type": "string" },
+          "api_key": { "type": "string" },
+          "enabled": { "type": "boolean" }
+        }
+      },
+      "EmailSettings": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "smtp_host": { "type": "string" },
+          "smtp_port": { "type": "integer" },
+          "username": { "type": "string" },
+          "password": { "type": "string" },
+          "from_addr": { "type": "string" },
+          "enabled": { "type": "boolean" }
+        }
+      },
+      "RacerEmail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "racer_id": { "type": "integer" },
+          "email": { "type": "string" }
+        }
+      },
+      "BackupSettings": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "enabled": { "type": "boolean" },
+          "interval_hrs": { "type": "integer" }
+        }
+      },
+      "Season": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "start_date": { "type": "string" },
+          "end_date": { "type": "string" },
+          "status": { "type": "string" },
+          "created_at": { "type": "string" }
+        }
+      },
+      "RoundSnapshot": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "season_id": { "type": "integer" },
+          "race_name": { "type": "string" },
+          "race_date": { "type": "string" },
+          "round": { "type": "integer" },
+          "created_at": { "type": "string" },
+          "scores": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/RoundSnapshotScore" }
+          }
+        }
+      },
+      "RoundSnapshotScore": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "snapshot_id": { "type": "integer" },
+          "racer_id": { "type": "integer" },
+          "racer_name": { "type": "string" },
+          "points": { "type": "integer" },
+          "position": { "type": "integer" }
+        }
+      },
+      "FlagCommand": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "example": "flag" },
+          "flag": { "type": "string", "example": "safety" },
+          "state": { "type": "string", "example": "raise" },
+          "racer_id": { "type": "integer", "example": 1 },
+          "racer_name": { "type": "string", "example": "A. PROST" }
         }
       }
     }

@@ -159,7 +159,6 @@ func main() {
 	r.DELETE("/api/rounds", handlers.DeleteRoundSnapshot)
 	r.GET("/api/seasons", handlers.GetSeasons)
 
-
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
 	})
