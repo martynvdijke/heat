@@ -1,3 +1,10 @@
+## [1.15.3](https://github.com/martynvdijke/heat/compare/v1.15.2...v1.15.3) (2026-05-06)
+
+
+### Bug Fixes
+
+* move email/analytics/backup tab panes inside .tab-content to fix white screen ([2047d38](https://github.com/martynvdijke/heat/commit/2047d386330f241eafe0aa136d5c2a253c34a33d))
+
 ## [1.15.2](https://github.com/martynvdijke/heat/compare/v1.15.1...v1.15.2) (2026-05-05)
 
 
