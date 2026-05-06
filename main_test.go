@@ -1739,4 +1739,145 @@ func TestGetRacerStatsAll(t *testing.T) {
 	app.DB.Exec("DELETE FROM racer_stats WHERE racer_id = 1")
 }
 
+func TestCreateSeason(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/seasons", handlers.GetSeasons)
+	r.POST("/api/seasons", handlers.CreateSeason)
+	r.POST("/api/seasons/archive", handlers.ArchiveSeason)
+	r.DELETE("/api/seasons", handlers.DeleteSeason)
+
+	t.Run("create season", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{"name": "Test Season 2025"})
+		req, _ := http.NewRequest("POST", "/api/seasons", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("create: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+	})
+
+	t.Run("create season empty name", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{"name": ""})
+		req, _ := http.NewRequest("POST", "/api/seasons", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for empty name, got %d", rr.Code)
+		}
+	})
+
+	t.Run("list seasons", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/seasons", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("list: expected 200, got %d", rr.Code)
+		}
+		var seasons []models.Season
+		json.Unmarshal(rr.Body.Bytes(), &seasons)
+		if len(seasons) < 1 {
+			t.Error("expected at least 1 season")
+		}
+		if seasons[0].Name == "" {
+			t.Error("expected season to have a name")
+		}
+	})
+
+	t.Run("archive season", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/seasons", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var seasons []models.Season
+		json.Unmarshal(rr.Body.Bytes(), &seasons)
+		if len(seasons) == 0 {
+			t.Skip("no seasons to archive")
+		}
+		req, _ = http.NewRequest("POST", "/api/seasons/archive?id="+strconv.Itoa(seasons[0].ID), nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("archive: expected 200, got %d", rr.Code)
+		}
+	})
+}
+
+func TestCreateRoundSnapshot(t *testing.T) {
+	app.DB.Exec("DELETE FROM round_snapshot_scores")
+	app.DB.Exec("DELETE FROM round_snapshots")
+
+	r := gin.New()
+	r.POST("/api/rounds", handlers.TakeRoundSnapshot)
+	r.GET("/api/rounds", handlers.GetRoundSnapshots)
+	r.DELETE("/api/rounds", handlers.DeleteRoundSnapshot)
+
+	t.Run("take round snapshot", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]interface{}{
+			"race_name": "Round 1",
+			"season_id": 1,
+		})
+		req, _ := http.NewRequest("POST", "/api/rounds", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("snapshot: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var result map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &result)
+		if result["id"] == nil {
+			t.Error("expected snapshot id in response")
+		}
+	})
+
+	t.Run("list round snapshots", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/rounds", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("list: expected 200, got %d", rr.Code)
+		}
+		var snapshots []models.RoundSnapshot
+		json.Unmarshal(rr.Body.Bytes(), &snapshots)
+		if len(snapshots) < 1 {
+			t.Error("expected at least 1 snapshot")
+		}
+	})
+
+	t.Run("get snapshot with scores", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/rounds", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var snapshots []models.RoundSnapshot
+		json.Unmarshal(rr.Body.Bytes(), &snapshots)
+		if len(snapshots) == 0 {
+			t.Skip("no snapshots")
+		}
+		req, _ = http.NewRequest("GET", "/api/rounds?id="+strconv.Itoa(snapshots[0].ID), nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("get by id: expected 200, got %d", rr.Code)
+		}
+		var details models.RoundSnapshot
+		json.Unmarshal(rr.Body.Bytes(), &details)
+		if len(details.Scores) == 0 {
+			t.Error("expected snapshot to have scores")
+		}
+	})
+
+	t.Run("filter by season", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/rounds?season_id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("filter: expected 200, got %d", rr.Code)
+		}
+	})
+
+	app.DB.Exec("DELETE FROM round_snapshot_scores")
+	app.DB.Exec("DELETE FROM round_snapshots")
+}
+
 

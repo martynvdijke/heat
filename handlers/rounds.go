@@ -37,6 +37,28 @@ func TakeRoundSnapshot(c *gin.Context) {
 		roundNum = input.Round
 	}
 
+	rows, err := app.DB.Query("SELECT id, name, points FROM racers ORDER BY points DESC, name ASC")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	type racerScore struct {
+		ID     int
+		Name   string
+		Points int
+	}
+	var scores []racerScore
+	for rows.Next() {
+		var s racerScore
+		if err := rows.Scan(&s.ID, &s.Name, &s.Points); err != nil {
+			continue
+		}
+		scores = append(scores, s)
+	}
+	rows.Close()
+
 	tx, err := app.DB.Begin()
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -52,23 +74,9 @@ func TakeRoundSnapshot(c *gin.Context) {
 	}
 	snapshotID, _ := res.LastInsertId()
 
-	rows, err := app.DB.Query("SELECT id, name, points FROM racers ORDER BY points DESC, name ASC")
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	defer rows.Close()
-
-	position := 1
-	for rows.Next() {
-		var id, points int
-		var name string
-		if err := rows.Scan(&id, &name, &points); err != nil {
-			continue
-		}
+	for i, s := range scores {
 		tx.Exec("INSERT INTO round_snapshot_scores (snapshot_id, racer_id, racer_name, points, position) VALUES (?, ?, ?, ?, ?)",
-			snapshotID, id, name, points, position)
-		position++
+			snapshotID, s.ID, s.Name, s.Points, i+1)
 	}
 
 	if err := tx.Commit(); err != nil {
