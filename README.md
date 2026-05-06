@@ -226,7 +226,7 @@ Download all racer statistics as a CSV file:
 ```
 GET /api/stats/export
 ```
-Returns a CSV file with columns: ID, Name, Car, Points, Rank, Races, Wins, Podiums, Fastest Laps, DNF.
+Returns a CSV file with columns: ID, Name, Car, Points, Rank, Races, Wins, Gold, Silver, Bronze, Fastest Laps, DNF, DNS.
 
 ### Track Performance Breakdown
 Analyze performance per track:

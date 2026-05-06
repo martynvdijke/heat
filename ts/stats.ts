@@ -16,33 +16,33 @@ async function loadSeasonStats(): Promise<void> {
         document.getElementById('total-races')!.textContent = String(history.length);
         document.getElementById('total-drivers')!.textContent = String(racers.length);
 
-        let totalFL = 0;
-        history.forEach((h: any) => {
-            h.Results?.forEach((r: any) => {
-                if (r.FastestLap) totalFL++;
-            });
-        });
+        const totalFL = allStats.reduce((sum: number, s: any) => sum + (s.fastest_laps || 0), 0);
         document.getElementById('fastest-laps')!.textContent = String(totalFL);
 
         const driverMap: Record<number, any> = {};
         racers.forEach((r: any) => {
-            driverMap[r.id] = { ...r, races: 0, wins: 0, podiums: 0, totalPoints: 0, positions: [] };
+            driverMap[r.id] = { ...r, races: 0, wins: 0, gold: 0, silver: 0, bronze: 0, totalPoints: 0, fastest_laps: 0 };
         });
 
-        history.forEach((h: any) => {
-            h.Results?.forEach((r: any) => {
-                if (driverMap[r.racer_id]) {
-                    driverMap[r.racer_id].races++;
-                    driverMap[r.racer_id].totalPoints += r.points;
-                    driverMap[r.racer_id].positions.push(r.position);
-                    if (r.position === 1) driverMap[r.racer_id].wins++;
-                    if (r.position <= 3) driverMap[r.racer_id].podiums++;
-                }
-            });
+        allStats.forEach((s: any) => {
+            if (driverMap[s.racer_id]) {
+                driverMap[s.racer_id].races = s.races;
+                driverMap[s.racer_id].wins = s.wins;
+                driverMap[s.racer_id].gold = s.gold;
+                driverMap[s.racer_id].silver = s.silver;
+                driverMap[s.racer_id].bronze = s.bronze;
+                driverMap[s.racer_id].fastest_laps = s.fastest_laps;
+            }
+        });
+
+        racers.forEach((r: any) => {
+            if (driverMap[r.id]) {
+                driverMap[r.id].totalPoints = r.points;
+            }
         });
 
         const driverData = Object.values(driverMap).filter((d: any) => d.races > 0);
-        const championships = Math.max(...driverData.map((d: any) => d.wins as number));
+        const championships = Math.max(...driverData.map((d: any) => d.wins as number), 0);
         document.getElementById('championships')!.textContent = String(championships);
 
         renderPointsChart(history, driverMap);
@@ -79,6 +79,7 @@ function renderPointsChart(history: any[], driverMap: Record<number, any>): void
         };
     });
 
+    if (pointsChart) pointsChart.destroy();
     pointsChart = new Chart(ctx, {
         type: 'line',
         data: { labels: races, datasets },
@@ -97,6 +98,7 @@ function renderWinsChart(driverData: any[]): void {
     const ctx = (document.getElementById('wins-chart') as HTMLCanvasElement).getContext('2d');
     const sorted = [...driverData].sort((a, b) => b.wins - a.wins).slice(0, 5);
 
+    if (winsChart) winsChart.destroy();
     winsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -118,15 +120,15 @@ function renderDriverStatsTable(driverData: any[]): void {
     const sorted = [...driverData].sort((a, b) => b.wins - a.wins);
 
     tbody.innerHTML = sorted.map((d: any) => {
-        const avgFinish = d.positions.length ? (d.positions.reduce((a: number, b: number) => a + b, 0) / d.positions.length).toFixed(1) : '-';
+        const totalPodiums = (d.gold || 0) + (d.silver || 0) + (d.bronze || 0);
         return `
             <tr>
                 <td><span class="color-indicator ${d.car_color} me-2"></span>${d.name}</td>
                 <td>${d.races}</td>
-                <td class="text-warning">${d.wins}</td>
-                <td class="text-secondary">${d.podiums}</td>
+                <td class="text-warning fw-bold">${d.wins}</td>
+                <td><span class="text-warning">${d.gold || 0}</span> / <span class="text-secondary">${d.silver || 0}</span> / <span class="bronze-text">${d.bronze || 0}</span></td>
+                <td>${totalPodiums}</td>
                 <td>${d.totalPoints}</td>
-                <td>${avgFinish}</td>
             </tr>
         `;
     }).join('');
@@ -160,6 +162,7 @@ function renderTrackStatsTable(history: any[]): void {
 function renderLapTimeChart(history: any[]): void {
     const ctx = (document.getElementById('laptime-chart') as HTMLCanvasElement).getContext('2d');
 
+    if (lapTimeChart) lapTimeChart.destroy();
     lapTimeChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -187,6 +190,7 @@ function renderBattleChart(driverData: any[]): void {
     const ctx = (document.getElementById('battle-chart') as HTMLCanvasElement).getContext('2d');
     const sorted = [...driverData].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 4);
 
+    if (battleChart) battleChart.destroy();
     battleChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -209,4 +213,3 @@ function renderBattleChart(driverData: any[]): void {
 }
 
 loadSeasonStats();
-

@@ -59,7 +59,9 @@ interface RaceResult {
 interface RacerStats {
     Races: number;
     Wins: number;
-    Podiums: number;
+    Gold: number;
+    Silver: number;
+    Bronze: number;
     FastestLaps: number;
     Points: number;
     DNF: number;
@@ -384,7 +386,9 @@ async function showDriverStats(id: number): Promise<void> {
         <div class="row g-3">
             <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Races || 0}</span><span class="stat-label">Races</span></div></div>
             <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Wins || 0}</span><span class="stat-label">Wins</span></div></div>
-            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Podiums || 0}</span><span class="stat-label">Podiums</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Gold || 0}</span><span class="stat-label">Gold</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Silver || 0}</span><span class="stat-label">Silver</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Bronze || 0}</span><span class="stat-label">Bronze</span></div></div>
             <div class="col-6"><div class="stat-box"><span class="stat-value">${s.FastestLaps || 0}</span><span class="stat-label">Fastest Laps</span></div></div>
             <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Points || r.points || 0}</span><span class="stat-label">Total Points</span></div></div>
             <div class="col-6"><div class="stat-box"><span class="stat-value">${s.DNF || 0}</span><span class="stat-label">DNF</span></div></div>

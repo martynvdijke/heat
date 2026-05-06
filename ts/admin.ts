@@ -25,7 +25,9 @@ interface AdminStats {
     racer_id: number;
     races: number;
     wins: number;
-    podiums: number;
+    gold: number;
+    silver: number;
+    bronze: number;
     fastest_laps: number;
     dnf: number;
     dns: number;
@@ -313,7 +315,7 @@ function renderStatsList(): void {
             <td class="ps-4 fw-bold">${racerNameById(s.racer_id)}</td>
             <td>${s.races}</td>
             <td><span class="badge bg-warning text-dark">${s.wins}</span></td>
-            <td><span class="badge bg-secondary">${s.podiums}</span></td>
+            <td><span class="badge bg-warning text-dark">${s.gold || 0}</span> <span class="badge bg-secondary">${s.silver || 0}</span> <span class="badge" style="background:#cd7f32">${s.bronze || 0}</span></td>
             <td><span class="badge bg-info">${s.fastest_laps}</span></td>
             <td><span class="badge bg-danger">${s.dnf}</span></td>
             <td><span class="badge bg-dark">${s.dns}</span></td>
@@ -338,7 +340,9 @@ function openStatsModal(stat?: AdminStats): void {
         (document.getElementById('stats-racer-id') as HTMLInputElement).value = String(stat.racer_id);
         (document.getElementById('stats-races') as HTMLInputElement).value = String(stat.races);
         (document.getElementById('stats-wins') as HTMLInputElement).value = String(stat.wins);
-        (document.getElementById('stats-podiums') as HTMLInputElement).value = String(stat.podiums);
+        (document.getElementById('stats-gold') as HTMLInputElement).value = String(stat.gold || 0);
+        (document.getElementById('stats-silver') as HTMLInputElement).value = String(stat.silver || 0);
+        (document.getElementById('stats-bronze') as HTMLInputElement).value = String(stat.bronze || 0);
         (document.getElementById('stats-fastest-laps') as HTMLInputElement).value = String(stat.fastest_laps);
         (document.getElementById('stats-dnf') as HTMLInputElement).value = String(stat.dnf);
         (document.getElementById('stats-dns') as HTMLInputElement).value = String(stat.dns);
@@ -373,7 +377,9 @@ document.getElementById('stats-form')!.addEventListener('submit', async (e: Even
         racer_id: racerId,
         races: parseInt((document.getElementById('stats-races') as HTMLInputElement).value) || 0,
         wins: parseInt((document.getElementById('stats-wins') as HTMLInputElement).value) || 0,
-        podiums: parseInt((document.getElementById('stats-podiums') as HTMLInputElement).value) || 0,
+        gold: parseInt((document.getElementById('stats-gold') as HTMLInputElement).value) || 0,
+        silver: parseInt((document.getElementById('stats-silver') as HTMLInputElement).value) || 0,
+        bronze: parseInt((document.getElementById('stats-bronze') as HTMLInputElement).value) || 0,
         fastest_laps: parseInt((document.getElementById('stats-fastest-laps') as HTMLInputElement).value) || 0,
         dnf: parseInt((document.getElementById('stats-dnf') as HTMLInputElement).value) || 0,
         dns: parseInt((document.getElementById('stats-dns') as HTMLInputElement).value) || 0

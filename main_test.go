@@ -333,7 +333,7 @@ func TestUpdateRacerStats(t *testing.T) {
 
 	// Create new stats for racer 3 (no existing stats yet)
 	createBody, _ := json.Marshal(models.RacerStats{
-		RacerID: 3, Races: 10, Wins: 4, Podiums: 7, FastestLaps: 3, DNF: 1, DNS: 2,
+		RacerID: 3, Races: 10, Wins: 4, Gold: 4, Silver: 2, Bronze: 1, FastestLaps: 3, DNF: 1, DNS: 2,
 	})
 	req, _ := http.NewRequest("POST", "/api/racer-stats", bytes.NewBuffer(createBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -354,8 +354,8 @@ func TestUpdateRacerStats(t *testing.T) {
 	json.Unmarshal(rr.Body.Bytes(), &result)
 	var s models.RacerStats
 	json.Unmarshal(result["stats"], &s)
-	if s.Races != 10 || s.Wins != 4 || s.Podiums != 7 || s.FastestLaps != 3 || s.DNF != 1 || s.DNS != 2 {
-		t.Errorf("expected stats (10,4,7,3,1,2), got (%d,%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Podiums, s.FastestLaps, s.DNF, s.DNS)
+	if s.Races != 10 || s.Wins != 4 || s.Gold != 4 || s.Silver != 2 || s.Bronze != 1 || s.FastestLaps != 3 || s.DNF != 1 || s.DNS != 2 {
+		t.Errorf("expected stats (10,4,4,2,1,3,1,2), got (%d,%d,%d,%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Gold, s.Silver, s.Bronze, s.FastestLaps, s.DNF, s.DNS)
 	}
 
 	// Find the actual DB id for the update
@@ -364,7 +364,7 @@ func TestUpdateRacerStats(t *testing.T) {
 
 	// Update existing stats
 	updateBody, _ := json.Marshal(models.RacerStats{
-		ID: statsID, RacerID: 3, Races: 20, Wins: 8, Podiums: 15, FastestLaps: 6, DNF: 2, DNS: 1,
+		ID: statsID, RacerID: 3, Races: 20, Wins: 8, Gold: 8, Silver: 4, Bronze: 3, FastestLaps: 6, DNF: 2, DNS: 1,
 	})
 	req, _ = http.NewRequest("POST", "/api/racer-stats", bytes.NewBuffer(updateBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -380,8 +380,8 @@ func TestUpdateRacerStats(t *testing.T) {
 	r.ServeHTTP(rr, req)
 	json.Unmarshal(rr.Body.Bytes(), &result)
 	json.Unmarshal(result["stats"], &s)
-	if s.Races != 20 || s.Wins != 8 || s.Podiums != 15 || s.FastestLaps != 6 || s.DNF != 2 || s.DNS != 1 {
-		t.Errorf("expected updated stats (20,8,15,6,2,1), got (%d,%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Podiums, s.FastestLaps, s.DNF, s.DNS)
+	if s.Races != 20 || s.Wins != 8 || s.Gold != 8 || s.Silver != 4 || s.Bronze != 3 || s.FastestLaps != 6 || s.DNF != 2 || s.DNS != 1 {
+		t.Errorf("expected updated stats (20,8,8,4,3,6,2,1), got (%d,%d,%d,%d,%d,%d,%d,%d)", s.Races, s.Wins, s.Gold, s.Silver, s.Bronze, s.FastestLaps, s.DNF, s.DNS)
 	}
 }
 

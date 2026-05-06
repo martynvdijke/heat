@@ -47,7 +47,9 @@ type RacerStats struct {
 	RacerID     int `json:"racer_id"`
 	Races       int `json:"races"`
 	Wins        int `json:"wins"`
-	Podiums     int `json:"podiums"`
+	Gold        int `json:"gold"`
+	Silver      int `json:"silver"`
+	Bronze      int `json:"bronze"`
 	FastestLaps int `json:"fastest_laps"`
 	Points      int `json:"points"`
 	DNF         int `json:"dnf"`

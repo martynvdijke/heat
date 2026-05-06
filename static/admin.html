@@ -334,7 +334,9 @@
                                         <th class="ps-4">Driver</th>
                                         <th>Races</th>
                                         <th>Wins</th>
-                                        <th>Podiums</th>
+                                        <th>Gold</th>
+                                        <th>Silver</th>
+                                        <th>Bronze</th>
                                         <th>Fastest Laps</th>
                                         <th>DNF</th>
                                         <th>DNS</th>
@@ -962,9 +964,19 @@
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-4">
-                                <label class="form-label small fw-bold">Podiums</label>
-                                <input type="number" class="form-control" name="podiums" id="stats-podiums" min="0" required>
+                                <label class="form-label small fw-bold text-warning">Gold (1st)</label>
+                                <input type="number" class="form-control" name="gold" id="stats-gold" min="0" required>
                             </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-bold text-secondary">Silver (2nd)</label>
+                                <input type="number" class="form-control" name="silver" id="stats-silver" min="0" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-bold" style="color:#cd7f32">Bronze (3rd)</label>
+                                <input type="number" class="form-control" name="bronze" id="stats-bronze" min="0" required>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
                             <div class="col-4">
                                 <label class="form-label small fw-bold">Fastest Laps</label>
                                 <input type="number" class="form-control" name="fastest_laps" id="stats-fastest-laps" min="0" required>

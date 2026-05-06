@@ -421,6 +421,7 @@ footer {
 .result-item.silver .pos { color: #c0c0c0; }
 .result-item.bronze { background: rgba(205, 127, 50, 0.1); }
 .result-item.bronze .pos { color: #cd7f32; }
+.bronze-text { color: #cd7f32; }
 
 .quote-banner {
     margin-top: 2rem;

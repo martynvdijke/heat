@@ -91,15 +91,24 @@ func SaveRaceToHistory(c *gin.Context) {
 			raceID, res.RacerID, res.RacerName, res.Position, res.Points, boolToInt(res.FastestLap))
 
 		if !isOneOff {
-			app.DB.Exec(`INSERT INTO racer_stats (racer_id, races, wins, podiums, fastest_laps, dnf, dns) VALUES (?, 1, ?, ?, ?, ?, ?)
+			app.DB.Exec(`INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)
 					 ON CONFLICT(racer_id) DO UPDATE SET
 					 races = races + 1,
 					 wins = wins + excluded.wins,
-					 podiums = podiums + excluded.podiums,
+					 gold = gold + excluded.gold,
+					 silver = silver + excluded.silver,
+					 bronze = bronze + excluded.bronze,
 					 fastest_laps = fastest_laps + excluded.fastest_laps,
 					 dnf = dnf + excluded.dnf,
 					 dns = dns + excluded.dns`,
-				res.RacerID, boolToInt(res.Position == 1), boolToInt(res.Position <= 3), boolToInt(res.FastestLap), boolToInt(!res.Finished && !res.DidNotStart), boolToInt(res.DidNotStart))
+				res.RacerID,
+				boolToInt(res.Position == 1),
+				boolToInt(res.Position == 1),
+				boolToInt(res.Position == 2),
+				boolToInt(res.Position == 3),
+				boolToInt(res.FastestLap),
+				boolToInt(!res.Finished && !res.DidNotStart),
+				boolToInt(res.DidNotStart))
 		}
 	}
 

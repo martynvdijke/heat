@@ -16,11 +16,11 @@ func GetRacerStats(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
 		stats := make([]models.RacerStats, 0)
-		rows, _ := app.DB.Query("SELECT id, racer_id, races, wins, podiums, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf, dns FROM racer_stats")
+		rows, _ := app.DB.Query("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf, dns FROM racer_stats")
 		if rows != nil {
 			for rows.Next() {
 				var s models.RacerStats
-				rows.Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Podiums, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
+				rows.Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 				stats = append(stats, s)
 			}
 			rows.Close()
@@ -30,9 +30,9 @@ func GetRacerStats(c *gin.Context) {
 	}
 
 	var s models.RacerStats
-	err := app.DB.QueryRow("SELECT id, racer_id, races, wins, podiums, fastest_laps, COALESCE((SELECT SUM(points) FROM racers WHERE id = racer_id), 0) as pts, dnf, dns FROM racer_stats WHERE racer_id = ?", id).Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Podiums, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
+	err := app.DB.QueryRow("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, COALESCE((SELECT SUM(points) FROM racers WHERE id = racer_id), 0) as pts, dnf, dns FROM racer_stats WHERE racer_id = ?", id).Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 	if err != nil {
-		s = models.RacerStats{RacerID: 0, Races: 0, Wins: 0, Podiums: 0, FastestLaps: 0, Points: 0, DNF: 0, DNS: 0}
+		s = models.RacerStats{RacerID: 0}
 	}
 
 	var rInfo models.Racer
@@ -49,15 +49,15 @@ func UpdateRacerStats(c *gin.Context) {
 	}
 
 	if stats.ID == 0 {
-		_, err := app.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, podiums, fastest_laps, dnf, dns) VALUES (?, ?, ?, ?, ?, ?, ?)",
-			stats.RacerID, stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF, stats.DNS)
+		_, err := app.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			stats.RacerID, stats.Races, stats.Wins, stats.Gold, stats.Silver, stats.Bronze, stats.FastestLaps, stats.DNF, stats.DNS)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
-		_, err := app.DB.Exec("UPDATE racer_stats SET races = ?, wins = ?, podiums = ?, fastest_laps = ?, dnf = ?, dns = ? WHERE id = ?",
-			stats.Races, stats.Wins, stats.Podiums, stats.FastestLaps, stats.DNF, stats.DNS, stats.ID)
+		_, err := app.DB.Exec("UPDATE racer_stats SET races = ?, wins = ?, gold = ?, silver = ?, bronze = ?, fastest_laps = ?, dnf = ?, dns = ? WHERE id = ?",
+			stats.Races, stats.Wins, stats.Gold, stats.Silver, stats.Bronze, stats.FastestLaps, stats.DNF, stats.DNS, stats.ID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -93,7 +93,6 @@ func GetTrackStats(c *gin.Context) {
 	c.JSON(http.StatusOK, stats)
 }
 
-// HeadToHead compares two racers across all races they've both participated in
 func GetHeadToHead(c *gin.Context) {
 	racer1Str := c.Query("racer1")
 	racer2Str := c.Query("racer2")
@@ -157,7 +156,6 @@ func GetHeadToHead(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// GetPointsProgression returns per-race points for a racer
 func GetPointsProgression(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 	racerID, err := strconv.Atoi(racerIDStr)
@@ -193,7 +191,6 @@ func GetPointsProgression(c *gin.Context) {
 	c.JSON(http.StatusOK, progression)
 }
 
-// GetStreaks returns win/podium/dnf streaks for all racers
 func GetStreaks(c *gin.Context) {
 	rows, err := app.DB.Query("SELECT id, name FROM racers ORDER BY rank")
 	if err != nil {
@@ -316,7 +313,6 @@ func calcStreak(positions []struct {
 	}
 }
 
-// GetELORatings computes ELO-style ratings for all racers
 func GetELORatings(c *gin.Context) {
 	type raceEntry struct {
 		RaceID   int
@@ -343,7 +339,7 @@ func GetELORatings(c *gin.Context) {
 		if err := rows.Scan(&e.RaceID, &e.RacerID, &e.Position); err != nil {
 			continue
 		}
-		if e.Position < 900 { // exclude DNF for rating
+		if e.Position < 900 {
 			entries = append(entries, e)
 		}
 	}
@@ -351,7 +347,6 @@ func GetELORatings(c *gin.Context) {
 	ratings := make(map[int]float64)
 	raceCount := make(map[int]int)
 
-	// Group by race
 	raceMap := make(map[int][]raceEntry)
 	for _, e := range entries {
 		raceMap[e.RaceID] = append(raceMap[e.RaceID], e)
@@ -365,7 +360,6 @@ func GetELORatings(c *gin.Context) {
 			continue
 		}
 
-		// Initialize ratings for new racers
 		for _, e := range race {
 			if _, exists := ratings[e.RacerID]; !exists {
 				ratings[e.RacerID] = initialRating
@@ -373,7 +367,6 @@ func GetELORatings(c *gin.Context) {
 			}
 		}
 
-		// Each racer "plays" against every other racer
 		for i := 0; i < len(race); i++ {
 			for j := i + 1; j < len(race); j++ {
 				e1, e2 := race[i], race[j]
@@ -411,7 +404,6 @@ func GetELORatings(c *gin.Context) {
 		})
 	}
 
-	// Sort by rating descending
 	for i := 0; i < len(result); i++ {
 		for j := i + 1; j < len(result); j++ {
 			if result[j].Rating > result[i].Rating {
@@ -423,14 +415,13 @@ func GetELORatings(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// ExportStatsCSV exports racer stats as CSV
 func ExportStatsCSV(c *gin.Context) {
 	format := c.Query("format")
 	if format == "" {
 		format = "csv"
 	}
 
-	rows, err := app.DB.Query("SELECT r.id, r.name, r.car_name, r.points, r.rank, COALESCE(rs.races, 0), COALESCE(rs.wins, 0), COALESCE(rs.podiums, 0), COALESCE(rs.fastest_laps, 0), COALESCE(rs.dnf, 0), COALESCE(rs.dns, 0) FROM racers r LEFT JOIN racer_stats rs ON rs.racer_id = r.id ORDER BY r.rank")
+	rows, err := app.DB.Query("SELECT r.id, r.name, r.car_name, r.points, r.rank, COALESCE(rs.races, 0), COALESCE(rs.wins, 0), COALESCE(rs.gold, 0), COALESCE(rs.silver, 0), COALESCE(rs.bronze, 0), COALESCE(rs.fastest_laps, 0), COALESCE(rs.dnf, 0), COALESCE(rs.dns, 0) FROM racers r LEFT JOIN racer_stats rs ON rs.racer_id = r.id ORDER BY r.rank")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -441,23 +432,23 @@ func ExportStatsCSV(c *gin.Context) {
 	c.Header("Content-Disposition", "attachment; filename=heat_racer_stats.csv")
 
 	writer := csv.NewWriter(c.Writer)
-	writer.Write([]string{"ID", "Name", "Car", "Points", "Rank", "Races", "Wins", "Podiums", "Fastest Laps", "DNF", "DNS"})
+	writer.Write([]string{"ID", "Name", "Car", "Points", "Rank", "Races", "Wins", "Gold", "Silver", "Bronze", "Fastest Laps", "DNF", "DNS"})
 
 	for rows.Next() {
-		var id, points, rank, races, wins, podiums, fl, dnf, dns int
+		var id, points, rank, races, wins, gold, silver, bronze, fl, dnf, dns int
 		var name, carName string
-		rows.Scan(&id, &name, &carName, &points, &rank, &races, &wins, &podiums, &fl, &dnf, &dns)
+		rows.Scan(&id, &name, &carName, &points, &rank, &races, &wins, &gold, &silver, &bronze, &fl, &dnf, &dns)
 		writer.Write([]string{
 			strconv.Itoa(id), name, carName,
 			strconv.Itoa(points), strconv.Itoa(rank),
 			strconv.Itoa(races), strconv.Itoa(wins),
-			strconv.Itoa(podiums), strconv.Itoa(fl), strconv.Itoa(dnf), strconv.Itoa(dns),
+			strconv.Itoa(gold), strconv.Itoa(silver), strconv.Itoa(bronze),
+			strconv.Itoa(fl), strconv.Itoa(dnf), strconv.Itoa(dns),
 		})
 	}
 	writer.Flush()
 }
 
-// TrackPerformanceBreakdown returns per-track performance for a specific racer or all racers
 func GetTrackPerformance(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 

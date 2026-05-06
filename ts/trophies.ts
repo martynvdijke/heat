@@ -55,7 +55,7 @@ async function loadAchievements(driverId: number): Promise<void> {
         const stats = statsData.stats || {};
 
         const wins = stats.Wins || 0;
-        const podiums = stats.Podiums || 0;
+        const podiums = (stats.Gold || 0) + (stats.Silver || 0) + (stats.Bronze || 0);
         const fastestLaps = stats.FastestLaps || 0;
 
         let badges = 0;
