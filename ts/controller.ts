@@ -289,6 +289,21 @@ function discardRace(): void {
     }
 }
 
+async function takeRoundSnapshot(): Promise<void> {
+    const name = (document.getElementById('race-name') as HTMLInputElement).value || `Round ${new Date().toLocaleDateString()}`;
+    const res = await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ race_name: name, round: 0 })
+    });
+    if (res.ok) {
+        alert('Round snapshot saved!');
+    } else {
+        const err = await res.json();
+        alert('Failed: ' + (err.error || 'Unknown error'));
+    }
+}
+
 function getPointsForPosition(pos: number): number {
     const points = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
     return points[pos - 1] || 0;

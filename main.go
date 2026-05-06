@@ -151,6 +151,9 @@ func main() {
 	r.GET("/api/stats/export", handlers.ExportStatsCSV)
 	r.GET("/api/stats/track-performance", handlers.GetTrackPerformance)
 	r.POST("/api/flags", handlers.HandleFlag)
+	r.POST("/api/rounds", handlers.TakeRoundSnapshot)
+	r.GET("/api/rounds", handlers.GetRoundSnapshots)
+	r.DELETE("/api/rounds", handlers.DeleteRoundSnapshot)
 
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})

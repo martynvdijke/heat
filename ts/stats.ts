@@ -8,126 +8,113 @@ function getCanvas(id: string): CanvasRenderingContext2D | null {
 
 async function loadSeasonStats(): Promise<void> {
     try {
-        const [historyRes, racersRes, statsRes] = await Promise.all([
-            fetch('/api/race-history'),
+        const [racersRes, statsRes, snapshotsRes] = await Promise.all([
             fetch('/api/racers'),
-            fetch('/api/racer-stats')
+            fetch('/api/racer-stats'),
+            fetch('/api/rounds')
         ]);
 
-        const history = await historyRes.json();
         const racers = await racersRes.json();
         const allStats = await statsRes.json();
+        const snapshots = await snapshotsRes.json();
 
-        const hasRaces = Array.isArray(history) && history.length > 0;
         const hasStats = Array.isArray(allStats) && allStats.length > 0;
+        const hasSnapshots = Array.isArray(snapshots) && snapshots.length > 0;
 
-        document.getElementById('total-races')!.textContent = String(hasRaces ? history.length : 0);
+        document.getElementById('total-races')!.textContent = String(hasSnapshots ? snapshots.length : 0);
         document.getElementById('total-drivers')!.textContent = String(racers.length);
 
         const totalFL = hasStats ? allStats.reduce((sum: number, s: any) => sum + (s.fastest_laps || 0), 0) : 0;
         document.getElementById('fastest-laps')!.textContent = String(totalFL);
 
-        if (!hasStats && !hasRaces) {
+        if (hasSnapshots) {
+            const allScores = await Promise.all(
+                snapshots.map((s: any) => fetch(`/api/rounds?id=${s.id}`).then(r => r.json()))
+            );
+            renderPointsChart(snapshots, allScores);
+            renderBattleChart(allScores);
+            renderDriverStatsTable(allStats, racers);
+            renderTrackStatsTable(allScores);
+        } else {
             document.getElementById('championships')!.textContent = '0';
             document.querySelector('#driver-stats-table tbody')!.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No race data yet</td></tr>';
-            document.querySelector('#track-stats-table tbody')!.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No race history yet</td></tr>';
-            return;
+            document.querySelector('#track-stats-table tbody')!.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No round snapshots yet</td></tr>';
         }
-
-        const driverMap: Record<number, any> = {};
-        racers.forEach((r: any) => {
-            driverMap[r.id] = { ...r, races: 0, wins: 0, gold: 0, silver: 0, bronze: 0, totalPoints: 0, fastest_laps: 0 };
-        });
-
         if (hasStats) {
-            allStats.forEach((s: any) => {
-                if (driverMap[s.racer_id]) {
-                    driverMap[s.racer_id].races = s.races || 0;
-                    driverMap[s.racer_id].wins = s.wins || 0;
-                    driverMap[s.racer_id].gold = s.gold || 0;
-                    driverMap[s.racer_id].silver = s.silver || 0;
-                    driverMap[s.racer_id].bronze = s.bronze || 0;
-                    driverMap[s.racer_id].fastest_laps = s.fastest_laps || 0;
-                }
-            });
-        }
-
-        racers.forEach((r: any) => {
-            if (driverMap[r.id]) {
-                driverMap[r.id].totalPoints = r.points || 0;
+            const driverData = allStats.filter((s: any) => s.races > 0);
+            if (driverData.length > 0) {
+                renderWinsChart(driverData);
             }
-        });
-
-        const driverData = Object.values(driverMap).filter((d: any) => d.races > 0);
-        const championships = driverData.length > 0 ? Math.max(...driverData.map((d: any) => d.wins as number), 0) : 0;
-        document.getElementById('championships')!.textContent = String(championships);
-
-        if (driverData.length > 0) {
-            renderDriverStatsTable(driverData);
-            renderWinsChart(driverData);
-            renderBattleChart(driverData);
-        } else {
-            document.querySelector('#driver-stats-table tbody')!.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No driver stats yet</td></tr>';
         }
-
-        if (hasRaces) {
-            renderPointsChart(history, driverMap);
-            renderTrackStatsTable(history);
-            renderLapTimeChart(history);
-        } else {
-            document.querySelector('#track-stats-table tbody')!.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No race history yet</td></tr>';
-        }
-
     } catch (err) {
         console.error('Failed to load stats:', err);
     }
 }
 
-function renderPointsChart(history: any[], driverMap: Record<number, any>): void {
+function renderPointsChart(snapshots: any[], allScores: any[]): void {
     const ctx = getCanvas('points-chart');
     if (!ctx) return;
 
-    const races = history.map((h: any, i: number) => `R${i + 1}`);
+    const labels = snapshots.map((s: any) => s.race_name || `R${s.round}`);
     const colors = ['#ff4444', '#4444ff', '#44ff44', '#ffff44', '#ff00ff'];
-    const sortedDrivers = Object.values(driverMap)
-        .filter((d: any) => d.races > 0)
-        .sort((a: any, b: any) => b.totalPoints - a.totalPoints)
+
+    const racerPoints: Record<number, { name: string; pts: number[] }> = {};
+    allScores.forEach((snap: any) => {
+        (snap.scores || []).forEach((sc: any) => {
+            if (!racerPoints[sc.racer_id]) {
+                racerPoints[sc.racer_id] = { name: sc.racer_name, pts: [] };
+            }
+            racerPoints[sc.racer_id].pts.push(sc.points);
+        });
+    });
+
+    const sorted = Object.entries(racerPoints)
+        .sort(([, a]: any, [, b]: any) => {
+            const aLast = a.pts[a.pts.length - 1] || 0;
+            const bLast = b.pts[b.pts.length - 1] || 0;
+            return bLast - aLast;
+        })
         .slice(0, 5);
 
-    if (sortedDrivers.length === 0) return;
+    const datasets = sorted.map(([id, d]: [string, any], i: number) => ({
+        label: d.name,
+        data: d.pts,
+        borderColor: colors[i % colors.length],
+        backgroundColor: colors[i % colors.length] + '20',
+        fill: true,
+        tension: 0.4,
+    }));
 
-    const datasets = sortedDrivers.map((d: any, i: number) => {
-        let cumulative = 0;
-        const points = history.map((h: any) => {
-            const result = h.Results?.find((r: any) => r.racer_id == d.id);
-            if (result) cumulative += result.points || 0;
-            return cumulative;
-        });
-        return {
-            label: d.name,
-            data: points,
-            borderColor: colors[i % colors.length],
-            backgroundColor: colors[i % colors.length] + '20',
-            fill: true,
-            tension: 0.4
-        };
-    });
+    const championships = Math.max(...Object.values(racerPoints).map((d: any) => {
+        const pts = d.pts;
+        let champCount = 0;
+        for (let r = 0; r < snapshots.length; r++) {
+            const roundScores = allScores[r]?.scores || [];
+            const topScore = Math.max(...roundScores.map((sc: any) => sc.points), 0);
+            const thisRacer = roundScores.find((sc: any) => sc.racer_name === d.name);
+            if (thisRacer && thisRacer.points === topScore && topScore > 0) {
+                champCount++;
+            }
+        }
+        return champCount;
+    }), 0);
+    document.getElementById('championships')!.textContent = String(championships);
 
     if (pointsChart) pointsChart.destroy();
     pointsChart = new Chart(ctx, {
         type: 'line',
-        data: { labels: races, datasets },
+        data: { labels, datasets },
         options: {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } }
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } },
             },
             scales: {
                 y: { beginAtZero: true, title: { display: true, text: 'Points' } },
-                x: { title: { display: true, text: 'Race' } }
-            }
-        }
+                x: { title: { display: true, text: 'Round' } },
+            },
+        },
     });
 }
 
@@ -135,57 +122,63 @@ function renderWinsChart(driverData: any[]): void {
     const ctx = getCanvas('wins-chart');
     if (!ctx) return;
 
-    const sorted = [...driverData].sort((a, b) => b.wins - a.wins).slice(0, 5);
-    if (sorted.length === 0 || sorted.every((d: any) => d.wins === 0)) return;
+    const sorted = [...driverData].sort((a: any, b: any) => (b.gold || 0) - (a.gold || 0)).slice(0, 5);
+    if (sorted.length === 0 || sorted.every((d: any) => !d.gold)) return;
 
     if (winsChart) winsChart.destroy();
     winsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: sorted.map(d => d.name),
+            labels: sorted.map((d: any) => d.name || d.racer_name),
             datasets: [{
-                data: sorted.map(d => d.wins),
-                backgroundColor: ['#ffd700', '#c0c0c0', '#cd7f32', '#ff6b6b', '#4ecdc4']
-            }]
+                data: sorted.map((d: any) => d.gold || 0),
+                backgroundColor: ['#ffd700', '#c0c0c0', '#cd7f32', '#ff6b6b', '#4ecdc4'],
+            }],
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } } }
-        }
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } } },
+        },
     });
 }
 
-function renderDriverStatsTable(driverData: any[]): void {
+function renderDriverStatsTable(allStats: any[], racers: any[]): void {
     const tbody = document.querySelector('#driver-stats-table tbody')!;
-    const sorted = [...driverData].sort((a, b) => b.wins - a.wins);
+    const sorted = [...allStats].sort((a: any, b: any) => (b.gold || 0) - (a.gold || 0));
 
-    tbody.innerHTML = sorted.map((d: any) => {
-        const totalPodiums = (d.gold || 0) + (d.silver || 0) + (d.bronze || 0);
+    const nameMap: Record<number, string> = {};
+    racers.forEach((r: any) => { nameMap[r.id] = r.name; });
+
+    tbody.innerHTML = sorted.map((s: any) => {
+        const totalPodiums = (s.gold || 0) + (s.silver || 0) + (s.bronze || 0);
+        const name = nameMap[s.racer_id] || s.racer_name || `Racer #${s.racer_id}`;
         return `
             <tr>
-                <td><span class="color-indicator ${d.car_color} me-2"></span>${d.name}</td>
-                <td>${d.races}</td>
-                <td class="text-warning fw-bold">${d.wins}</td>
-                <td><span class="text-warning">${d.gold || 0}</span> / <span class="text-secondary">${d.silver || 0}</span> / <span class="bronze-text">${d.bronze || 0}</span></td>
+                <td>${name}</td>
+                <td>${s.races || 0}</td>
+                <td class="text-warning fw-bold">${s.gold || s.wins || 0}</td>
+                <td><span class="text-warning">${s.gold || 0}</span> / <span class="text-secondary">${s.silver || 0}</span> / <span class="bronze-text">${s.bronze || 0}</span></td>
                 <td>${totalPodiums}</td>
-                <td>${d.totalPoints}</td>
+                <td>${s.points || 0}</td>
             </tr>
         `;
     }).join('');
 }
 
-function renderTrackStatsTable(history: any[]): void {
+function renderTrackStatsTable(allScores: any[]): void {
     const tbody = document.querySelector('#track-stats-table tbody')!;
     const trackMap: Record<string, any> = {};
 
-    history.forEach((h: any) => {
-        if (!trackMap[h.track_id]) {
-            trackMap[h.track_id] = { track: h.track, races: 0, winner: null };
+    allScores.forEach((snap: any, i: number) => {
+        const trackName = snap.race_name || `Round ${i + 1}`;
+        if (!trackMap[trackName]) {
+            trackMap[trackName] = { track: trackName, races: 0, winner: null };
         }
-        trackMap[h.track_id].races++;
-        const winner = h.Results?.find((r: any) => r.position === 1);
-        if (winner) trackMap[h.track_id].winner = winner.RacerName || winner.racer_name;
+        trackMap[trackName].races++;
+        const scores = snap.scores || [];
+        const top = scores.reduce((best: any, s: any) => (!best || s.points > best.points ? s : best), null);
+        if (top) trackMap[trackName].winner = top.racer_name;
     });
 
     const sorted = Object.values(trackMap).sort((a: any, b: any) => b.races - a.races);
@@ -200,62 +193,33 @@ function renderTrackStatsTable(history: any[]): void {
     `).join('');
 }
 
-function renderLapTimeChart(history: any[]): void {
-    const ctx = getCanvas('laptime-chart');
-    if (!ctx) return;
-
-    if (lapTimeChart) lapTimeChart.destroy();
-    lapTimeChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: history.slice(0, 10).map((h: any, i: number) => `R${i + 1}`),
-            datasets: [{
-                label: 'Fastest Lap',
-                data: history.slice(0, 10).map((h: any) => {
-                    const fl = h.Results?.find((r: any) => r.FastestLap || r.fastest_lap);
-                    return fl ? Math.random() * 30 + 60 : null;
-                }),
-                backgroundColor: '#ffd700'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: false, title: { display: true, text: 'Seconds' } }
-            }
-        }
-    });
-}
-
-function renderBattleChart(driverData: any[]): void {
+function renderBattleChart(allScores: any[]): void {
     const ctx = getCanvas('battle-chart');
     if (!ctx) return;
 
-    const sorted = [...driverData].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 4);
-    if (sorted.length === 0 || sorted.every((d: any) => d.totalPoints === 0)) return;
+    const latest = allScores[allScores.length - 1];
+    if (!latest) return;
+    const scores = (latest.scores || []).sort((a: any, b: any) => b.points - a.points).slice(0, 4);
+    if (scores.length === 0 || scores.every((s: any) => s.points === 0)) return;
 
     if (battleChart) battleChart.destroy();
     battleChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: sorted.map(d => d.name),
+            labels: scores.map((s: any) => s.racer_name),
             datasets: [{
                 label: 'Points',
-                data: sorted.map(d => d.totalPoints),
-                backgroundColor: ['#ffd700', '#c0c0c0', '#cd7f32', '#ff6b6b']
-            }]
+                data: scores.map((s: any) => s.points),
+                backgroundColor: ['#ffd700', '#c0c0c0', '#cd7f32', '#ff6b6b'],
+            }],
         },
         options: {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: true,
             plugins: { legend: { display: false } },
-            scales: {
-                x: { beginAtZero: true }
-            }
-        }
+            scales: { x: { beginAtZero: true } },
+        },
     });
 }
 

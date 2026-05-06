@@ -57,19 +57,20 @@ interface RaceResult {
 }
 
 interface RacerStats {
-    Races: number;
-    Wins: number;
-    Gold: number;
-    Silver: number;
-    Bronze: number;
-    FastestLaps: number;
-    Points: number;
-    DNF: number;
+    races: number;
+    wins: number;
+    gold: number;
+    silver: number;
+    bronze: number;
+    fastest_laps: number;
+    points: number;
+    dnf: number;
+    dns: number;
 }
 
 interface StatsResponse {
     stats: RacerStats;
-    racer: Racer;
+    racer: any;
 }
 
 interface GeoJSONFeature {
@@ -384,14 +385,14 @@ async function showDriverStats(id: number): Promise<void> {
             <span class="color-indicator ${r.car_color}"></span> ${r.car_color}
         </div>
         <div class="row g-3">
-            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Races || 0}</span><span class="stat-label">Races</span></div></div>
-            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Wins || 0}</span><span class="stat-label">Wins</span></div></div>
-            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Gold || 0}</span><span class="stat-label">Gold</span></div></div>
-            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Silver || 0}</span><span class="stat-label">Silver</span></div></div>
-            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Bronze || 0}</span><span class="stat-label">Bronze</span></div></div>
-            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.FastestLaps || 0}</span><span class="stat-label">Fastest Laps</span></div></div>
-            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.Points || r.points || 0}</span><span class="stat-label">Total Points</span></div></div>
-            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.DNF || 0}</span><span class="stat-label">DNF</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.races || 0}</span><span class="stat-label">Races</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.gold || s.wins || 0}</span><span class="stat-label">Wins</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.gold || 0}</span><span class="stat-label">Gold</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.silver || 0}</span><span class="stat-label">Silver</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.bronze || 0}</span><span class="stat-label">Bronze</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.fastest_laps || 0}</span><span class="stat-label">Fastest Laps</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.points || r.points || 0}</span><span class="stat-label">Total Points</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.dnf || 0}</span><span class="stat-label">DNF</span></div></div>
         </div>
     `;
     new (window as any).bootstrap.Modal(document.getElementById('statsModal')!).show();

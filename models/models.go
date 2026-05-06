@@ -178,6 +178,24 @@ type BackupSettings struct {
 	IntervalHrs int  `json:"interval_hrs"`
 }
 
+type RoundSnapshot struct {
+	ID        int                  `json:"id"`
+	RaceName  string               `json:"race_name"`
+	RaceDate  string               `json:"race_date"`
+	Round     int                  `json:"round"`
+	CreatedAt string               `json:"created_at"`
+	Scores    []RoundSnapshotScore `json:"scores,omitempty"`
+}
+
+type RoundSnapshotScore struct {
+	ID         int    `json:"id"`
+	SnapshotID int    `json:"snapshot_id"`
+	RacerID    int    `json:"racer_id"`
+	RacerName  string `json:"racer_name"`
+	Points     int    `json:"points"`
+	Position   int    `json:"position"`
+}
+
 type FlagCommand struct {
 	Type      string `json:"type"`
 	Flag      string `json:"flag"`
