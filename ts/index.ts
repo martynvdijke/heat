@@ -562,7 +562,7 @@ function handleFlagCommand(cmd: any): void {
     }
 
     if (cmd.flag === 'blue') {
-        showToast('warning', 'BLUE FLAG', `${cmd.racer_name} — let faster car through!`);
+        showToast('primary', 'BLUE FLAG', `${cmd.racer_name} — let faster car through!`);
     } else if (cmd.flag === 'blackwhite') {
         showToast('secondary', 'BLACK & WHITE FLAG', `${cmd.racer_name} — unsportsmanlike conduct warning!`);
     }

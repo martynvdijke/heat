@@ -11,7 +11,7 @@ import (
 	"heat/models"
 )
 
-var currentSchemaVersion = 16
+var currentSchemaVersion = 17
 
 func Init() {
 	_, _ = app.DB.Exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
@@ -236,6 +236,17 @@ func runMigration(fromVersion int) {
 			FOREIGN KEY (racer_id) REFERENCES racers(id)
 		)`)
 	case 15:
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS seasons (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			start_date TEXT NOT NULL,
+			end_date TEXT,
+			status TEXT DEFAULT 'active',
+			created_at TEXT DEFAULT (datetime('now'))
+		)`)
+		_, _ = app.DB.Exec("INSERT OR IGNORE INTO seasons (id, name, start_date, status) VALUES (1, 'Season 1', date('now'), 'active')")
+		_, _ = app.DB.Exec("ALTER TABLE round_snapshots ADD COLUMN season_id INTEGER DEFAULT 1 REFERENCES seasons(id)")
+	case 16:
 		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS seasons (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
