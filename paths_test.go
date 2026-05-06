@@ -131,7 +131,7 @@ func TestAdminHTMLTabPaneStructure(t *testing.T) {
 
 	t.Run("AllPanesHaveTabContentParent", func(t *testing.T) {
 		panes := []string{"race-pane", "qualification-pane", "stats-pane", "notify-pane",
-			"racers-pane", "tracks-pane", "quotes-pane", "archive-pane", "ai-pane",
+			"racers-pane", "tracks-pane", "quotes-pane", "ai-pane",
 			"email-pane", "umami-pane", "backup-pane"}
 		for _, pane := range panes {
 			if !strings.Contains(tabContentSection, `id="`+pane+`"`) {

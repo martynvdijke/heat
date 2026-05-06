@@ -146,10 +146,9 @@ test.describe.serial('Admin Panel', () => {
     await expect(rows.first()).toBeVisible();
   });
 
-  test('should show archive tab', async ({ page }) => {
-    await page.click('#archive-tab');
-    await expect(page.locator('#archive-name')).toBeVisible();
-    await expect(page.locator('#archive-date')).toBeVisible();
+  test('should show seasons tab', async ({ page }) => {
+    await page.click('#seasons-tab');
+    await expect(page.locator('#seasons-list')).toBeVisible();
   });
 
   test('should show qualification tab', async ({ page }) => {

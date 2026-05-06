@@ -33,15 +33,6 @@ interface AdminStats {
     dns: number;
 }
 
-interface AdminHistory {
-    id: number;
-    name: string;
-    race_date: string;
-    country: string;
-    track: string;
-    track_id: string;
-}
-
 let adminRacers: AdminRacer[] = [];
 let adminTracks: AdminTrack[] = [];
 let allTracks: AdminTrack[] = [];
@@ -56,7 +47,6 @@ const trackModal = new bootstrap.Modal(document.getElementById('trackModal')!);
 const statsModal = new bootstrap.Modal(document.getElementById('statsModal')!);
 
 async function init(): Promise<void> {
-    (document.getElementById('archive-date') as HTMLInputElement).valueAsDate = new Date();
     await loadAdminTracks();
     await loadRaceInfo();
     await loadRacers();
@@ -65,7 +55,6 @@ async function init(): Promise<void> {
     await loadRacerStats();
     await loadNotificationSettings();
     await loadUmamiSettings();
-    await loadHistory();
     await loadAISettings();
 }
 
@@ -177,25 +166,6 @@ async function loadQuotes(): Promise<void> {
             </tr>
         `).join('');
     } catch (e) { console.error('Failed to load quotes', e); }
-}
-
-async function loadHistory(): Promise<void> {
-    try {
-        const res = await fetch('/api/race-history');
-        const history: AdminHistory[] = await res.json();
-        const list = document.getElementById('history-list')!;
-        list.innerHTML = history.map(h => `
-            <tr>
-                <td class="ps-4 fw-bold">${escapeHtml(h.name || h.race_date)}</td>
-                <td>${h.race_date}</td>
-                <td>${escapeHtml(h.country)}</td>
-                <td>${escapeHtml(h.track)}</td>
-                <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteHistory(${h.id})"><i class="fa-solid fa-trash"></i></button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (e) { console.error('Failed to load history', e); }
 }
 
 async function loadRacerStats(): Promise<void> {
@@ -681,44 +651,6 @@ function previewGrid(): void {
     `).join('');
 }
 
-async function archiveRace(): Promise<void> {
-    const name = (document.getElementById('archive-name') as HTMLInputElement).value;
-    const date = (document.getElementById('archive-date') as HTMLInputElement).value;
-    if (!name) { alert('Please provide a name for the archive'); return; }
-    if (!confirm(`Archive current race as "${name}"?`)) return;
-
-    const [race, racerData] = await Promise.all([
-        fetch('/api/race-info').then(r => r.json()),
-        fetch('/api/racers').then(r => r.json())
-    ]);
-
-    const results = (racerData as AdminRacer[]).map(r => ({
-        racer_id: r.id, racer_name: r.name,
-        position: r.rank, points: r.points,
-        fastest_lap: false, finished: true
-    }));
-
-    const res = await fetch('/api/race-history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            name: name,
-            race_date: date,
-            country: race.country,
-            track: race.track,
-            track_id: race.track_id,
-            total_laps: race.laps,
-            results: results
-        })
-    });
-
-    if (res.ok) {
-        alert('Race archived!');
-        loadHistory();
-        (document.getElementById('archive-name') as HTMLInputElement).value = '';
-    }
-}
-
 function openRacerModal(): void {
     (document.getElementById('racer-form') as HTMLFormElement).reset();
     (document.getElementById('racer-id') as HTMLInputElement).value = '';
@@ -777,13 +709,6 @@ async function deleteQuote(id: number): Promise<void> {
     if (confirm('Delete this quote?')) {
         await fetch(`/api/quotes?id=${id}`, { method: 'DELETE' });
         loadQuotes();
-    }
-}
-
-async function deleteHistory(id: number): Promise<void> {
-    if (confirm('Remove this entry from history?')) {
-        await fetch(`/api/race-history?id=${id}`, { method: 'DELETE' });
-        loadHistory();
     }
 }
 
