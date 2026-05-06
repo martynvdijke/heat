@@ -1,3 +1,10 @@
+## [1.15.4](https://github.com/martynvdijke/heat/compare/v1.15.3...v1.15.4) (2026-05-06)
+
+
+### Bug Fixes
+
+* rewrite image upload handler with MIME verification, dimension limits, and GIF passthrough ([db4385d](https://github.com/martynvdijke/heat/commit/db4385d98c33191bd3dd50abded20931c3a3e17d))
+
 ## [1.15.3](https://github.com/martynvdijke/heat/compare/v1.15.2...v1.15.3) (2026-05-06)
 
 
