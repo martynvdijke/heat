@@ -177,3 +177,10 @@ type BackupSettings struct {
 	Enabled     bool `json:"enabled"`
 	IntervalHrs int  `json:"interval_hrs"`
 }
+
+type FlagCommand struct {
+	Type      string `json:"type"`
+	Flag      string `json:"flag"`
+	RacerID   int    `json:"racer_id,omitempty"`
+	RacerName string `json:"racer_name,omitempty"`
+}

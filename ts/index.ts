@@ -495,6 +495,64 @@ async function loadRandomQuote(): Promise<void> {
     }
 }
 
+function handleFlagCommand(cmd: any): void {
+    const overlay = document.getElementById('flag-overlay')!;
+    if (cmd.flag === 'safety') {
+        overlay.className = 'flag-overlay flag-safety d-flex';
+        overlay.innerHTML = '<div class="flag-content"><div class="flag-icon"><i class="fa-solid fa-car-side"></i></div><div class="flag-text">SAFETY CAR</div><div class="flag-sub">Yellow flag — no overtaking</div></div>';
+        clearFlagOverlay(8000);
+    } else if (cmd.flag === 'red') {
+        overlay.className = 'flag-overlay flag-red d-flex';
+        overlay.innerHTML = '<div class="flag-content"><div class="flag-icon"><i class="fa-solid fa-circle-exclamation"></i></div><div class="flag-text">RED FLAG</div><div class="flag-sub">Race suspended — return to pits</div></div>';
+        clearFlagOverlay(10000);
+    } else if (cmd.flag === 'yellow') {
+        overlay.className = 'flag-overlay flag-yellow d-flex';
+        overlay.innerHTML = '<div class="flag-content"><div class="flag-icon"><i class="fa-solid fa-flag"></i></div><div class="flag-text">YELLOW FLAG</div><div class="flag-sub">Caution — danger ahead</div></div>';
+        clearFlagOverlay(6000);
+    } else if (cmd.flag === 'chequered') {
+        overlay.className = 'flag-overlay flag-chequered d-flex';
+        overlay.innerHTML = '<div class="flag-content"><div class="flag-icon"><i class="fa-solid fa-flag-checkered"></i></div><div class="flag-text">CHEQUERED FLAG</div><div class="flag-sub">Race finished!</div></div>';
+        clearFlagOverlay(8000);
+    } else if (cmd.flag === 'blue') {
+        showToast('warning', 'BLUE FLAG', `${cmd.racer_name} — let faster car through!`);
+    } else if (cmd.flag === 'blackwhite') {
+        showToast('secondary', 'BLACK & WHITE FLAG', `${cmd.racer_name} — unsportsmanlike conduct warning!`);
+    }
+}
+
+let flagOverlayTimer: number | undefined;
+
+function clearFlagOverlay(delay: number): void {
+    if (flagOverlayTimer) clearTimeout(flagOverlayTimer);
+    flagOverlayTimer = window.setTimeout(() => {
+        const overlay = document.getElementById('flag-overlay')!;
+        overlay.className = 'flag-overlay d-none';
+        overlay.innerHTML = '';
+    }, delay);
+}
+
+function showToast(color: string, title: string, message: string): void {
+    const container = document.getElementById('toast-container')!;
+    const id = 'toast-' + Date.now();
+    const html = `
+        <div id="${id}" class="toast align-items-center text-bg-${color} border-0 mb-2" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong><br>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+    const el = document.getElementById(id);
+    if (el) {
+        const toast = new (window as any).bootstrap.Toast(el, { autohide: true, delay: 8000 });
+        toast.show();
+        el.addEventListener('hidden.bs.toast', () => el.remove());
+    }
+}
+
 function startQuoteRotation(): void {
     loadRandomQuote();
     if (quoteInterval) clearInterval(quoteInterval);
@@ -528,9 +586,14 @@ async function loadData(): Promise<void> {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
         ws.onmessage = (event) => {
-            racers = JSON.parse(event.data);
-            renderRacers();
-            loadQualificationGrid();
+            const data = JSON.parse(event.data);
+            if (data.type === 'flag') {
+                handleFlagCommand(data);
+            } else if (Array.isArray(data)) {
+                racers = data;
+                renderRacers();
+                loadQualificationGrid();
+            }
         };
         ws.onclose = () => setTimeout(loadData, 5000);
     } catch (err) {

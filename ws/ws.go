@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -21,11 +22,23 @@ func HandleWebSocket(c *gin.Context) {
 	log.Printf("[WS] New client connected. Total clients: %d", len(app.Clients))
 
 	for {
-		_, _, err := ws.ReadMessage()
+		_, msgBytes, err := ws.ReadMessage()
 		if err != nil {
 			log.Printf("[WS] Client disconnected: %v", err)
 			delete(app.Clients, ws)
 			break
+		}
+
+		var msg map[string]interface{}
+		if err := json.Unmarshal(msgBytes, &msg); err != nil {
+			continue
+		}
+
+		if msgType, ok := msg["type"].(string); ok && msgType == "flag" {
+			var cmd models.FlagCommand
+			if err := json.Unmarshal(msgBytes, &cmd); err == nil {
+				app.FlagBroadcast <- cmd
+			}
 		}
 	}
 }
@@ -37,6 +50,20 @@ func BroadcastManager() {
 			err := client.WriteJSON(racers)
 			if err != nil {
 				log.Printf("[WS] error broadcasting to client: %v", err)
+				client.Close()
+				delete(app.Clients, client)
+			}
+		}
+	}
+}
+
+func BroadcastFlags() {
+	for {
+		cmd := <-app.FlagBroadcast
+		for client := range app.Clients {
+			err := client.WriteJSON(cmd)
+			if err != nil {
+				log.Printf("[WS] error broadcasting flag: %v", err)
 				client.Close()
 				delete(app.Clients, client)
 			}

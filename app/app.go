@@ -13,6 +13,8 @@ import (
 	"heat/models"
 )
 
+var FlagBroadcast = make(chan models.FlagCommand)
+
 type SessionInfo struct {
 	Expiry int64
 	IP     string

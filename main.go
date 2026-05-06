@@ -53,6 +53,7 @@ func main() {
 
 	db.Init()
 	go ws.BroadcastManager()
+	go ws.BroadcastFlags()
 	go func() {
 		for {
 			time.Sleep(15 * time.Minute)

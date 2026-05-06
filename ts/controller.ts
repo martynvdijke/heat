@@ -44,7 +44,13 @@ function renderStandings(): void {
                 <div class="fw-bold small">${r.name}</div>
                 <small class="opacity-50">${r.car_name}</small>
             </div>
-            <button class="btn btn-sm btn-outline-secondary" onclick="moveUp(${r.id})">
+            <button class="btn btn-sm btn-outline-info ms-1" onclick="triggerBlueFlag(${r.id}, '${r.name}')" title="Blue Flag">
+                <i class="fa-solid fa-flag"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary ms-1" onclick="triggerBlackWhiteFlag(${r.id}, '${r.name}')" title="Black & White Flag">
+                <i class="fa-solid fa-flag-checkered"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary ms-1" onclick="moveUp(${r.id})">
                 <i class="fa-solid fa-chevron-up"></i>
             </button>
             <button class="btn btn-sm btn-outline-secondary ms-1" onclick="moveDown(${r.id})">
@@ -169,8 +175,20 @@ function triggerSafetyCar(): void {
     broadcastMessage({ type: 'flag', flag: 'safety' });
 }
 
+function triggerRedFlag(): void {
+    broadcastMessage({ type: 'flag', flag: 'red' });
+}
+
 function triggerChequeredFlag(): void {
     broadcastMessage({ type: 'flag', flag: 'chequered' });
+}
+
+function triggerBlueFlag(id: number, name: string): void {
+    broadcastMessage({ type: 'flag', flag: 'blue', racer_id: id, racer_name: name });
+}
+
+function triggerBlackWhiteFlag(id: number, name: string): void {
+    broadcastMessage({ type: 'flag', flag: 'blackwhite', racer_id: id, racer_name: name });
 }
 
 function sendCommentary(): void {
