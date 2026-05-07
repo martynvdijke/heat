@@ -1,3 +1,15 @@
+# [1.18.0](https://github.com/martynvdijke/heat/compare/v1.17.0...v1.18.0) (2026-05-07)
+
+
+### Bug Fixes
+
+* update stats cards test for seasons stat replacing races ([69644ae](https://github.com/martynvdijke/heat/commit/69644ae0d4b9ae333cf9943d3cacd4640a462d54))
+
+
+### Features
+
+* add seasons page, remove race history from index, per-season stats filtering ([414b05f](https://github.com/martynvdijke/heat/commit/414b05fdaff040cefe76c091c11b433c5519b32b))
+
 # [1.17.0](https://github.com/martynvdijke/heat/compare/v1.16.1...v1.17.0) (2026-05-06)
 
 
