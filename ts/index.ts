@@ -39,23 +39,6 @@ interface RaceInfo {
     track_id: string;
 }
 
-interface RaceHistory {
-    ID: number;
-    Name: string;
-    Date: string;
-    Country: string;
-    Track: string;
-    Results?: RaceResult[];
-    TotalLaps: number;
-}
-
-interface RaceResult {
-    Position: number;
-    RacerName: string;
-    Points: number;
-    FastestLap: boolean;
-}
-
 interface RacerStats {
     races: number;
     wins: number;
@@ -424,46 +407,6 @@ async function loadQualificationGrid(): Promise<void> {
     }
 }
 
-async function loadRaceHistory(): Promise<void> {
-    const res = await fetch('/api/race-history');
-    const history: RaceHistory[] = await res.json();
-    const container = document.getElementById('race-history-container')!;
-    if (!history || history.length === 0) {
-        container.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="fa-solid fa-inbox fa-3x mb-3"></i><p>No race history yet. Completed races will appear here.</p></div>';
-        return;
-    }
-    container.innerHTML = history.map(h => {
-        const results = h.Results || [];
-        const winner = results.find(r => r.Position === 1);
-        return `
-            <div class="col-md-6 col-lg-4">
-                <div class="history-card">
-                    <div class="history-header">
-                        <span class="history-date">${h.Date || 'Unknown Date'}</span>
-                        <span class="history-winner"><i class="fa-solid fa-trophy me-1"></i>${winner ? winner.RacerName : 'TBD'}</span>
-                    </div>
-                    <div class="history-body">
-                        <h5><i class="fa-solid fa-flag-checkered me-2"></i>${h.Country}</h5>
-                        <p class="mb-1">${h.Track || 'Unknown Track'}</p>
-                        <span class="badge bg-secondary">${h.TotalLaps} Laps</span>
-                    </div>
-                    <div class="history-results">
-                        ${results.slice(0, 3).map(r => `
-                            <div class="result-item ${r.Position === 1 ? 'gold' : ''} ${r.Position === 2 ? 'silver' : ''} ${r.Position === 3 ? 'bronze' : ''}">
-                                <span class="pos">${r.Position}</span>
-                                <span class="name">${r.RacerName || 'Unknown'}</span>
-                                <span class="pts">${r.Points} pts</span>
-                                ${r.FastestLap ? '<i class="fa-solid fa-stopwatch text-warning ms-1"></i>' : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-    document.getElementById('total-races')!.textContent = String(history.length);
-}
-
 async function loadTracks(): Promise<void> {
     try {
         const res = await fetch('/api/tracks');
@@ -598,17 +541,19 @@ function startQuoteRotation(): void {
 
 async function loadData(): Promise<void> {
     try {
-        const [raceResp, racerResp, historyResp] = await Promise.all([
+        const [raceResp, racerResp, seasonsResp] = await Promise.all([
             fetch('/api/race-info'),
             fetch('/api/racers'),
-            fetch('/api/race-history')
+            fetch('/api/seasons')
         ]);
         const race: RaceInfo = await raceResp.json();
         racers = await racerResp.json();
+        const seasons = await seasonsResp.json();
         document.getElementById('race-country')!.innerHTML = `${race.country} <i class="fa-solid fa-location-dot ms-2 text-warning"></i>`;
         document.getElementById('race-track')!.textContent = race.track;
         document.getElementById('race-laps')!.textContent = String(race.laps);
         document.getElementById('total-drivers')!.textContent = String(racers.length);
+        document.getElementById('total-seasons')!.textContent = String(Array.isArray(seasons) ? seasons.length : 1);
         currentTrack = race.track_id || 'monza';
         const track = tracks.find(t => t.id === currentTrack);
         if (track) {
@@ -617,7 +562,6 @@ async function loadData(): Promise<void> {
         }
         initMap();
         renderRacers();
-        loadRaceHistory();
         loadQualificationGrid();
         startQuoteRotation();
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

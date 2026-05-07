@@ -24,9 +24,11 @@ async function loadSeasonStats(seasonId?: string): Promise<void> {
         if (sid && select) select.value = sid;
         const roundsUrl = sid ? `/api/rounds?season_id=${sid}` : '/api/rounds';
 
+        const statsUrl = sid ? `/api/racer-stats?season_id=${sid}` : '/api/racer-stats';
+
         const [racersRes, statsRes, snapshotsRes] = await Promise.all([
             fetch('/api/racers'),
-            fetch('/api/racer-stats'),
+            fetch(statsUrl),
             fetch(roundsUrl)
         ]);
 
@@ -241,4 +243,9 @@ function renderBattleChart(allScores: any[]): void {
     });
 }
 
+function switchSeason(value: string): void {
+    loadSeasonStats(value || undefined);
+}
+
 loadSeasonStats();
+(window as any).switchSeason = switchSeason;

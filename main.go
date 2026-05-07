@@ -303,6 +303,10 @@ func main() {
 			servePage(c, filepath.Join(app.BasePath, "static/stats.html"))
 		})
 
+		pages.GET("/seasons.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(app.BasePath, "static/seasons.html"))
+		})
+
 		pages.GET("/trophies.html", func(c *gin.Context) {
 			servePage(c, filepath.Join(app.BasePath, "static/trophies.html"))
 		})

@@ -17,10 +17,83 @@ import (
 // @Tags Stats
 // @Produce json
 // @Param id query int false "Racer ID"
+// @Param season_id query int false "Season ID"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/racer-stats [get]
 func GetRacerStats(c *gin.Context) {
 	id := c.Query("id")
+	seasonID := c.Query("season_id")
+
+	if seasonID != "" {
+		var startDate, endDate string
+		err := app.DB.QueryRow("SELECT start_date, COALESCE(end_date, '9999-12-31') FROM seasons WHERE id = ?", seasonID).Scan(&startDate, &endDate)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
+			return
+		}
+
+		if id == "" {
+			rows, err := app.DB.Query(`
+				SELECT rr.racer_id,
+					COUNT(*) as races,
+					SUM(CASE WHEN rr.position = 1 THEN 1 ELSE 0 END) as wins,
+					SUM(CASE WHEN rr.position = 1 THEN 1 ELSE 0 END) as gold,
+					SUM(CASE WHEN rr.position = 2 THEN 1 ELSE 0 END) as silver,
+					SUM(CASE WHEN rr.position = 3 THEN 1 ELSE 0 END) as bronze,
+					SUM(CASE WHEN rr.fastest_lap = 1 THEN 1 ELSE 0 END) as fastest_laps,
+					SUM(rr.points) as points,
+					SUM(CASE WHEN rr.position >= 900 THEN 1 ELSE 0 END) as dnf,
+					0 as dns
+				FROM race_results rr
+				JOIN race_history rh ON rh.id = rr.race_id
+				WHERE rh.race_date >= ? AND rh.race_date <= ? AND rh.race_type = 'season'
+				GROUP BY rr.racer_id
+				ORDER BY points DESC
+			`, startDate, endDate)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			defer rows.Close()
+
+			stats := make([]models.RacerStats, 0)
+			for rows.Next() {
+				var s models.RacerStats
+				rows.Scan(&s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
+				stats = append(stats, s)
+			}
+			c.JSON(http.StatusOK, stats)
+			return
+		}
+
+		var s models.RacerStats
+		err = app.DB.QueryRow(`
+			SELECT rr.racer_id,
+				COUNT(*) as races,
+				SUM(CASE WHEN rr.position = 1 THEN 1 ELSE 0 END) as wins,
+				SUM(CASE WHEN rr.position = 1 THEN 1 ELSE 0 END) as gold,
+				SUM(CASE WHEN rr.position = 2 THEN 1 ELSE 0 END) as silver,
+				SUM(CASE WHEN rr.position = 3 THEN 1 ELSE 0 END) as bronze,
+				SUM(CASE WHEN rr.fastest_lap = 1 THEN 1 ELSE 0 END) as fastest_laps,
+				SUM(rr.points) as points,
+				SUM(CASE WHEN rr.position >= 900 THEN 1 ELSE 0 END) as dnf,
+				0 as dns
+			FROM race_results rr
+			JOIN race_history rh ON rh.id = rr.race_id
+			WHERE rr.racer_id = ? AND rh.race_date >= ? AND rh.race_date <= ? AND rh.race_type = 'season'
+			GROUP BY rr.racer_id
+		`, id, startDate, endDate).Scan(&s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
+		if err != nil {
+			s = models.RacerStats{RacerID: 0}
+		}
+
+		var rInfo models.Racer
+		app.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points FROM racers WHERE id = ?", id).Scan(&rInfo.ID, &rInfo.Name, &rInfo.ProfilePicture, &rInfo.CarColor, &rInfo.CarName, &rInfo.Points)
+
+		c.JSON(http.StatusOK, gin.H{"stats": s, "racer": rInfo})
+		return
+	}
+
 	if id == "" {
 		stats := make([]models.RacerStats, 0)
 		rows, _ := app.DB.Query("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf, dns FROM racer_stats")
