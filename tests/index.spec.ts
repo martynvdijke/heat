@@ -54,8 +54,8 @@ test.describe('Index Page', () => {
 
   test('should display stats cards', async ({ page }) => {
     await page.goto('/');
-    const totalRaces = page.locator('#total-races');
-    await expect(totalRaces).toBeVisible();
+    const totalSeasons = page.locator('#total-seasons');
+    await expect(totalSeasons).toBeVisible();
     const totalDrivers = page.locator('#total-drivers');
     await expect(totalDrivers).toBeVisible();
     const totalTracks = page.locator('#total-tracks');
