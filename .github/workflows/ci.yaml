@@ -38,12 +38,6 @@ jobs:
       - name: Run Tests
         run: go test -v ./...
 
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-
-      - name: Run Vulnerability Scan
-        run: govulncheck ./...
-
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:

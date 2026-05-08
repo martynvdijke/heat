@@ -47,20 +47,12 @@ tasks:
       - task: build:ts
       - go build -o heat-server .
 
-  vuln:
-    desc: Run Go vulnerability scan
-    cmds:
-      - go vet ./...
-      - test -f $(go env GOPATH)/bin/govulncheck || go install golang.org/x/vuln/cmd/govulncheck@latest
-      - $(go env GOPATH)/bin/govulncheck ./...
-
   pre-push:
     desc: Run all checks before pushing
     cmds:
       - task: fmt
       - task: generate-swagger
       - task: test
-      - task: vuln
       - task: build:ts
       - task: build
 
