@@ -60,10 +60,15 @@ header {
     display: flex;
     align-items: center;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 3.5rem;
+    font-size: clamp(2rem, 5vw, 3.5rem);
     line-height: 0.8;
     letter-spacing: -1px;
     font-style: italic;
+}
+
+.logo img {
+    width: clamp(40px, 8vw, 60px);
+    height: clamp(40px, 8vw, 60px);
 }
 
 .logo img {
@@ -116,9 +121,27 @@ nav a:hover, nav a.active { color: var(--primary) !important; }
 
 .theme-toggle:hover { background: rgba(255,255,255,0.2); }
 
+.navbar-toggler {
+    border-color: rgba(255,255,255,0.3);
+}
+
+.navbar-toggler:focus {
+    box-shadow: 0 0 0 0.15rem rgba(255,255,255,0.3);
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+@media (min-width: 768px) {
+    #mainNav.collapse:not(.show) {
+        display: block !important;
+    }
+}
+
 h2 {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.8rem;
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
     letter-spacing: 2px;
     color: var(--text-main);
     display: flex;
@@ -139,7 +162,7 @@ h2::before {
     box-shadow: 12px 12px 0px var(--card-shadow);
 }
 
-.country { font-family: 'Bebas Neue', sans-serif; font-size: 3.5rem; line-height: 1; }
+.country { font-family: 'Bebas Neue', sans-serif; font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1; }
 .track { font-weight: 700; color: #ffeb3b; text-transform: uppercase; letter-spacing: 1px; }
 
 .time {
@@ -147,9 +170,9 @@ h2::before {
     border: 1px solid rgba(255,255,255,0.2);
     padding: 15px;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.2rem;
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
     text-align: center;
-    min-width: 90px;
+    min-width: clamp(70px, 12vw, 90px);
 }
 
 .time span { display: block; font-size: 0.7rem; opacity: 0.6; margin-top: 5px; }
@@ -157,7 +180,7 @@ h2::before {
 .custom-table { border-collapse: separate; border-spacing: 0 12px; }
 .custom-table thead th { 
     font-family: 'Bebas Neue', sans-serif; 
-    font-size: 1.3rem; 
+    font-size: clamp(1rem, 2vw, 1.3rem); 
     color: var(--text-muted);
     border: none;
 }
@@ -180,7 +203,7 @@ h2::before {
 .custom-table td:first-child { 
     border-left: var(--border-width) solid var(--border-color); 
     font-family: 'Bebas Neue', sans-serif; 
-    font-size: 1.8rem;
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
 }
 
 .custom-table td:last-child { border-right: var(--border-width) solid var(--border-color); }
@@ -251,14 +274,14 @@ h2::before {
 
 .standing-item .rank { 
     font-family: 'Bebas Neue', sans-serif; 
-    font-size: 2rem; 
-    width: 40px; 
+    font-size: clamp(1.5rem, 3vw, 2rem); 
+    width: clamp(32px, 6vw, 40px); 
     color: var(--primary); 
 }
 
 .standing-item .points { 
     font-family: 'Bebas Neue', sans-serif; 
-    font-size: 1.4rem; 
+    font-size: clamp(1.1rem, 2vw, 1.4rem); 
     background: #111; 
     color: #fff;
     padding: 2px 12px;
@@ -273,6 +296,96 @@ footer {
 @media (max-width: 991px) {
     .race-card { text-align: center; }
     .race-stats { justify-content: center; }
+}
+
+@media (max-width: 768px) {
+    #circuit-map {
+        height: 200px !important;
+    }
+
+    .custom-table td {
+        padding: 12px 8px;
+    }
+
+    .race-card {
+        padding: 1rem !important;
+    }
+
+    .standing-item {
+        padding: 10px 12px;
+        margin-bottom: 10px;
+    }
+
+    .quote-card {
+        padding: 20px 24px;
+    }
+
+    header .container {
+        flex-direction: column;
+    }
+
+    nav {
+        margin-top: 0.75rem;
+    }
+
+    nav ul {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem !important;
+    }
+
+    nav a {
+        font-size: 0.85rem;
+    }
+
+    nav a i {
+        margin-right: 4px !important;
+    }
+
+    .theme-toggle {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .logo {
+        font-size: clamp(1.6rem, 7vw, 2.5rem);
+    }
+
+    .logo img {
+        width: clamp(32px, 10vw, 48px);
+        height: clamp(32px, 10vw, 48px);
+    }
+
+    h2 {
+        font-size: clamp(1.4rem, 5vw, 1.8rem);
+    }
+
+    .country {
+        font-size: clamp(1.8rem, 7vw, 2.5rem);
+    }
+
+    .custom-table td:first-child {
+        font-size: clamp(1rem, 3vw, 1.4rem);
+    }
+
+    .stat-card {
+        padding: 12px;
+    }
+
+    .stat-card .stat-value {
+        font-size: clamp(1.5rem, 5vw, 2.5rem);
+    }
+
+    .stat-card i {
+        font-size: 1.5rem;
+    }
+
+    header .logo span {
+        font-size: 0.6rem;
+        letter-spacing: 3px;
+    }
 }
 
 .sortable {
@@ -313,7 +426,7 @@ footer {
 
 .stat-card .stat-value {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 3rem;
+    font-size: clamp(2rem, 4vw, 3rem);
     line-height: 1;
     color: var(--text-main);
 }
@@ -444,7 +557,7 @@ footer {
 
 .quote-text {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.8rem;
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
     color: white;
     margin: 0 0 15px 0;
     line-height: 1.3;

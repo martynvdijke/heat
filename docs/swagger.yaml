@@ -905,6 +905,10 @@ paths:
         in: query
         name: id
         type: integer
+      - description: Season ID
+        in: query
+        name: season_id
+        type: integer
       produces:
       - application/json
       responses:

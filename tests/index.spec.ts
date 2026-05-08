@@ -65,13 +65,13 @@ test.describe('Index Page', () => {
   test('should have link to admin in navigation', async ({ page }) => {
     await page.goto('/');
     const adminLink = page.locator('a[href="/login.html"]');
-    await expect(adminLink).toBeVisible();
+    await expect(adminLink.first()).toBeAttached();
   });
 
   test('should have link to API docs in navigation', async ({ page }) => {
     await page.goto('/');
     const docsLink = page.locator('a[href="/docs"]');
-    await expect(docsLink).toBeVisible();
+    await expect(docsLink.first()).toBeAttached();
   });
 
   test('should display circuit map', async ({ page }) => {

@@ -887,6 +887,12 @@ const docTemplate = `{
                         "description": "Racer ID",
                         "name": "id",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season ID",
+                        "name": "season_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {

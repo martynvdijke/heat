@@ -17,9 +17,9 @@ test.describe('Stats Page', () => {
 
   test('should have navigation links', async ({ page }) => {
     await page.goto('/stats.html');
-    await expect(page.locator('a[href="/"]')).toBeVisible();
-    await expect(page.locator('a[href="/trophies.html"]')).toBeVisible();
-    await expect(page.locator('a[href="/controller.html"]')).toBeVisible();
+    await expect(page.locator('a[href="/"]').first()).toBeAttached();
+    await expect(page.locator('a[href="/trophies.html"]').first()).toBeAttached();
+    await expect(page.locator('a[href="/controller.html"]').first()).toBeAttached();
   });
 });
 
