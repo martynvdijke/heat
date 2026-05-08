@@ -62,7 +62,7 @@ async function loadSeasonStats(seasonId?: string): Promise<void> {
 
         if (hasDrivers) {
             renderDriverStatsTable(allStats, racers);
-            renderWinsChart(driverData);
+            renderWinsChart(driverData, racers);
         } else {
             document.querySelector('#driver-stats-table tbody')!.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No driver stats yet</td></tr>';
         }
@@ -138,9 +138,12 @@ function renderPointsChart(snapshots: any[], allScores: any[]): void {
     });
 }
 
-function renderWinsChart(driverData: any[]): void {
+function renderWinsChart(driverData: any[], racers: any[]): void {
     const ctx = getCanvas('wins-chart');
     if (!ctx) return;
+
+    const nameMap: Record<number, string> = {};
+    racers.forEach((r: any) => { nameMap[r.id] = r.name; });
 
     const sorted = [...driverData].sort((a: any, b: any) => (b.gold || 0) - (a.gold || 0)).slice(0, 5);
     if (sorted.length === 0 || sorted.every((d: any) => !d.gold)) return;
@@ -149,7 +152,7 @@ function renderWinsChart(driverData: any[]): void {
     winsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: sorted.map((d: any) => d.name || d.racer_name),
+            labels: sorted.map((d: any) => nameMap[d.racer_id] || d.racer_name || `Racer #${d.racer_id}`),
             datasets: [{
                 data: sorted.map((d: any) => d.gold || 0),
                 backgroundColor: ['#ffd700', '#c0c0c0', '#cd7f32', '#ff6b6b', '#4ecdc4'],
