@@ -5,7 +5,6 @@ go 1.26.2
 require github.com/mattn/go-sqlite3 v1.14.44
 
 require (
-	github.com/disintegration/imaging v1.6.2
 	github.com/gin-gonic/gin v1.12.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/swaggo/files v1.0.1
