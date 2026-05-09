@@ -1,3 +1,12 @@
+## [1.19.1](https://github.com/martynvdijke/heat/compare/v1.19.0...v1.19.1) (2026-05-09)
+
+
+### Bug Fixes
+
+* **deps:** update module golang.org/x/crypto to v0.51.0 ([289caf7](https://github.com/martynvdijke/heat/commit/289caf77f555ae29ce4efcf13e35cbcb2a277d48))
+* remove non-Chromium Playwright projects (CI only installs Chromium) ([38adb38](https://github.com/martynvdijke/heat/commit/38adb38cdb54199c95969a5bd8de9220e008fe5d))
+* run go mod tidy after updating golang.org/x/crypto to v0.51.0 ([55c252f](https://github.com/martynvdijke/heat/commit/55c252fcb9540041b91c62d36caa855e6f34c474))
+
 # [1.19.0](https://github.com/martynvdijke/heat/compare/v1.18.0...v1.19.0) (2026-05-09)
 
 
