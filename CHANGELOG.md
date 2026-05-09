@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/martynvdijke/heat/compare/v1.21.0...v1.22.0) (2026-05-09)
+
+
+### Features
+
+* add workflow to auto-delete stale branches older than 90 days ([35546ff](https://github.com/martynvdijke/heat/commit/35546ff96acccffb01cf8f635c4545eb47e39d7b))
+
 # [1.21.0](https://github.com/martynvdijke/heat/compare/v1.20.0...v1.21.0) (2026-05-09)
 
 
