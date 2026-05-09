@@ -51,7 +51,7 @@ jobs:
         run: npm run build:ts
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox
 
       - name: Run Playwright tests
         run: npm run test:e2e
