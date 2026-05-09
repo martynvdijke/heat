@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/martynvdijke/heat/compare/v1.20.0...v1.21.0) (2026-05-09)
+
+
+### Features
+
+* auto-prune backups keeping last 7 by default ([ad26ebd](https://github.com/martynvdijke/heat/commit/ad26ebd6078a8f338a52efdea5d5cc1be05e6a42))
+
 # [1.20.0](https://github.com/martynvdijke/heat/compare/v1.19.1...v1.20.0) (2026-05-09)
 
 
