@@ -1041,6 +1041,7 @@ async function loadBackupSettings(): Promise<void> {
         const data = await res.json();
         (document.getElementById('backup-enabled') as HTMLInputElement).checked = data.enabled;
         (document.getElementById('backup-interval') as HTMLSelectElement).value = String(data.interval_hrs || 24);
+        (document.getElementById('backup-retention') as HTMLInputElement).value = String(data.retention_count || 7);
     } catch (e) { console.error('Failed to load backup settings', e); }
 }
 
@@ -1095,7 +1096,8 @@ document.getElementById('backup-form')!.addEventListener('submit', async (e: Eve
     e.preventDefault();
     const data = {
         enabled: (document.getElementById('backup-enabled') as HTMLInputElement).checked,
-        interval_hrs: parseInt((document.getElementById('backup-interval') as HTMLSelectElement).value) || 24
+        interval_hrs: parseInt((document.getElementById('backup-interval') as HTMLSelectElement).value) || 24,
+        retention_count: parseInt((document.getElementById('backup-retention') as HTMLInputElement).value) || 7
     };
     const res = await fetch('/api/backup-settings', {
         method: 'POST',

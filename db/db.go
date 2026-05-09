@@ -5,13 +5,15 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"heat/app"
 	"heat/models"
 )
 
-var currentSchemaVersion = 17
+var currentSchemaVersion = 18
 
 func Init() {
 	_, _ = app.DB.Exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
@@ -257,6 +259,8 @@ func runMigration(fromVersion int) {
 		)`)
 		_, _ = app.DB.Exec("INSERT OR IGNORE INTO seasons (id, name, start_date, status) VALUES (1, 'Season 1', date('now'), 'active')")
 		_, _ = app.DB.Exec("ALTER TABLE round_snapshots ADD COLUMN season_id INTEGER DEFAULT 1 REFERENCES seasons(id)")
+	case 17:
+		_, _ = app.DB.Exec("ALTER TABLE backup_settings ADD COLUMN retention_count INTEGER DEFAULT 7")
 	}
 }
 
@@ -331,6 +335,38 @@ func CreateBackup() error {
 		_, err = app.DB.Exec(fmt.Sprintf("VACUUM INTO %q", backupPath))
 	}
 	return err
+}
+
+func PruneBackups() error {
+	var retentionCount int
+	err := app.DB.QueryRow("SELECT retention_count FROM backup_settings WHERE id = 1").Scan(&retentionCount)
+	if err != nil || retentionCount <= 0 {
+		retentionCount = 7
+	}
+
+	backupDir := filepath.Join(filepath.Dir(app.DBPath), "backups")
+	entries, err := os.ReadDir(backupDir)
+	if err != nil {
+		return nil
+	}
+
+	var backups []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasPrefix(e.Name(), "heat_backup_") && strings.HasSuffix(e.Name(), ".db") {
+			backups = append(backups, e.Name())
+		}
+	}
+
+	sort.Sort(sort.Reverse(sort.StringSlice(backups)))
+
+	if len(backups) <= retentionCount {
+		return nil
+	}
+
+	for _, name := range backups[retentionCount:] {
+		os.Remove(filepath.Join(backupDir, name))
+	}
+	return nil
 }
 
 func BoolToInt(b bool) int {

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,10 +21,13 @@ import (
 // @Router /api/backup-settings [get]
 func GetBackupSettings(c *gin.Context) {
 	var s models.BackupSettings
-	err := app.DB.QueryRow("SELECT id, enabled, interval_hrs FROM backup_settings WHERE id = 1").Scan(&s.ID, &s.Enabled, &s.IntervalHrs)
+	err := app.DB.QueryRow("SELECT id, enabled, interval_hrs, retention_count FROM backup_settings WHERE id = 1").Scan(&s.ID, &s.Enabled, &s.IntervalHrs, &s.RetentionCount)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	if s.RetentionCount <= 0 {
+		s.RetentionCount = 7
 	}
 	c.JSON(http.StatusOK, s)
 }
@@ -48,7 +52,10 @@ func SaveBackupSettings(c *gin.Context) {
 	if s.Enabled {
 		enabled = 1
 	}
-	_, err := app.DB.Exec("UPDATE backup_settings SET enabled = ?, interval_hrs = ? WHERE id = 1", enabled, s.IntervalHrs)
+	if s.RetentionCount <= 0 {
+		s.RetentionCount = 7
+	}
+	_, err := app.DB.Exec("UPDATE backup_settings SET enabled = ?, interval_hrs = ?, retention_count = ? WHERE id = 1", enabled, s.IntervalHrs, s.RetentionCount)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -69,6 +76,9 @@ func TriggerManualBackup(c *gin.Context) {
 	if err := db.CreateBackup(); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	if err := db.PruneBackups(); err != nil {
+		log.Printf("[BACKUP] Prune failed: %v", err)
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

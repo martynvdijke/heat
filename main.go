@@ -105,6 +105,9 @@ func main() {
 				} else {
 					log.Printf("[BACKUP] Periodic backup completed (interval: %dh)", intervalHrs)
 				}
+				if err := db.PruneBackups(); err != nil {
+					log.Printf("[BACKUP] Prune failed: %v", err)
+				}
 			}
 			interval := 24
 			if intervalHrs > 0 {

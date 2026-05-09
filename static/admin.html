@@ -772,6 +772,11 @@
                                                 <option value="168">Every 7 days</option>
                                             </select>
                                         </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Keep Last (backups)</label>
+                                            <input type="number" class="form-control" id="backup-retention" value="7" min="1" max="999">
+                                            <div class="form-text mt-1">Oldest backups beyond this count are automatically pruned.</div>
+                                        </div>
                                         <button type="submit" class="btn btn-primary w-100">Save Backup Settings</button>
                                     </form>
                                 </div>

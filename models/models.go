@@ -173,9 +173,10 @@ type ELORating struct {
 }
 
 type BackupSettings struct {
-	ID          int  `json:"id"`
-	Enabled     bool `json:"enabled"`
-	IntervalHrs int  `json:"interval_hrs"`
+	ID             int  `json:"id"`
+	Enabled        bool `json:"enabled"`
+	IntervalHrs    int  `json:"interval_hrs"`
+	RetentionCount int  `json:"retention_count"`
 }
 
 type Season struct {

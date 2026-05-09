@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -1493,8 +1494,33 @@ func TestBackupSettings(t *testing.T) {
 		}
 	})
 
+	t.Run("PruneBackups", func(t *testing.T) {
+		backupDir := filepath.Join(filepath.Dir(app.DBPath), "backups")
+		os.MkdirAll(backupDir, 0755)
+
+		for i := 1; i <= 10; i++ {
+			name := fmt.Sprintf("heat_backup_20260101_%06d.db", i)
+			os.WriteFile(filepath.Join(backupDir, name), []byte("test"), 0644)
+		}
+
+		db.PruneBackups()
+
+		entries, _ := os.ReadDir(backupDir)
+		var remaining int
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasPrefix(e.Name(), "heat_backup_") {
+				remaining++
+			}
+		}
+		if remaining != 7 {
+			t.Errorf("expected 7 backups after prune, got %d", remaining)
+		}
+
+		os.RemoveAll(backupDir)
+	})
+
 	// Reset settings back for other tests
-	body, _ := json.Marshal(models.BackupSettings{Enabled: true, IntervalHrs: 24})
+	body, _ := json.Marshal(models.BackupSettings{Enabled: true, IntervalHrs: 24, RetentionCount: 7})
 	req, _ := http.NewRequest("POST", "/api/backup-settings", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
