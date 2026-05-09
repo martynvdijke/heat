@@ -1,3 +1,17 @@
+# [1.20.0](https://github.com/martynvdijke/heat/compare/v1.19.1...v1.20.0) (2026-05-09)
+
+
+### Bug Fixes
+
+* disable fullyParallel to prevent cross-browser DB state conflicts ([ff3becf](https://github.com/martynvdijke/heat/commit/ff3becfa8f001779cb0f5d20153d4530f36489e3))
+* explicitly list browsers for Playwright install in CI ([ec506d8](https://github.com/martynvdijke/heat/commit/ec506d8d5ddbf58c3d1acb139373d281e515f24e))
+* remove WebKit/Safari projects, only Chromium + Firefox (WebKit not available in CI) ([0c478b0](https://github.com/martynvdijke/heat/commit/0c478b015e7babde090b410feacabc544c351620))
+
+
+### Features
+
+* add multi-device Playwright projects and install all browsers in CI ([a627646](https://github.com/martynvdijke/heat/commit/a62764638cf65737956798fd0ba7273d69a82707))
+
 ## [1.19.1](https://github.com/martynvdijke/heat/compare/v1.19.0...v1.19.1) (2026-05-09)
 
 
