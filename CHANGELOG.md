@@ -1,3 +1,22 @@
+# [1.19.0](https://github.com/martynvdijke/heat/compare/v1.18.0...v1.19.0) (2026-05-09)
+
+
+### Bug Fixes
+
+* remove non-Chromium Playwright projects (CI only installs Chromium) ([288a0a8](https://github.com/martynvdijke/heat/commit/288a0a8419630c8af4080462e592ecda218f1a8a))
+* win distribution chart labels missing racer names ([3caeba9](https://github.com/martynvdijke/heat/commit/3caeba9ab907939f2102f62a167b210a0061aff8))
+
+
+### Features
+
+* add multi-device Playwright projects (desktop, tablet, mobile) ([0052074](https://github.com/martynvdijke/heat/commit/0052074284eeca62518e78a57c576a027497b685))
+* add responsive typography, hamburger nav, and multi-device layout ([6818125](https://github.com/martynvdijke/heat/commit/68181255fca3300e7df291e0eeb08e65e81a7387))
+
+
+### Reverts
+
+* remove Go vulnerability scan from CI and pre-push ([bcb3a7a](https://github.com/martynvdijke/heat/commit/bcb3a7a39082d9ee6598e19a3863ba027016387b))
+
 # [1.18.0](https://github.com/martynvdijke/heat/compare/v1.17.0...v1.18.0) (2026-05-07)
 
 
