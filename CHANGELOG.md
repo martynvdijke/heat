@@ -1,3 +1,10 @@
+## [1.22.1](https://github.com/martynvdijke/heat/compare/v1.22.0...v1.22.1) (2026-05-10)
+
+
+### Bug Fixes
+
+* populate win distribution and driver performance sections from driver stats ([b93c2d6](https://github.com/martynvdijke/heat/commit/b93c2d6d955f1f97c168da068bbf291b2b06f66d))
+
 # [1.22.0](https://github.com/martynvdijke/heat/compare/v1.21.0...v1.22.0) (2026-05-09)
 
 
