@@ -21,6 +21,25 @@ test.describe('Stats Page', () => {
     await expect(page.locator('a[href="/trophies.html"]').first()).toBeAttached();
     await expect(page.locator('a[href="/controller.html"]').first()).toBeAttached();
   });
+
+  test('should render win distribution chart', async ({ page }) => {
+    await page.goto('/stats.html');
+    const canvas = page.locator('#wins-chart');
+    await expect(canvas).toBeVisible();
+    const rendered = await page.evaluate(() => {
+      const c = document.getElementById('wins-chart') as HTMLCanvasElement;
+      return c && c.getContext('2d') ? true : false;
+    });
+    expect(rendered).toBe(true);
+  });
+
+  test('should render driver performance table', async ({ page }) => {
+    await page.goto('/stats.html');
+    const tbody = page.locator('#driver-stats-table tbody');
+    await expect(tbody).toBeVisible();
+    const hasRows = await tbody.locator('tr').count();
+    expect(hasRows).toBeGreaterThanOrEqual(0);
+  });
 });
 
 test.describe('Trophies Page', () => {

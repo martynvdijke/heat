@@ -146,9 +146,27 @@ function renderWinsChart(driverData: any[], racers: any[]): void {
     racers.forEach((r: any) => { nameMap[r.id] = r.name; });
 
     const sorted = [...driverData].sort((a: any, b: any) => (b.gold || 0) - (a.gold || 0)).slice(0, 5);
-    if (sorted.length === 0 || sorted.every((d: any) => !d.gold)) return;
 
     if (winsChart) winsChart.destroy();
+
+    if (sorted.length === 0 || sorted.every((d: any) => !d.gold)) {
+        winsChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['No wins yet'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#444'],
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } } },
+            },
+        });
+        return;
+    }
     winsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -168,7 +186,7 @@ function renderWinsChart(driverData: any[], racers: any[]): void {
 
 function renderDriverStatsTable(allStats: any[], racers: any[]): void {
     const tbody = document.querySelector('#driver-stats-table tbody')!;
-    const sorted = [...allStats].sort((a: any, b: any) => (b.gold || 0) - (a.gold || 0));
+    const sorted = [...allStats].sort((a: any, b: any) => (b.points || 0) - (a.points || 0) || (b.gold || 0) - (a.gold || 0));
 
     const nameMap: Record<number, string> = {};
     racers.forEach((r: any) => { nameMap[r.id] = r.name; });
