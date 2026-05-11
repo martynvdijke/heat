@@ -45,6 +45,11 @@ func TestMain(m *testing.M) {
 
 	db.Init()
 	go ws.BroadcastManager()
+	go ws.BroadcastFlags()
+	go ws.BroadcastGameMechanics()
+	go ws.BroadcastWeather()
+	go ws.BroadcastLapReplay()
+	go ws.BroadcastSound()
 
 	if err := os.MkdirAll(app.MediaPath, 0755); err != nil {
 		log.Fatalf("failed to create media directory: %v", err)
@@ -2474,4 +2479,657 @@ func TestCreateRoundSnapshot(t *testing.T) {
 
 	app.DB.Exec("DELETE FROM round_snapshot_scores")
 	app.DB.Exec("DELETE FROM round_snapshots")
+}
+
+func TestPlayerLogin(t *testing.T) {
+	r := gin.New()
+	r.POST("/api/player/login", handlers.PlayerLogin)
+	r.GET("/api/player/validate", handlers.ValidatePlayerToken)
+	r.POST("/api/player/logout", handlers.PlayerLogout)
+
+	var token string
+	t.Run("login valid racer", func(t *testing.T) {
+		body := `{"racer_id":1,"device_name":"TestPhone"}`
+		req, _ := http.NewRequest("POST", "/api/player/login", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var resp struct {
+			Token     string `json:"token"`
+			RacerID   int    `json:"racer_id"`
+			RacerName string `json:"racer_name"`
+		}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		if resp.Token == "" {
+			t.Error("expected non-empty token")
+		}
+		if resp.RacerID != 1 {
+			t.Errorf("expected racer_id=1, got %d", resp.RacerID)
+		}
+		token = resp.Token
+	})
+
+	t.Run("validate token", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/player/validate", nil)
+		req.Header.Set("X-Player-Token", token)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var resp struct {
+			RacerID   int    `json:"racer_id"`
+			RacerName string `json:"racer_name"`
+		}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		if resp.RacerName == "" {
+			t.Error("expected non-empty racer name")
+		}
+	})
+
+	t.Run("reject invalid token", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/player/validate", nil)
+		req.Header.Set("X-Player-Token", "invalid_token_12345")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401, got %d", rr.Code)
+		}
+	})
+
+	t.Run("login nonexistent racer", func(t *testing.T) {
+		body := `{"racer_id":999,"device_name":"Test"}`
+		req, _ := http.NewRequest("POST", "/api/player/login", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusNotFound {
+			t.Errorf("expected 404, got %d", rr.Code)
+		}
+	})
+}
+
+func TestHeatCardAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/heat-cards", handlers.GetHeatCards)
+	r.POST("/api/heat-cards", handlers.AddHeatCard)
+	r.PUT("/api/heat-cards/move", handlers.MoveHeatCard)
+	r.DELETE("/api/heat-cards", handlers.DeleteHeatCard)
+	r.POST("/api/heat-cards/init-decks", handlers.InitializeHeatDecks)
+
+	t.Run("init decks", func(t *testing.T) {
+		body := `{"race_id":0,"racer_ids":[1,2]}`
+		req, _ := http.NewRequest("POST", "/api/heat-cards/init-decks", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("list heat cards", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/heat-cards", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var cards []models.HeatCard
+		json.Unmarshal(rr.Body.Bytes(), &cards)
+		if len(cards) < 14 {
+			t.Errorf("expected at least 14 cards (7x2), got %d", len(cards))
+		}
+	})
+
+	t.Run("add heat card", func(t *testing.T) {
+		body := `{"racer_id":1,"location":"hand","card_type":"heat","lap_added":1}`
+		req, _ := http.NewRequest("POST", "/api/heat-cards", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("move heat card", func(t *testing.T) {
+		var cards []models.HeatCard
+		req, _ := http.NewRequest("GET", "/api/heat-cards?racer_id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		json.Unmarshal(rr.Body.Bytes(), &cards)
+		if len(cards) == 0 {
+			t.Skip("no cards to move")
+		}
+		body := fmt.Sprintf(`{"card_id":%d,"location":"engine"}`, cards[len(cards)-1].ID)
+		req, _ = http.NewRequest("PUT", "/api/heat-cards/move", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("filter by racer", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/heat-cards?racer_id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var cards []models.HeatCard
+		json.Unmarshal(rr.Body.Bytes(), &cards)
+		for _, c := range cards {
+			if c.RacerID != 1 {
+				t.Errorf("expected all cards for racer 1, got racer_id=%d", c.RacerID)
+			}
+		}
+	})
+
+	app.DB.Exec("DELETE FROM heat_cards")
+}
+
+func TestGearShiftAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/gear-shifts", handlers.GetGearShifts)
+	r.POST("/api/gear-shifts", handlers.AddGearShift)
+
+	t.Run("add gear shift", func(t *testing.T) {
+		body := `{"racer_id":1,"race_id":0,"lap":1,"gear":3,"stress":1}`
+		req, _ := http.NewRequest("POST", "/api/gear-shifts", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("list gear shifts", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/gear-shifts", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var shifts []models.GearShift
+		json.Unmarshal(rr.Body.Bytes(), &shifts)
+		if len(shifts) < 1 {
+			t.Error("expected at least 1 gear shift")
+		}
+	})
+
+	t.Run("filter by racer", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/gear-shifts?racer_id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	app.DB.Exec("DELETE FROM gear_shifts")
+}
+
+func TestUpgradeAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/upgrade-cards", handlers.GetUpgradeCards)
+	r.GET("/api/legend-abilities", handlers.GetLegendAbilities)
+
+	t.Run("list upgrade cards", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/upgrade-cards", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var upgrades []models.UpgradeCard
+		json.Unmarshal(rr.Body.Bytes(), &upgrades)
+		if len(upgrades) < 8 {
+			t.Errorf("expected at least 8 upgrade cards, got %d", len(upgrades))
+		}
+	})
+
+	t.Run("list legend abilities", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/legend-abilities", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var abilities []models.LegendAbility
+		json.Unmarshal(rr.Body.Bytes(), &abilities)
+		if len(abilities) < 5 {
+			t.Errorf("expected at least 5 legend abilities, got %d", len(abilities))
+		}
+	})
+}
+
+func TestWeatherAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/weather", handlers.GetWeather)
+	r.POST("/api/weather", handlers.SetWeather)
+
+	t.Run("set weather", func(t *testing.T) {
+		body := `{"race_id":0,"condition":"wet","lap_start":1,"lap_end":999,"grip_modifier":0.7}`
+		req, _ := http.NewRequest("POST", "/api/weather", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("get weather", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/weather?race_id=0", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var weather []models.WeatherCondition
+		json.Unmarshal(rr.Body.Bytes(), &weather)
+		if len(weather) < 1 {
+			t.Error("expected at least 1 weather condition")
+		}
+		if weather[len(weather)-1].Condition != "wet" {
+			t.Errorf("expected wet, got %s", weather[len(weather)-1].Condition)
+		}
+	})
+
+	app.DB.Exec("DELETE FROM weather_conditions")
+}
+
+func TestTurboLogAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/turbo-logs", handlers.GetTurboLogs)
+	r.POST("/api/turbo-logs", handlers.AddTurboLog)
+
+	t.Run("add turbo log", func(t *testing.T) {
+		body := `{"racer_id":1,"race_id":0,"lap":1,"times_used":1}`
+		req, _ := http.NewRequest("POST", "/api/turbo-logs", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("list turbo logs", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/turbo-logs", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var logs []models.TurboLog
+		json.Unmarshal(rr.Body.Bytes(), &logs)
+		if len(logs) < 1 {
+			t.Error("expected at least 1 turbo log")
+		}
+	})
+
+	app.DB.Exec("DELETE FROM turbo_logs")
+}
+
+func TestLapRecordAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/lap-records", handlers.GetLapRecords)
+	r.POST("/api/lap-records", handlers.RecordLap)
+	r.POST("/api/lap-records/batch", handlers.RecordLapBatch)
+
+	t.Run("record single lap", func(t *testing.T) {
+		body := `{"race_id":0,"racer_id":1,"lap_number":1,"position":1,"gear_used":3,"heat_generated":2,"turbo_used":false}`
+		req, _ := http.NewRequest("POST", "/api/lap-records", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("record batch lap", func(t *testing.T) {
+		body := `{"race_id":0,"lap":2,"records":[
+			{"racer_id":1,"position":2,"gear_used":2,"heat_generated":1,"turbo_used":false},
+			{"racer_id":2,"position":1,"gear_used":3,"heat_generated":0,"turbo_used":true}
+		]}`
+		req, _ := http.NewRequest("POST", "/api/lap-records/batch", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("list lap records", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/lap-records?race_id=0", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var records []models.LapRecord
+		json.Unmarshal(rr.Body.Bytes(), &records)
+		if len(records) < 3 {
+			t.Errorf("expected at least 3 lap records, got %d", len(records))
+		}
+	})
+
+	app.DB.Exec("DELETE FROM lap_records")
+}
+
+func TestRaceEventAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/race-events", handlers.GetRaceEvents)
+	r.POST("/api/race-events", handlers.AddRaceEvent)
+
+	t.Run("add race event", func(t *testing.T) {
+		body := `{"race_id":0,"lap":1,"event_type":"overtake","racer_id":1,"racer_id2":2,"note":"Great pass!"}`
+		req, _ := http.NewRequest("POST", "/api/race-events", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("list race events", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/race-events?race_id=0", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var events []models.RaceEvent
+		json.Unmarshal(rr.Body.Bytes(), &events)
+		if len(events) < 1 {
+			t.Error("expected at least 1 event")
+		}
+		if events[0].EventType != "overtake" {
+			t.Errorf("expected overtake, got %s", events[0].EventType)
+		}
+	})
+
+	app.DB.Exec("DELETE FROM race_events")
+}
+
+func TestSpectatorState(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/spectator/state", handlers.GetSpectatorState)
+
+	t.Run("get spectator state", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/spectator/state", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var resp struct {
+			Racers []models.Racer  `json:"racers"`
+			Race   models.RaceInfo `json:"race"`
+		}
+		json.Unmarshal(rr.Body.Bytes(), &resp)
+		if len(resp.Racers) == 0 {
+			t.Error("expected at least 1 racer")
+		}
+		if resp.Race.Track == "" {
+			t.Error("expected race track to be non-empty")
+		}
+	})
+}
+
+func TestSoundFX(t *testing.T) {
+	r := gin.New()
+	r.POST("/api/sound", handlers.PlaySound)
+
+	t.Run("play engine sound", func(t *testing.T) {
+		body := `{"sound":"engine"}`
+		req, _ := http.NewRequest("POST", "/api/sound", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("play finish sound", func(t *testing.T) {
+		body := `{"sound":"finish"}`
+		req, _ := http.NewRequest("POST", "/api/sound", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+}
+
+func TestDeeperStats(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/stats/qualifying-delta", handlers.GetQualifyingRaceDelta)
+	r.GET("/api/stats/consistency", handlers.GetConsistencyRatings)
+	r.GET("/api/stats/incidents", handlers.GetRaceIncidentsReport)
+	r.GET("/api/stats/pace-heatmap", handlers.GetPaceHeatmap)
+	r.GET("/api/race-report", handlers.GetRaceReport)
+
+	t.Run("qualifying delta", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/stats/qualifying-delta", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var data []interface{}
+		json.Unmarshal(rr.Body.Bytes(), &data)
+		// Can be non-nil empty array or nil (no race data yet)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("consistency ratings", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/stats/consistency", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("incidents report", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/stats/incidents", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("pace heatmap", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/stats/pace-heatmap", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("race report", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/race-report", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		// Can be 200 (race exists) or 404 (no race yet)
+		if rr.Code != http.StatusOK && rr.Code != http.StatusNotFound {
+			t.Errorf("expected 200 or 404, got %d", rr.Code)
+		}
+	})
+}
+
+func TestPlayerSelfServiceEndpoints(t *testing.T) {
+	r := gin.New()
+	r.POST("/api/player/gear", handlers.PlayerReportGear)
+	r.POST("/api/player/heat", handlers.PlayerReportHeat)
+	r.POST("/api/player/turbo", handlers.PlayerReportTurbo)
+	r.GET("/api/player/status", handlers.PlayerGetStatus)
+	r.POST("/api/player/login", handlers.PlayerLogin)
+
+	var token string
+	loginBody := `{"racer_id":1,"device_name":"Test"}`
+	req, _ := http.NewRequest("POST", "/api/player/login", strings.NewReader(loginBody))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	var loginResp struct {
+		Token string `json:"token"`
+	}
+	json.Unmarshal(rr.Body.Bytes(), &loginResp)
+	token = loginResp.Token
+
+	t.Run("report gear", func(t *testing.T) {
+		body := fmt.Sprintf(`{"token":"%s","lap":1,"gear":3,"stress":0}`, token)
+		req, _ := http.NewRequest("POST", "/api/player/gear", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("report heat", func(t *testing.T) {
+		body := fmt.Sprintf(`{"token":"%s","card_type":"heat","location":"engine","count":1}`, token)
+		req, _ := http.NewRequest("POST", "/api/player/heat", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("report turbo", func(t *testing.T) {
+		body := fmt.Sprintf(`{"token":"%s","lap":1}`, token)
+		req, _ := http.NewRequest("POST", "/api/player/turbo", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("get player status", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/player/status", nil)
+		req.Header.Set("X-Player-Token", token)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var data map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &data)
+		if data["racer"] == nil {
+			t.Error("expected racer field")
+		}
+		if data["heat_cards"] == nil {
+			t.Error("expected heat_cards field")
+		}
+	})
+
+	t.Run("reject unauthorized gear report", func(t *testing.T) {
+		body := `{"token":"bad_token","lap":1,"gear":1,"stress":0}`
+		req, _ := http.NewRequest("POST", "/api/player/gear", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401, got %d", rr.Code)
+		}
+	})
+
+	app.DB.Exec("DELETE FROM gear_shifts")
+	app.DB.Exec("DELETE FROM heat_cards WHERE racer_id=1 AND lap_added=0")
+	app.DB.Exec("DELETE FROM turbo_logs")
+	app.DB.Exec("DELETE FROM player_sessions")
+}
+
+func TestPlayerUpgradeBuy(t *testing.T) {
+	r := gin.New()
+	r.POST("/api/player-upgrades/buy", handlers.BuyUpgrade)
+
+	t.Run("buy upgrade", func(t *testing.T) {
+		body := `{"racer_id":1,"upgrade_id":1,"season_id":1,"round":1}`
+		req, _ := http.NewRequest("POST", "/api/player-upgrades/buy", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	app.DB.Exec("DELETE FROM player_upgrades")
+}
+
+func TestSectorAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/sectors", handlers.GetSectors)
+	r.POST("/api/racer-sectors", handlers.RecordRacerSector)
+
+	t.Run("list sectors for monza", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/sectors?track_id=monza", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var sectors []models.Sector
+		json.Unmarshal(rr.Body.Bytes(), &sectors)
+		if len(sectors) < 5 {
+			t.Errorf("expected at least 5 sectors for monza, got %d", len(sectors))
+		}
+	})
+
+	t.Run("record racer sector", func(t *testing.T) {
+		body := `{"race_id":0,"racer_id":1,"sector_id":1,"lap":1}`
+		req, _ := http.NewRequest("POST", "/api/racer-sectors", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	app.DB.Exec("DELETE FROM racer_sectors")
+}
+
+func TestAvailableUpgrades(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/available-upgrades", handlers.GetAvailableUpgradesForRacer)
+
+	t.Run("list available upgrades", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/available-upgrades?racer_id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var upgrades []models.UpgradeCard
+		json.Unmarshal(rr.Body.Bytes(), &upgrades)
+		if len(upgrades) < 8 {
+			t.Errorf("expected at least 8 available upgrades, got %d", len(upgrades))
+		}
+	})
 }
