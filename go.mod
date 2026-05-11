@@ -8,11 +8,11 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/swaggo/files/v2 v2.0.2
-	github.com/swaggo/files/v2 v2.0.2
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/crypto v0.51.0
 	golang.org/x/image v0.40.0
+	golang.org/x/net v0.53.0
 	golang.org/x/time v0.15.0
 )
 
@@ -51,7 +51,6 @@ require (
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
 	golang.org/x/arch v0.22.0 // indirect
 	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/text v0.37.0 // indirect

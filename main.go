@@ -35,7 +35,6 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 
-	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	_ "heat/docs"
 
@@ -223,7 +222,7 @@ func main() {
 </html>`))
 	})
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerHandler))
 
 	r.Static("/media", app.MediaPath)
 	r.Static("/static", filepath.Join(app.BasePath, "static"))
