@@ -81,6 +81,9 @@ func main() {
 	db.Init()
 	go ws.BroadcastManager()
 	go ws.BroadcastFlags()
+	go ws.BroadcastGameMechanics()
+	go ws.BroadcastWeather()
+	go ws.BroadcastLapReplay()
 	go func() {
 		for {
 			time.Sleep(15 * time.Minute)
@@ -166,6 +169,35 @@ func main() {
 		admin.POST("/seasons", handlers.CreateSeason)
 		admin.POST("/seasons/archive", handlers.ArchiveSeason)
 		admin.DELETE("/seasons", handlers.DeleteSeason)
+
+		// Admin: Game Mechanics
+		admin.POST("/heat-cards", handlers.AddHeatCard)
+		admin.PUT("/heat-cards/move", handlers.MoveHeatCard)
+		admin.DELETE("/heat-cards", handlers.DeleteHeatCard)
+		admin.DELETE("/heat-cards/clear", handlers.ClearHeatCards)
+		admin.POST("/heat-cards/init-decks", handlers.InitializeHeatDecks)
+		admin.POST("/gear-shifts", handlers.AddGearShift)
+		admin.DELETE("/gear-shifts", handlers.DeleteGearShift)
+		admin.POST("/upgrade-cards", handlers.SaveUpgradeCard)
+		admin.DELETE("/upgrade-cards", handlers.DeleteUpgradeCard)
+		admin.POST("/player-upgrades/buy", handlers.BuyUpgrade)
+		admin.PUT("/player-upgrades/toggle", handlers.ToggleUpgrade)
+		admin.DELETE("/player-upgrades", handlers.DeletePlayerUpgrade)
+		admin.POST("/legend-abilities/assign", handlers.AssignLegendAbility)
+		admin.PUT("/legend-abilities/toggle", handlers.ToggleLegendAbility)
+
+		// Admin: Multi-User
+		admin.GET("/player-sessions", handlers.GetPlayerSessions)
+		admin.DELETE("/player-sessions", handlers.DeletePlayerSession)
+
+		// Admin: Race Enhancements
+		admin.POST("/weather", handlers.SetWeather)
+		admin.DELETE("/weather", handlers.DeleteWeather)
+		admin.POST("/turbo-logs", handlers.AddTurboLog)
+		admin.DELETE("/turbo-logs", handlers.DeleteTurboLog)
+		admin.DELETE("/lap-records", handlers.DeleteLapRecords)
+		admin.DELETE("/race-events", handlers.DeleteRaceEvent)
+		admin.POST("/ai-difficulty", handlers.SetAIDifficulty)
 	}
 
 	r.GET("/api/uploads", handlers.GetUploads)
@@ -188,6 +220,38 @@ func main() {
 	r.GET("/api/rounds", handlers.GetRoundSnapshots)
 	r.DELETE("/api/rounds", handlers.DeleteRoundSnapshot)
 	r.GET("/api/seasons", handlers.GetSeasons)
+
+	// Game Mechanics routes
+	r.GET("/api/heat-cards", handlers.GetHeatCards)
+	r.GET("/api/gear-shifts", handlers.GetGearShifts)
+	r.GET("/api/upgrade-cards", handlers.GetUpgradeCards)
+	r.GET("/api/player-upgrades", handlers.GetPlayerUpgrades)
+	r.GET("/api/legend-abilities", handlers.GetLegendAbilities)
+	r.GET("/api/racer-legend-abilities", handlers.GetRacerLegendAbilities)
+	r.GET("/api/available-upgrades", handlers.GetAvailableUpgradesForRacer)
+
+	// Multi-User routes
+	r.POST("/api/player/login", handlers.PlayerLogin)
+	r.POST("/api/player/logout", handlers.PlayerLogout)
+	r.GET("/api/player/validate", handlers.ValidatePlayerToken)
+	r.GET("/api/player/status", handlers.PlayerGetStatus)
+	r.POST("/api/player/gear", handlers.PlayerReportGear)
+	r.POST("/api/player/heat", handlers.PlayerReportHeat)
+	r.POST("/api/player/turbo", handlers.PlayerReportTurbo)
+	r.GET("/api/spectator/state", handlers.GetSpectatorState)
+
+	// Race Enhancement routes
+	r.GET("/api/weather", handlers.GetWeather)
+	r.GET("/api/turbo-logs", handlers.GetTurboLogs)
+	r.GET("/api/lap-records", handlers.GetLapRecords)
+	r.POST("/api/lap-records", handlers.RecordLap)
+	r.POST("/api/lap-records/batch", handlers.RecordLapBatch)
+	r.GET("/api/sectors", handlers.GetSectors)
+	r.GET("/api/racer-sectors", handlers.GetRacerSectors)
+	r.POST("/api/racer-sectors", handlers.RecordRacerSector)
+	r.GET("/api/race-events", handlers.GetRaceEvents)
+	r.POST("/api/race-events", handlers.AddRaceEvent)
+	r.GET("/api/ai-difficulty", handlers.GetAIDifficulty)
 
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
@@ -312,6 +376,14 @@ func main() {
 
 		pages.GET("/trophies.html", func(c *gin.Context) {
 			servePage(c, filepath.Join(app.BasePath, "static/trophies.html"))
+		})
+
+		pages.GET("/player.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(app.BasePath, "static/player.html"))
+		})
+
+		pages.GET("/spectator.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(app.BasePath, "static/spectator.html"))
 		})
 
 		pages.GET("/", func(c *gin.Context) {

@@ -335,5 +335,136 @@ function broadcastMessage(msg: Record<string, unknown>): void {
     });
 }
 
+// Weather
+async function setWeather(): Promise<void> {
+    const condition = (document.getElementById('weather-condition') as HTMLSelectElement).value;
+    const lapStart = parseInt((document.getElementById('weather-lap-start') as HTMLInputElement).value) || 1;
+    const lapEnd = 999;
+    const gripMap: Record<string, number> = { dry: 1.0, damp: 0.85, wet: 0.7, torrential: 0.5 };
+
+    await fetch('/api/weather', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ race_id: 0, condition, lap_start: lapStart, lap_end: lapEnd, grip_modifier: gripMap[condition] || 1.0 })
+    });
+
+    const weatherNames: Record<string, string> = { dry: '☀️ Dry', damp: '🌧️ Damp', wet: '🌧️ Wet', torrential: '⛈️ Torrential' };
+    document.getElementById('current-weather')!.textContent = `Current: ${weatherNames[condition] || condition}`;
+}
+
+// Turbo tracking
+async function refreshTurboLog(): Promise<void> {
+    const res = await fetch('/api/turbo-logs');
+    const logs = await res.json();
+    const list = document.getElementById('turbo-list')!;
+    if (!logs.length) {
+        list.innerHTML = '<p class="text-center opacity-50">No turbo used yet</p>';
+        return;
+    }
+    list.innerHTML = logs.map((l: any) =>
+        `<div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+            <span>${getRacerName(l.racer_id)}</span>
+            <span class="badge bg-success">Lap ${l.lap} x${l.times_used}</span>
+        </div>`
+    ).join('');
+}
+
+function getRacerName(id: number): string {
+    const r = controllerRacers.find(r => r.id === id);
+    return r ? r.name : `#${id}`;
+}
+
+// Gear log
+async function refreshGearLog(): Promise<void> {
+    const res = await fetch('/api/gear-shifts');
+    const shifts = await res.json();
+    const log = document.getElementById('gear-log')!;
+    if (!shifts.length) {
+        log.innerHTML = '<p class="text-center opacity-50">No shifts reported</p>';
+        return;
+    }
+    const recent = shifts.slice(-20).reverse();
+    log.innerHTML = recent.map((s: any) =>
+        `<div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+            <span>${getRacerName(s.racer_id)}</span>
+            <span>Lap ${s.lap}: Gear ${s.gear} ${s.stress ? `+${s.stress} Stress` : ''}</span>
+        </div>`
+    ).join('');
+}
+
+// Lap recording
+async function recordCurrentLap(): Promise<void> {
+    const lapNum = parseInt((document.getElementById('record-lap-number') as HTMLInputElement).value) || 1;
+
+    const records = controllerRacers.map(r => ({
+        racer_id: r.id, position: r.position, gear_used: 0, heat_generated: 0, turbo_used: false
+    }));
+
+    await fetch('/api/lap-records/batch', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ race_id: 0, lap: lapNum, records })
+    });
+
+    (document.getElementById('record-lap-number') as HTMLInputElement).value = (lapNum + 1).toString();
+    document.getElementById('current-lap')!.textContent = lapNum.toString();
+}
+
+// Race events
+async function addRaceEvent(): Promise<void> {
+    const eventType = (document.getElementById('event-type-select') as HTMLSelectElement).value;
+    const racerSelect = document.getElementById('event-racer-select') as HTMLSelectElement;
+    const racerId = parseInt(racerSelect.value);
+    if (!racerId) { alert('Select a driver'); return; }
+    const lap = parseInt((document.getElementById('record-lap-number') as HTMLInputElement).value) || 1;
+
+    await fetch('/api/race-events', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ race_id: 0, lap, event_type: eventType, racer_id: racerId })
+    });
+    refreshRaceEvents();
+}
+
+async function refreshRaceEvents(): Promise<void> {
+    const res = await fetch('/api/race-events?race_id=0');
+    const events = await res.json();
+    const log = document.getElementById('race-event-log')!;
+    if (!events.length) {
+        log.innerHTML = '<p class="text-center opacity-50">No events</p>';
+        return;
+    }
+    const recent = events.slice(-10).reverse();
+    const eventIcons: Record<string, string> = {
+        overtake: '🏎️', crash: '💥', spin: '🔄', safety_car: '🚗', pit_stop: '🔧'
+    };
+    log.innerHTML = recent.map((e: any) =>
+        `<div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+            <span>${eventIcons[e.event_type] || '📌'} ${getRacerName(e.racer_id)}</span>
+            <small class="opacity-75">Lap ${e.lap} - ${e.event_type}</small>
+        </div>`
+    ).join('');
+}
+
+// Player sessions
+async function refreshPlayerSessions(): Promise<void> {
+    const res = await fetch('/api/player-sessions');
+    const sessions = await res.json();
+    const div = document.getElementById('connected-players')!;
+    if (!Array.isArray(sessions) || !sessions.length) {
+        div.innerHTML = '<p class="text-center opacity-50">No players connected</p>';
+        return;
+    }
+    div.innerHTML = sessions.map((s: any) =>
+        `<div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+            <span><i class="fa-solid fa-user me-1"></i>${s.racer_name}</span>
+            <small class="opacity-75">${s.device_name || ''} ${s.last_seen ? '· ' + s.last_seen : ''}</small>
+        </div>`
+    ).join('');
+}
+
+// Periodic refresh
+setInterval(refreshTurboLog, 5000);
+setInterval(refreshGearLog, 5000);
+setInterval(refreshRaceEvents, 5000);
+setInterval(refreshPlayerSessions, 5000);
+
 loadControllerData();
 

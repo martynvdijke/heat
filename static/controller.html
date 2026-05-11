@@ -250,6 +250,111 @@
                 </div>
             </div>
 
+            <!-- Weather Control -->
+            <div class="col-12">
+                <div class="controller-card">
+                    <h5 class="mb-3"><i class="fa-solid fa-cloud-rain me-2"></i>Weather</h5>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <select class="form-select" id="weather-condition">
+                                <option value="dry">Dry</option>
+                                <option value="damp">Damp</option>
+                                <option value="wet">Wet</option>
+                                <option value="torrential">Torrential</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <input type="number" class="form-control" id="weather-lap-start" placeholder="From Lap" value="1" min="1">
+                        </div>
+                        <div class="col-3">
+                            <button class="btn btn-outline-info w-100 quick-action-btn py-2" onclick="setWeather()">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="current-weather" class="mt-2 small text-center opacity-75">Current: Dry</div>
+                </div>
+            </div>
+
+            <!-- Turbo Tracking -->
+            <div class="col-12">
+                <div class="controller-card">
+                    <h5 class="mb-3"><i class="fa-solid fa-gauge-high me-2" style="color:#2ecc71;"></i>Turbo Usage</h5>
+                    <div id="turbo-list" class="small">
+                        <p class="text-center opacity-50">No turbo used yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gear Log -->
+            <div class="col-12">
+                <div class="controller-card">
+                    <h5 class="mb-3"><i class="fa-solid fa-gears me-2"></i>Gear Shift Log</h5>
+                    <div id="gear-log" class="small" style="max-height:200px;overflow-y:auto;">
+                        <p class="text-center opacity-50">No shifts reported</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Record Lap -->
+            <div class="col-12">
+                <div class="controller-card">
+                    <h5 class="mb-3"><i class="fa-solid fa-stopwatch me-2"></i>Record Lap</h5>
+                    <div class="row g-2 align-items-center">
+                        <div class="col-4">
+                            <input type="number" class="form-control" id="record-lap-number" placeholder="Lap #" min="1" value="1">
+                        </div>
+                        <div class="col-8">
+                            <button class="btn btn-success w-100 quick-action-btn" onclick="recordCurrentLap()">
+                                <i class="fa-solid fa-check me-2"></i>Record Lap Positions
+                            </button>
+                        </div>
+                    </div>
+                    <small class="opacity-50 mt-1 d-block">Captures current positions of all drivers</small>
+                </div>
+            </div>
+
+            <!-- Race Events -->
+            <div class="col-12">
+                <div class="controller-card">
+                    <h5 class="mb-3"><i class="fa-solid fa-list me-2"></i>Race Events</h5>
+                    <div class="row g-2 mb-2">
+                        <div class="col-5">
+                            <select class="form-select" id="event-type-select">
+                                <option value="overtake">Overtake</option>
+                                <option value="crash">Crash</option>
+                                <option value="spin">Spin</option>
+                                <option value="safety_car">Safety Car</option>
+                                <option value="pit_stop">Pit Stop</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <select class="form-select" id="event-racer-select">
+                                <option value="">Driver...</option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-light w-100 quick-action-btn py-2" onclick="addRaceEvent()">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="race-event-log" class="small" style="max-height:150px;overflow-y:auto;">
+                        <p class="text-center opacity-50">No events</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Sessions -->
+            <div class="col-12">
+                <div class="controller-card">
+                    <h5 class="mb-3"><i class="fa-solid fa-users me-2"></i>Connected Players</h5>
+                    <div id="connected-players" class="small">
+                        <p class="text-center opacity-50">No players connected</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-12">
                 <div class="controller-card">
                     <h5 class="mb-3"><i class="fa-solid fa-flag me-2"></i>Race Settings</h5>

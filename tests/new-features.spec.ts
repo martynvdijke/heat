@@ -105,3 +105,220 @@ test.describe('Index Page - GeoJSON and Racers', () => {
     await expect(raceTrack).toContainText('Monza');
   });
 });
+
+test.describe('Player Self-Service', () => {
+  test('should load player login page', async ({ page }) => {
+    await page.goto('/player.html');
+    await expect(page.locator('h1')).toContainText('Player Login');
+    await expect(page.locator('#player-select')).toBeVisible();
+    await expect(page.locator('#device-name')).toBeVisible();
+  });
+
+  test('should show driver options in select', async ({ page }) => {
+    await page.goto('/player.html');
+    const options = page.locator('#player-select option');
+    await expect(options).toHaveCount(6);
+  });
+
+  test('should login player via API', async ({ page }) => {
+    const res = await page.request.post('/api/player/login', {
+      data: { racer_id: 1, device_name: 'TestPhone' }
+    });
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    expect(data).toHaveProperty('token');
+    expect(data.racer_id).toBe(1);
+    expect(data.racer_name).toBe('A. PROST');
+  });
+
+  test('should validate player token', async ({ page }) => {
+    const loginRes = await page.request.post('/api/player/login', {
+      data: { racer_id: 2, device_name: 'TestPhone' }
+    });
+    const { token } = await loginRes.json();
+
+    const validateRes = await page.request.get('/api/player/validate', {
+      headers: { 'X-Player-Token': token }
+    });
+    expect(validateRes.ok()).toBeTruthy();
+    const data = await validateRes.json();
+    expect(data.racer_name).toBe('M. SCHUMACHER');
+  });
+
+  test('should reject invalid token', async ({ page }) => {
+    const res = await page.request.get('/api/player/validate', {
+      headers: { 'X-Player-Token': 'invalid_token_12345' }
+    });
+    expect(res.status()).toBe(401);
+  });
+
+  test('should report gear as player', async ({ page }) => {
+    const loginRes = await page.request.post('/api/player/login', {
+      data: { racer_id: 3, device_name: 'TestPhone' }
+    });
+    const { token } = await loginRes.json();
+
+    const gearRes = await page.request.post('/api/player/gear', {
+      data: { token, lap: 1, gear: 3, stress: 0 }
+    });
+    expect(gearRes.ok()).toBeTruthy();
+  });
+
+  test('should report heat as player', async ({ page }) => {
+    const loginRes = await page.request.post('/api/player/login', {
+      data: { racer_id: 1, device_name: 'TestPhone' }
+    });
+    const { token } = await loginRes.json();
+
+    const heatRes = await page.request.post('/api/player/heat', {
+      data: { token, card_type: 'heat', location: 'engine', count: 1 }
+    });
+    expect(heatRes.ok()).toBeTruthy();
+  });
+
+  test('should report turbo usage as player', async ({ page }) => {
+    const loginRes = await page.request.post('/api/player/login', {
+      data: { racer_id: 4, device_name: 'TestPhone' }
+    });
+    const { token } = await loginRes.json();
+
+    const turboRes = await page.request.post('/api/player/turbo', {
+      data: { token, lap: 1 }
+    });
+    expect(turboRes.ok()).toBeTruthy();
+  });
+
+  test('should get player status', async ({ page }) => {
+    const loginRes = await page.request.post('/api/player/login', {
+      data: { racer_id: 5, device_name: 'TestPhone' }
+    });
+    const { token } = await loginRes.json();
+
+    const statusRes = await page.request.get('/api/player/status', {
+      headers: { 'X-Player-Token': token }
+    });
+    expect(statusRes.ok()).toBeTruthy();
+    const data = await statusRes.json();
+    expect(data).toHaveProperty('racer');
+    expect(data).toHaveProperty('heat_cards');
+    expect(data.racer.name).toBe('J. STEWART');
+  });
+});
+
+test.describe('Game Mechanics API', () => {
+  test('should get heat cards for racer', async ({ page }) => {
+    const res = await page.request.get('/api/heat-cards?racer_id=1');
+    expect(res.ok()).toBeTruthy();
+    const cards = await res.json();
+    expect(Array.isArray(cards)).toBeTruthy();
+  });
+
+  test('should initialize heat decks', async ({ page }) => {
+    const res = await page.request.post('/api/heat-cards/init-decks', {
+      data: { race_id: 0, racer_ids: [1, 2, 3] }
+    });
+    expect(res.ok()).toBeTruthy();
+
+    const cardsRes = await page.request.get('/api/heat-cards');
+    const cards = await cardsRes.json();
+    expect(cards.length).toBeGreaterThanOrEqual(21);
+  });
+
+  test('should get gear shifts', async ({ page }) => {
+    const res = await page.request.get('/api/gear-shifts?racer_id=1');
+    expect(res.ok()).toBeTruthy();
+    const shifts = await res.json();
+    expect(Array.isArray(shifts)).toBeTruthy();
+  });
+
+  test('should get upgrade cards', async ({ page }) => {
+    const res = await page.request.get('/api/upgrade-cards');
+    expect(res.ok()).toBeTruthy();
+    const upgrades = await res.json();
+    expect(Array.isArray(upgrades)).toBeTruthy();
+    expect(upgrades.length).toBeGreaterThanOrEqual(8);
+  });
+
+  test('should have legend abilities', async ({ page }) => {
+    const res = await page.request.get('/api/legend-abilities');
+    expect(res.ok()).toBeTruthy();
+    const abilities = await res.json();
+    expect(Array.isArray(abilities)).toBeTruthy();
+    expect(abilities.length).toBeGreaterThanOrEqual(5);
+  });
+});
+
+test.describe('Race Enhancements API', () => {
+  test('should set and get weather', async ({ page }) => {
+    await page.request.post('/api/weather', {
+      data: { race_id: 0, condition: 'wet', lap_start: 1, lap_end: 999, grip_modifier: 0.7 }
+    });
+    const res = await page.request.get('/api/weather?race_id=0');
+    expect(res.ok()).toBeTruthy();
+    const weather = await res.json();
+    expect(weather.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('should log turbo usage', async ({ page }) => {
+    await page.request.post('/api/turbo-logs', {
+      data: { racer_id: 1, race_id: 0, lap: 1, times_used: 1 }
+    });
+    const res = await page.request.get('/api/turbo-logs?racer_id=1');
+    expect(res.ok()).toBeTruthy();
+    const logs = await res.json();
+    expect(logs.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('should record and retrieve lap records', async ({ page }) => {
+    await page.request.post('/api/lap-records', {
+      data: { race_id: 0, racer_id: 1, lap_number: 1, position: 1, gear_used: 3, heat_generated: 2, turbo_used: false }
+    });
+    const res = await page.request.get('/api/lap-records?race_id=0');
+    expect(res.ok()).toBeTruthy();
+    const records = await res.json();
+    expect(records.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('should record batch lap records', async ({ page }) => {
+    const res = await page.request.post('/api/lap-records/batch', {
+      data: {
+        race_id: 0, lap: 1,
+        records: [
+          { racer_id: 1, position: 1, gear_used: 3, heat_generated: 2, turbo_used: false },
+          { racer_id: 2, position: 2, gear_used: 2, heat_generated: 1, turbo_used: true }
+        ]
+      }
+    });
+    expect(res.ok()).toBeTruthy();
+  });
+
+  test('should get sectors for a track', async ({ page }) => {
+    const res = await page.request.get('/api/sectors?track_id=monza');
+    expect(res.ok()).toBeTruthy();
+    const sectors = await res.json();
+    expect(Array.isArray(sectors)).toBeTruthy();
+    expect(sectors.length).toBeGreaterThanOrEqual(5);
+  });
+
+  test('should add and retrieve race events', async ({ page }) => {
+    await page.request.post('/api/race-events', {
+      data: { race_id: 0, lap: 1, event_type: 'overtake', racer_id: 1, racer_id2: 2, note: 'Great pass!' }
+    });
+    const res = await page.request.get('/api/race-events?race_id=0');
+    expect(res.ok()).toBeTruthy();
+    const events = await res.json();
+    expect(events.length).toBeGreaterThanOrEqual(1);
+    expect(events[0].event_type).toBe('overtake');
+  });
+});
+
+test.describe('Spectator Mode', () => {
+  test('should return spectator state', async ({ page }) => {
+    const res = await page.request.get('/api/spectator/state');
+    expect(res.ok()).toBeTruthy();
+    const state = await res.json();
+    expect(state).toHaveProperty('racers');
+    expect(state).toHaveProperty('race');
+    expect(Array.isArray(state.racers)).toBeTruthy();
+  });
+});

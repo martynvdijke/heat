@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HEAT: Player Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        body { font-size: 16px; background: var(--background); color: var(--text-main); padding-bottom: 100px; }
+        .card { background: var(--surface); border: var(--border-width) solid var(--border-color); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; }
+        .heat-card { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 56px; background: #e74c3c; color: white; border-radius: 6px; font-weight: bold; font-size: 0.8rem; margin: 2px; }
+        .heat-card.stress { background: #8e44ad; }
+        .heat-card.boost { background: #2ecc71; }
+        .heat-card.deck { background: #555; opacity: 0.7; }
+        .heat-card.discard { background: #666; }
+        .heat-card.engine { background: #c0392b; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .action-btn { padding: 1rem; border-radius: 12px; font-weight: bold; font-size: 1.1rem; }
+        .gear-btn { width: 56px; height: 56px; border-radius: 50%; font-size: 1.5rem; font-weight: bold; margin: 4px; }
+        .gear-btn.active { transform: scale(1.2); box-shadow: 0 0 16px var(--primary); }
+        .turbo-btn { width: 80px; height: 80px; border-radius: 50%; font-size: 2rem; }
+        .turbo-btn.used { opacity: 0.4; }
+        .car-badge { width: 16px; height: 16px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .header-bar { background: var(--surface); border-bottom: var(--border-width) solid var(--border-color); padding: 1rem; }
+        .login-pin { font-size: 2rem; letter-spacing: 8px; text-align: center; }
+        .position-badge { font-size: 2rem; font-weight: bold; font-family: 'Bebas Neue', sans-serif; }
+        .driver-color-dot { width: 24px; height: 24px; border-radius: 50%; display: inline-block; border: 2px solid #fff; }
+    </style>
+</head>
+<body>
+    <div class="vintage-overlay"></div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="container-fluid px-3" style="padding-top: 40vh;">
+        <div class="text-center mb-4">
+            <img src="/static/logo.svg" alt="HEAT" width="80" height="80">
+            <h1 class="mt-3" style="font-family:'Bebas Neue',sans-serif;">Player Login</h1>
+        </div>
+        <div class="card">
+            <select id="player-select" class="form-select mb-3">
+                <option value="">Select your driver...</option>
+            </select>
+            <input type="text" id="device-name" class="form-control mb-3" placeholder="Device Name (e.g. iPhone)" value="Phone">
+            <button class="btn btn-primary w-100 action-btn" onclick="playerLogin()">
+                <i class="fa-solid fa-right-to-bracket me-2"></i>Connect
+            </button>
+            <p class="text-center mt-3 mb-0 small opacity-50">
+                <i class="fa-solid fa-shield-halved me-1"></i>Your device gets a private token
+            </p>
+        </div>
+    </div>
+
+    <!-- Player Dashboard -->
+    <div id="dashboard-screen" style="display:none;">
+        <div class="header-bar d-flex justify-content-between align-items-center">
+            <div>
+                <div class="d-flex align-items-center">
+                    <span class="driver-color-dot" id="my-color"></span>
+                    <span class="fw-bold ms-2" id="my-name" style="font-size:1.2rem;"></span>
+                </div>
+                <small class="opacity-50">Lap <span id="my-lap">0</span> &middot; Pos <span id="my-pos">0</span></small>
+            </div>
+            <button class="btn btn-outline-danger btn-sm" onclick="playerLogout()">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </div>
+
+        <div class="container-fluid px-3 mt-3">
+            <!-- Heat Cards -->
+            <div class="card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0"><i class="fa-solid fa-fire me-2" style="color:#e74c3c;"></i>Heat Cards</h5>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-secondary">Hand: <span id="hand-count">0</span></span>
+                        <span class="badge bg-dark">Deck: <span id="deck-count">0</span></span>
+                        <span class="badge bg-secondary">Discard: <span id="discard-count">0</span></span>
+                        <span class="badge bg-danger">Engine: <span id="engine-count">0</span></span>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <small class="opacity-50">Hand</small>
+                    <div id="hand-cards" class="d-flex flex-wrap"></div>
+                </div>
+                <div class="action-grid mt-2">
+                    <button class="btn btn-outline-danger action-btn" onclick="addHeatToEngine()">
+                        <i class="fa-solid fa-fire me-1"></i>+1 Heat
+                    </button>
+                    <button class="btn btn-outline-warning action-btn" onclick="addStress()">
+                        <i class="fa-solid fa-bolt me-1"></i>+1 Stress
+                    </button>
+                    <button class="btn btn-outline-success action-btn" onclick="discardHeat()">
+                        <i class="fa-solid fa-arrow-right me-1"></i>Discard 1
+                    </button>
+                    <button class="btn btn-outline-info action-btn" onclick="drawCard()">
+                        <i class="fa-solid fa-hand me-1"></i>Draw 1
+                    </button>
+                </div>
+            </div>
+
+            <!-- Gear & Stress -->
+            <div class="card">
+                <h5 class="mb-3"><i class="fa-solid fa-gear me-2"></i>Gear Shift</h5>
+                <div class="text-center">
+                    <div id="gear-selector" class="mb-3">
+                        <button class="btn btn-outline-light gear-btn" data-gear="1" onclick="reportGear(1)">1</button>
+                        <button class="btn btn-outline-light gear-btn" data-gear="2" onclick="reportGear(2)">2</button>
+                        <button class="btn btn-outline-light gear-btn" data-gear="3" onclick="reportGear(3)">3</button>
+                        <button class="btn btn-outline-light gear-btn" data-gear="4" onclick="reportGear(4)">4</button>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button class="btn btn-outline-secondary w-100" onclick="reportStress(1)">
+                                <i class="fa-solid fa-bolt me-1"></i>+1 Stress
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-secondary w-100" onclick="reportStress(2)">
+                                <i class="fa-solid fa-bolt me-1"></i>+2 Stress
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Turbo -->
+            <div class="card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fa-solid fa-gauge-high me-2" style="color:#2ecc71;"></i>Turbo</h5>
+                    <span id="turbo-count" class="badge bg-success">Available</span>
+                </div>
+                <div class="text-center mt-3">
+                    <button class="btn btn-success turbo-btn" id="turbo-btn" onclick="useTurbo()">
+                        <i class="fa-solid fa-bolt"></i>
+                    </button>
+                    <p class="mt-2 small opacity-50">Tap to use turbo this lap</p>
+                </div>
+            </div>
+
+            <!-- Lap History -->
+            <div class="card">
+                <h5 class="mb-3"><i class="fa-solid fa-clock-rotate-left me-2"></i>My Laps</h5>
+                <div id="my-lap-history" class="small">
+                    <p class="text-center opacity-50">No laps recorded yet</p>
+                </div>
+            </div>
+
+            <!-- Connection Status -->
+            <div class="text-center mt-3 mb-5">
+                <small class="opacity-50" id="connection-status">
+                    <i class="fa-solid fa-circle me-1" style="color:#4caf50;font-size:8px;"></i>Connected
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/player.js"></script>
+</body>
+</html>

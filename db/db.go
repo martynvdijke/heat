@@ -13,7 +13,7 @@ import (
 	"heat/models"
 )
 
-var currentSchemaVersion = 18
+var currentSchemaVersion = 19
 
 func Init() {
 	_, _ = app.DB.Exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
@@ -83,6 +83,9 @@ func Init() {
 	if count == 0 {
 		SeedData()
 	}
+	SeedUpgrades()
+	SeedLegendAbilities()
+	SeedSectors()
 }
 
 func runMigration(fromVersion int) {
@@ -261,6 +264,124 @@ func runMigration(fromVersion int) {
 		_, _ = app.DB.Exec("ALTER TABLE round_snapshots ADD COLUMN season_id INTEGER DEFAULT 1 REFERENCES seasons(id)")
 	case 17:
 		_, _ = app.DB.Exec("ALTER TABLE backup_settings ADD COLUMN retention_count INTEGER DEFAULT 7")
+	case 18:
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS heat_cards (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			racer_id INTEGER NOT NULL,
+			location TEXT NOT NULL DEFAULT 'hand',
+			card_type TEXT NOT NULL DEFAULT 'heat',
+			lap_added INTEGER DEFAULT 0,
+			FOREIGN KEY (racer_id) REFERENCES racers(id)
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS gear_shifts (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			racer_id INTEGER NOT NULL,
+			race_id INTEGER NOT NULL,
+			lap INTEGER NOT NULL DEFAULT 1,
+			gear INTEGER NOT NULL DEFAULT 1,
+			stress INTEGER DEFAULT 0,
+			FOREIGN KEY (racer_id) REFERENCES racers(id),
+			FOREIGN KEY (race_id) REFERENCES race_history(id)
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS upgrade_cards (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			description TEXT NOT NULL,
+			card_type TEXT NOT NULL DEFAULT 'upgrade',
+			cost INTEGER DEFAULT 0,
+			effects TEXT DEFAULT '{}'
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS player_upgrades (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			racer_id INTEGER NOT NULL,
+			upgrade_id INTEGER NOT NULL,
+			season_id INTEGER DEFAULT 0,
+			equipped INTEGER DEFAULT 1,
+			round_bought INTEGER DEFAULT 0,
+			FOREIGN KEY (racer_id) REFERENCES racers(id),
+			FOREIGN KEY (upgrade_id) REFERENCES upgrade_cards(id)
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS legend_abilities (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			description TEXT NOT NULL,
+			ability_type TEXT NOT NULL,
+			racer_name TEXT NOT NULL
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS racer_legend_abilities (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			racer_id INTEGER NOT NULL,
+			ability_id INTEGER NOT NULL,
+			active INTEGER DEFAULT 1,
+			FOREIGN KEY (racer_id) REFERENCES racers(id),
+			FOREIGN KEY (ability_id) REFERENCES legend_abilities(id)
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS player_sessions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			racer_id INTEGER NOT NULL UNIQUE,
+			token TEXT NOT NULL UNIQUE,
+			device_name TEXT DEFAULT '',
+			last_seen TEXT DEFAULT (datetime('now')),
+			created_at TEXT DEFAULT (datetime('now')),
+			FOREIGN KEY (racer_id) REFERENCES racers(id)
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS weather_conditions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			race_id INTEGER DEFAULT 0,
+			condition TEXT NOT NULL DEFAULT 'dry',
+			lap_start INTEGER DEFAULT 1,
+			lap_end INTEGER DEFAULT 999,
+			grip_modifier REAL DEFAULT 1.0
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS turbo_logs (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			racer_id INTEGER NOT NULL,
+			race_id INTEGER DEFAULT 0,
+			lap INTEGER DEFAULT 1,
+			times_used INTEGER DEFAULT 1,
+			FOREIGN KEY (racer_id) REFERENCES racers(id)
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS lap_records (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			race_id INTEGER DEFAULT 0,
+			racer_id INTEGER NOT NULL,
+			lap_number INTEGER NOT NULL,
+			position INTEGER NOT NULL,
+			gear_used INTEGER DEFAULT 1,
+			heat_generated INTEGER DEFAULT 0,
+			turbo_used INTEGER DEFAULT 0,
+			timestamp TEXT DEFAULT (datetime('now')),
+			FOREIGN KEY (racer_id) REFERENCES racers(id)
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS sectors (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			track_id TEXT NOT NULL,
+			"order" INTEGER DEFAULT 0,
+			FOREIGN KEY (track_id) REFERENCES tracks(id)
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS racer_sectors (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			race_id INTEGER DEFAULT 0,
+			racer_id INTEGER NOT NULL,
+			sector_id INTEGER NOT NULL,
+			lap INTEGER DEFAULT 1,
+			entry_time TEXT DEFAULT (datetime('now')),
+			exit_time TEXT DEFAULT (datetime('now')),
+			FOREIGN KEY (racer_id) REFERENCES racers(id),
+			FOREIGN KEY (sector_id) REFERENCES sectors(id)
+		)`)
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS race_events (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			race_id INTEGER DEFAULT 0,
+			lap INTEGER DEFAULT 1,
+			event_type TEXT NOT NULL,
+			racer_id INTEGER NOT NULL,
+			racer_id2 INTEGER DEFAULT 0,
+			note TEXT DEFAULT '',
+			timestamp TEXT DEFAULT (datetime('now')),
+			FOREIGN KEY (racer_id) REFERENCES racers(id)
+		)`)
 	}
 }
 
@@ -367,6 +488,71 @@ func PruneBackups() error {
 		os.Remove(filepath.Join(backupDir, name))
 	}
 	return nil
+}
+
+func SeedUpgrades() {
+	var count int
+	app.DB.QueryRow("SELECT COUNT(*) FROM upgrade_cards").Scan(&count)
+	if count > 0 {
+		return
+	}
+	upgrades := []models.UpgradeCard{
+		{Name: "Racing Gearbox", Description: "Shift one gear higher without adding heat", CardType: "upgrade", Cost: 3, Effects: "{\"gear_bonus\":1}"},
+		{Name: "Lightweight Chassis", Description: "Reduce heat generated by 1 per corner", CardType: "upgrade", Cost: 4, Effects: "{\"heat_reduction\":1}"},
+		{Name: "High-RPM Engine", Description: "+1 speed on straights", CardType: "upgrade", Cost: 5, Effects: "{\"straight_speed\":1}"},
+		{Name: "Cooling System", Description: "Discard 1 extra heat card per cooldown", CardType: "upgrade", Cost: 3, Effects: "{\"cooldown_bonus\":1}"},
+		{Name: "Reinforced Brakes", Description: "Reduce stress from braking by 1", CardType: "upgrade", Cost: 2, Effects: "{\"brake_stress_reduction\":1}"},
+		{Name: "Aerodynamic Kit", Description: "Better cornering, add +1 to corner speed", CardType: "upgrade", Cost: 4, Effects: "{\"corner_speed\":1}"},
+		{Name: "Quick Shifter", Description: "Once per race, shift without adding stress", CardType: "upgrade", Cost: 3, Effects: "{\"free_shift\":1}"},
+		{Name: "Turbo Charger", Description: "Extra turbo boost per race", CardType: "upgrade", Cost: 5, Effects: "{\"extra_turbo\":1}"},
+	}
+	for _, u := range upgrades {
+		app.DB.Exec("INSERT INTO upgrade_cards (name, description, card_type, cost, effects) VALUES (?, ?, ?, ?, ?)",
+			u.Name, u.Description, u.CardType, u.Cost, u.Effects)
+	}
+	log.Printf("[DB] Seeded %d upgrade cards", len(upgrades))
+}
+
+func SeedLegendAbilities() {
+	var count int
+	app.DB.QueryRow("SELECT COUNT(*) FROM legend_abilities").Scan(&count)
+	if count > 0 {
+		return
+	}
+	abilities := []models.LegendAbility{
+		{Name: "Perfect Start", Description: "Gain +1 position on the first lap", AbilityType: "start", RacerName: "A. PROST"},
+		{Name: "Rain Master", Description: "No speed penalty in wet conditions", AbilityType: "weather", RacerName: "M. SCHUMACHER"},
+		{Name: "Aggressive Overtake", Description: "+1 overtake attempt per race", AbilityType: "overtake", RacerName: "A. SENNA"},
+		{Name: "Consistent Performer", Description: "Reduce stress accumulation by 1 each lap", AbilityType: "consistency", RacerName: "N. LAUDA"},
+		{Name: "Smooth Operator", Description: "Generate 1 less heat per gear shift", AbilityType: "smoothness", RacerName: "J. STEWART"},
+	}
+	for _, a := range abilities {
+		app.DB.Exec("INSERT INTO legend_abilities (name, description, ability_type, racer_name) VALUES (?, ?, ?, ?)",
+			a.Name, a.Description, a.AbilityType, a.RacerName)
+	}
+	log.Printf("[DB] Seeded %d legend abilities", len(abilities))
+}
+
+func SeedSectors() {
+	var count int
+	app.DB.QueryRow("SELECT COUNT(*) FROM sectors").Scan(&count)
+	if count > 0 {
+		return
+	}
+	trackSectors := map[string][]string{
+		"monza":       {"Start/Finish", "Lesmo 1", "Lesmo 2", "Ascari", "Parabolica"},
+		"spa":         {"Start/Finish", "Eau Rouge", "Raidillon", "Les Combes", "Pouhon", "Stavelot", "Blanchimont"},
+		"silverstone": {"Start/Finish", "Copse", "Maggots-Becketts", "Stowe", "Village", "Club"},
+		"monaco":      {"Start/Finish", "Casino", "Mirabeau", "Loews", "Portier", "Tunnel", "Nouvelle", "Rascasse"},
+		"interlagos":  {"Start/Finish", "Senna S", "Descida", "Curva do Lago", "Ferradura", "Juncao"},
+	}
+	for trackID, sectors := range trackSectors {
+		for i, name := range sectors {
+			app.DB.Exec("INSERT INTO sectors (name, track_id, \"order\") VALUES (?, ?, ?)",
+				name, trackID, i+1)
+		}
+	}
+	log.Printf("[DB] Seeded sectors")
 }
 
 func BoolToInt(b bool) int {

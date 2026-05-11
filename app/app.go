@@ -14,6 +14,9 @@ import (
 )
 
 var FlagBroadcast = make(chan models.FlagCommand)
+var GameMechanicsBroadcast = make(chan models.GameMechanicsUpdate)
+var WeatherBroadcast = make(chan models.WeatherCondition)
+var LapReplayBroadcast = make(chan models.LapReplayFrame)
 
 type SessionInfo struct {
 	Expiry int64
