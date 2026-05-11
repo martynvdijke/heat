@@ -1,3 +1,11 @@
+## [1.22.2](https://github.com/martynvdijke/heat/compare/v1.22.1...v1.22.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([b65c8b5](https://github.com/martynvdijke/heat/commit/b65c8b5c16c58c00c86035b712c82730ec52bdab))
+* **deps:** update module github.com/swaggo/files to v2 ([5298a85](https://github.com/martynvdijke/heat/commit/5298a85e512442f6bb1c50aa85fecf5f714e6725))
+
 ## [1.22.1](https://github.com/martynvdijke/heat/compare/v1.22.0...v1.22.1) (2026-05-10)
 
 
