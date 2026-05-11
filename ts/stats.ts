@@ -270,3 +270,87 @@ function switchSeason(value: string): void {
 
 loadSeasonStats();
 (window as any).switchSeason = switchSeason;
+
+// Deeper Stats
+async function loadDeeperStats(): Promise<void> {
+    try {
+        const [deltaRes, consistencyRes, incidentsRes, paceRes] = await Promise.all([
+            fetch('/api/stats/qualifying-delta'),
+            fetch('/api/stats/consistency'),
+            fetch('/api/stats/incidents'),
+            fetch('/api/stats/pace-heatmap')
+        ]);
+
+        const delta = await deltaRes.json();
+        const consistency = await consistencyRes.json();
+        const incidents = await incidentsRes.json();
+        const pace = await paceRes.json();
+
+        // Qualifying Delta
+        const deltaBody = document.getElementById('qualifying-delta-body')!;
+        if (Array.isArray(delta) && delta.length > 0) {
+            deltaBody.innerHTML = delta.map((d: any) => `
+                <tr>
+                    <td>${d.racer_name}</td>
+                    <td>${d.races}</td>
+                    <td>${d.avg_race_position}</td>
+                    <td class="fw-bold">${d.total_points}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Consistency
+        const consBody = document.getElementById('consistency-body')!;
+        if (Array.isArray(consistency) && consistency.length > 0) {
+            consBody.innerHTML = consistency.map((c: any) => `
+                <tr>
+                    <td>${c.racer_name}</td>
+                    <td>${c.races}</td>
+                    <td>${c.avg_position}</td>
+                    <td>${c.std_dev}</td>
+                    <td><span class="badge bg-${c.consistency_score >= 80 ? 'success' : c.consistency_score >= 60 ? 'warning' : 'danger'}">${c.consistency_score}</span></td>
+                    <td>${c.best_position}</td>
+                    <td>${c.worst_position}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Incidents
+        const incBody = document.getElementById('incidents-body')!;
+        if (Array.isArray(incidents) && incidents.length > 0) {
+            const eventIcons: Record<string, string> = { overtake: '🏎️', crash: '💥', spin: '🔄', safety_car: '🚗', pit_stop: '🔧' };
+            incBody.innerHTML = incidents.slice(-20).reverse().map((e: any) => `
+                <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                    <span>${eventIcons[e.event_type] || '📌'} <strong>${e.racer1_name}</strong>${e.racer2_name ? ` vs ${e.racer2_name}` : ''}</span>
+                    <small class="opacity-75">${e.event_type}${e.lap ? ` · Lap ${e.lap}` : ''}</small>
+                </div>
+            `).join('');
+        }
+
+        // Pace Heatmap
+        const paceBody = document.getElementById('pace-heatmap-body')!;
+        if (Array.isArray(pace) && pace.length > 0) {
+            const grouped: Record<string, any[]> = {};
+            pace.forEach((p: any) => {
+                if (!grouped[p.racer_name]) grouped[p.racer_name] = [];
+                grouped[p.racer_name].push(p);
+            });
+            paceBody.innerHTML = Object.entries(grouped).map(([name, laps]: [string, any[]]) => `
+                <div class="mb-2">
+                    <strong>${name}</strong>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        ${laps.slice(-10).map((l: any) => `
+                            <div class="small px-2 py-1 rounded" style="background:${l.turbo_used ? '#2ecc71' : l.heat_generated > 2 ? '#e74c3c' : '#444'};">
+                                L${l.lap} P${l.position}${l.turbo_used ? ' ⚡' : ''}${l.heat_generated ? ' 🔥' + l.heat_generated : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (err) {
+        console.error('Failed to load deeper stats:', err);
+    }
+}
+
+setTimeout(loadDeeperStats, 1000);

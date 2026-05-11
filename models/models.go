@@ -377,3 +377,10 @@ type RacerPosition struct {
 	HeatInHand int    `json:"heat_in_hand,omitempty"`
 	Gear       int    `json:"gear,omitempty"`
 }
+
+// Sound FX
+type SoundCommand struct {
+	Type  string      `json:"type"`  // sound
+	Sound string      `json:"sound"` // engine, horn, finish, flag, crash
+	Data  interface{} `json:"data,omitempty"`
+}

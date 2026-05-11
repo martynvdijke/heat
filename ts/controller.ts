@@ -466,5 +466,13 @@ setInterval(refreshGearLog, 5000);
 setInterval(refreshRaceEvents, 5000);
 setInterval(refreshPlayerSessions, 5000);
 
+// Sound FX
+async function playSound(sound: string): Promise<void> {
+    await fetch('/api/sound', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sound })
+    });
+}
+
 loadControllerData();
 

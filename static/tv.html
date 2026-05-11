@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEAT: TV Broadcast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script>if(localStorage.getItem('theme')==='dark'||(!localStorage.getItem('theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}</script>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        body { margin:0; padding:0; background:#000; color:#fff; overflow:hidden; font-family:'Montserrat',sans-serif; }
+        .tv-header { position:fixed; top:0; left:0; right:0; height:80px; background:linear-gradient(135deg,#1a1a2e,#16213e); border-bottom:3px solid #e74c3c; display:flex; align-items:center; padding:0 30px; z-index:100; }
+        .tv-header .logo { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; color:#e74c3c; letter-spacing:4px; }
+        .tv-header .race-info { margin-left:auto; text-align:right; }
+        .tv-header .race-info div { font-size:1.1rem; }
+        .tv-header .race-info small { opacity:0.7; }
+        .tv-leaderboard { position:fixed; right:30px; top:100px; width:420px; max-height:calc(100vh - 180px); overflow-y:auto; }
+        .tv-driver-row { display:flex; align-items:center; padding:12px 16px; margin-bottom:4px; background:rgba(255,255,255,0.05); border-radius:8px; border-left:4px solid transparent; transition:all 0.3s; }
+        .tv-driver-row.pos1 { background:linear-gradient(90deg,rgba(255,215,0,0.15),transparent); border-left-color:#ffd700; }
+        .tv-driver-row.pos2 { background:linear-gradient(90deg,rgba(192,192,192,0.1),transparent); border-left-color:#c0c0c0; }
+        .tv-driver-row.pos3 { background:linear-gradient(90deg,rgba(205,127,50,0.1),transparent); border-left-color:#cd7f32; }
+        .tv-position { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; width:50px; text-align:center; }
+        .tv-name { font-weight:700; font-size:1.1rem; flex-grow:1; margin-left:12px; }
+        .tv-car-color { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:8px; }
+        .tv-gap { font-family:'Bebas Neue',sans-serif; font-size:1.2rem; color:#ffd700; min-width:60px; text-align:right; }
+        .tv-status { font-size:0.8rem; padding:2px 8px; border-radius:4px; }
+        .tv-status.racing { background:#4caf50; }
+        .tv-status.paused { background:#ff9800; }
+        .tv-status.stopped { background:#f44336; }
+        .tv-footer { position:fixed; bottom:0; left:0; right:0; height:60px; background:rgba(0,0,0,0.8); border-top:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; padding:0 30px; z-index:100; }
+        .tv-footer .flag-display { font-size:1.5rem; margin-right:20px; }
+        .tv-footer .clock { margin-left:auto; font-family:'Bebas Neue',sans-serif; font-size:1.5rem; color:#ffd700; }
+        .tv-center { position:fixed; bottom:80px; left:30px; }
+        .tv-center .lap-counter { font-family:'Bebas Neue',sans-serif; font-size:5rem; line-height:1; color:#e74c3c; }
+        .tv-center .lap-label { font-size:1rem; text-transform:uppercase; letter-spacing:4px; opacity:0.7; }
+        .tv-weather { position:fixed; top:100px; left:30px; background:rgba(255,255,255,0.05); border-radius:12px; padding:16px 24px; }
+        .tv-weather .weather-icon { font-size:2rem; }
+        .tv-weather .weather-text { font-size:1.1rem; margin-left:12px; }
+        .tv-events { position:fixed; bottom:80px; right:30px; width:400px; max-height:200px; overflow-y:auto; }
+        .tv-event { padding:6px 12px; margin-bottom:2px; background:rgba(255,255,255,0.03); border-radius:4px; font-size:0.9rem; }
+        .tv-event .event-time { font-size:0.7rem; opacity:0.5; }
+        .tv-quote { position:fixed; bottom:70px; left:50%; transform:translateX(-50%); font-style:italic; opacity:0.6; font-size:0.9rem; text-align:center; max-width:60%; }
+        .fullscreen-btn { position:fixed; top:10px; left:10px; z-index:200; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:0.8rem; }
+        .fullscreen-btn:hover { background:rgba(255,255,255,0.1); }
+        @keyframes slideIn { from { transform:translateX(50px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+        .tv-driver-row { animation:slideIn 0.3s ease-out; }
+        @keyframes flash { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+        .flag-active { animation:flash 0.5s infinite; }
+    </style>
+</head>
+<body>
+    <button class="fullscreen-btn" onclick="tvToggleFullscreen()">
+        <i class="fa-solid fa-expand me-1"></i>Fullscreen
+    </button>
+
+    <div class="tv-header">
+        <div class="logo">HEAT</div>
+        <div class="race-info">
+            <div id="tv-race-name">Race</div>
+            <small id="tv-race-track">Track</small>
+        </div>
+    </div>
+
+    <div class="tv-weather" id="tv-weather-panel">
+        <div class="d-flex align-items-center">
+            <span class="weather-icon" id="tv-weather-icon">☀️</span>
+            <span class="weather-text" id="tv-weather-text">Dry</span>
+        </div>
+    </div>
+
+    <div class="tv-center">
+        <div class="lap-counter" id="tv-lap">00</div>
+        <div class="lap-label">Lap</div>
+    </div>
+
+    <div class="tv-leaderboard" id="tv-leaderboard">
+        <div class="text-center opacity-50 py-5">Waiting for race data...</div>
+    </div>
+
+    <div class="tv-events" id="tv-events">
+        <div class="text-center opacity-50 small">No recent events</div>
+    </div>
+
+    <div class="tv-quote" id="tv-quote"></div>
+
+    <div class="tv-footer">
+        <div class="flag-display" id="tv-flag-display">
+            <span id="tv-flag-icon">🏁</span>
+            <span id="tv-flag-text">Ready</span>
+        </div>
+        <div class="clock" id="tv-clock">00:00</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/tv.js"></script>
+</body>
+</html>

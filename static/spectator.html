@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEAT: Spectator View</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script>if(localStorage.getItem('theme')==='dark'||(!localStorage.getItem('theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}</script>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        body { background:var(--background); color:var(--text-main); font-family:'Montserrat',sans-serif; }
+        .spec-header { background:var(--surface); border-bottom:var(--border-width) solid var(--border-color); padding:16px 24px; }
+        .spec-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; padding:16px; }
+        .spec-card { background:var(--surface); border-radius:12px; padding:16px; border-left:4px solid var(--primary); }
+        .spec-card .name { font-weight:700; font-size:1.1rem; }
+        .spec-card .pos { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; }
+        .spec-card .meta { font-size:0.8rem; opacity:0.6; }
+        .spec-race-info { background:var(--surface); border-radius:12px; padding:16px; margin:0 16px; }
+        .spec-events { max-height:300px; overflow-y:auto; }
+        .spec-status { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:700; }
+        .spec-status.racing { background:#4caf50; color:#fff; }
+        .spec-status.stopped { background:#f44336; color:#fff; }
+        .spec-status.paused { background:#ff9800; color:#fff; }
+    </style>
+</head>
+<body>
+    <div class="vintage-overlay"></div>
+    <div class="spec-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="mb-0" style="font-family:'Bebas Neue',sans-serif;font-size:2rem;">
+                <i class="fa-solid fa-binoculars me-2"></i>Spectator View
+            </h1>
+            <div class="d-flex align-items-center gap-3">
+                <span class="spec-status stopped" id="spec-status-indicator">READY</span>
+                <a href="/" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-house"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="spec-race-info mt-3">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <h4 id="spec-race-name" class="mb-0">Race</h4>
+                <small id="spec-race-track" class="opacity-50">Track</small>
+            </div>
+            <div class="col-md-4 text-center">
+                <span style="font-family:'Bebas Neue',sans-serif;font-size:2rem;" id="spec-lap">Lap 0</span>
+            </div>
+            <div class="col-md-4 text-end">
+                <span id="spec-weather">☀️ Dry</span>
+                <span class="ms-3" id="spec-timer">00:00</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="spec-grid" id="spec-grid">
+        <p class="text-center opacity-50" style="grid-column:1/-1;">Loading race data...</p>
+    </div>
+
+    <div class="row g-3 px-3 mt-2">
+        <div class="col-md-6">
+            <div class="spec-race-info">
+                <h5 class="mb-3"><i class="fa-solid fa-list me-2"></i>Recent Events</h5>
+                <div class="spec-events" id="spec-events">
+                    <p class="text-center opacity-50">No events yet</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="spec-race-info">
+                <h5 class="mb-3"><i class="fa-solid fa-fire me-2"></i>Heat Usage</h5>
+                <div id="spec-heat-chart" class="text-center opacity-50 py-3">Heat data available when players self-report</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/spectator.js"></script>
+</body>
+</html>

@@ -131,6 +131,20 @@ func BroadcastLapReplay() {
 	}
 }
 
+func BroadcastSound() {
+	for {
+		cmd := <-app.SoundBroadcast
+		for client := range app.Clients {
+			err := client.WriteJSON(cmd)
+			if err != nil {
+				log.Printf("[WS] error broadcasting sound: %v", err)
+				client.Close()
+				delete(app.Clients, client)
+			}
+		}
+	}
+}
+
 func BroadcastSelfService(action models.SelfServiceAction) {
 	msg := map[string]interface{}{
 		"type":     "self_service",

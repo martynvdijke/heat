@@ -322,3 +322,82 @@ test.describe('Spectator Mode', () => {
     expect(Array.isArray(state.racers)).toBeTruthy();
   });
 });
+
+test.describe('Deeper Stats', () => {
+  test('should return qualifying vs race delta', async ({ page }) => {
+    const res = await page.request.get('/api/stats/qualifying-delta');
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    expect(Array.isArray(data)).toBeTruthy();
+  });
+
+  test('should return consistency ratings', async ({ page }) => {
+    const res = await page.request.get('/api/stats/consistency');
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    expect(Array.isArray(data)).toBeTruthy();
+  });
+
+  test('should return incidents report', async ({ page }) => {
+    const res = await page.request.get('/api/stats/incidents');
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    expect(Array.isArray(data)).toBeTruthy();
+  });
+
+  test('should return pace heatmap', async ({ page }) => {
+    const res = await page.request.get('/api/stats/pace-heatmap');
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    expect(Array.isArray(data)).toBeTruthy();
+  });
+
+  test('should return race report', async ({ page }) => {
+    const res = await page.request.get('/api/race-report');
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    expect(data).toHaveProperty('name');
+  });
+});
+
+test.describe('UI Presentation Pages', () => {
+  test('should load TV broadcast overlay', async ({ page }) => {
+    await page.goto('/tv.html');
+    await expect(page.locator('.logo')).toContainText('HEAT');
+    await expect(page.locator('#tv-leaderboard')).toBeVisible();
+  });
+
+  test('should load pit board display', async ({ page }) => {
+    await page.goto('/pitboard.html');
+    await expect(page.locator('h1')).toContainText('PIT BOARD');
+    await expect(page.locator('#pit-board')).toBeVisible();
+  });
+
+  test('should load race replay viewer', async ({ page }) => {
+    await page.goto('/replay.html');
+    await expect(page.locator('h1')).toContainText('Race Replay');
+    await expect(page.locator('#replay-race-select')).toBeVisible();
+  });
+
+  test('should load spectator view', async ({ page }) => {
+    await page.goto('/spectator.html');
+    await expect(page.locator('h1')).toContainText('Spectator View');
+    await expect(page.locator('#spec-grid')).toBeVisible();
+  });
+});
+
+test.describe('Sound FX', () => {
+  test('should trigger sound via API', async ({ page }) => {
+    const res = await page.request.post('/api/sound', {
+      data: { sound: 'engine' }
+    });
+    expect(res.ok()).toBeTruthy();
+  });
+
+  test('should trigger finish sound', async ({ page }) => {
+    const res = await page.request.post('/api/sound', {
+      data: { sound: 'finish' }
+    });
+    expect(res.ok()).toBeTruthy();
+  });
+});

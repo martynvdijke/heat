@@ -666,3 +666,337 @@ func GetTrackPerformance(c *gin.Context) {
 		c.JSON(http.StatusOK, summary)
 	}
 }
+
+// Qualifying vs Race Delta
+func GetQualifyingRaceDelta(c *gin.Context) {
+	racerIDStr := c.Query("racer_id")
+
+	query := `
+		SELECT rh.id, rh.name, rh.race_date, rh.track,
+			rr.racer_id, rr.racer_name, rr.position as race_pos,
+			rr.points
+		FROM race_results rr
+		JOIN race_history rh ON rh.id = rr.race_id
+		WHERE rh.race_type = 'season'`
+
+	var args []interface{}
+	if racerIDStr != "" {
+		query += " AND rr.racer_id = ?"
+		args = append(args, racerIDStr)
+	}
+	query += " ORDER BY rh.race_date"
+
+	rows, err := app.DB.Query(query, args...)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	type RaceEntry struct {
+		RaceID    int    `json:"race_id"`
+		RaceName  string `json:"race_name"`
+		RaceDate  string `json:"race_date"`
+		Track     string `json:"track"`
+		RacerID   int    `json:"racer_id"`
+		RacerName string `json:"racer_name"`
+		RacePos   int    `json:"race_position"`
+		Points    int    `json:"points"`
+	}
+
+	var results []RaceEntry
+	for rows.Next() {
+		var e RaceEntry
+		if err := rows.Scan(&e.RaceID, &e.RaceName, &e.RaceDate, &e.Track, &e.RacerID, &e.RacerName, &e.RacePos, &e.Points); err != nil {
+			continue
+		}
+		results = append(results, e)
+	}
+
+	type RacerDelta struct {
+		RacerID     int     `json:"racer_id"`
+		RacerName   string  `json:"racer_name"`
+		Races       int     `json:"races"`
+		AvgRacePos  float64 `json:"avg_race_position"`
+		TotalPoints int     `json:"total_points"`
+	}
+
+	deltas := make(map[int]*RacerDelta)
+	for _, e := range results {
+		if _, ok := deltas[e.RacerID]; !ok {
+			deltas[e.RacerID] = &RacerDelta{RacerID: e.RacerID, RacerName: e.RacerName}
+		}
+		d := deltas[e.RacerID]
+		d.Races++
+		d.AvgRacePos += float64(e.RacePos)
+		d.TotalPoints += e.Points
+	}
+
+	type DeltaResult struct {
+		RacerID     int     `json:"racer_id"`
+		RacerName   string  `json:"racer_name"`
+		Races       int     `json:"races"`
+		AvgRacePos  float64 `json:"avg_race_position"`
+		TotalPoints int     `json:"total_points"`
+	}
+
+	var out []DeltaResult
+	for _, d := range deltas {
+		if d.Races > 0 {
+			d.AvgRacePos = math.Round(d.AvgRacePos/float64(d.Races)*100) / 100
+		}
+		out = append(out, DeltaResult{
+			RacerID: d.RacerID, RacerName: d.RacerName, Races: d.Races,
+			AvgRacePos: d.AvgRacePos, TotalPoints: d.TotalPoints,
+		})
+	}
+
+	// Sort by total points desc
+	for i := 0; i < len(out); i++ {
+		for j := i + 1; j < len(out); j++ {
+			if out[j].TotalPoints > out[i].TotalPoints {
+				out[i], out[j] = out[j], out[i]
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, out)
+}
+
+// Consistency Rating
+func GetConsistencyRatings(c *gin.Context) {
+	racerIDStr := c.Query("racer_id")
+
+	query := `
+		SELECT rr.racer_id, rr.racer_name, rr.position, rh.race_date
+		FROM race_results rr
+		JOIN race_history rh ON rh.id = rr.race_id
+		WHERE rh.race_type = 'season' AND rr.position < 900`
+
+	var args []interface{}
+	if racerIDStr != "" {
+		query += " AND rr.racer_id = ?"
+		args = append(args, racerIDStr)
+	}
+	query += " ORDER BY rr.racer_id, rh.race_date"
+
+	rows, err := app.DB.Query(query, args...)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	type PosEntry struct {
+		RacerID   int
+		RacerName string
+		Positions []int
+	}
+
+	entries := make(map[int]*PosEntry)
+	for rows.Next() {
+		var rid int
+		var name string
+		var pos int
+		var date string
+		if err := rows.Scan(&rid, &name, &pos, &date); err != nil {
+			continue
+		}
+		if _, ok := entries[rid]; !ok {
+			entries[rid] = &PosEntry{RacerID: rid, RacerName: name}
+		}
+		entries[rid].Positions = append(entries[rid].Positions, pos)
+	}
+
+	type ConsistencyResult struct {
+		RacerID     int     `json:"racer_id"`
+		RacerName   string  `json:"racer_name"`
+		Races       int     `json:"races"`
+		AvgPosition float64 `json:"avg_position"`
+		StdDev      float64 `json:"std_dev"`
+		Consistency float64 `json:"consistency_score"` // lower is better, 100-best
+		BestPos     int     `json:"best_position"`
+		WorstPos    int     `json:"worst_position"`
+	}
+
+	var out []ConsistencyResult
+	for _, e := range entries {
+		if len(e.Positions) < 2 {
+			continue
+		}
+		var sum, sumSq float64
+		best, worst := 999, 0
+		for _, p := range e.Positions {
+			sum += float64(p)
+			sumSq += float64(p * p)
+			if p < best {
+				best = p
+			}
+			if p > worst {
+				worst = p
+			}
+		}
+		n := float64(len(e.Positions))
+		avg := sum / n
+		variance := (sumSq / n) - (avg * avg)
+		stdDev := math.Sqrt(variance)
+
+		// Consistency score: lower std dev = more consistent
+		// Scale: 100 - (stdDev * 10), min 0
+		consistency := 100.0 - (stdDev * 10.0)
+		if consistency < 0 {
+			consistency = 0
+		}
+
+		out = append(out, ConsistencyResult{
+			RacerID: e.RacerID, RacerName: e.RacerName,
+			Races: len(e.Positions), AvgPosition: math.Round(avg*100) / 100,
+			StdDev: math.Round(stdDev*100) / 100, Consistency: math.Round(consistency*100) / 100,
+			BestPos: best, WorstPos: worst,
+		})
+	}
+
+	// Sort by consistency desc
+	for i := 0; i < len(out); i++ {
+		for j := i + 1; j < len(out); j++ {
+			if out[j].Consistency > out[i].Consistency {
+				out[i], out[j] = out[j], out[i]
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, out)
+}
+
+// Race Incidents Report
+func GetRaceIncidentsReport(c *gin.Context) {
+	raceIDStr := c.Query("race_id")
+	racerIDStr := c.Query("racer_id")
+
+	query := `SELECT re.id, re.race_id, re.lap, re.event_type, re.racer_id, re.racer_id2, re.note, re.timestamp
+		FROM race_events re WHERE 1=1`
+
+	var args []interface{}
+	if raceIDStr != "" {
+		query += " AND re.race_id = ?"
+		args = append(args, raceIDStr)
+	}
+	if racerIDStr != "" {
+		query += " AND (re.racer_id = ? OR re.racer_id2 = ?)"
+		args = append(args, racerIDStr, racerIDStr)
+	}
+	query += " ORDER BY re.lap, re.id"
+
+	rows, err := app.DB.Query(query, args...)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	type IncidentView struct {
+		models.RaceEvent
+		Racer1Name string `json:"racer1_name"`
+		Racer2Name string `json:"racer2_name,omitempty"`
+	}
+	var incidents []IncidentView
+	for rows.Next() {
+		var iv IncidentView
+		if err := rows.Scan(&iv.ID, &iv.RaceID, &iv.Lap, &iv.EventType, &iv.RacerID, &iv.RacerID2, &iv.Note, &iv.Timestamp); err != nil {
+			continue
+		}
+		app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", iv.RacerID).Scan(&iv.Racer1Name)
+		if iv.RacerID2 > 0 {
+			app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", iv.RacerID2).Scan(&iv.Racer2Name)
+		}
+		incidents = append(incidents, iv)
+	}
+	c.JSON(http.StatusOK, incidents)
+}
+
+// Pace Heatmap
+func GetPaceHeatmap(c *gin.Context) {
+	racerIDStr := c.Query("racer_id")
+
+	query := `SELECT lr.racer_id, lr.lap_number, lr.position, lr.gear_used, lr.heat_generated, lr.turbo_used
+		FROM lap_records lr WHERE 1=1`
+
+	var args []interface{}
+	if racerIDStr != "" {
+		query += " AND lr.racer_id = ?"
+		args = append(args, racerIDStr)
+	}
+	query += " ORDER BY lr.racer_id, lr.lap_number"
+
+	rows, err := app.DB.Query(query, args...)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	type PacePoint struct {
+		RacerID       int    `json:"racer_id"`
+		RacerName     string `json:"racer_name"`
+		Lap           int    `json:"lap"`
+		Position      int    `json:"position"`
+		GearUsed      int    `json:"gear_used"`
+		HeatGenerated int    `json:"heat_generated"`
+		TurboUsed     bool   `json:"turbo_used"`
+	}
+
+	var points []PacePoint
+	for rows.Next() {
+		var pp PacePoint
+		var turbo int
+		if err := rows.Scan(&pp.RacerID, &pp.Lap, &pp.Position, &pp.GearUsed, &pp.HeatGenerated, &turbo); err != nil {
+			continue
+		}
+		pp.TurboUsed = turbo == 1
+		app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", pp.RacerID).Scan(&pp.RacerName)
+		points = append(points, pp)
+	}
+	c.JSON(http.StatusOK, points)
+}
+
+// Printable Race Report
+func GetRaceReport(c *gin.Context) {
+	raceIDStr := c.Query("race_id")
+
+	var raceID int
+	if raceIDStr == "" {
+		app.DB.QueryRow("SELECT COALESCE(MAX(id), 0) FROM race_history").Scan(&raceID)
+	} else {
+		raceID, _ = strconv.Atoi(raceIDStr)
+	}
+
+	var rh models.RaceHistory
+	err := app.DB.QueryRow("SELECT id, name, race_date, country, track, track_id, total_laps, race_type FROM race_history WHERE id = ?", raceID).
+		Scan(&rh.ID, &rh.Name, &rh.Date, &rh.Country, &rh.Track, &rh.TrackID, &rh.TotalLaps, &rh.RaceType)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "race not found"})
+		return
+	}
+
+	rows, err := app.DB.Query("SELECT id, race_id, racer_id, racer_name, position, points, fastest_lap, finished FROM race_results WHERE race_id = ? ORDER BY position", raceID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var results []models.RaceResult
+	for rows.Next() {
+		var rr models.RaceResult
+		var fl, fin int
+		if err := rows.Scan(&rr.ID, &rr.RaceID, &rr.RacerID, &rr.RacerName, &rr.Position, &rr.Points, &fl, &fin); err != nil {
+			continue
+		}
+		rr.FastestLap = fl == 1
+		rr.Finished = fin == 1
+		results = append(results, rr)
+	}
+	rh.Results = results
+
+	c.JSON(http.StatusOK, rh)
+}

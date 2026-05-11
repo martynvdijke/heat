@@ -84,6 +84,7 @@ func main() {
 	go ws.BroadcastGameMechanics()
 	go ws.BroadcastWeather()
 	go ws.BroadcastLapReplay()
+	go ws.BroadcastSound()
 	go func() {
 		for {
 			time.Sleep(15 * time.Minute)
@@ -215,6 +216,11 @@ func main() {
 	r.GET("/api/stats/elo", handlers.GetELORatings)
 	r.GET("/api/stats/export", handlers.ExportStatsCSV)
 	r.GET("/api/stats/track-performance", handlers.GetTrackPerformance)
+	r.GET("/api/stats/qualifying-delta", handlers.GetQualifyingRaceDelta)
+	r.GET("/api/stats/consistency", handlers.GetConsistencyRatings)
+	r.GET("/api/stats/incidents", handlers.GetRaceIncidentsReport)
+	r.GET("/api/stats/pace-heatmap", handlers.GetPaceHeatmap)
+	r.GET("/api/race-report", handlers.GetRaceReport)
 	r.POST("/api/flags", handlers.HandleFlag)
 	r.POST("/api/rounds", handlers.TakeRoundSnapshot)
 	r.GET("/api/rounds", handlers.GetRoundSnapshots)
@@ -252,6 +258,7 @@ func main() {
 	r.GET("/api/race-events", handlers.GetRaceEvents)
 	r.POST("/api/race-events", handlers.AddRaceEvent)
 	r.GET("/api/ai-difficulty", handlers.GetAIDifficulty)
+	r.POST("/api/sound", handlers.PlaySound)
 
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
@@ -376,6 +383,18 @@ func main() {
 
 		pages.GET("/trophies.html", func(c *gin.Context) {
 			servePage(c, filepath.Join(app.BasePath, "static/trophies.html"))
+		})
+
+		pages.GET("/tv.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(app.BasePath, "static/tv.html"))
+		})
+
+		pages.GET("/pitboard.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(app.BasePath, "static/pitboard.html"))
+		})
+
+		pages.GET("/replay.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(app.BasePath, "static/replay.html"))
 		})
 
 		pages.GET("/player.html", func(c *gin.Context) {

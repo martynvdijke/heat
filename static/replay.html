@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEAT: Race Replay</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script>if(localStorage.getItem('theme')==='dark'||(!localStorage.getItem('theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}</script>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        body { background:var(--background); color:var(--text-main); font-family:'Montserrat',sans-serif; }
+        .replay-header { background:var(--surface); border-bottom:var(--border-width) solid var(--border-color); padding:16px 24px; }
+        .replay-controls { background:var(--surface); border-radius:16px; padding:16px; margin-bottom:16px; }
+        .replay-timeline { display:flex; gap:4px; overflow-x:auto; padding:12px 0; }
+        .replay-lap { width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.8rem; font-weight:700; flex-shrink:0; background:var(--border-color); }
+        .replay-lap.active { background:var(--primary); color:#fff; transform:scale(1.15); }
+        .replay-lap:hover { opacity:0.8; }
+        .replay-table { background:var(--surface); border-radius:16px; padding:16px; }
+        .replay-row { display:flex; align-items:center; padding:8px 12px; margin-bottom:4px; background:rgba(255,255,255,0.03); border-radius:8px; }
+        .replay-pos { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; width:40px; }
+        .replay-name { font-weight:700; flex-grow:1; margin-left:12px; }
+        .replay-gear { background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-size:0.8rem; }
+        .replay-heat { color:#e74c3c; font-size:0.9rem; }
+        .replay-turbo { color:#2ecc71; }
+        .replay-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+        .replay-stat-card { background:var(--surface); border-radius:12px; padding:16px; text-align:center; }
+        .replay-stat-card .value { font-family:'Bebas Neue',sans-serif; font-size:2rem; }
+        .replay-stat-card .label { font-size:0.8rem; opacity:0.6; text-transform:uppercase; }
+        .race-selector { max-width:400px; margin:0 auto; }
+    </style>
+</head>
+<body>
+    <div class="vintage-overlay"></div>
+    <div class="replay-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="mb-0" style="font-family:'Bebas Neue',sans-serif;font-size:2rem;">
+                <i class="fa-solid fa-clock-rotate-left me-2"></i>Race Replay
+            </h1>
+            <a href="/" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-house"></i></a>
+        </div>
+    </div>
+
+    <div class="container-fluid px-3 mt-3">
+        <div class="replay-controls">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <select class="form-select" id="replay-race-select">
+                        <option value="">Select a race...</option>
+                    </select>
+                </div>
+                <div class="col-md-8 d-flex gap-2">
+                    <button class="btn btn-outline-info" onclick="replayPrevLap()"><i class="fa-solid fa-backward-step"></i></button>
+                    <button class="btn btn-success" id="replay-play-btn" onclick="toggleReplayPlay()"><i class="fa-solid fa-play"></i></button>
+                    <button class="btn btn-outline-info" onclick="replayNextLap()"><i class="fa-solid fa-forward-step"></i></button>
+                    <button class="btn btn-outline-warning" onclick="replayReset()"><i class="fa-solid fa-rotate-left"></i></button>
+                    <span class="ms-auto align-self-center fw-bold" id="replay-lap-display">Lap 0 / 0</span>
+                </div>
+            </div>
+            <div class="replay-timeline" id="replay-timeline"></div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="replay-table">
+                    <h5 class="mb-3"><i class="fa-solid fa-ranking-star me-2"></i>Positions</h5>
+                    <div id="replay-positions">
+                        <p class="text-center opacity-50">Select a race to begin</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="replay-stats">
+                    <div class="replay-stat-card">
+                        <div class="value" id="replay-avg-pos">-</div>
+                        <div class="label">Avg Position</div>
+                    </div>
+                    <div class="replay-stat-card">
+                        <div class="value" id="replay-most-overtakes">-</div>
+                        <div class="label">Most Overtakes</div>
+                    </div>
+                    <div class="replay-stat-card">
+                        <div class="value" id="replay-total-turbo">-</div>
+                        <div class="label">Total Turbo Uses</div>
+                    </div>
+                    <div class="replay-stat-card">
+                        <div class="value" id="replay-total-heat">-</div>
+                        <div class="label">Total Heat</div>
+                    </div>
+                </div>
+                <div class="replay-table mt-3">
+                    <h5 class="mb-3"><i class="fa-solid fa-list me-2"></i>Events</h5>
+                    <div id="replay-events" style="max-height:200px;overflow-y:auto;">
+                        <p class="text-center opacity-50">No events</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/replay.js"></script>
+</body>
+</html>

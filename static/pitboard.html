@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEAT: Pit Board</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script>if(localStorage.getItem('theme')==='dark'||(!localStorage.getItem('theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}</script>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        body { margin:0; padding:0; background:#000; color:#fff; font-family:'Montserrat',sans-serif; }
+        .pit-header { background:linear-gradient(135deg,#1a1a2e,#16213e); border-bottom:3px solid #e74c3c; padding:16px 30px; display:flex; align-items:center; }
+        .pit-header h1 { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; margin:0; }
+        .pit-header .race-meta { margin-left:auto; text-align:right; }
+        .pit-board { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px; padding:20px; }
+        .pit-driver-card { background:rgba(255,255,255,0.05); border-radius:12px; padding:16px; border-left:6px solid #fff; }
+        .pit-driver-card.pos1 { border-left-color:#ffd700; background:linear-gradient(135deg,rgba(255,215,0,0.1),transparent); }
+        .pit-driver-card.pos2 { border-left-color:#c0c0c0; }
+        .pit-driver-card.pos3 { border-left-color:#cd7f32; }
+        .pit-pos { font-family:'Bebas Neue',sans-serif; font-size:3rem; line-height:1; }
+        .pit-name { font-size:1.3rem; font-weight:700; }
+        .pit-stat { text-align:center; padding:8px; background:rgba(0,0,0,0.3); border-radius:8px; }
+        .pit-stat .value { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; }
+        .pit-stat .label { font-size:0.7rem; text-transform:uppercase; opacity:0.6; }
+        .pit-footer { position:fixed; bottom:0; left:0; right:0; background:rgba(0,0,0,0.9); border-top:1px solid rgba(255,255,255,0.1); padding:12px 30px; display:flex; justify-content:space-between; font-size:0.9rem; }
+        .pit-weather { display:flex; align-items:center; gap:8px; }
+        .fullscreen-btn { position:fixed; top:10px; left:10px; z-index:200; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:0.8rem; }
+        .pit-heat { display:inline-flex; align-items:center; gap:4px; }
+        .pit-heat-dot { width:10px; height:14px; border-radius:2px; background:#e74c3c; }
+        .pit-heat-dot.stress { background:#8e44ad; }
+        .pit-turbo { color:#2ecc71; }
+    </style>
+</head>
+<body>
+    <button class="fullscreen-btn" onclick="pitToggleFullscreen()">
+        <i class="fa-solid fa-expand me-1"></i>Fullscreen
+    </button>
+
+    <div class="pit-header">
+        <div>
+            <h1>PIT BOARD</h1>
+            <small id="pit-race-name" class="opacity-75">Loading race...</small>
+        </div>
+        <div class="race-meta">
+            <div id="pit-lap" style="font-family:'Bebas Neue',sans-serif;font-size:2rem;">Lap 0</div>
+            <small id="pit-clock">--:--</small>
+        </div>
+    </div>
+
+    <div class="pit-board" id="pit-board">
+        <div class="text-center py-5" style="grid-column:1/-1;">Loading driver data...</div>
+    </div>
+
+    <div class="pit-footer">
+        <div class="pit-weather">
+            <span id="pit-weather-icon">☀️</span>
+            <span id="pit-weather-text">Dry</span>
+        </div>
+        <div id="pit-flag-status">🏁 Green Flag</div>
+    </div>
+
+    <script src="/static/js/pitboard.js"></script>
+</body>
+</html>

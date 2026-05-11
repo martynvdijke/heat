@@ -422,3 +422,16 @@ func SetAIDifficulty(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 }
+
+// Sound FX
+func PlaySound(c *gin.Context) {
+	var req struct {
+		Sound string `json:"sound"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	app.SoundBroadcast <- models.SoundCommand{Type: "sound", Sound: req.Sound}
+	c.Status(http.StatusOK)
+}
