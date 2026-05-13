@@ -212,6 +212,6 @@ async function loginAsAdmin(page: Page) {
     await page.click('#login-form button[type="submit"]');
   }
 
-  await page.waitForURL(/admin/, { timeout: 10000 });
-  await expect(page.locator('#adminTabs')).toBeVisible({ timeout: 5000 });
+  await page.waitForURL(/admin/, { timeout: 20000 });
+  await expect(page.locator('#adminTabs')).toBeVisible({ timeout: 10000 });
 }

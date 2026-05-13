@@ -56,7 +56,10 @@ func SetWeather(c *gin.Context) {
 			return
 		}
 	}
-	app.WeatherBroadcast <- w
+	select {
+	case app.WeatherBroadcast <- w:
+	default:
+	}
 	c.Status(http.StatusOK)
 }
 
@@ -121,9 +124,12 @@ func AddTurboLog(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	app.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
+	select {
+	case app.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
 		Type: "turbo", RacerID: tl.RacerID, Action: "used",
 		Data: map[string]int{"lap": tl.Lap, "times": tl.TimesUsed},
+	}:
+	default:
 	}
 	c.Status(http.StatusOK)
 }
@@ -230,7 +236,10 @@ func RecordLapBatch(c *gin.Context) {
 		})
 	}
 
-	app.LapReplayBroadcast <- frame
+	select {
+	case app.LapReplayBroadcast <- frame:
+	default:
+	}
 	ws.BroadcastRacers()
 	c.Status(http.StatusOK)
 }
@@ -432,6 +441,9 @@ func PlaySound(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	app.SoundBroadcast <- models.SoundCommand{Type: "sound", Sound: req.Sound}
+	select {
+	case app.SoundBroadcast <- models.SoundCommand{Type: "sound", Sound: req.Sound}:
+	default:
+	}
 	c.Status(http.StatusOK)
 }

@@ -183,5 +183,8 @@ func BroadcastRacers() {
 		}
 		racers = append(racers, r)
 	}
-	app.Broadcast <- racers
+	select {
+	case app.Broadcast <- racers:
+	default:
+	}
 }

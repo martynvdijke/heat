@@ -54,7 +54,10 @@ func AddHeatCard(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	app.GameMechanicsBroadcast <- models.GameMechanicsUpdate{Type: "heat_cards", RacerID: hc.RacerID, Action: "added"}
+	select {
+	case app.GameMechanicsBroadcast <- models.GameMechanicsUpdate{Type: "heat_cards", RacerID: hc.RacerID, Action: "added"}:
+	default:
+	}
 	c.Status(http.StatusOK)
 }
 
@@ -85,7 +88,10 @@ func DeleteHeatCard(c *gin.Context) {
 	var racerID int
 	app.DB.QueryRow("SELECT racer_id FROM heat_cards WHERE id = ?", id).Scan(&racerID)
 	app.DB.Exec("DELETE FROM heat_cards WHERE id = ?", id)
-	app.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{Type: "heat_cards", RacerID: racerID, Action: "removed"})
+	select {
+	case app.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{Type: "heat_cards", RacerID: racerID, Action: "removed"}):
+	default:
+	}
 	c.Status(http.StatusOK)
 }
 
@@ -150,10 +156,13 @@ func AddGearShift(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	app.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{
+	select {
+	case app.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{
 		Type: "gear_shifts", RacerID: gs.RacerID, Action: "shifted",
 		Data: map[string]int{"lap": gs.Lap, "gear": gs.Gear, "stress": gs.Stress},
-	})
+	}):
+	default:
+	}
 	c.Status(http.StatusOK)
 }
 
@@ -286,10 +295,13 @@ func BuyUpgrade(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	app.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{
+	select {
+	case app.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{
 		Type: "upgrades", RacerID: req.RacerID, Action: "bought",
 		Data: map[string]int{"upgrade_id": req.UpgradeID, "round": req.Round},
-	})
+	}):
+	default:
+	}
 	c.Status(http.StatusOK)
 }
 

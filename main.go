@@ -108,6 +108,7 @@ func main() {
 		log.Fatal(err)
 	}
 	app.DB.SetMaxOpenConns(1)
+	app.DB.Exec("PRAGMA journal_mode=WAL")
 	defer app.DB.Close()
 
 	db.Init()

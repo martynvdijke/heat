@@ -209,9 +209,12 @@ func PlayerReportHeat(c *gin.Context) {
 			racerID, req.Location, req.CardType, 0)
 	}
 
-	app.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
+	select {
+	case app.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
 		Type: "heat_cards", RacerID: racerID, Action: "added",
 		Data: map[string]interface{}{"count": req.Count, "location": req.Location},
+	}:
+	default:
 	}
 
 	c.Status(http.StatusOK)

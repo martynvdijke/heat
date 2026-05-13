@@ -704,7 +704,7 @@ func GetQualifyingRaceDelta(c *gin.Context) {
 		Points    int    `json:"points"`
 	}
 
-	var results []RaceEntry
+	results := make([]RaceEntry, 0)
 	for rows.Next() {
 		var e RaceEntry
 		if err := rows.Scan(&e.RaceID, &e.RaceName, &e.RaceDate, &e.Track, &e.RacerID, &e.RacerName, &e.RacePos, &e.Points); err != nil {
@@ -740,7 +740,7 @@ func GetQualifyingRaceDelta(c *gin.Context) {
 		TotalPoints int     `json:"total_points"`
 	}
 
-	var out []DeltaResult
+	out := make([]DeltaResult, 0)
 	for _, d := range deltas {
 		if d.Races > 0 {
 			d.AvgRacePos = math.Round(d.AvgRacePos/float64(d.Races)*100) / 100
@@ -819,7 +819,7 @@ func GetConsistencyRatings(c *gin.Context) {
 		WorstPos    int     `json:"worst_position"`
 	}
 
-	var out []ConsistencyResult
+	out := make([]ConsistencyResult, 0)
 	for _, e := range entries {
 		if len(e.Positions) < 2 {
 			continue
@@ -873,8 +873,12 @@ func GetRaceIncidentsReport(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	racerIDStr := c.Query("racer_id")
 
-	query := `SELECT re.id, re.race_id, re.lap, re.event_type, re.racer_id, re.racer_id2, re.note, re.timestamp
-		FROM race_events re WHERE 1=1`
+	query := `SELECT re.id, re.race_id, re.lap, re.event_type, re.racer_id, re.racer_id2, re.note, re.timestamp,
+		COALESCE(r1.name, ''), COALESCE(r2.name, '')
+		FROM race_events re
+		LEFT JOIN racers r1 ON r1.id = re.racer_id
+		LEFT JOIN racers r2 ON r2.id = re.racer_id2
+		WHERE 1=1`
 
 	var args []interface{}
 	if raceIDStr != "" {
@@ -899,15 +903,12 @@ func GetRaceIncidentsReport(c *gin.Context) {
 		Racer1Name string `json:"racer1_name"`
 		Racer2Name string `json:"racer2_name,omitempty"`
 	}
-	var incidents []IncidentView
+	incidents := make([]IncidentView, 0)
 	for rows.Next() {
 		var iv IncidentView
-		if err := rows.Scan(&iv.ID, &iv.RaceID, &iv.Lap, &iv.EventType, &iv.RacerID, &iv.RacerID2, &iv.Note, &iv.Timestamp); err != nil {
+		if err := rows.Scan(&iv.ID, &iv.RaceID, &iv.Lap, &iv.EventType, &iv.RacerID, &iv.RacerID2, &iv.Note, &iv.Timestamp,
+			&iv.Racer1Name, &iv.Racer2Name); err != nil {
 			continue
-		}
-		app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", iv.RacerID).Scan(&iv.Racer1Name)
-		if iv.RacerID2 > 0 {
-			app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", iv.RacerID2).Scan(&iv.Racer2Name)
 		}
 		incidents = append(incidents, iv)
 	}
@@ -918,8 +919,10 @@ func GetRaceIncidentsReport(c *gin.Context) {
 func GetPaceHeatmap(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 
-	query := `SELECT lr.racer_id, lr.lap_number, lr.position, lr.gear_used, lr.heat_generated, lr.turbo_used
-		FROM lap_records lr WHERE 1=1`
+	query := `SELECT lr.racer_id, COALESCE(r.name, ''), lr.lap_number, lr.position, lr.gear_used, lr.heat_generated, lr.turbo_used
+		FROM lap_records lr
+		LEFT JOIN racers r ON r.id = lr.racer_id
+		WHERE 1=1`
 
 	var args []interface{}
 	if racerIDStr != "" {
@@ -945,15 +948,14 @@ func GetPaceHeatmap(c *gin.Context) {
 		TurboUsed     bool   `json:"turbo_used"`
 	}
 
-	var points []PacePoint
+	points := make([]PacePoint, 0)
 	for rows.Next() {
 		var pp PacePoint
 		var turbo int
-		if err := rows.Scan(&pp.RacerID, &pp.Lap, &pp.Position, &pp.GearUsed, &pp.HeatGenerated, &turbo); err != nil {
+		if err := rows.Scan(&pp.RacerID, &pp.RacerName, &pp.Lap, &pp.Position, &pp.GearUsed, &pp.HeatGenerated, &turbo); err != nil {
 			continue
 		}
 		pp.TurboUsed = turbo == 1
-		app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", pp.RacerID).Scan(&pp.RacerName)
 		points = append(points, pp)
 	}
 	c.JSON(http.StatusOK, points)
@@ -985,7 +987,7 @@ func GetRaceReport(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var results []models.RaceResult
+	results := make([]models.RaceResult, 0)
 	for rows.Next() {
 		var rr models.RaceResult
 		var fl, fin int
