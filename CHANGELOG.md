@@ -1,3 +1,20 @@
+# [1.23.0](https://github.com/martynvdijke/heat/compare/v1.22.2...v1.23.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* adapt swaggo/files v2 import to use embed FS via webdav handler ([111f0ae](https://github.com/martynvdijke/heat/commit/111f0ae40d1c3934a800397b396a5ff2123c812f))
+* **deps:** update module github.com/swaggo/files to v2 ([332de35](https://github.com/martynvdijke/heat/commit/332de35dd1e06f8684a1d3839b2f1ca7f72a53ce))
+* inline swagger handler into main.go to support go run main.go ([2a76317](https://github.com/martynvdijke/heat/commit/2a763171b14369229f29029c0362ed5d385132f0))
+* resolve e2e test failures across all browsers ([37be585](https://github.com/martynvdijke/heat/commit/37be58563922c89cef645bd286662217364e4b01))
+* trigger CI ([0fe1038](https://github.com/martynvdijke/heat/commit/0fe103844132ef37ac2d9be5d8ac8ccea6649be6))
+
+
+### Features
+
+* add game mechanics simulation, multi-user support, and race enhancements ([83d025c](https://github.com/martynvdijke/heat/commit/83d025cb4b06ce32f0db82298fb7485a26d83500))
+* add UI presentation, deeper stats, multiplayer enhancements, and sound FX ([cbde244](https://github.com/martynvdijke/heat/commit/cbde244916dac690c7645a65cf07d9dc487af3be))
+
 ## [1.22.2](https://github.com/martynvdijke/heat/compare/v1.22.1...v1.22.2) (2026-05-11)
 
 
