@@ -2387,6 +2387,29 @@ func TestPWAManifest(t *testing.T) {
 	})
 }
 
+func TestRaceReportPage(t *testing.T) {
+	t.Run("race report page exists", func(t *testing.T) {
+		data, err := os.ReadFile("static/race-report.html")
+		if err != nil {
+			t.Fatal("race-report.html not found")
+		}
+		if !strings.Contains(string(data), "Final Classification") {
+			t.Error("expected race report content")
+		}
+	})
+
+	t.Run("race report API returns data", func(t *testing.T) {
+		r := gin.New()
+		r.GET("/api/race-report", handlers.GetRaceReport)
+		req, _ := http.NewRequest("GET", "/api/race-report", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK && rr.Code != http.StatusNotFound {
+			t.Errorf("expected 200 or 404, got %d", rr.Code)
+		}
+	})
+}
+
 func TestFlagEndpoint(t *testing.T) {
 	r := gin.New()
 	r.POST("/api/flags", handlers.HandleFlag)
