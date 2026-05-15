@@ -481,3 +481,135 @@ test.describe('Sound FX', () => {
     expect(res.ok()).toBeTruthy();
   });
 });
+
+test.describe('Deck Builder', () => {
+  test('should get available upgrades for racer', async ({ page }) => {
+    const racersRes = await page.request.get('/api/racers');
+    const racers = await racersRes.json();
+    const racerId = racers[0]?.id || 1;
+
+    const res = await page.request.get(`/api/available-upgrades?racer_id=${racerId}`);
+    expect(res.ok()).toBeTruthy();
+    const upgrades = await res.json();
+    expect(Array.isArray(upgrades)).toBeTruthy();
+  });
+
+  test('should buy an upgrade for a racer', async ({ page }) => {
+    await loginAdminViaAPI(page.request);
+
+    const racersRes = await page.request.get('/api/racers');
+    const racers = await racersRes.json();
+    const racerId = racers[0]?.id || 1;
+
+    const upgradesRes = await page.request.get(`/api/available-upgrades?racer_id=${racerId}`);
+    const upgrades = await upgradesRes.json();
+    if (upgrades.length > 0) {
+      const res = await page.request.post('/api/player-upgrades/buy', {
+        data: { racer_id: racerId, upgrade_id: upgrades[0].id, season_id: 0, round: 1 },
+        headers: API_HEADERS,
+      });
+      expect(res.ok()).toBeTruthy();
+    }
+  });
+
+  test('should get player upgrades', async ({ page }) => {
+    const racersRes = await page.request.get('/api/racers');
+    const racers = await racersRes.json();
+    const racerId = racers[0]?.id || 1;
+
+    const res = await page.request.get(`/api/player-upgrades?racer_id=${racerId}`);
+    expect(res.ok()).toBeTruthy();
+    const upgrades = await res.json();
+    expect(Array.isArray(upgrades)).toBeTruthy();
+  });
+
+  test('should toggle upgrade equipped status', async ({ page }) => {
+    await loginAdminViaAPI(page.request);
+
+    const racersRes = await page.request.get('/api/racers');
+    const racers = await racersRes.json();
+    const racerId = racers[0]?.id || 1;
+
+    const upgradesRes = await page.request.get(`/api/player-upgrades?racer_id=${racerId}`);
+    const upgrades = await upgradesRes.json();
+    if (upgrades.length > 0) {
+      const res = await page.request.put('/api/player-upgrades/toggle', {
+        data: { id: upgrades[0].id, equipped: false },
+        headers: API_HEADERS,
+      });
+      expect(res.ok()).toBeTruthy();
+    }
+  });
+});
+
+test.describe('Shared Race Control', () => {
+  test('should list player sessions', async ({ page }) => {
+    await loginAdminViaAPI(page.request);
+
+    const res = await page.request.get('/api/player-sessions');
+    expect(res.ok()).toBeTruthy();
+    const sessions = await res.json();
+    expect(Array.isArray(sessions)).toBeTruthy();
+  });
+
+  test('should create and delete a player session', async ({ page }) => {
+    const racersRes = await page.request.get('/api/racers');
+    const racers = await racersRes.json();
+    const racerId = racers[0]?.id || 1;
+
+    const loginRes = await page.request.post('/api/player/login', {
+      data: { racer_id: racerId, device_name: 'TestAdmin' }
+    });
+    expect(loginRes.ok()).toBeTruthy();
+
+    await loginAdminViaAPI(page.request);
+
+    const sessionsRes = await page.request.get('/api/player-sessions');
+    const sessions = await sessionsRes.json();
+    if (sessions.length > 0) {
+      const delRes = await page.request.delete(`/api/player-sessions?id=${sessions[0].id}`, {
+        headers: API_HEADERS,
+      });
+      expect(delRes.ok()).toBeTruthy();
+    }
+  });
+
+  test('should logout player', async ({ page }) => {
+    const racersRes = await page.request.get('/api/racers');
+    const racers = await racersRes.json();
+    const racerId = racers[0]?.id || 1;
+
+    const loginRes = await page.request.post('/api/player/login', {
+      data: { racer_id: racerId, device_name: 'LogoutTest' }
+    });
+    expect(loginRes.ok()).toBeTruthy();
+    const { token } = await loginRes.json();
+
+    const logoutRes = await page.request.post('/api/player/logout', {
+      headers: { 'X-Player-Token': token }
+    });
+    expect(logoutRes.ok()).toBeTruthy();
+  });
+});
+
+test.describe('AI Difficulty Presets', () => {
+  test('should get AI difficulty defaults', async ({ page }) => {
+    const res = await page.request.get('/api/ai-difficulty');
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    expect(data).toHaveProperty('difficulty');
+    expect(data).toHaveProperty('aggression');
+    expect(data).toHaveProperty('error_rate');
+    expect(data).toHaveProperty('consistency');
+  });
+
+  test('should set AI difficulty', async ({ page }) => {
+    await loginAdminViaAPI(page.request);
+
+    const res = await page.request.post('/api/ai-difficulty', {
+      data: { difficulty: 'aggressive', aggression: 80, error_rate: 20, consistency: 40 },
+      headers: API_HEADERS,
+    });
+    expect(res.ok()).toBeTruthy();
+  });
+});
