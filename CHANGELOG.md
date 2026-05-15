@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/martynvdijke/heat/compare/v1.24.1...v1.25.0) (2026-05-15)
+
+
+### Features
+
+* add sharable driver stats links with email-friendly driver page ([cbe96c6](https://github.com/martynvdijke/heat/commit/cbe96c6618475989f0137f50ecd8f40bac825064))
+
 ## [1.24.1](https://github.com/martynvdijke/heat/compare/v1.24.0...v1.24.1) (2026-05-15)
 
 # [1.24.0](https://github.com/martynvdijke/heat/compare/v1.23.2...v1.24.0) (2026-05-15)
