@@ -30,6 +30,7 @@ var (
 	SessionStoreMu sync.RWMutex
 	StaticCache    = make(map[string][]byte)
 	Clients        = make(map[*websocket.Conn]bool)
+	ClientsMu      sync.RWMutex
 	Broadcast      = make(chan []models.Racer)
 	BasePath       = "/app"
 	DBPath         = "/db/heat.db"

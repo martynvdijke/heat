@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"heat/app"
+	"heat/db"
 	"heat/models"
 )
 
@@ -55,7 +56,7 @@ func SaveAISettings(c *gin.Context) {
 	}
 
 	_, err := app.DB.Exec(`INSERT OR REPLACE INTO ai_settings (id, track_extract_url, api_key, enabled) VALUES (1, ?, ?, ?)`,
-		s.TrackExtractURL, s.APIKey, boolToInt(s.Enabled))
+		s.TrackExtractURL, s.APIKey, db.BoolToInt(s.Enabled))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -105,7 +106,7 @@ func SaveNotificationSettings(c *gin.Context) {
 	}
 
 	_, err := app.DB.Exec(`INSERT OR REPLACE INTO notification_settings (id, gotify_url, gotify_token, notify_winner, notify_race_start, notify_podium) VALUES (1, ?, ?, ?, ?, ?)`,
-		s.GotiFyURL, s.GotiFyToken, boolToInt(s.NotifyWinner), boolToInt(s.NotifyRaceStart), boolToInt(s.NotifyPodium))
+		s.GotiFyURL, s.GotiFyToken, db.BoolToInt(s.NotifyWinner), db.BoolToInt(s.NotifyRaceStart), db.BoolToInt(s.NotifyPodium))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -158,7 +159,7 @@ func SaveEmailSettings(c *gin.Context) {
 	}
 
 	_, err := app.DB.Exec(`INSERT OR REPLACE INTO email_settings (id, smtp_host, smtp_port, username, password, from_addr, enabled) VALUES (1, ?, ?, ?, ?, ?, ?)`,
-		s.SMTPHost, s.SMTPPort, s.Username, s.Password, s.FromAddr, boolToInt(s.Enabled))
+		s.SMTPHost, s.SMTPPort, s.Username, s.Password, s.FromAddr, db.BoolToInt(s.Enabled))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -200,7 +201,7 @@ func SaveUmamiSettings(c *gin.Context) {
 	}
 
 	_, err := app.DB.Exec(`INSERT OR REPLACE INTO umami_settings (id, url, website_id, enabled) VALUES (1, ?, ?, ?)`,
-		s.URL, s.WebsiteID, boolToInt(s.Enabled))
+		s.URL, s.WebsiteID, db.BoolToInt(s.Enabled))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

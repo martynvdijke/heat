@@ -388,10 +388,10 @@ func DeleteRaceEvent(c *gin.Context) {
 // AI Difficulty Presets (stored as settings)
 
 func GetAIDifficulty(c *gin.Context) {
-	var difficulty, aggression, errorRate, consistency int
-	err := app.DB.QueryRow("SELECT id FROM ai_settings WHERE id = 1").Scan(&difficulty)
+	var difficulty string
+	var aggression, errorRate, consistency int
+	err := app.DB.QueryRow("SELECT COALESCE(difficulty, 'balanced'), COALESCE(aggression, 50), COALESCE(error_rate, 30), COALESCE(consistency, 50) FROM ai_settings WHERE id = 1").Scan(&difficulty, &aggression, &errorRate, &consistency)
 	if err != nil {
-		// No custom settings yet, return defaults
 		c.JSON(http.StatusOK, gin.H{
 			"difficulty":  "balanced",
 			"aggression":  50,
@@ -402,7 +402,7 @@ func GetAIDifficulty(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"difficulty":  "balanced",
+		"difficulty":  difficulty,
 		"aggression":  aggression,
 		"error_rate":  errorRate,
 		"consistency": consistency,
@@ -424,6 +424,13 @@ func SetAIDifficulty(c *gin.Context) {
 	_, err := app.DB.Exec(`INSERT INTO ai_settings (id, track_extract_url, api_key, enabled)
 		VALUES (1, '', '', 0)
 		ON CONFLICT(id) DO NOTHING`)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = app.DB.Exec(`UPDATE ai_settings SET difficulty = ?, aggression = ?, error_rate = ?, consistency = ? WHERE id = 1`,
+		req.Difficulty, req.Aggression, req.ErrorRate, req.Consistency)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

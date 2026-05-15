@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"heat/app"
+	"heat/db"
 	"heat/models"
 )
 
@@ -131,8 +132,8 @@ func buildRaceEmailContent(raceName, country, track string, totalLaps int, resul
 	b.WriteString("tr:nth-child(even){background:#1a1a1a}")
 	b.WriteString(".gold{color:#ffd700}.silver{color:#c0c0c0}.bronze{color:#cd7f32}")
 	b.WriteString("</style></head><body>")
-	b.WriteString(fmt.Sprintf("<h1>Race %s</h1>", escapeHTML(raceName)))
-	b.WriteString(fmt.Sprintf("<p><strong>Location:</strong> %s - %s</p>", escapeHTML(country), escapeHTML(track)))
+	b.WriteString(fmt.Sprintf("<h1>Race %s</h1>", db.EscapeHTML(raceName)))
+	b.WriteString(fmt.Sprintf("<p><strong>Location:</strong> %s - %s</p>", db.EscapeHTML(country), db.EscapeHTML(track)))
 	b.WriteString(fmt.Sprintf("<p><strong>Laps:</strong> %d</p>", totalLaps))
 	b.WriteString("<h2>Final Standings</h2><table><thead><tr><th>Pos</th><th>Driver</th><th>Points</th><th>Fastest Lap</th></tr></thead><tbody>")
 	for _, r := range results {
@@ -149,7 +150,7 @@ func buildRaceEmailContent(raceName, country, track string, totalLaps int, resul
 			fl = "Yes"
 		}
 		b.WriteString(fmt.Sprintf("<tr><td class=\"%s\">#%d</td><td class=\"%s\">%s</td><td>%d pts</td><td>%s</td></tr>",
-			cls, r.Position, cls, escapeHTML(r.RacerName), r.Points, fl))
+			cls, r.Position, cls, db.EscapeHTML(r.RacerName), r.Points, fl))
 	}
 	b.WriteString("</tbody></table>")
 	b.WriteString("<p style=\"color:#666;font-size:12px;margin-top:30px\">HEAT: Pedal to the Metal Board Game Companion</p>")
@@ -157,24 +158,7 @@ func buildRaceEmailContent(raceName, country, track string, totalLaps int, resul
 	return b.String()
 }
 
-func escapeHTML(s string) string {
-	var result string
-	for _, c := range s {
-		switch c {
-		case '&':
-			result += "&amp;"
-		case '<':
-			result += "&lt;"
-		case '>':
-			result += "&gt;"
-		case '"':
-			result += "&quot;"
-		default:
-			result += string(c)
-		}
-	}
-	return result
-}
+
 
 func SendRaceEmail(raceName, country, track string, totalLaps int, results []models.RaceResult) {
 	var s models.EmailSettings

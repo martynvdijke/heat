@@ -18,14 +18,18 @@ func HandleWebSocket(c *gin.Context) {
 	}
 	defer ws.Close()
 
+	app.ClientsMu.Lock()
 	app.Clients[ws] = true
+	app.ClientsMu.Unlock()
 	log.Printf("[WS] New client connected. Total clients: %d", len(app.Clients))
 
 	for {
 		_, msgBytes, err := ws.ReadMessage()
 		if err != nil {
 			log.Printf("[WS] Client disconnected: %v", err)
+			app.ClientsMu.Lock()
 			delete(app.Clients, ws)
+			app.ClientsMu.Unlock()
 			break
 		}
 
@@ -61,87 +65,62 @@ func HandleWebSocket(c *gin.Context) {
 	}
 }
 
+func broadcastToClients(msg interface{}) {
+	app.ClientsMu.RLock()
+	defer app.ClientsMu.RUnlock()
+	for client := range app.Clients {
+		err := client.WriteJSON(msg)
+		if err != nil {
+			log.Printf("[WS] error broadcasting to client: %v", err)
+			client.Close()
+			app.ClientsMu.RUnlock()
+			app.ClientsMu.Lock()
+			delete(app.Clients, client)
+			app.ClientsMu.Unlock()
+			app.ClientsMu.RLock()
+		}
+	}
+}
+
 func BroadcastManager() {
 	for {
 		racers := <-app.Broadcast
-		for client := range app.Clients {
-			err := client.WriteJSON(racers)
-			if err != nil {
-				log.Printf("[WS] error broadcasting to client: %v", err)
-				client.Close()
-				delete(app.Clients, client)
-			}
-		}
+		broadcastToClients(racers)
 	}
 }
 
 func BroadcastFlags() {
 	for {
 		cmd := <-app.FlagBroadcast
-		for client := range app.Clients {
-			err := client.WriteJSON(cmd)
-			if err != nil {
-				log.Printf("[WS] error broadcasting flag: %v", err)
-				client.Close()
-				delete(app.Clients, client)
-			}
-		}
+		broadcastToClients(cmd)
 	}
 }
 
 func BroadcastGameMechanics() {
 	for {
 		update := <-app.GameMechanicsBroadcast
-		for client := range app.Clients {
-			err := client.WriteJSON(update)
-			if err != nil {
-				log.Printf("[WS] error broadcasting game mechanics: %v", err)
-				client.Close()
-				delete(app.Clients, client)
-			}
-		}
+		broadcastToClients(update)
 	}
 }
 
 func BroadcastWeather() {
 	for {
 		wc := <-app.WeatherBroadcast
-		for client := range app.Clients {
-			err := client.WriteJSON(wc)
-			if err != nil {
-				log.Printf("[WS] error broadcasting weather: %v", err)
-				client.Close()
-				delete(app.Clients, client)
-			}
-		}
+		broadcastToClients(wc)
 	}
 }
 
 func BroadcastLapReplay() {
 	for {
 		frame := <-app.LapReplayBroadcast
-		for client := range app.Clients {
-			err := client.WriteJSON(frame)
-			if err != nil {
-				log.Printf("[WS] error broadcasting lap replay: %v", err)
-				client.Close()
-				delete(app.Clients, client)
-			}
-		}
+		broadcastToClients(frame)
 	}
 }
 
 func BroadcastSound() {
 	for {
 		cmd := <-app.SoundBroadcast
-		for client := range app.Clients {
-			err := client.WriteJSON(cmd)
-			if err != nil {
-				log.Printf("[WS] error broadcasting sound: %v", err)
-				client.Close()
-				delete(app.Clients, client)
-			}
-		}
+		broadcastToClients(cmd)
 	}
 }
 
@@ -155,14 +134,7 @@ func BroadcastSelfService(action models.SelfServiceAction) {
 		"stress":   action.Stress,
 		"turbo":    action.TurboUsed,
 	}
-	for client := range app.Clients {
-		err := client.WriteJSON(msg)
-		if err != nil {
-			log.Printf("[WS] error broadcasting self-service: %v", err)
-			client.Close()
-			delete(app.Clients, client)
-		}
-	}
+	broadcastToClients(msg)
 }
 
 func BroadcastRacers() {

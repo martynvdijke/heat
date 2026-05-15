@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"heat/app"
+	"heat/db"
 	"heat/models"
 )
 
@@ -114,7 +115,7 @@ func SaveRaceToHistory(c *gin.Context) {
 
 	for _, res := range input.Results {
 		app.DB.Exec("INSERT INTO race_results (race_id, racer_id, racer_name, position, points, fastest_lap) VALUES (?, ?, ?, ?, ?, ?)",
-			raceID, res.RacerID, res.RacerName, res.Position, res.Points, boolToInt(res.FastestLap))
+			raceID, res.RacerID, res.RacerName, res.Position, res.Points, db.BoolToInt(res.FastestLap))
 
 		if !isOneOff {
 			app.DB.Exec(`INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)
@@ -128,13 +129,13 @@ func SaveRaceToHistory(c *gin.Context) {
 					 dnf = dnf + excluded.dnf,
 					 dns = dns + excluded.dns`,
 				res.RacerID,
-				boolToInt(res.Position == 1),
-				boolToInt(res.Position == 1),
-				boolToInt(res.Position == 2),
-				boolToInt(res.Position == 3),
-				boolToInt(res.FastestLap),
-				boolToInt(!res.Finished && !res.DidNotStart),
-				boolToInt(res.DidNotStart))
+				db.BoolToInt(res.Position == 1),
+				db.BoolToInt(res.Position == 1),
+				db.BoolToInt(res.Position == 2),
+				db.BoolToInt(res.Position == 3),
+				db.BoolToInt(res.FastestLap),
+				db.BoolToInt(!res.Finished && !res.DidNotStart),
+				db.BoolToInt(res.DidNotStart))
 		}
 	}
 
@@ -266,9 +267,4 @@ func DeleteRaceHistory(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
+

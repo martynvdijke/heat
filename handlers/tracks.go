@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"heat/app"
+	"heat/db"
 	"heat/models"
 )
 
@@ -63,7 +64,7 @@ func SaveTrack(c *gin.Context) {
 	}
 
 	_, err := app.DB.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.ID, t.Name, t.Country, t.ID, t.Length, t.LapRecord, boolToInt(t.UseMapImage), t.MapImageURL, boolToInt(t.RefreshGeoJSON))
+		t.ID, t.Name, t.Country, t.ID, t.Length, t.LapRecord, db.BoolToInt(t.UseMapImage), t.MapImageURL, db.BoolToInt(t.RefreshGeoJSON))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -395,7 +395,7 @@ func calcStreak(positions []struct {
 	var bestStart, bestEnd string
 	var currentStart string
 
-	for i, p := range positions {
+	for _, p := range positions {
 		isMatch := false
 		if streakType == "dnf" {
 			isMatch = p.pos >= 900 // DNF positions are high numbers
@@ -418,7 +418,6 @@ func calcStreak(positions []struct {
 		} else {
 			current = 0
 		}
-		_ = i
 	}
 
 	var currentValue int

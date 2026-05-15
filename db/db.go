@@ -13,7 +13,7 @@ import (
 	"heat/models"
 )
 
-var currentSchemaVersion = 20
+var currentSchemaVersion = 21
 
 func Init() {
 	_, _ = app.DB.Exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
@@ -252,15 +252,6 @@ func runMigration(fromVersion int) {
 		_, _ = app.DB.Exec("INSERT OR IGNORE INTO seasons (id, name, start_date, status) VALUES (1, 'Season 1', date('now'), 'active')")
 		_, _ = app.DB.Exec("ALTER TABLE round_snapshots ADD COLUMN season_id INTEGER DEFAULT 1 REFERENCES seasons(id)")
 	case 16:
-		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS seasons (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL,
-			start_date TEXT NOT NULL,
-			end_date TEXT,
-			status TEXT DEFAULT 'active',
-			created_at TEXT DEFAULT (datetime('now'))
-		)`)
-		_, _ = app.DB.Exec("INSERT OR IGNORE INTO seasons (id, name, start_date, status) VALUES (1, 'Season 1', date('now'), 'active')")
 		_, _ = app.DB.Exec("ALTER TABLE round_snapshots ADD COLUMN season_id INTEGER DEFAULT 1 REFERENCES seasons(id)")
 	case 17:
 		_, _ = app.DB.Exec("ALTER TABLE backup_settings ADD COLUMN retention_count INTEGER DEFAULT 7")
@@ -390,6 +381,11 @@ func runMigration(fromVersion int) {
 			created_at TEXT DEFAULT (datetime('now')),
 			FOREIGN KEY (racer_id) REFERENCES racers(id)
 		)`)
+	case 20:
+		_, _ = app.DB.Exec("ALTER TABLE ai_settings ADD COLUMN difficulty TEXT DEFAULT 'balanced'")
+		_, _ = app.DB.Exec("ALTER TABLE ai_settings ADD COLUMN aggression INTEGER DEFAULT 50")
+		_, _ = app.DB.Exec("ALTER TABLE ai_settings ADD COLUMN error_rate INTEGER DEFAULT 30")
+		_, _ = app.DB.Exec("ALTER TABLE ai_settings ADD COLUMN consistency INTEGER DEFAULT 50")
 	}
 }
 
