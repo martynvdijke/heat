@@ -1,3 +1,10 @@
+## [1.23.2](https://github.com/martynvdijke/heat/compare/v1.23.1...v1.23.2) (2026-05-15)
+
+
+### Bug Fixes
+
+* recover missing upload files on duplicate hash detection ([c4124a9](https://github.com/martynvdijke/heat/commit/c4124a986df379d2ca6578b08b1173e9c9124827))
+
 ## [1.23.1](https://github.com/martynvdijke/heat/compare/v1.23.0...v1.23.1) (2026-05-14)
 
 
