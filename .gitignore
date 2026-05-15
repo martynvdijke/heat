@@ -1,5 +1,7 @@
 heat
 heat.db
+heat.db-shm
+heat.db-wal
 heat-server
 static/js/
 vendor/

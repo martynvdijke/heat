@@ -95,12 +95,16 @@ func HandleUpload(c *gin.Context) {
 		return
 	}
 
+	uploadPath := filepath.Join(dir, filename)
+
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
 		var existingURL string
 		if err := app.DB.QueryRow("SELECT url FROM uploads WHERE hash = ?", hashStr).Scan(&existingURL); err == nil {
-			c.JSON(http.StatusOK, gin.H{"url": existingURL, "duplicate": true})
-			return
+			if _, statErr := os.Stat(uploadPath); statErr == nil {
+				c.JSON(http.StatusOK, gin.H{"url": existingURL, "duplicate": true})
+				return
+			}
 		}
 	}
 
@@ -108,8 +112,6 @@ func HandleUpload(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
 		return
 	}
-
-	uploadPath := filepath.Join(dir, filename)
 
 	if ext != ".gif" && ext != ".svg" && ext != ".tif" && ext != ".tiff" {
 		img, format, err := image.Decode(bytes.NewReader(data))
