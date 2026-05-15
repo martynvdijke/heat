@@ -1635,6 +1635,142 @@ func setupAdminRouter() (*gin.Engine, string) {
 	return r, ""
 }
 
+func TestTeamsAPI(t *testing.T) {
+	r := gin.New()
+	admin := r.Group("/api")
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+	admin.POST("/teams", handlers.SaveTeam)
+	admin.DELETE("/teams", handlers.DeleteTeam)
+	admin.POST("/teams/assign", handlers.AssignTeam)
+	r.GET("/api/teams", handlers.GetTeams)
+	r.GET("/api/teams/standings", handlers.GetConstructorStandings)
+
+	sessionID := createAdminSession(t)
+	defer removeAdminSession(sessionID)
+
+	t.Run("list teams", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/teams", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rr.Code)
+		}
+		var teams []models.Team
+		json.Unmarshal(rr.Body.Bytes(), &teams)
+		if len(teams) < 5 {
+			t.Errorf("expected at least 5 teams, got %d", len(teams))
+		}
+	})
+
+	t.Run("create team", func(t *testing.T) {
+		body, _ := json.Marshal(models.Team{Name: "Test Team", Color: "#ff00ff"})
+		req := newAdminRequest("POST", "/api/teams", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var name string
+		app.DB.QueryRow("SELECT name FROM teams WHERE name = 'Test Team'").Scan(&name)
+		if name != "Test Team" {
+			t.Errorf("expected 'Test Team', got %q", name)
+		}
+	})
+
+	t.Run("create team empty name", func(t *testing.T) {
+		body, _ := json.Marshal(models.Team{Name: "", Color: "#ff00ff"})
+		req := newAdminRequest("POST", "/api/teams", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for empty name, got %d", rr.Code)
+		}
+	})
+
+	t.Run("assign racer to team", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]int{"racer_id": 1, "team_id": 1})
+		req := newAdminRequest("POST", "/api/teams/assign", body, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var teamID int
+		app.DB.QueryRow("SELECT team_id FROM racers WHERE id = 1").Scan(&teamID)
+		if teamID != 1 {
+			t.Errorf("expected team_id=1, got %d", teamID)
+		}
+	})
+
+	t.Run("constructor standings", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/teams/standings", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rr.Code)
+		}
+		var standings []map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &standings)
+		if len(standings) < 1 {
+			t.Error("expected at least 1 team in standings")
+		}
+	})
+
+	t.Run("delete team", func(t *testing.T) {
+		req := newAdminRequest("DELETE", "/api/teams?id=1", nil, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rr.Code)
+		}
+		var count int
+		app.DB.QueryRow("SELECT COUNT(*) FROM teams WHERE id = 1").Scan(&count)
+		if count != 0 {
+			t.Error("team should be deleted")
+		}
+		var teamID int
+		app.DB.QueryRow("SELECT COALESCE(team_id, 0) FROM racers WHERE id = 1").Scan(&teamID)
+		if teamID != 0 {
+			t.Errorf("expected racer team_id reset to 0, got %d", teamID)
+		}
+		// Re-seed for other tests
+		app.DB.Exec("INSERT OR IGNORE INTO teams (id, name, color) VALUES (1, 'Scuderia Ferrari', '#d40000')")
+	})
+
+	t.Run("delete team without auth", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", "/api/teams?id=2", nil)
+		req.Header.Set("Origin", "http://127.0.0.1:6270")
+		req.Host = "127.0.0.1:6270"
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401, got %d", rr.Code)
+		}
+	})
+
+	t.Run("create team without auth", func(t *testing.T) {
+		body, _ := json.Marshal(models.Team{Name: "Unauth Team"})
+		req, _ := http.NewRequest("POST", "/api/teams", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Origin", "http://127.0.0.1:6270")
+		req.Host = "127.0.0.1:6270"
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401, got %d", rr.Code)
+		}
+	})
+
+	t.Run("delete team invalid id", func(t *testing.T) {
+		req := newAdminRequest("DELETE", "/api/teams?id=0", nil, sessionID)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400, got %d", rr.Code)
+		}
+	})
+}
+
 func TestRacerCRUD(t *testing.T) {
 	r := gin.New()
 	admin := r.Group("/api")

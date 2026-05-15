@@ -13,7 +13,7 @@ import (
 	"heat/models"
 )
 
-var currentSchemaVersion = 21
+var currentSchemaVersion = 22
 
 func Init() {
 	_, _ = app.DB.Exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
@@ -44,7 +44,8 @@ func Init() {
 		car_name TEXT,
 		points INTEGER,
 		rank INTEGER,
-		position INTEGER DEFAULT 0
+		position INTEGER DEFAULT 0,
+		team_id INTEGER DEFAULT 0
 	);`
 
 	createRaceInfoTable := `
@@ -386,6 +387,15 @@ func runMigration(fromVersion int) {
 		_, _ = app.DB.Exec("ALTER TABLE ai_settings ADD COLUMN aggression INTEGER DEFAULT 50")
 		_, _ = app.DB.Exec("ALTER TABLE ai_settings ADD COLUMN error_rate INTEGER DEFAULT 30")
 		_, _ = app.DB.Exec("ALTER TABLE ai_settings ADD COLUMN consistency INTEGER DEFAULT 50")
+	case 21:
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS teams (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL UNIQUE,
+			color TEXT NOT NULL DEFAULT '#d40000',
+			created_at TEXT DEFAULT (datetime('now'))
+		)`)
+		_, _ = app.DB.Exec("ALTER TABLE racers ADD COLUMN team_id INTEGER DEFAULT 0 REFERENCES teams(id)")
+		SeedTeams()
 	}
 }
 
@@ -557,6 +567,25 @@ func SeedSectors() {
 		}
 	}
 	log.Printf("[DB] Seeded sectors")
+}
+
+func SeedTeams() {
+	var count int
+	app.DB.QueryRow("SELECT COUNT(*) FROM teams").Scan(&count)
+	if count > 0 {
+		return
+	}
+	teams := []struct{ Name, Color string }{
+		{"Scuderia Ferrari", "#d40000"},
+		{"Scuderia Alfa Romeo", "#900000"},
+		{"Team Lotus", "#005500"},
+		{"McLaren Racing", "#ff8700"},
+		{"Williams Racing", "#005aff"},
+	}
+	for _, t := range teams {
+		app.DB.Exec("INSERT INTO teams (name, color) VALUES (?, ?)", t.Name, t.Color)
+	}
+	log.Printf("[DB] Seeded %d teams", len(teams))
 }
 
 func BoolToInt(b bool) int {

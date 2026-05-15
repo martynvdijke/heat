@@ -237,6 +237,11 @@ func main() {
 		admin.POST("/driver-share", handlers.GenerateDriverShareToken)
 		admin.GET("/driver-shares", handlers.GetDriverShareTokens)
 		admin.DELETE("/driver-share", handlers.DeleteDriverShareToken)
+
+		// Teams
+		admin.POST("/teams", handlers.SaveTeam)
+		admin.DELETE("/teams", handlers.DeleteTeam)
+		admin.POST("/teams/assign", handlers.AssignTeam)
 	}
 
 	r.GET("/api/uploads", handlers.GetUploads)
@@ -300,6 +305,8 @@ func main() {
 
 	// Driver Share (public, token-based)
 	r.GET("/api/shared/driver-stats", handlers.GetDriverStatsByToken)
+	r.GET("/api/teams", handlers.GetTeams)
+	r.GET("/api/teams/standings", handlers.GetConstructorStandings)
 
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})

@@ -273,8 +273,8 @@ func PlayerGetStatus(c *gin.Context) {
 
 	// Get racer info
 	var racer models.Racer
-	err = app.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points, rank, position FROM racers WHERE id = ?",
-		racerID).Scan(&racer.ID, &racer.Name, &racer.ProfilePicture, &racer.CarColor, &racer.CarName, &racer.Points, &racer.Rank, &racer.Position)
+	err = app.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers WHERE id = ?",
+		racerID).Scan(&racer.ID, &racer.Name, &racer.ProfilePicture, &racer.CarColor, &racer.CarName, &racer.Points, &racer.Rank, &racer.Position, &racer.TeamID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -307,7 +307,7 @@ func PlayerGetStatus(c *gin.Context) {
 // Spectator endpoint - public race state
 
 func GetSpectatorState(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position FROM racers ORDER BY rank ASC")
+	rows, err := app.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -317,7 +317,7 @@ func GetSpectatorState(c *gin.Context) {
 	racers := make([]models.Racer, 0)
 	for rows.Next() {
 		var r models.Racer
-		rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position)
+		rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID)
 		racers = append(racers, r)
 	}
 
