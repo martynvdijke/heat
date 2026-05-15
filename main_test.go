@@ -2342,6 +2342,51 @@ func shorten(s string) string {
 	return s
 }
 
+func TestPWAManifest(t *testing.T) {
+	r := gin.New()
+	r.StaticFile("/sw.js", "./static/sw.js")
+
+	t.Run("serve service worker", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/sw.js", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		if rr.Body.Len() == 0 {
+			t.Error("expected non-empty service worker")
+		}
+	})
+
+	t.Run("manifest exists", func(t *testing.T) {
+		data, err := os.ReadFile("static/manifest.json")
+		if err != nil {
+			t.Fatal("manifest.json not found")
+		}
+		var m map[string]interface{}
+		json.Unmarshal(data, &m)
+		if m["name"] == nil || m["short_name"] == nil {
+			t.Error("manifest missing required fields")
+		}
+	})
+
+	t.Run("all HTML pages have manifest link", func(t *testing.T) {
+		files, _ := filepath.Glob("static/*.html")
+		for _, f := range files {
+			data, err := os.ReadFile(f)
+			if err != nil {
+				continue
+			}
+			if !strings.Contains(string(data), "manifest.json") {
+				t.Errorf("%s missing manifest link", f)
+			}
+			if !strings.Contains(string(data), "theme-color") {
+				t.Errorf("%s missing theme-color", f)
+			}
+		}
+	})
+}
+
 func TestFlagEndpoint(t *testing.T) {
 	r := gin.New()
 	r.POST("/api/flags", handlers.HandleFlag)

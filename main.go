@@ -349,6 +349,7 @@ func main() {
 
 	r.Static("/media", app.MediaPath)
 	r.Static("/static", filepath.Join(app.BasePath, "static"))
+	r.StaticFile("/sw.js", filepath.Join(app.BasePath, "static/sw.js"))
 
 	pages := r.Group("")
 	pages.Use(middleware.UmamiMiddleware())
