@@ -118,6 +118,7 @@ func main() {
 	go ws.BroadcastWeather()
 	go ws.BroadcastLapReplay()
 	go ws.BroadcastSound()
+	go ws.BroadcastRaceRadio()
 	go func() {
 		for {
 			time.Sleep(15 * time.Minute)
@@ -302,6 +303,8 @@ func main() {
 	r.POST("/api/race-events", handlers.AddRaceEvent)
 	r.GET("/api/ai-difficulty", handlers.GetAIDifficulty)
 	r.POST("/api/sound", handlers.PlaySound)
+	r.GET("/api/race-radio", handlers.GetRaceRadio)
+	r.POST("/api/race-radio", handlers.AddRaceRadio)
 
 	// Driver Share (public, token-based)
 	r.GET("/api/shared/driver-stats", handlers.GetDriverStatsByToken)

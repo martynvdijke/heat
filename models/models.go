@@ -366,6 +366,15 @@ type DriverShare struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type RaceRadioMessage struct {
+	ID        int    `json:"id"`
+	RaceID    int    `json:"race_id"`
+	RacerID   int    `json:"racer_id"`
+	RacerName string `json:"racer_name,omitempty"`
+	Message   string `json:"message"`
+	Timestamp string `json:"timestamp,omitempty"`
+}
+
 // WebSocket message wrappers
 
 type GameMechanicsUpdate struct {

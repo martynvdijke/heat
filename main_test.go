@@ -50,6 +50,7 @@ func TestMain(m *testing.M) {
 	go ws.BroadcastWeather()
 	go ws.BroadcastLapReplay()
 	go ws.BroadcastSound()
+	go ws.BroadcastRaceRadio()
 
 	if err := os.MkdirAll(app.MediaPath, 0755); err != nil {
 		log.Fatalf("failed to create media directory: %v", err)
@@ -3114,6 +3115,88 @@ func TestSoundFX(t *testing.T) {
 			t.Errorf("expected 200, got %d", rr.Code)
 		}
 	})
+}
+
+func TestRaceRadioAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/race-radio", handlers.GetRaceRadio)
+	r.POST("/api/race-radio", handlers.AddRaceRadio)
+
+	t.Run("add radio message", func(t *testing.T) {
+		body := `{"race_id":1,"racer_id":1,"message":"Box box, box now!"}`
+		req, _ := http.NewRequest("POST", "/api/race-radio", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var msg models.RaceRadioMessage
+		json.Unmarshal(rr.Body.Bytes(), &msg)
+		if msg.ID == 0 {
+			t.Error("expected non-zero id")
+		}
+		if msg.RacerName == "" {
+			t.Error("expected racer name")
+		}
+	})
+
+	t.Run("add radio message empty message", func(t *testing.T) {
+		body := `{"race_id":1,"racer_id":1,"message":""}`
+		req, _ := http.NewRequest("POST", "/api/race-radio", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for empty message, got %d", rr.Code)
+		}
+	})
+
+	t.Run("add radio message no racer", func(t *testing.T) {
+		body := `{"race_id":1,"racer_id":0,"message":"Test"}`
+		req, _ := http.NewRequest("POST", "/api/race-radio", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for no racer, got %d", rr.Code)
+		}
+	})
+
+	t.Run("get radio messages", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/race-radio?race_id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rr.Code)
+		}
+		var msgs []models.RaceRadioMessage
+		json.Unmarshal(rr.Body.Bytes(), &msgs)
+		if len(msgs) < 1 {
+			t.Error("expected at least 1 message")
+		}
+		if msgs[0].Message != "Box box, box now!" {
+			t.Errorf("expected 'Box box, box now!', got %q", msgs[0].Message)
+		}
+	})
+
+	t.Run("filter by racer", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/race-radio?racer_id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rr.Code)
+		}
+		var msgs []models.RaceRadioMessage
+		json.Unmarshal(rr.Body.Bytes(), &msgs)
+		for _, m := range msgs {
+			if m.RacerID != 1 {
+				t.Errorf("expected racer_id=1, got %d", m.RacerID)
+			}
+		}
+	})
+
+	app.DB.Exec("DELETE FROM race_radio")
 }
 
 func TestDeeperStats(t *testing.T) {

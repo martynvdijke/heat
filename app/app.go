@@ -18,6 +18,7 @@ var GameMechanicsBroadcast = make(chan models.GameMechanicsUpdate)
 var WeatherBroadcast = make(chan models.WeatherCondition)
 var LapReplayBroadcast = make(chan models.LapReplayFrame)
 var SoundBroadcast = make(chan models.SoundCommand)
+var RaceRadioBroadcast = make(chan models.RaceRadioMessage)
 
 type SessionInfo struct {
 	Expiry int64

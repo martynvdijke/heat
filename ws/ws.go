@@ -124,6 +124,20 @@ func BroadcastSound() {
 	}
 }
 
+func BroadcastRaceRadio() {
+	for {
+		msg := <-app.RaceRadioBroadcast
+		broadcastToClients(map[string]interface{}{
+			"type":       "race_radio",
+			"id":         msg.ID,
+			"racer_id":   msg.RacerID,
+			"racer_name": msg.RacerName,
+			"message":    msg.Message,
+			"timestamp":  msg.Timestamp,
+		})
+	}
+}
+
 func BroadcastSelfService(action models.SelfServiceAction) {
 	msg := map[string]interface{}{
 		"type":     "self_service",
