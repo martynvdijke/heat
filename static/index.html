@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/static/js/i18n.js"></script>
 </head>
 <body>
     <div class="vintage-overlay"></div>
@@ -56,6 +57,15 @@
                     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
                         <i class="fa-solid fa-moon"></i>
                     </button>
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:0.75rem;padding:0.2rem 0.5rem">
+                            <i class="fa-solid fa-language"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" style="min-width:auto;font-size:0.85rem">
+                            <li><a class="dropdown-item" href="#" onclick="i18n.switchLang('en');return false">English</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="i18n.switchLang('de');return false">Deutsch</a></li>
+                        </ul>
+                    </div>
                 </nav>
             </div>
         </div>

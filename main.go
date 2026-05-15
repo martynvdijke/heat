@@ -306,6 +306,10 @@ func main() {
 	r.GET("/api/race-radio", handlers.GetRaceRadio)
 	r.POST("/api/race-radio", handlers.AddRaceRadio)
 
+	// i18n
+	r.GET("/api/translations", handlers.GetTranslations)
+	r.POST("/api/language", handlers.SetLanguage)
+
 	// Driver Share (public, token-based)
 	r.GET("/api/shared/driver-stats", handlers.GetDriverStatsByToken)
 	r.GET("/api/teams", handlers.GetTeams)
@@ -352,7 +356,7 @@ func main() {
 	r.StaticFile("/sw.js", filepath.Join(app.BasePath, "static/sw.js"))
 
 	pages := r.Group("")
-	pages.Use(middleware.UmamiMiddleware())
+	pages.Use(middleware.UmamiMiddleware(), handlers.I18nMiddleware())
 	{
 		pages.GET("/admin.html", func(c *gin.Context) {
 			var validSession string

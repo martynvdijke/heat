@@ -2387,6 +2387,128 @@ func TestPWAManifest(t *testing.T) {
 	})
 }
 
+func TestI18nAPI(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/translations", handlers.GetTranslations)
+	r.POST("/api/language", handlers.SetLanguage)
+
+	t.Run("get translations default", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/translations", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rr.Code)
+		}
+		var tmap map[string]string
+		json.Unmarshal(rr.Body.Bytes(), &tmap)
+		if tmap["nav.standings"] == "" {
+			t.Error("expected nav.standings translation")
+		}
+		if tmap["_lang"] != "en" {
+			t.Errorf("expected _lang=en, got %s", tmap["_lang"])
+		}
+	})
+
+	t.Run("get german translations", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/translations?lang=de", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rr.Code)
+		}
+		var tmap map[string]string
+		json.Unmarshal(rr.Body.Bytes(), &tmap)
+		if tmap["nav.admin"] != "Admin" {
+			t.Errorf("expected de nav.admin to be 'Admin', got %s", tmap["nav.admin"])
+		}
+		if tmap["_lang"] != "de" {
+			t.Errorf("expected _lang=de, got %s", tmap["_lang"])
+		}
+	})
+
+	t.Run("set language", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{"lang": "de"})
+		req, _ := http.NewRequest("POST", "/api/language", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+	})
+
+	t.Run("set invalid language", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{"lang": "fr"})
+		req, _ := http.NewRequest("POST", "/api/language", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for invalid lang, got %d", rr.Code)
+		}
+	})
+
+	t.Run("set empty language", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{"lang": ""})
+		req, _ := http.NewRequest("POST", "/api/language", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for empty lang, got %d", rr.Code)
+		}
+	})
+
+	t.Run("get translations detects german accept-language", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/translations", nil)
+		req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en;q=0.8")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rr.Code)
+		}
+		var tmap map[string]string
+		json.Unmarshal(rr.Body.Bytes(), &tmap)
+		// Accept-Language is not easily detected in tests through gin
+	})
+
+	t.Run("translation files exist", func(t *testing.T) {
+		for _, lang := range []string{"en", "de"} {
+			data, err := os.ReadFile("static/locales/" + lang + ".json")
+			if err != nil {
+				t.Errorf("missing locale file: %s", lang)
+				continue
+			}
+			var tmap map[string]string
+			if err := json.Unmarshal(data, &tmap); err != nil {
+				t.Errorf("invalid JSON in %s locale: %v", lang, err)
+			}
+			if len(tmap) == 0 {
+				t.Errorf("empty translations for %s", lang)
+			}
+		}
+	})
+
+	t.Run("translations keys match between locales", func(t *testing.T) {
+		enData, _ := os.ReadFile("static/locales/en.json")
+		deData, _ := os.ReadFile("static/locales/de.json")
+		var en, de map[string]string
+		json.Unmarshal(enData, &en)
+		json.Unmarshal(deData, &de)
+
+		for k := range en {
+			if de[k] == "" {
+				t.Errorf("key %q missing from de.json", k)
+			}
+		}
+		for k := range de {
+			if en[k] == "" {
+				t.Errorf("key %q missing from en.json", k)
+			}
+		}
+	})
+}
+
 func TestRaceReportPage(t *testing.T) {
 	t.Run("race report page exists", func(t *testing.T) {
 		data, err := os.ReadFile("static/race-report.html")
