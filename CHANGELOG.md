@@ -1,3 +1,15 @@
+# [1.24.0](https://github.com/martynvdijke/heat/compare/v1.23.2...v1.24.0) (2026-05-15)
+
+
+### Bug Fixes
+
+* fall back to racer_stats table when season filter returns empty ([341b307](https://github.com/martynvdijke/heat/commit/341b3079728cac7970ba006f444a4c0425dd0c39))
+
+
+### Features
+
+* remove features plan, add tests for deck builder, shared race control, AI difficulty ([fb66222](https://github.com/martynvdijke/heat/commit/fb66222e6faf3b1a25c2c96108e4faaa7ce993d6))
+
 ## [1.23.2](https://github.com/martynvdijke/heat/compare/v1.23.1...v1.23.2) (2026-05-15)
 
 
