@@ -461,13 +461,13 @@ func main() {
 			servePage(c, filepath.Join(app.BasePath, "static/spectator.html"))
 		})
 
-	pages.GET("/driver.html", func(c *gin.Context) {
-		c.File(filepath.Join(app.BasePath, "static/driver.html"))
-	})
+		pages.GET("/driver.html", func(c *gin.Context) {
+			c.File(filepath.Join(app.BasePath, "static/driver.html"))
+		})
 
-	pages.GET("/race-report.html", func(c *gin.Context) {
-		servePage(c, filepath.Join(app.BasePath, "static/race-report.html"))
-	})
+		pages.GET("/race-report.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(app.BasePath, "static/race-report.html"))
+		})
 
 		pages.GET("/", func(c *gin.Context) {
 			servePage(c, filepath.Join(app.BasePath, "static/index.html"))

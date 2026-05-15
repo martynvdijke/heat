@@ -158,8 +158,6 @@ func buildRaceEmailContent(raceName, country, track string, totalLaps int, resul
 	return b.String()
 }
 
-
-
 func SendRaceEmail(raceName, country, track string, totalLaps int, results []models.RaceResult) {
 	var s models.EmailSettings
 	var enabled int

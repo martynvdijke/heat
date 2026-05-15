@@ -266,5 +266,3 @@ func DeleteRaceHistory(c *gin.Context) {
 	app.DB.Exec("DELETE FROM race_history WHERE id = ?", id)
 	c.Status(http.StatusOK)
 }
-
-
