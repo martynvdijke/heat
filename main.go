@@ -232,6 +232,11 @@ func main() {
 		admin.DELETE("/lap-records", handlers.DeleteLapRecords)
 		admin.DELETE("/race-events", handlers.DeleteRaceEvent)
 		admin.POST("/ai-difficulty", handlers.SetAIDifficulty)
+
+		// Admin: Driver Share
+		admin.POST("/driver-share", handlers.GenerateDriverShareToken)
+		admin.GET("/driver-shares", handlers.GetDriverShareTokens)
+		admin.DELETE("/driver-share", handlers.DeleteDriverShareToken)
 	}
 
 	r.GET("/api/uploads", handlers.GetUploads)
@@ -292,6 +297,9 @@ func main() {
 	r.POST("/api/race-events", handlers.AddRaceEvent)
 	r.GET("/api/ai-difficulty", handlers.GetAIDifficulty)
 	r.POST("/api/sound", handlers.PlaySound)
+
+	// Driver Share (public, token-based)
+	r.GET("/api/shared/driver-stats", handlers.GetDriverStatsByToken)
 
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
@@ -436,6 +444,10 @@ func main() {
 
 		pages.GET("/spectator.html", func(c *gin.Context) {
 			servePage(c, filepath.Join(app.BasePath, "static/spectator.html"))
+		})
+
+		pages.GET("/driver.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(app.BasePath, "static/driver.html"))
 		})
 
 		pages.GET("/", func(c *gin.Context) {

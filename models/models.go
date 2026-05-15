@@ -351,6 +351,13 @@ type RaceEvent struct {
 	Timestamp string `json:"timestamp,omitempty"`
 }
 
+type DriverShare struct {
+	ID        int    `json:"id"`
+	RacerID   int    `json:"racer_id"`
+	Token     string `json:"token"`
+	CreatedAt string `json:"created_at"`
+}
+
 // WebSocket message wrappers
 
 type GameMechanicsUpdate struct {

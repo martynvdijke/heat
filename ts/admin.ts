@@ -39,6 +39,7 @@ let allTracks: AdminTrack[] = [];
 let qualificationOrder: AdminRacer[] = [];
 let shuffleInterval: ReturnType<typeof setInterval> | null = null;
 let racerStats: AdminStats[] = [];
+let driverShares: Record<number, string> = {};
 declare const bootstrap: any;
 
 const racerModal = new bootstrap.Modal(document.getElementById('racerModal')!);
@@ -120,10 +121,23 @@ async function loadRaceInfo(): Promise<void> {
 
 async function loadRacers(): Promise<void> {
     try {
-        const res = await fetch('/api/racers');
-        adminRacers = await res.json();
+        const [racersRes, sharesRes] = await Promise.all([
+            fetch('/api/racers'),
+            fetch('/api/driver-shares').catch(() => new Response('[]'))
+        ]);
+        adminRacers = await racersRes.json();
+        driverShares = {};
+        if (sharesRes.ok) {
+            const shares: any[] = await sharesRes.json();
+            for (const s of shares) {
+                driverShares[s.racer_id] = s.token;
+            }
+        }
         const list = document.getElementById('racer-list')!;
-        list.innerHTML = adminRacers.map(r => `
+        list.innerHTML = adminRacers.map(r => {
+            const token = driverShares[r.id];
+            const shareLink = token ? `${window.location.origin}/driver.html?token=${token}` : '';
+            return `
             <tr>
                 <td class="ps-4 fw-bold">#${r.rank}</td>
                 <td>
@@ -135,13 +149,51 @@ async function loadRacers(): Promise<void> {
                 <td><span class="color-dot bg-${r.car_color}"></span> ${escapeHtml(r.car_name)}</td>
                 <td><span class="badge bg-dark">${r.points} pts</span></td>
                 <td class="small text-muted">${r.position}</td>
+                <td>
+                    ${shareLink
+                        ? `<button class="btn btn-sm btn-outline-success" onclick="copyShareLink(${r.id})" title="Copy share link"><i class="fa-solid fa-link"></i></button>`
+                        : `<button class="btn btn-sm btn-outline-secondary" onclick="generateShareLink(${r.id})" title="Generate share link"><i class="fa-solid fa-share-nodes"></i></button>`
+                    }
+                </td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary" onclick="editRacer(${r.id})"><i class="fa-solid fa-pen"></i></button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteRacer(${r.id})"><i class="fa-solid fa-trash"></i></button>
                 </td>
             </tr>
-        `).join('');
+        `}).join('');
     } catch (e) { console.error('Failed to load racers', e); }
+}
+
+async function generateShareLink(racerId: number): Promise<void> {
+    try {
+        const res = await fetch('/api/driver-share?racer_id=' + racerId, { method: 'POST' });
+        if (res.ok) {
+            loadRacers();
+        } else {
+            const err = await res.json();
+            alert('Failed to generate link: ' + (err.error || 'Unknown error'));
+        }
+    } catch (e: any) {
+        alert('Error: ' + e.message);
+    }
+}
+
+async function copyShareLink(racerId: number): Promise<void> {
+    const token = driverShares[racerId];
+    if (!token) return;
+    const link = `${window.location.origin}/driver.html?token=${token}`;
+    try {
+        await navigator.clipboard.writeText(link);
+        alert('Share link copied to clipboard!');
+    } catch {
+        const input = document.createElement('input');
+        input.value = link;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        alert('Share link copied!');
+    }
 }
 
 interface Quote {

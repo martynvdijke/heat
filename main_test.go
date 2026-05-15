@@ -3198,3 +3198,162 @@ func TestAvailableUpgrades(t *testing.T) {
 		}
 	})
 }
+
+func TestDriverShare(t *testing.T) {
+	adminRouter := func() *gin.Engine {
+		r := gin.New()
+		admin := r.Group("/api")
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+		admin.POST("/driver-share", handlers.GenerateDriverShareToken)
+		admin.GET("/driver-shares", handlers.GetDriverShareTokens)
+		admin.DELETE("/driver-share", handlers.DeleteDriverShareToken)
+		return r
+	}
+
+	publicRouter := func() *gin.Engine {
+		r := gin.New()
+		r.GET("/api/shared/driver-stats", handlers.GetDriverStatsByToken)
+		return r
+	}
+
+	sessionID := "test-share-session"
+	app.SessionStoreMu.Lock()
+	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
+	app.SessionStoreMu.Unlock()
+	defer func() {
+		app.SessionStoreMu.Lock()
+		delete(app.SessionStore, sessionID)
+		app.SessionStoreMu.Unlock()
+	}()
+
+	addSessionCookie := func(req *http.Request) {
+		req.AddCookie(&http.Cookie{Name: "session", Value: sessionID})
+	}
+
+	t.Run("generate share token", func(t *testing.T) {
+		r := adminRouter()
+		body := `{}`
+		req, _ := http.NewRequest("POST", "/api/driver-share?racer_id=1", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Origin", "http://localhost")
+		addSessionCookie(req)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var share models.DriverShare
+		json.Unmarshal(rr.Body.Bytes(), &share)
+		if share.Token == "" {
+			t.Error("expected non-empty token")
+		}
+		if share.RacerID != 1 {
+			t.Errorf("expected racer_id 1, got %d", share.RacerID)
+		}
+	})
+
+	t.Run("get driver shares (admin)", func(t *testing.T) {
+		r := adminRouter()
+		req, _ := http.NewRequest("GET", "/api/driver-shares", nil)
+		req.Header.Set("Origin", "http://localhost")
+		addSessionCookie(req)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		var shares []map[string]interface{}
+		json.Unmarshal(rr.Body.Bytes(), &shares)
+		if len(shares) == 0 {
+			t.Error("expected at least one share")
+		}
+	})
+
+	t.Run("access driver stats via token", func(t *testing.T) {
+		// First get the token
+		rAdmin := adminRouter()
+		req, _ := http.NewRequest("GET", "/api/driver-shares", nil)
+		req.Header.Set("Origin", "http://localhost")
+		addSessionCookie(req)
+		rr := httptest.NewRecorder()
+		rAdmin.ServeHTTP(rr, req)
+		var shares []struct {
+			RacerID int    `json:"racer_id"`
+			Token   string `json:"token"`
+		}
+		json.Unmarshal(rr.Body.Bytes(), &shares)
+		if len(shares) == 0 {
+			t.Fatal("no shares to test")
+		}
+
+		rPub := publicRouter()
+		req2, _ := http.NewRequest("GET", "/api/shared/driver-stats?token="+shares[0].Token, nil)
+		rr2 := httptest.NewRecorder()
+		rPub.ServeHTTP(rr2, req2)
+		if rr2.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d: %s", rr2.Code, rr2.Body.String())
+		}
+		var result map[string]interface{}
+		json.Unmarshal(rr2.Body.Bytes(), &result)
+		if result["racer"] == nil {
+			t.Error("expected racer data")
+		}
+		if result["stats"] == nil {
+			t.Error("expected stats data")
+		}
+	})
+
+	t.Run("invalid token returns 404", func(t *testing.T) {
+		r := publicRouter()
+		req, _ := http.NewRequest("GET", "/api/shared/driver-stats?token=invalidtoken123", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusNotFound {
+			t.Errorf("expected 404 for invalid token, got %d", rr.Code)
+		}
+	})
+
+	t.Run("missing token returns 400", func(t *testing.T) {
+		r := publicRouter()
+		req, _ := http.NewRequest("GET", "/api/shared/driver-stats", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for missing token, got %d", rr.Code)
+		}
+	})
+
+	t.Run("delete driver share", func(t *testing.T) {
+		r := adminRouter()
+		req, _ := http.NewRequest("DELETE", "/api/driver-share?racer_id=1", nil)
+		req.Header.Set("Origin", "http://localhost")
+		addSessionCookie(req)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+
+		// Verify token is gone
+		rPub := publicRouter()
+		req2, _ := http.NewRequest("GET", "/api/shared/driver-stats?token=invalidtoken123", nil)
+		rr2 := httptest.NewRecorder()
+		rPub.ServeHTTP(rr2, req2)
+		if rr2.Code != http.StatusNotFound {
+			t.Errorf("expected 404 after delete, got %d", rr2.Code)
+		}
+	})
+
+	t.Run("generate for nonexistent racer returns 404", func(t *testing.T) {
+		r := adminRouter()
+		req, _ := http.NewRequest("POST", "/api/driver-share?racer_id=9999", strings.NewReader("{}"))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Origin", "http://localhost")
+		addSessionCookie(req)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusNotFound {
+			t.Errorf("expected 404 for nonexistent racer, got %d", rr.Code)
+		}
+	})
+}

@@ -13,7 +13,7 @@ import (
 	"heat/models"
 )
 
-var currentSchemaVersion = 19
+var currentSchemaVersion = 20
 
 func Init() {
 	_, _ = app.DB.Exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
@@ -380,6 +380,14 @@ func runMigration(fromVersion int) {
 			racer_id2 INTEGER DEFAULT 0,
 			note TEXT DEFAULT '',
 			timestamp TEXT DEFAULT (datetime('now')),
+			FOREIGN KEY (racer_id) REFERENCES racers(id)
+		)`)
+	case 19:
+		_, _ = app.DB.Exec(`CREATE TABLE IF NOT EXISTS driver_shares (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			racer_id INTEGER NOT NULL UNIQUE,
+			token TEXT NOT NULL UNIQUE,
+			created_at TEXT DEFAULT (datetime('now')),
 			FOREIGN KEY (racer_id) REFERENCES racers(id)
 		)`)
 	}
