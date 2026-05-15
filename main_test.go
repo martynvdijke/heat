@@ -313,6 +313,71 @@ func TestQuotes(t *testing.T) {
 	})
 }
 
+func TestGetRacerStatsSeasonFallback(t *testing.T) {
+	app.DB.Exec("INSERT OR REPLACE INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (1, 5, 3, 3, 1, 0, 2, 0, 0)")
+	app.DB.Exec("INSERT OR REPLACE INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (2, 5, 1, 1, 2, 1, 0, 1, 0)")
+	defer app.DB.Exec("DELETE FROM racer_stats WHERE racer_id IN (1, 2)")
+
+	r := gin.New()
+	r.GET("/api/racer-stats", handlers.GetRacerStats)
+
+	t.Run("SeasonFilterFallsBackToRacerStats", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/racer-stats?season_id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Fatalf("expected status 200, got %v", status)
+		}
+
+		var stats []models.RacerStats
+		if err := json.Unmarshal(rr.Body.Bytes(), &stats); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+
+		if len(stats) == 0 {
+			t.Fatal("expected non-empty stats from season fallback")
+		}
+
+		var found bool
+		for _, s := range stats {
+			if s.RacerID == 1 {
+				found = true
+				if s.Wins != 3 || s.Gold != 3 || s.Races != 5 {
+					t.Errorf("racer 1: expected wins=3, gold=3, races=5, got wins=%d, gold=%d, races=%d", s.Wins, s.Gold, s.Races)
+				}
+			}
+		}
+		if !found {
+			t.Error("expected racer 1 in stats")
+		}
+	})
+
+	t.Run("SingleRacerSeasonFallback", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/racer-stats?id=1&season_id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Fatalf("expected status 200, got %v", status)
+		}
+
+		var result map[string]json.RawMessage
+		if err := json.Unmarshal(rr.Body.Bytes(), &result); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+
+		var s models.RacerStats
+		if err := json.Unmarshal(result["stats"], &s); err != nil {
+			t.Fatalf("failed to unmarshal stats: %v", err)
+		}
+
+		if s.RacerID != 1 || s.Wins != 3 || s.Gold != 3 || s.Races != 5 {
+			t.Errorf("expected racer_id=1, wins=3, gold=3, races=5, got racer_id=%d, wins=%d, gold=%d, races=%d", s.RacerID, s.Wins, s.Gold, s.Races)
+		}
+	})
+}
+
 func TestGetRacerStats(t *testing.T) {
 	r := gin.New()
 	r.GET("/api/racer-stats", handlers.GetRacerStats)

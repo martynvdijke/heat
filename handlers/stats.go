@@ -20,6 +20,21 @@ import (
 // @Param season_id query int false "Season ID"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/racer-stats [get]
+func getRacerStatsFallback() []models.RacerStats {
+	stats := make([]models.RacerStats, 0)
+	rows, err := app.DB.Query("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_stats.racer_id) as pts, dnf, dns FROM racer_stats")
+	if err != nil {
+		return stats
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var s models.RacerStats
+		rows.Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
+		stats = append(stats, s)
+	}
+	return stats
+}
+
 func GetRacerStats(c *gin.Context) {
 	id := c.Query("id")
 	seasonID := c.Query("season_id")
@@ -62,6 +77,9 @@ func GetRacerStats(c *gin.Context) {
 				rows.Scan(&s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 				stats = append(stats, s)
 			}
+			if len(stats) == 0 {
+				stats = getRacerStatsFallback()
+			}
 			c.JSON(http.StatusOK, stats)
 			return
 		}
@@ -84,7 +102,7 @@ func GetRacerStats(c *gin.Context) {
 			GROUP BY rr.racer_id
 		`, id, startDate, endDate).Scan(&s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 		if err != nil {
-			s = models.RacerStats{RacerID: 0}
+			app.DB.QueryRow("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf, dns FROM racer_stats WHERE racer_id = ?", id).Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 		}
 
 		var rInfo models.Racer
