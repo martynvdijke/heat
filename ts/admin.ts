@@ -146,7 +146,7 @@ async function loadRacers(): Promise<void> {
                         <div><div class="fw-bold">${escapeHtml(r.name)}</div></div>
                     </div>
                 </td>
-                <td><span class="color-dot bg-${r.car_color}"></span> ${escapeHtml(r.car_name)}</td>
+                <td><span class="color-dot" style="background:${r.car_color.startsWith('#')?r.car_color:'#'+r.car_color}"></span> ${escapeHtml(r.car_name)}</td>
                 <td><span class="badge bg-dark">${r.points} pts</span></td>
                 <td class="small text-muted">${r.position}</td>
                 <td>
@@ -583,7 +583,7 @@ function renderQualificationGrid(order: AdminRacer[], locked: number): void {
                         <img src="${r.profile_picture}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover" onerror="this.src='/static/images/helmet.svg'">
                         <div class="flex-grow-1">
                             <div class="fw-bold small">${escapeHtml(r.name)}</div>
-                            <div class="small opacity-75"><span class="color-dot bg-${r.car_color}"></span>${escapeHtml(r.car_name)}</div>
+                            <div class="small opacity-75"><span class="color-dot" style="background:${r.car_color.startsWith('#')?r.car_color:'#'+r.car_color}"></span>${escapeHtml(r.car_name)}</div>
                         </div>
                         ${isLocked ? '<i class="fa-solid fa-check text-warning"></i>' : '<i class="fa-solid fa-arrows-rotate fa-spin text-muted"></i>'}
                     </div>
@@ -617,7 +617,7 @@ function renderFinalGrid(order: AdminRacer[]): void {
             <img src="${r.profile_picture}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover" onerror="this.src='/static/images/helmet.svg'">
             <div class="flex-grow-1">
                 <div class="fw-bold small">${escapeHtml(r.name)}</div>
-                <div class="small text-muted"><span class="color-dot bg-${r.car_color}"></span>${escapeHtml(r.car_name)}</div>
+                <div class="small text-muted"><span class="color-dot" style="background:${r.car_color.startsWith('#')?r.car_color:'#'+r.car_color}"></span>${escapeHtml(r.car_name)}</div>
             </div>
             ${i === 0 ? '<i class="fa-solid fa-crown text-warning"></i>' : ''}
         </div>
@@ -696,7 +696,7 @@ function previewGrid(): void {
                 </div>
                 <img src="${r.profile_picture}" class="rounded-circle mb-2" width="64" height="64" style="object-fit: cover" onerror="this.src='https://via.placeholder.com/64'">
                 <div class="fw-bold">${escapeHtml(r.name)}</div>
-                <div class="small text-muted"><span class="color-dot bg-${r.car_color}"></span>${escapeHtml(r.car_name)}</div>
+                <div class="small text-muted"><span class="color-dot" style="background:${r.car_color.startsWith('#')?r.car_color:'#'+r.car_color}"></span>${escapeHtml(r.car_name)}</div>
                 ${i === 0 ? '<i class="fa-solid fa-crown text-warning fa-2x mt-2"></i>' : ''}
             </div>
         </div>
@@ -711,6 +711,22 @@ function openRacerModal(): void {
     racerModal.show();
 }
 
+function updateCarPreview(color: string): void {
+    const bar = document.getElementById('car-preview-bar');
+    if (bar) bar.style.background = color;
+}
+
+function initColorSwatches(): void {
+    const swatches = document.getElementById('color-swatches');
+    if (!swatches) return;
+    const colors = ['#d40000','#ff4d4d','#ff8700','#ffd700','#4dff88','#4d94ff','#005aff','#9b59b6','#e67e22','#333333','#a6a6a6','#ffffff'];
+    swatches.innerHTML = colors.map(c =>
+        `<button type="button" class="btn p-0 m-0" style="width:24px;height:24px;background:${c};border:2px solid #ddd;border-radius:4px;cursor:pointer" onclick="document.getElementById('car_color').value='${c}';document.getElementById('car_color_text').value='${c}';updateCarPreview('${c}')" title="${c}"></button>`
+    ).join('');
+}
+
+document.addEventListener('DOMContentLoaded', initColorSwatches);
+
 function editRacer(id: number): void {
     const r = adminRacers.find(x => x.id === id);
     if (!r) return;
@@ -719,7 +735,10 @@ function editRacer(id: number): void {
     (form.elements.namedItem('name') as HTMLInputElement).value = r.name;
     (form.elements.namedItem('profile_picture') as HTMLInputElement).value = r.profile_picture;
     (form.elements.namedItem('car_name') as HTMLInputElement).value = r.car_name;
-    (form.elements.namedItem('car_color') as HTMLSelectElement).value = r.car_color;
+    const color = r.car_color.startsWith('#') ? r.car_color : '#' + r.car_color;
+    (document.getElementById('car_color') as HTMLInputElement).value = color;
+    (document.getElementById('car_color_text') as HTMLInputElement).value = color;
+    updateCarPreview(color);
     (form.elements.namedItem('points') as HTMLInputElement).value = String(r.points);
     (form.elements.namedItem('rank') as HTMLInputElement).value = String(r.rank);
     (form.elements.namedItem('position') as HTMLInputElement).value = String(r.position);
