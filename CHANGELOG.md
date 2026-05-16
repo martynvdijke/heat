@@ -1,3 +1,22 @@
+# [1.26.0](https://github.com/martynvdijke/heat/compare/v1.25.0...v1.26.0) (2026-05-16)
+
+
+### Bug Fixes
+
+* resolve tech debt - WebSocket mutex, duplicate migrations/functions, AI difficulty bug, dead code ([44e34c3](https://github.com/martynvdijke/heat/commit/44e34c370cbe244ea4a25fef7f4bb16fef0cf0b2))
+* resolve test failures for admin login race and car_color selector ([bb9f0ce](https://github.com/martynvdijke/heat/commit/bb9f0ce6f48cde241f516495c57087920993a2a7))
+* track static/js/i18n.js in git for CI builds ([5924597](https://github.com/martynvdijke/heat/commit/5924597cc9ece78377acc534a7e64f0d2128c4b3))
+
+
+### Features
+
+* add constructor/team championship with standings, CRUD, and racer assignment ([9866b8a](https://github.com/martynvdijke/heat/commit/9866b8a91a695c70b45bb4a2dc48c0aeb7284e22))
+* add custom livery editor with color picker and live car preview ([7294f6b](https://github.com/martynvdijke/heat/commit/7294f6b01481b642014fa3e7af654ba1f424ed46))
+* add i18n support with EN/DE translations, language detection, and API ([3bb3e0c](https://github.com/martynvdijke/heat/commit/3bb3e0c39c2b2784d2c3b227bde1739e9ed7f638))
+* add printable race report page with print-to-PDF support ([79f97f9](https://github.com/martynvdijke/heat/commit/79f97f90e67de1a5dca63db87d424e79634de204))
+* add PWA support with manifest, service worker, and offline caching ([58dd4be](https://github.com/martynvdijke/heat/commit/58dd4be312fa29ea5d27857c51f8f300cee8b7eb))
+* add race radio log with WebSocket broadcast and filtering ([72c3276](https://github.com/martynvdijke/heat/commit/72c327648994c9f07bdff380af42fbac4aad3212))
+
 # [1.25.0](https://github.com/martynvdijke/heat/compare/v1.24.1...v1.25.0) (2026-05-15)
 
 
