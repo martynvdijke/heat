@@ -45,7 +45,7 @@ test.describe.serial('Admin Panel', () => {
     await page.fill('form#racer-form input[name="name"]', 'Test Racer');
     await page.fill('form#racer-form input[name="profile_picture"]', '/static/images/helmet.svg');
     await page.fill('form#racer-form input[name="car_name"]', 'Test Car');
-    await page.selectOption('form#racer-form select[name="car_color"]', 'purple');
+    await page.fill('form#racer-form input[name="car_color_text"]', '#800080');
     await page.fill('form#racer-form input[name="points"]', '42');
     await page.fill('form#racer-form input[name="rank"]', '10');
     await page.fill('form#racer-form input[name="position"]', '0');
@@ -91,7 +91,7 @@ test.describe.serial('Admin Panel', () => {
     await page.fill('form#racer-form input[name="name"]', 'No Pic Racer');
     await page.fill('form#racer-form input[name="profile_picture"]', '');
     await page.fill('form#racer-form input[name="car_name"]', 'Shadow');
-    await page.selectOption('form#racer-form select[name="car_color"]', 'black');
+    await page.fill('form#racer-form input[name="car_color_text"]', '#000000');
     await page.fill('form#racer-form input[name="points"]', '10');
     await page.fill('form#racer-form input[name="rank"]', '20');
     await page.fill('form#racer-form input[name="position"]', '0');
@@ -110,7 +110,7 @@ test.describe.serial('Admin Panel', () => {
     await page.fill('form#racer-form input[name="name"]', 'Min Racer');
     await page.fill('form#racer-form input[name="profile_picture"]', '');
     await page.fill('form#racer-form input[name="car_name"]', 'Basic');
-    await page.selectOption('form#racer-form select[name="car_color"]', 'red');
+    await page.fill('form#racer-form input[name="car_color_text"]', '#ff0000');
     await page.fill('form#racer-form input[name="points"]', '0');
     await page.fill('form#racer-form input[name="rank"]', '99');
     await page.fill('form#racer-form input[name="position"]', '0');
@@ -195,18 +195,26 @@ test.describe.serial('Admin Panel', () => {
 });
 
 async function loginAsAdmin(page: Page) {
-  await page.goto('/login.html');
-  await page.waitForLoadState('domcontentloaded');
+  await page.goto('/admin.html');
+  if (await page.locator('#adminTabs').count() > 0) return;
 
-  const url = page.url();
-  const isSetup = url.includes('/setup') || await page.locator('#setup-form').count() > 0;
+  await page.waitForSelector('#setup-form, #login-form', { timeout: 10000 });
 
-  if (isSetup) {
+  if (await page.locator('#setup-form').count() > 0) {
     await page.fill('#setup-form input[name="username"]', 'admin');
     await page.fill('#setup-form input[name="password"]', 'admin123');
     await page.fill('#setup-form input[name="confirm_password"]', 'admin123');
     await page.click('#setup-form button[type="submit"]');
-  } else {
+    try {
+      await page.waitForURL(/admin/, { timeout: 5000 });
+    } catch {
+      // Setup failed (race with another browser). Fall back to login.
+      await page.goto('/login.html');
+    }
+  }
+
+  if (!page.url().includes('/admin')) {
+    await page.waitForSelector('#login-form', { timeout: 10000 });
     await page.fill('#login-form input[name="username"]', 'admin');
     await page.fill('#login-form input[name="password"]', 'admin123');
     await page.click('#login-form button[type="submit"]');
