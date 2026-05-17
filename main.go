@@ -38,6 +38,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/net/webdav"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	swaggerFiles "github.com/swaggo/files/v2"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	_ "heat/docs"
@@ -160,6 +162,18 @@ func main() {
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.SecurityHeaders())
+
+	tp, err := initTelemetry()
+	if err != nil {
+		log.Printf("Failed to initialize telemetry: %v", err)
+	} else {
+		r.Use(metricsMiddleware())
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
 
 	r.GET("/ws", ws.HandleWebSocket)
 
@@ -318,6 +332,7 @@ func main() {
 	r.GET("/api/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
 	})
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	r.GET("/api/admin/backup", middleware.CSRFMiddleware(), middleware.AuthMiddleware(), handlers.TriggerManualBackup)
 
