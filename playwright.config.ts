@@ -26,7 +26,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'rm -f heat.db heat.db-wal heat.db-shm && go run main.go',
+    command: 'rm -f heat.db heat.db-wal heat.db-shm && go run .',
     url: 'http://localhost:6270',
     reuseExistingServer: false,
   },
