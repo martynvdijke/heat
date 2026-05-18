@@ -189,6 +189,9 @@
                 <button class="nav-link" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button"><i class="fa-solid fa-comment me-2"></i>Quotes</button>
             </li>
             <li class="nav-item">
+                <button class="nav-link" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams-pane" type="button"><i class="fa-solid fa-people-group me-2"></i>Teams</button>
+            </li>
+            <li class="nav-item">
                 <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-pane" type="button"><i class="fa-solid fa-bell me-2"></i>Notifications</button>
             </li>
             <li class="nav-item">
@@ -447,7 +450,7 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="fa-solid fa-users me-2 text-danger"></i>Racer Standings</span>
-                        <button class="btn btn-sm btn-success" onclick="openRacerModal()">
+                        <button class="btn btn-sm btn-success" hx-get="/api/html/racers/0/edit" hx-target="#racerModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#racerModal">
                             <i class="fa-solid fa-plus me-1"></i> Add Racer
                         </button>
                     </div>
@@ -465,7 +468,9 @@
                                         <th class="text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="racer-list"></tbody>
+                                <tbody id="racer-list" hx-get="/api/html/racers" hx-trigger="load" hx-swap="outerHTML">
+                                    <tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading racers...</td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -494,7 +499,9 @@
                                         <th class="text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="track-list"></tbody>
+                                <tbody id="track-list" hx-get="/api/html/tracks" hx-trigger="load" hx-swap="outerHTML">
+                                    <tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading tracks...</td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -506,7 +513,7 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="fa-solid fa-microphone me-2 text-danger"></i>Commentator Quotes</span>
-                        <button class="btn btn-sm btn-success" onclick="openQuoteModal()">
+                        <button class="btn btn-sm btn-success" hx-get="/api/html/quotes/0/edit" hx-target="#quoteModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#quoteModal">
                             <i class="fa-solid fa-plus me-1"></i> Add Quote
                         </button>
                     </div>
@@ -520,7 +527,37 @@
                                         <th class="text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="quote-list"></tbody>
+                                <tbody id="quote-list" hx-get="/api/html/quotes" hx-trigger="load" hx-swap="outerHTML">
+                                    <tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading quotes...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams Pane -->
+            <div class="tab-pane fade" id="teams-pane">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-people-group me-2 text-danger"></i>Constructor Teams</span>
+                        <button class="btn btn-sm btn-success" hx-get="/api/html/teams/0/edit" hx-target="#teamModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#teamModal">
+                            <i class="fa-solid fa-plus me-1"></i> Add Team
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4" style="width:40px">Color</th>
+                                        <th>Name</th>
+                                        <th class="text-end pe-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="team-list" hx-get="/api/html/teams" hx-trigger="load" hx-swap="outerHTML">
+                                    <tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading teams...</td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -534,7 +571,7 @@
                         <div class="card mb-4">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <span><i class="fa-solid fa-calendar me-2 text-danger"></i>Seasons</span>
-                                <button class="btn btn-sm btn-success" onclick="createSeason()">
+                                <button class="btn btn-sm btn-success" hx-get="/api/html/seasons/new" hx-target="#seasonsModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#seasonsModal">
                                     <i class="fa-solid fa-plus me-1"></i> New Season
                                 </button>
                             </div>
@@ -550,7 +587,9 @@
                                                 <th class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="seasons-list"></tbody>
+                                        <tbody id="seasons-list" hx-get="/api/html/seasons" hx-trigger="load" hx-swap="outerHTML">
+                                            <tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading seasons...</td></tr>
+                                        </tbody>
                                     </table>
                                 </div>
                             </div>
@@ -980,6 +1019,36 @@
         </div>
     </div>
 
+    <!-- Team Modal -->
+    <div class="modal fade" id="teamModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="teamModalLabel">Edit Team</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted text-center py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seasons Modal -->
+    <div class="modal fade" id="seasonsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">New Season</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted text-center py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Stats Modal -->
     <div class="modal fade" id="statsModal" tabindex="-1">
         <div class="modal-dialog">
@@ -1037,7 +1106,25 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="/static/js/admin.js"></script>
+    <script>
+        document.body.addEventListener('closeRacerModal', function() {
+            bootstrap.Modal.getInstance(document.getElementById('racerModal')).hide();
+        });
+        document.body.addEventListener('closeQuoteModal', function() {
+            bootstrap.Modal.getInstance(document.getElementById('quoteModal')).hide();
+        });
+        document.body.addEventListener('closeTrackModal', function() {
+            bootstrap.Modal.getInstance(document.getElementById('trackModal')).hide();
+        });
+        document.body.addEventListener('closeTeamModal', function() {
+            bootstrap.Modal.getInstance(document.getElementById('teamModal')).hide();
+        });
+        document.body.addEventListener('closeSeasonsModal', function() {
+            bootstrap.Modal.getInstance(document.getElementById('seasonsModal')).hide();
+        });
+    </script>
+    <script src="/static/js/admin.js"></script>
 </body>
 </html>

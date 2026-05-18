@@ -257,6 +257,34 @@ func main() {
 		admin.POST("/teams", handlers.SaveTeam)
 		admin.DELETE("/teams", handlers.DeleteTeam)
 		admin.POST("/teams/assign", handlers.AssignTeam)
+
+		// HTMX endpoints (under admin auth group)
+		admin.GET("/html/racers", handlers.HtmxRacersTable)
+		admin.POST("/html/racers", handlers.HtmxRacersSave)
+		admin.GET("/html/racers/:id/edit", handlers.HtmxRacersEditForm)
+		admin.DELETE("/html/racers/:id", handlers.HtmxRacersDelete)
+		admin.POST("/html/racers/:id/share", handlers.HtmxRacersGenerateShare)
+
+		admin.GET("/html/tracks", handlers.HtmxTracksTable)
+		admin.POST("/html/tracks", handlers.HtmxTracksSave)
+		admin.GET("/html/tracks/:id/edit", handlers.HtmxTracksEditForm)
+		admin.DELETE("/html/tracks/:id", handlers.HtmxTracksDelete)
+
+		admin.GET("/html/quotes", handlers.HtmxQuotesTable)
+		admin.POST("/html/quotes", handlers.HtmxQuotesSave)
+		admin.GET("/html/quotes/:id/edit", handlers.HtmxQuotesEditForm)
+		admin.DELETE("/html/quotes/:id", handlers.HtmxQuotesDelete)
+
+		admin.GET("/html/teams", handlers.HtmxTeamsTable)
+		admin.POST("/html/teams", handlers.HtmxTeamsSave)
+		admin.GET("/html/teams/:id/edit", handlers.HtmxTeamsEditForm)
+		admin.DELETE("/html/teams/:id", handlers.HtmxTeamsDelete)
+
+		admin.GET("/html/seasons", handlers.HtmxSeasonsTable)
+		admin.GET("/html/seasons/new", handlers.HtmxSeasonsNewForm)
+		admin.POST("/html/seasons", handlers.HtmxSeasonsCreate)
+		admin.POST("/html/seasons/:id/archive", handlers.HtmxSeasonsArchive)
+		admin.DELETE("/html/seasons/:id", handlers.HtmxSeasonsDelete)
 	}
 
 	r.GET("/api/uploads", handlers.GetUploads)
