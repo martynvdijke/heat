@@ -1,3 +1,15 @@
+# [1.27.0](https://github.com/martynvdijke/heat/compare/v1.26.0...v1.27.0) (2026-05-18)
+
+
+### Bug Fixes
+
+* compile all Go files in e2e server command (go run . instead of main.go) ([1989739](https://github.com/martynvdijke/heat/commit/19897393b6f7fc71e911d889fcdef13a5bbc412c))
+
+
+### Features
+
+* add opentelemetry tracing and prometheus metrics support ([6ca1928](https://github.com/martynvdijke/heat/commit/6ca1928c66768c09c876021e6d05762c74952e46))
+
 # [1.26.0](https://github.com/martynvdijke/heat/compare/v1.25.0...v1.26.0) (2026-05-16)
 
 
