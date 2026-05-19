@@ -1,3 +1,16 @@
+# [1.28.0](https://github.com/martynvdijke/heat/compare/v1.27.0...v1.28.0) (2026-05-19)
+
+
+### Bug Fixes
+
+* update admin e2e tests to use htmx button and car_color field ([5e8df5a](https://github.com/martynvdijke/heat/commit/5e8df5a25ba237ee848f29d802182935bc1c906e))
+
+
+### Features
+
+* integrate Ent ORM for schema management and core entities ([238a863](https://github.com/martynvdijke/heat/commit/238a8635877c38d5fd2a2d815ef806da13c57753))
+* migrate CRUD admin panels to htmx ([6244799](https://github.com/martynvdijke/heat/commit/6244799429d4b9d3636977667fd2e4d881af48fd))
+
 # [1.27.0](https://github.com/martynvdijke/heat/compare/v1.26.0...v1.27.0) (2026-05-18)
 
 
