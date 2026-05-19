@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -16,6 +17,14 @@ import (
 var currentSchemaVersion = 23
 
 func Init() {
+	ctx := context.Background()
+
+	if err := app.Ent.Schema.Create(ctx); err != nil {
+		log.Fatalf("[DB] Failed to run Ent auto-migration: %v", err)
+	}
+
+	app.DB.Exec("PRAGMA foreign_keys=OFF")
+
 	_, _ = app.DB.Exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
 
 	var version int
@@ -35,19 +44,6 @@ func Init() {
 		log.Printf("[DB] Migrated to schema version %d", version)
 	}
 
-	createRacersTable := `
-	CREATE TABLE IF NOT EXISTS racers (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT,
-		profile_picture TEXT,
-		car_color TEXT,
-		car_name TEXT,
-		points INTEGER,
-		rank INTEGER,
-		position INTEGER DEFAULT 0,
-		team_id INTEGER DEFAULT 0
-	);`
-
 	createRaceInfoTable := `
 	CREATE TABLE IF NOT EXISTS race_info (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,24 +53,7 @@ func Init() {
 		laps INTEGER
 	);`
 
-	createAdminTable := `
-	CREATE TABLE IF NOT EXISTS admin_users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT UNIQUE,
-		password TEXT
-	);`
-
-	_, err = app.DB.Exec(createRacersTable)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	_, err = app.DB.Exec(createRaceInfoTable)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = app.DB.Exec(createAdminTable)
 	if err != nil {
 		log.Fatal(err)
 	}

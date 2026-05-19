@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/time/rate"
 
+	"heat/ent"
 	"heat/models"
 )
 
@@ -27,6 +28,7 @@ type SessionInfo struct {
 
 var (
 	DB             *sql.DB
+	Ent            *ent.Client
 	SessionStore   = make(map[string]SessionInfo)
 	SessionStoreMu sync.RWMutex
 	StaticCache    = make(map[string][]byte)

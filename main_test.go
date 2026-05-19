@@ -21,8 +21,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
+
 	"heat/app"
 	"heat/db"
+	"heat/ent"
 	"heat/handlers"
 	"heat/middleware"
 	"heat/models"
@@ -38,11 +42,14 @@ func TestMain(m *testing.M) {
 	app.MediaPath = filepath.Join(app.BasePath, "media")
 
 	var err error
-	app.DB, err = sql.Open("sqlite3", app.DBPath)
+	app.DB, err = sql.Open("sqlite3", app.DBPath+"?_fk=1")
 	if err != nil {
 		log.Fatalf("failed to open in-memory db: %v", err)
 	}
 	app.DB.SetMaxOpenConns(1)
+
+	drv := entsql.OpenDB(dialect.SQLite, app.DB)
+	app.Ent = ent.NewClient(ent.Driver(drv))
 
 	db.Init()
 	go ws.BroadcastManager()
