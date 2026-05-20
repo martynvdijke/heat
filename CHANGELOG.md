@@ -1,3 +1,10 @@
+## [1.28.1](https://github.com/martynvdijke/heat/compare/v1.28.0...v1.28.1) (2026-05-20)
+
+
+### Bug Fixes
+
+* ensure Gotify notification always fires on release workflow ([dd0f084](https://github.com/martynvdijke/heat/commit/dd0f0848933862f77ebf0339084794c2f4560ab0))
+
 # [1.28.0](https://github.com/martynvdijke/heat/compare/v1.27.0...v1.28.0) (2026-05-19)
 
 
