@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/martynvdijke/heat/compare/v1.28.1...v1.29.0) (2026-05-21)
+
+
+### Features
+
+* add new entity schemas and Dutch locale support ([8cc62d6](https://github.com/martynvdijke/heat/commit/8cc62d64321306111dcb5052f694274ae1a9a2db))
+
 ## [1.28.1](https://github.com/martynvdijke/heat/compare/v1.28.0...v1.28.1) (2026-05-20)
 
 
