@@ -64,8 +64,8 @@ func detectLanguage(c *gin.Context) string {
 		langs := strings.Split(accept, ",")
 		for _, l := range langs {
 			code := strings.Split(strings.TrimSpace(l), ";")[0]
-			if strings.HasPrefix(code, "de") {
-				return "de"
+			if strings.HasPrefix(code, "nl") {
+				return "nl"
 			}
 		}
 	}
@@ -92,7 +92,7 @@ func SetLanguage(c *gin.Context) {
 		return
 	}
 
-	validLangs := map[string]bool{"en": true, "de": true}
+	validLangs := map[string]bool{"en": true, "nl": true}
 	if !validLangs[req.Lang] {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "unsupported language"})
 		return

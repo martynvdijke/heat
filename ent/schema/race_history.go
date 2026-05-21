@@ -2,11 +2,19 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/field"
 )
 
 type RaceHistory struct {
 	ent.Schema
+}
+
+func (RaceHistory) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entsql.Annotation{Table: "race_history"},
+	}
 }
 
 func (RaceHistory) Fields() []ent.Field {

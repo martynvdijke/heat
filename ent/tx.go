@@ -12,24 +12,74 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// AISetting is the client for interacting with the AISetting builders.
+	AISetting *AISettingClient
 	// AdminUser is the client for interacting with the AdminUser builders.
 	AdminUser *AdminUserClient
+	// BackupSetting is the client for interacting with the BackupSetting builders.
+	BackupSetting *BackupSettingClient
+	// DriverShare is the client for interacting with the DriverShare builders.
+	DriverShare *DriverShareClient
+	// EmailSetting is the client for interacting with the EmailSetting builders.
+	EmailSetting *EmailSettingClient
+	// GearShift is the client for interacting with the GearShift builders.
+	GearShift *GearShiftClient
+	// HeatCard is the client for interacting with the HeatCard builders.
+	HeatCard *HeatCardClient
+	// LapRecord is the client for interacting with the LapRecord builders.
+	LapRecord *LapRecordClient
+	// LegendAbility is the client for interacting with the LegendAbility builders.
+	LegendAbility *LegendAbilityClient
+	// NotificationSetting is the client for interacting with the NotificationSetting builders.
+	NotificationSetting *NotificationSettingClient
+	// PlayerSession is the client for interacting with the PlayerSession builders.
+	PlayerSession *PlayerSessionClient
+	// PlayerUpgrade is the client for interacting with the PlayerUpgrade builders.
+	PlayerUpgrade *PlayerUpgradeClient
 	// Quote is the client for interacting with the Quote builders.
 	Quote *QuoteClient
+	// RaceEvent is the client for interacting with the RaceEvent builders.
+	RaceEvent *RaceEventClient
 	// RaceHistory is the client for interacting with the RaceHistory builders.
 	RaceHistory *RaceHistoryClient
+	// RaceInfo is the client for interacting with the RaceInfo builders.
+	RaceInfo *RaceInfoClient
+	// RaceRadio is the client for interacting with the RaceRadio builders.
+	RaceRadio *RaceRadioClient
 	// RaceResult is the client for interacting with the RaceResult builders.
 	RaceResult *RaceResultClient
 	// Racer is the client for interacting with the Racer builders.
 	Racer *RacerClient
+	// RacerEmail is the client for interacting with the RacerEmail builders.
+	RacerEmail *RacerEmailClient
+	// RacerLegendAbility is the client for interacting with the RacerLegendAbility builders.
+	RacerLegendAbility *RacerLegendAbilityClient
+	// RacerSector is the client for interacting with the RacerSector builders.
+	RacerSector *RacerSectorClient
 	// RacerStats is the client for interacting with the RacerStats builders.
 	RacerStats *RacerStatsClient
+	// RoundSnapshot is the client for interacting with the RoundSnapshot builders.
+	RoundSnapshot *RoundSnapshotClient
+	// RoundSnapshotScore is the client for interacting with the RoundSnapshotScore builders.
+	RoundSnapshotScore *RoundSnapshotScoreClient
 	// Season is the client for interacting with the Season builders.
 	Season *SeasonClient
+	// Sector is the client for interacting with the Sector builders.
+	Sector *SectorClient
 	// Team is the client for interacting with the Team builders.
 	Team *TeamClient
 	// Track is the client for interacting with the Track builders.
 	Track *TrackClient
+	// TurboLog is the client for interacting with the TurboLog builders.
+	TurboLog *TurboLogClient
+	// UmamiSetting is the client for interacting with the UmamiSetting builders.
+	UmamiSetting *UmamiSettingClient
+	// UpgradeCard is the client for interacting with the UpgradeCard builders.
+	UpgradeCard *UpgradeCardClient
+	// Upload is the client for interacting with the Upload builders.
+	Upload *UploadClient
+	// WeatherCondition is the client for interacting with the WeatherCondition builders.
+	WeatherCondition *WeatherConditionClient
 
 	// lazily loaded.
 	client     *Client
@@ -161,15 +211,40 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.AISetting = NewAISettingClient(tx.config)
 	tx.AdminUser = NewAdminUserClient(tx.config)
+	tx.BackupSetting = NewBackupSettingClient(tx.config)
+	tx.DriverShare = NewDriverShareClient(tx.config)
+	tx.EmailSetting = NewEmailSettingClient(tx.config)
+	tx.GearShift = NewGearShiftClient(tx.config)
+	tx.HeatCard = NewHeatCardClient(tx.config)
+	tx.LapRecord = NewLapRecordClient(tx.config)
+	tx.LegendAbility = NewLegendAbilityClient(tx.config)
+	tx.NotificationSetting = NewNotificationSettingClient(tx.config)
+	tx.PlayerSession = NewPlayerSessionClient(tx.config)
+	tx.PlayerUpgrade = NewPlayerUpgradeClient(tx.config)
 	tx.Quote = NewQuoteClient(tx.config)
+	tx.RaceEvent = NewRaceEventClient(tx.config)
 	tx.RaceHistory = NewRaceHistoryClient(tx.config)
+	tx.RaceInfo = NewRaceInfoClient(tx.config)
+	tx.RaceRadio = NewRaceRadioClient(tx.config)
 	tx.RaceResult = NewRaceResultClient(tx.config)
 	tx.Racer = NewRacerClient(tx.config)
+	tx.RacerEmail = NewRacerEmailClient(tx.config)
+	tx.RacerLegendAbility = NewRacerLegendAbilityClient(tx.config)
+	tx.RacerSector = NewRacerSectorClient(tx.config)
 	tx.RacerStats = NewRacerStatsClient(tx.config)
+	tx.RoundSnapshot = NewRoundSnapshotClient(tx.config)
+	tx.RoundSnapshotScore = NewRoundSnapshotScoreClient(tx.config)
 	tx.Season = NewSeasonClient(tx.config)
+	tx.Sector = NewSectorClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)
 	tx.Track = NewTrackClient(tx.config)
+	tx.TurboLog = NewTurboLogClient(tx.config)
+	tx.UmamiSetting = NewUmamiSettingClient(tx.config)
+	tx.UpgradeCard = NewUpgradeCardClient(tx.config)
+	tx.Upload = NewUploadClient(tx.config)
+	tx.WeatherCondition = NewWeatherConditionClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
@@ -179,7 +254,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: AdminUser.QueryXXX(), the query will be executed
+// applies a query, for example: AISetting.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

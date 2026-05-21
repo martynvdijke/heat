@@ -460,11 +460,6 @@ func GetAvailableUpgradesForRacer(c *gin.Context) {
 	c.JSON(http.StatusOK, upgrades)
 }
 
-// Helper to write GameMechanicsUpdate as JSON to response (used internally)
-func writeMechanicsJSON(c *gin.Context, data interface{}) {
-	c.JSON(http.StatusOK, data)
-}
-
 // Bulk heat card operations for race start
 func InitializeHeatDecks(c *gin.Context) {
 	var req struct {

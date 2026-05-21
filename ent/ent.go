@@ -7,14 +7,39 @@ import (
 	"errors"
 	"fmt"
 	"heat/ent/adminuser"
+	"heat/ent/aisetting"
+	"heat/ent/backupsetting"
+	"heat/ent/drivershare"
+	"heat/ent/emailsetting"
+	"heat/ent/gearshift"
+	"heat/ent/heatcard"
+	"heat/ent/laprecord"
+	"heat/ent/legendability"
+	"heat/ent/notificationsetting"
+	"heat/ent/playersession"
+	"heat/ent/playerupgrade"
 	"heat/ent/quote"
+	"heat/ent/raceevent"
 	"heat/ent/racehistory"
+	"heat/ent/raceinfo"
 	"heat/ent/racer"
+	"heat/ent/raceradio"
+	"heat/ent/raceremail"
 	"heat/ent/raceresult"
+	"heat/ent/racerlegendability"
+	"heat/ent/racersector"
 	"heat/ent/racerstats"
+	"heat/ent/roundsnapshot"
+	"heat/ent/roundsnapshotscore"
 	"heat/ent/season"
+	"heat/ent/sector"
 	"heat/ent/team"
 	"heat/ent/track"
+	"heat/ent/turbolog"
+	"heat/ent/umamisetting"
+	"heat/ent/upgradecard"
+	"heat/ent/upload"
+	"heat/ent/weathercondition"
 	"reflect"
 	"sync"
 
@@ -81,15 +106,40 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			adminuser.Table:   adminuser.ValidColumn,
-			quote.Table:       quote.ValidColumn,
-			racehistory.Table: racehistory.ValidColumn,
-			raceresult.Table:  raceresult.ValidColumn,
-			racer.Table:       racer.ValidColumn,
-			racerstats.Table:  racerstats.ValidColumn,
-			season.Table:      season.ValidColumn,
-			team.Table:        team.ValidColumn,
-			track.Table:       track.ValidColumn,
+			aisetting.Table:           aisetting.ValidColumn,
+			adminuser.Table:           adminuser.ValidColumn,
+			backupsetting.Table:       backupsetting.ValidColumn,
+			drivershare.Table:         drivershare.ValidColumn,
+			emailsetting.Table:        emailsetting.ValidColumn,
+			gearshift.Table:           gearshift.ValidColumn,
+			heatcard.Table:            heatcard.ValidColumn,
+			laprecord.Table:           laprecord.ValidColumn,
+			legendability.Table:       legendability.ValidColumn,
+			notificationsetting.Table: notificationsetting.ValidColumn,
+			playersession.Table:       playersession.ValidColumn,
+			playerupgrade.Table:       playerupgrade.ValidColumn,
+			quote.Table:               quote.ValidColumn,
+			raceevent.Table:           raceevent.ValidColumn,
+			racehistory.Table:         racehistory.ValidColumn,
+			raceinfo.Table:            raceinfo.ValidColumn,
+			raceradio.Table:           raceradio.ValidColumn,
+			raceresult.Table:          raceresult.ValidColumn,
+			racer.Table:               racer.ValidColumn,
+			raceremail.Table:          raceremail.ValidColumn,
+			racerlegendability.Table:  racerlegendability.ValidColumn,
+			racersector.Table:         racersector.ValidColumn,
+			racerstats.Table:          racerstats.ValidColumn,
+			roundsnapshot.Table:       roundsnapshot.ValidColumn,
+			roundsnapshotscore.Table:  roundsnapshotscore.ValidColumn,
+			season.Table:              season.ValidColumn,
+			sector.Table:              sector.ValidColumn,
+			team.Table:                team.ValidColumn,
+			track.Table:               track.ValidColumn,
+			turbolog.Table:            turbolog.ValidColumn,
+			umamisetting.Table:        umamisetting.ValidColumn,
+			upgradecard.Table:         upgradecard.ValidColumn,
+			upload.Table:              upload.ValidColumn,
+			weathercondition.Table:    weathercondition.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

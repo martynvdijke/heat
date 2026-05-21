@@ -26,7 +26,7 @@ const (
 	// FieldRaceType holds the string denoting the race_type field in the database.
 	FieldRaceType = "race_type"
 	// Table holds the table name of the racehistory in the database.
-	Table = "race_histories"
+	Table = "race_history"
 )
 
 // Columns holds all SQL columns for racehistory fields.

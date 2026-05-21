@@ -6,14 +6,56 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// AISetting is the predicate function for aisetting builders.
+type AISetting func(*sql.Selector)
+
 // AdminUser is the predicate function for adminuser builders.
 type AdminUser func(*sql.Selector)
+
+// BackupSetting is the predicate function for backupsetting builders.
+type BackupSetting func(*sql.Selector)
+
+// DriverShare is the predicate function for drivershare builders.
+type DriverShare func(*sql.Selector)
+
+// EmailSetting is the predicate function for emailsetting builders.
+type EmailSetting func(*sql.Selector)
+
+// GearShift is the predicate function for gearshift builders.
+type GearShift func(*sql.Selector)
+
+// HeatCard is the predicate function for heatcard builders.
+type HeatCard func(*sql.Selector)
+
+// LapRecord is the predicate function for laprecord builders.
+type LapRecord func(*sql.Selector)
+
+// LegendAbility is the predicate function for legendability builders.
+type LegendAbility func(*sql.Selector)
+
+// NotificationSetting is the predicate function for notificationsetting builders.
+type NotificationSetting func(*sql.Selector)
+
+// PlayerSession is the predicate function for playersession builders.
+type PlayerSession func(*sql.Selector)
+
+// PlayerUpgrade is the predicate function for playerupgrade builders.
+type PlayerUpgrade func(*sql.Selector)
 
 // Quote is the predicate function for quote builders.
 type Quote func(*sql.Selector)
 
+// RaceEvent is the predicate function for raceevent builders.
+type RaceEvent func(*sql.Selector)
+
 // RaceHistory is the predicate function for racehistory builders.
 type RaceHistory func(*sql.Selector)
+
+// RaceInfo is the predicate function for raceinfo builders.
+type RaceInfo func(*sql.Selector)
+
+// RaceRadio is the predicate function for raceradio builders.
+type RaceRadio func(*sql.Selector)
 
 // RaceResult is the predicate function for raceresult builders.
 type RaceResult func(*sql.Selector)
@@ -21,14 +63,47 @@ type RaceResult func(*sql.Selector)
 // Racer is the predicate function for racer builders.
 type Racer func(*sql.Selector)
 
+// RacerEmail is the predicate function for raceremail builders.
+type RacerEmail func(*sql.Selector)
+
+// RacerLegendAbility is the predicate function for racerlegendability builders.
+type RacerLegendAbility func(*sql.Selector)
+
+// RacerSector is the predicate function for racersector builders.
+type RacerSector func(*sql.Selector)
+
 // RacerStats is the predicate function for racerstats builders.
 type RacerStats func(*sql.Selector)
 
+// RoundSnapshot is the predicate function for roundsnapshot builders.
+type RoundSnapshot func(*sql.Selector)
+
+// RoundSnapshotScore is the predicate function for roundsnapshotscore builders.
+type RoundSnapshotScore func(*sql.Selector)
+
 // Season is the predicate function for season builders.
 type Season func(*sql.Selector)
+
+// Sector is the predicate function for sector builders.
+type Sector func(*sql.Selector)
 
 // Team is the predicate function for team builders.
 type Team func(*sql.Selector)
 
 // Track is the predicate function for track builders.
 type Track func(*sql.Selector)
+
+// TurboLog is the predicate function for turbolog builders.
+type TurboLog func(*sql.Selector)
+
+// UmamiSetting is the predicate function for umamisetting builders.
+type UmamiSetting func(*sql.Selector)
+
+// UpgradeCard is the predicate function for upgradecard builders.
+type UpgradeCard func(*sql.Selector)
+
+// Upload is the predicate function for upload builders.
+type Upload func(*sql.Selector)
+
+// WeatherCondition is the predicate function for weathercondition builders.
+type WeatherCondition func(*sql.Selector)

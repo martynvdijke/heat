@@ -3,21 +3,188 @@
 package ent
 
 import (
+	"heat/ent/aisetting"
+	"heat/ent/backupsetting"
+	"heat/ent/drivershare"
+	"heat/ent/emailsetting"
+	"heat/ent/gearshift"
+	"heat/ent/heatcard"
+	"heat/ent/laprecord"
+	"heat/ent/notificationsetting"
+	"heat/ent/playersession"
+	"heat/ent/playerupgrade"
 	"heat/ent/quote"
+	"heat/ent/raceevent"
 	"heat/ent/racehistory"
+	"heat/ent/raceinfo"
 	"heat/ent/racer"
+	"heat/ent/raceradio"
 	"heat/ent/raceresult"
+	"heat/ent/racerlegendability"
+	"heat/ent/racersector"
 	"heat/ent/racerstats"
+	"heat/ent/roundsnapshot"
+	"heat/ent/roundsnapshotscore"
 	"heat/ent/schema"
 	"heat/ent/season"
+	"heat/ent/sector"
 	"heat/ent/team"
 	"heat/ent/track"
+	"heat/ent/turbolog"
+	"heat/ent/umamisetting"
+	"heat/ent/upgradecard"
+	"heat/ent/upload"
+	"heat/ent/weathercondition"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	aisettingFields := schema.AISetting{}.Fields()
+	_ = aisettingFields
+	// aisettingDescEnabled is the schema descriptor for enabled field.
+	aisettingDescEnabled := aisettingFields[3].Descriptor()
+	// aisetting.DefaultEnabled holds the default value on creation for the enabled field.
+	aisetting.DefaultEnabled = aisettingDescEnabled.Default.(int)
+	// aisettingDescDifficulty is the schema descriptor for difficulty field.
+	aisettingDescDifficulty := aisettingFields[4].Descriptor()
+	// aisetting.DefaultDifficulty holds the default value on creation for the difficulty field.
+	aisetting.DefaultDifficulty = aisettingDescDifficulty.Default.(string)
+	// aisettingDescAggression is the schema descriptor for aggression field.
+	aisettingDescAggression := aisettingFields[5].Descriptor()
+	// aisetting.DefaultAggression holds the default value on creation for the aggression field.
+	aisetting.DefaultAggression = aisettingDescAggression.Default.(int)
+	// aisettingDescErrorRate is the schema descriptor for error_rate field.
+	aisettingDescErrorRate := aisettingFields[6].Descriptor()
+	// aisetting.DefaultErrorRate holds the default value on creation for the error_rate field.
+	aisetting.DefaultErrorRate = aisettingDescErrorRate.Default.(int)
+	// aisettingDescConsistency is the schema descriptor for consistency field.
+	aisettingDescConsistency := aisettingFields[7].Descriptor()
+	// aisetting.DefaultConsistency holds the default value on creation for the consistency field.
+	aisetting.DefaultConsistency = aisettingDescConsistency.Default.(int)
+	backupsettingFields := schema.BackupSetting{}.Fields()
+	_ = backupsettingFields
+	// backupsettingDescEnabled is the schema descriptor for enabled field.
+	backupsettingDescEnabled := backupsettingFields[1].Descriptor()
+	// backupsetting.DefaultEnabled holds the default value on creation for the enabled field.
+	backupsetting.DefaultEnabled = backupsettingDescEnabled.Default.(int)
+	// backupsettingDescIntervalHrs is the schema descriptor for interval_hrs field.
+	backupsettingDescIntervalHrs := backupsettingFields[2].Descriptor()
+	// backupsetting.DefaultIntervalHrs holds the default value on creation for the interval_hrs field.
+	backupsetting.DefaultIntervalHrs = backupsettingDescIntervalHrs.Default.(int)
+	// backupsettingDescRetentionCount is the schema descriptor for retention_count field.
+	backupsettingDescRetentionCount := backupsettingFields[3].Descriptor()
+	// backupsetting.DefaultRetentionCount holds the default value on creation for the retention_count field.
+	backupsetting.DefaultRetentionCount = backupsettingDescRetentionCount.Default.(int)
+	drivershareFields := schema.DriverShare{}.Fields()
+	_ = drivershareFields
+	// drivershareDescCreatedAt is the schema descriptor for created_at field.
+	drivershareDescCreatedAt := drivershareFields[3].Descriptor()
+	// drivershare.DefaultCreatedAt holds the default value on creation for the created_at field.
+	drivershare.DefaultCreatedAt = drivershareDescCreatedAt.Default.(string)
+	emailsettingFields := schema.EmailSetting{}.Fields()
+	_ = emailsettingFields
+	// emailsettingDescSMTPPort is the schema descriptor for smtp_port field.
+	emailsettingDescSMTPPort := emailsettingFields[2].Descriptor()
+	// emailsetting.DefaultSMTPPort holds the default value on creation for the smtp_port field.
+	emailsetting.DefaultSMTPPort = emailsettingDescSMTPPort.Default.(int)
+	// emailsettingDescEnabled is the schema descriptor for enabled field.
+	emailsettingDescEnabled := emailsettingFields[6].Descriptor()
+	// emailsetting.DefaultEnabled holds the default value on creation for the enabled field.
+	emailsetting.DefaultEnabled = emailsettingDescEnabled.Default.(int)
+	gearshiftFields := schema.GearShift{}.Fields()
+	_ = gearshiftFields
+	// gearshiftDescLap is the schema descriptor for lap field.
+	gearshiftDescLap := gearshiftFields[3].Descriptor()
+	// gearshift.DefaultLap holds the default value on creation for the lap field.
+	gearshift.DefaultLap = gearshiftDescLap.Default.(int)
+	// gearshiftDescGear is the schema descriptor for gear field.
+	gearshiftDescGear := gearshiftFields[4].Descriptor()
+	// gearshift.DefaultGear holds the default value on creation for the gear field.
+	gearshift.DefaultGear = gearshiftDescGear.Default.(int)
+	// gearshiftDescStress is the schema descriptor for stress field.
+	gearshiftDescStress := gearshiftFields[5].Descriptor()
+	// gearshift.DefaultStress holds the default value on creation for the stress field.
+	gearshift.DefaultStress = gearshiftDescStress.Default.(int)
+	heatcardFields := schema.HeatCard{}.Fields()
+	_ = heatcardFields
+	// heatcardDescLocation is the schema descriptor for location field.
+	heatcardDescLocation := heatcardFields[2].Descriptor()
+	// heatcard.DefaultLocation holds the default value on creation for the location field.
+	heatcard.DefaultLocation = heatcardDescLocation.Default.(string)
+	// heatcardDescCardType is the schema descriptor for card_type field.
+	heatcardDescCardType := heatcardFields[3].Descriptor()
+	// heatcard.DefaultCardType holds the default value on creation for the card_type field.
+	heatcard.DefaultCardType = heatcardDescCardType.Default.(string)
+	// heatcardDescLapAdded is the schema descriptor for lap_added field.
+	heatcardDescLapAdded := heatcardFields[4].Descriptor()
+	// heatcard.DefaultLapAdded holds the default value on creation for the lap_added field.
+	heatcard.DefaultLapAdded = heatcardDescLapAdded.Default.(int)
+	laprecordFields := schema.LapRecord{}.Fields()
+	_ = laprecordFields
+	// laprecordDescRaceID is the schema descriptor for race_id field.
+	laprecordDescRaceID := laprecordFields[1].Descriptor()
+	// laprecord.DefaultRaceID holds the default value on creation for the race_id field.
+	laprecord.DefaultRaceID = laprecordDescRaceID.Default.(int)
+	// laprecordDescGearUsed is the schema descriptor for gear_used field.
+	laprecordDescGearUsed := laprecordFields[5].Descriptor()
+	// laprecord.DefaultGearUsed holds the default value on creation for the gear_used field.
+	laprecord.DefaultGearUsed = laprecordDescGearUsed.Default.(int)
+	// laprecordDescHeatGenerated is the schema descriptor for heat_generated field.
+	laprecordDescHeatGenerated := laprecordFields[6].Descriptor()
+	// laprecord.DefaultHeatGenerated holds the default value on creation for the heat_generated field.
+	laprecord.DefaultHeatGenerated = laprecordDescHeatGenerated.Default.(int)
+	// laprecordDescTurboUsed is the schema descriptor for turbo_used field.
+	laprecordDescTurboUsed := laprecordFields[7].Descriptor()
+	// laprecord.DefaultTurboUsed holds the default value on creation for the turbo_used field.
+	laprecord.DefaultTurboUsed = laprecordDescTurboUsed.Default.(int)
+	// laprecordDescTimestamp is the schema descriptor for timestamp field.
+	laprecordDescTimestamp := laprecordFields[8].Descriptor()
+	// laprecord.DefaultTimestamp holds the default value on creation for the timestamp field.
+	laprecord.DefaultTimestamp = laprecordDescTimestamp.Default.(string)
+	notificationsettingFields := schema.NotificationSetting{}.Fields()
+	_ = notificationsettingFields
+	// notificationsettingDescNotifyWinner is the schema descriptor for notify_winner field.
+	notificationsettingDescNotifyWinner := notificationsettingFields[3].Descriptor()
+	// notificationsetting.DefaultNotifyWinner holds the default value on creation for the notify_winner field.
+	notificationsetting.DefaultNotifyWinner = notificationsettingDescNotifyWinner.Default.(int)
+	// notificationsettingDescNotifyRaceStart is the schema descriptor for notify_race_start field.
+	notificationsettingDescNotifyRaceStart := notificationsettingFields[4].Descriptor()
+	// notificationsetting.DefaultNotifyRaceStart holds the default value on creation for the notify_race_start field.
+	notificationsetting.DefaultNotifyRaceStart = notificationsettingDescNotifyRaceStart.Default.(int)
+	// notificationsettingDescNotifyPodium is the schema descriptor for notify_podium field.
+	notificationsettingDescNotifyPodium := notificationsettingFields[5].Descriptor()
+	// notificationsetting.DefaultNotifyPodium holds the default value on creation for the notify_podium field.
+	notificationsetting.DefaultNotifyPodium = notificationsettingDescNotifyPodium.Default.(int)
+	playersessionFields := schema.PlayerSession{}.Fields()
+	_ = playersessionFields
+	// playersessionDescDeviceName is the schema descriptor for device_name field.
+	playersessionDescDeviceName := playersessionFields[3].Descriptor()
+	// playersession.DefaultDeviceName holds the default value on creation for the device_name field.
+	playersession.DefaultDeviceName = playersessionDescDeviceName.Default.(string)
+	// playersessionDescLastSeen is the schema descriptor for last_seen field.
+	playersessionDescLastSeen := playersessionFields[4].Descriptor()
+	// playersession.DefaultLastSeen holds the default value on creation for the last_seen field.
+	playersession.DefaultLastSeen = playersessionDescLastSeen.Default.(string)
+	// playersessionDescCreatedAt is the schema descriptor for created_at field.
+	playersessionDescCreatedAt := playersessionFields[5].Descriptor()
+	// playersession.DefaultCreatedAt holds the default value on creation for the created_at field.
+	playersession.DefaultCreatedAt = playersessionDescCreatedAt.Default.(string)
+	playerupgradeFields := schema.PlayerUpgrade{}.Fields()
+	_ = playerupgradeFields
+	// playerupgradeDescSeasonID is the schema descriptor for season_id field.
+	playerupgradeDescSeasonID := playerupgradeFields[3].Descriptor()
+	// playerupgrade.DefaultSeasonID holds the default value on creation for the season_id field.
+	playerupgrade.DefaultSeasonID = playerupgradeDescSeasonID.Default.(int)
+	// playerupgradeDescEquipped is the schema descriptor for equipped field.
+	playerupgradeDescEquipped := playerupgradeFields[4].Descriptor()
+	// playerupgrade.DefaultEquipped holds the default value on creation for the equipped field.
+	playerupgrade.DefaultEquipped = playerupgradeDescEquipped.Default.(int)
+	// playerupgradeDescRoundBought is the schema descriptor for round_bought field.
+	playerupgradeDescRoundBought := playerupgradeFields[5].Descriptor()
+	// playerupgrade.DefaultRoundBought holds the default value on creation for the round_bought field.
+	playerupgrade.DefaultRoundBought = playerupgradeDescRoundBought.Default.(int)
 	quoteFields := schema.Quote{}.Fields()
 	_ = quoteFields
 	// quoteDescAuthor is the schema descriptor for author field.
@@ -28,12 +195,62 @@ func init() {
 	quoteDescCreatedAt := quoteFields[3].Descriptor()
 	// quote.DefaultCreatedAt holds the default value on creation for the created_at field.
 	quote.DefaultCreatedAt = quoteDescCreatedAt.Default.(string)
+	raceeventFields := schema.RaceEvent{}.Fields()
+	_ = raceeventFields
+	// raceeventDescRaceID is the schema descriptor for race_id field.
+	raceeventDescRaceID := raceeventFields[1].Descriptor()
+	// raceevent.DefaultRaceID holds the default value on creation for the race_id field.
+	raceevent.DefaultRaceID = raceeventDescRaceID.Default.(int)
+	// raceeventDescLap is the schema descriptor for lap field.
+	raceeventDescLap := raceeventFields[2].Descriptor()
+	// raceevent.DefaultLap holds the default value on creation for the lap field.
+	raceevent.DefaultLap = raceeventDescLap.Default.(int)
+	// raceeventDescRacerId2 is the schema descriptor for racer_id2 field.
+	raceeventDescRacerId2 := raceeventFields[5].Descriptor()
+	// raceevent.DefaultRacerId2 holds the default value on creation for the racer_id2 field.
+	raceevent.DefaultRacerId2 = raceeventDescRacerId2.Default.(int)
+	// raceeventDescNote is the schema descriptor for note field.
+	raceeventDescNote := raceeventFields[6].Descriptor()
+	// raceevent.DefaultNote holds the default value on creation for the note field.
+	raceevent.DefaultNote = raceeventDescNote.Default.(string)
+	// raceeventDescTimestamp is the schema descriptor for timestamp field.
+	raceeventDescTimestamp := raceeventFields[7].Descriptor()
+	// raceevent.DefaultTimestamp holds the default value on creation for the timestamp field.
+	raceevent.DefaultTimestamp = raceeventDescTimestamp.Default.(string)
 	racehistoryFields := schema.RaceHistory{}.Fields()
 	_ = racehistoryFields
 	// racehistoryDescRaceType is the schema descriptor for race_type field.
 	racehistoryDescRaceType := racehistoryFields[7].Descriptor()
 	// racehistory.DefaultRaceType holds the default value on creation for the race_type field.
 	racehistory.DefaultRaceType = racehistoryDescRaceType.Default.(string)
+	raceinfoFields := schema.RaceInfo{}.Fields()
+	_ = raceinfoFields
+	// raceinfoDescCountry is the schema descriptor for country field.
+	raceinfoDescCountry := raceinfoFields[1].Descriptor()
+	// raceinfo.DefaultCountry holds the default value on creation for the country field.
+	raceinfo.DefaultCountry = raceinfoDescCountry.Default.(string)
+	// raceinfoDescTrack is the schema descriptor for track field.
+	raceinfoDescTrack := raceinfoFields[2].Descriptor()
+	// raceinfo.DefaultTrack holds the default value on creation for the track field.
+	raceinfo.DefaultTrack = raceinfoDescTrack.Default.(string)
+	// raceinfoDescTrackID is the schema descriptor for track_id field.
+	raceinfoDescTrackID := raceinfoFields[3].Descriptor()
+	// raceinfo.DefaultTrackID holds the default value on creation for the track_id field.
+	raceinfo.DefaultTrackID = raceinfoDescTrackID.Default.(string)
+	// raceinfoDescLaps is the schema descriptor for laps field.
+	raceinfoDescLaps := raceinfoFields[4].Descriptor()
+	// raceinfo.DefaultLaps holds the default value on creation for the laps field.
+	raceinfo.DefaultLaps = raceinfoDescLaps.Default.(int)
+	raceradioFields := schema.RaceRadio{}.Fields()
+	_ = raceradioFields
+	// raceradioDescRaceID is the schema descriptor for race_id field.
+	raceradioDescRaceID := raceradioFields[1].Descriptor()
+	// raceradio.DefaultRaceID holds the default value on creation for the race_id field.
+	raceradio.DefaultRaceID = raceradioDescRaceID.Default.(int)
+	// raceradioDescTimestamp is the schema descriptor for timestamp field.
+	raceradioDescTimestamp := raceradioFields[4].Descriptor()
+	// raceradio.DefaultTimestamp holds the default value on creation for the timestamp field.
+	raceradio.DefaultTimestamp = raceradioDescTimestamp.Default.(string)
 	raceresultFields := schema.RaceResult{}.Fields()
 	_ = raceresultFields
 	// raceresultDescFastestLap is the schema descriptor for fastest_lap field.
@@ -74,6 +291,30 @@ func init() {
 	racerDescTeamID := racerFields[8].Descriptor()
 	// racer.DefaultTeamID holds the default value on creation for the team_id field.
 	racer.DefaultTeamID = racerDescTeamID.Default.(int)
+	racerlegendabilityFields := schema.RacerLegendAbility{}.Fields()
+	_ = racerlegendabilityFields
+	// racerlegendabilityDescActive is the schema descriptor for active field.
+	racerlegendabilityDescActive := racerlegendabilityFields[3].Descriptor()
+	// racerlegendability.DefaultActive holds the default value on creation for the active field.
+	racerlegendability.DefaultActive = racerlegendabilityDescActive.Default.(int)
+	racersectorFields := schema.RacerSector{}.Fields()
+	_ = racersectorFields
+	// racersectorDescRaceID is the schema descriptor for race_id field.
+	racersectorDescRaceID := racersectorFields[1].Descriptor()
+	// racersector.DefaultRaceID holds the default value on creation for the race_id field.
+	racersector.DefaultRaceID = racersectorDescRaceID.Default.(int)
+	// racersectorDescLap is the schema descriptor for lap field.
+	racersectorDescLap := racersectorFields[4].Descriptor()
+	// racersector.DefaultLap holds the default value on creation for the lap field.
+	racersector.DefaultLap = racersectorDescLap.Default.(int)
+	// racersectorDescEntryTime is the schema descriptor for entry_time field.
+	racersectorDescEntryTime := racersectorFields[5].Descriptor()
+	// racersector.DefaultEntryTime holds the default value on creation for the entry_time field.
+	racersector.DefaultEntryTime = racersectorDescEntryTime.Default.(string)
+	// racersectorDescExitTime is the schema descriptor for exit_time field.
+	racersectorDescExitTime := racersectorFields[6].Descriptor()
+	// racersector.DefaultExitTime holds the default value on creation for the exit_time field.
+	racersector.DefaultExitTime = racersectorDescExitTime.Default.(string)
 	racerstatsFields := schema.RacerStats{}.Fields()
 	_ = racerstatsFields
 	// racerstatsDescRaces is the schema descriptor for races field.
@@ -112,6 +353,30 @@ func init() {
 	racerstatsDescDNS := racerstatsFields[10].Descriptor()
 	// racerstats.DefaultDNS holds the default value on creation for the dns field.
 	racerstats.DefaultDNS = racerstatsDescDNS.Default.(int)
+	roundsnapshotFields := schema.RoundSnapshot{}.Fields()
+	_ = roundsnapshotFields
+	// roundsnapshotDescRound is the schema descriptor for round field.
+	roundsnapshotDescRound := roundsnapshotFields[3].Descriptor()
+	// roundsnapshot.DefaultRound holds the default value on creation for the round field.
+	roundsnapshot.DefaultRound = roundsnapshotDescRound.Default.(int)
+	// roundsnapshotDescCreatedAt is the schema descriptor for created_at field.
+	roundsnapshotDescCreatedAt := roundsnapshotFields[4].Descriptor()
+	// roundsnapshot.DefaultCreatedAt holds the default value on creation for the created_at field.
+	roundsnapshot.DefaultCreatedAt = roundsnapshotDescCreatedAt.Default.(string)
+	// roundsnapshotDescSeasonID is the schema descriptor for season_id field.
+	roundsnapshotDescSeasonID := roundsnapshotFields[5].Descriptor()
+	// roundsnapshot.DefaultSeasonID holds the default value on creation for the season_id field.
+	roundsnapshot.DefaultSeasonID = roundsnapshotDescSeasonID.Default.(int)
+	roundsnapshotscoreFields := schema.RoundSnapshotScore{}.Fields()
+	_ = roundsnapshotscoreFields
+	// roundsnapshotscoreDescPoints is the schema descriptor for points field.
+	roundsnapshotscoreDescPoints := roundsnapshotscoreFields[4].Descriptor()
+	// roundsnapshotscore.DefaultPoints holds the default value on creation for the points field.
+	roundsnapshotscore.DefaultPoints = roundsnapshotscoreDescPoints.Default.(int)
+	// roundsnapshotscoreDescPosition is the schema descriptor for position field.
+	roundsnapshotscoreDescPosition := roundsnapshotscoreFields[5].Descriptor()
+	// roundsnapshotscore.DefaultPosition holds the default value on creation for the position field.
+	roundsnapshotscore.DefaultPosition = roundsnapshotscoreDescPosition.Default.(int)
 	seasonFields := schema.Season{}.Fields()
 	_ = seasonFields
 	// seasonDescStatus is the schema descriptor for status field.
@@ -122,6 +387,12 @@ func init() {
 	seasonDescCreatedAt := seasonFields[5].Descriptor()
 	// season.DefaultCreatedAt holds the default value on creation for the created_at field.
 	season.DefaultCreatedAt = seasonDescCreatedAt.Default.(string)
+	sectorFields := schema.Sector{}.Fields()
+	_ = sectorFields
+	// sectorDescOrder is the schema descriptor for order field.
+	sectorDescOrder := sectorFields[3].Descriptor()
+	// sector.DefaultOrder holds the default value on creation for the order field.
+	sector.DefaultOrder = sectorDescOrder.Default.(int)
 	teamFields := schema.Team{}.Fields()
 	_ = teamFields
 	// teamDescColor is the schema descriptor for color field.
@@ -158,4 +429,66 @@ func init() {
 	trackDescRefreshGeojson := trackFields[8].Descriptor()
 	// track.DefaultRefreshGeojson holds the default value on creation for the refresh_geojson field.
 	track.DefaultRefreshGeojson = trackDescRefreshGeojson.Default.(int)
+	turbologFields := schema.TurboLog{}.Fields()
+	_ = turbologFields
+	// turbologDescRaceID is the schema descriptor for race_id field.
+	turbologDescRaceID := turbologFields[2].Descriptor()
+	// turbolog.DefaultRaceID holds the default value on creation for the race_id field.
+	turbolog.DefaultRaceID = turbologDescRaceID.Default.(int)
+	// turbologDescLap is the schema descriptor for lap field.
+	turbologDescLap := turbologFields[3].Descriptor()
+	// turbolog.DefaultLap holds the default value on creation for the lap field.
+	turbolog.DefaultLap = turbologDescLap.Default.(int)
+	// turbologDescTimesUsed is the schema descriptor for times_used field.
+	turbologDescTimesUsed := turbologFields[4].Descriptor()
+	// turbolog.DefaultTimesUsed holds the default value on creation for the times_used field.
+	turbolog.DefaultTimesUsed = turbologDescTimesUsed.Default.(int)
+	umamisettingFields := schema.UmamiSetting{}.Fields()
+	_ = umamisettingFields
+	// umamisettingDescEnabled is the schema descriptor for enabled field.
+	umamisettingDescEnabled := umamisettingFields[3].Descriptor()
+	// umamisetting.DefaultEnabled holds the default value on creation for the enabled field.
+	umamisetting.DefaultEnabled = umamisettingDescEnabled.Default.(int)
+	upgradecardFields := schema.UpgradeCard{}.Fields()
+	_ = upgradecardFields
+	// upgradecardDescCardType is the schema descriptor for card_type field.
+	upgradecardDescCardType := upgradecardFields[3].Descriptor()
+	// upgradecard.DefaultCardType holds the default value on creation for the card_type field.
+	upgradecard.DefaultCardType = upgradecardDescCardType.Default.(string)
+	// upgradecardDescCost is the schema descriptor for cost field.
+	upgradecardDescCost := upgradecardFields[4].Descriptor()
+	// upgradecard.DefaultCost holds the default value on creation for the cost field.
+	upgradecard.DefaultCost = upgradecardDescCost.Default.(int)
+	// upgradecardDescEffects is the schema descriptor for effects field.
+	upgradecardDescEffects := upgradecardFields[5].Descriptor()
+	// upgradecard.DefaultEffects holds the default value on creation for the effects field.
+	upgradecard.DefaultEffects = upgradecardDescEffects.Default.(string)
+	uploadFields := schema.Upload{}.Fields()
+	_ = uploadFields
+	// uploadDescCreatedAt is the schema descriptor for created_at field.
+	uploadDescCreatedAt := uploadFields[6].Descriptor()
+	// upload.DefaultCreatedAt holds the default value on creation for the created_at field.
+	upload.DefaultCreatedAt = uploadDescCreatedAt.Default.(string)
+	weatherconditionFields := schema.WeatherCondition{}.Fields()
+	_ = weatherconditionFields
+	// weatherconditionDescRaceID is the schema descriptor for race_id field.
+	weatherconditionDescRaceID := weatherconditionFields[1].Descriptor()
+	// weathercondition.DefaultRaceID holds the default value on creation for the race_id field.
+	weathercondition.DefaultRaceID = weatherconditionDescRaceID.Default.(int)
+	// weatherconditionDescCondition is the schema descriptor for condition field.
+	weatherconditionDescCondition := weatherconditionFields[2].Descriptor()
+	// weathercondition.DefaultCondition holds the default value on creation for the condition field.
+	weathercondition.DefaultCondition = weatherconditionDescCondition.Default.(string)
+	// weatherconditionDescLapStart is the schema descriptor for lap_start field.
+	weatherconditionDescLapStart := weatherconditionFields[3].Descriptor()
+	// weathercondition.DefaultLapStart holds the default value on creation for the lap_start field.
+	weathercondition.DefaultLapStart = weatherconditionDescLapStart.Default.(int)
+	// weatherconditionDescLapEnd is the schema descriptor for lap_end field.
+	weatherconditionDescLapEnd := weatherconditionFields[4].Descriptor()
+	// weathercondition.DefaultLapEnd holds the default value on creation for the lap_end field.
+	weathercondition.DefaultLapEnd = weatherconditionDescLapEnd.Default.(int)
+	// weatherconditionDescGripModifier is the schema descriptor for grip_modifier field.
+	weatherconditionDescGripModifier := weatherconditionFields[5].Descriptor()
+	// weathercondition.DefaultGripModifier holds the default value on creation for the grip_modifier field.
+	weathercondition.DefaultGripModifier = weatherconditionDescGripModifier.Default.(float64)
 }

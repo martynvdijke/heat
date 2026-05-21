@@ -3,11 +3,29 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
 
 var (
+	// AiSettingsColumns holds the columns for the "ai_settings" table.
+	AiSettingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "track_extract_url", Type: field.TypeString, Nullable: true},
+		{Name: "api_key", Type: field.TypeString, Nullable: true},
+		{Name: "enabled", Type: field.TypeInt, Default: 0},
+		{Name: "difficulty", Type: field.TypeString, Default: "balanced"},
+		{Name: "aggression", Type: field.TypeInt, Default: 50},
+		{Name: "error_rate", Type: field.TypeInt, Default: 30},
+		{Name: "consistency", Type: field.TypeInt, Default: 50},
+	}
+	// AiSettingsTable holds the schema information for the "ai_settings" table.
+	AiSettingsTable = &schema.Table{
+		Name:       "ai_settings",
+		Columns:    AiSettingsColumns,
+		PrimaryKey: []*schema.Column{AiSettingsColumns[0]},
+	}
 	// AdminUsersColumns holds the columns for the "admin_users" table.
 	AdminUsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -19,6 +37,154 @@ var (
 		Name:       "admin_users",
 		Columns:    AdminUsersColumns,
 		PrimaryKey: []*schema.Column{AdminUsersColumns[0]},
+	}
+	// BackupSettingsColumns holds the columns for the "backup_settings" table.
+	BackupSettingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "enabled", Type: field.TypeInt, Default: 1},
+		{Name: "interval_hrs", Type: field.TypeInt, Default: 24},
+		{Name: "retention_count", Type: field.TypeInt, Nullable: true, Default: 7},
+	}
+	// BackupSettingsTable holds the schema information for the "backup_settings" table.
+	BackupSettingsTable = &schema.Table{
+		Name:       "backup_settings",
+		Columns:    BackupSettingsColumns,
+		PrimaryKey: []*schema.Column{BackupSettingsColumns[0]},
+	}
+	// DriverSharesColumns holds the columns for the "driver_shares" table.
+	DriverSharesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "racer_id", Type: field.TypeInt, Unique: true},
+		{Name: "token", Type: field.TypeString, Unique: true},
+		{Name: "created_at", Type: field.TypeString, Default: ""},
+	}
+	// DriverSharesTable holds the schema information for the "driver_shares" table.
+	DriverSharesTable = &schema.Table{
+		Name:       "driver_shares",
+		Columns:    DriverSharesColumns,
+		PrimaryKey: []*schema.Column{DriverSharesColumns[0]},
+	}
+	// EmailSettingsColumns holds the columns for the "email_settings" table.
+	EmailSettingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "smtp_host", Type: field.TypeString, Nullable: true},
+		{Name: "smtp_port", Type: field.TypeInt, Default: 587},
+		{Name: "username", Type: field.TypeString, Nullable: true},
+		{Name: "password", Type: field.TypeString, Nullable: true},
+		{Name: "from_addr", Type: field.TypeString, Nullable: true},
+		{Name: "enabled", Type: field.TypeInt, Default: 0},
+	}
+	// EmailSettingsTable holds the schema information for the "email_settings" table.
+	EmailSettingsTable = &schema.Table{
+		Name:       "email_settings",
+		Columns:    EmailSettingsColumns,
+		PrimaryKey: []*schema.Column{EmailSettingsColumns[0]},
+	}
+	// GearShiftsColumns holds the columns for the "gear_shifts" table.
+	GearShiftsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "race_id", Type: field.TypeInt},
+		{Name: "lap", Type: field.TypeInt, Default: 1},
+		{Name: "gear", Type: field.TypeInt, Default: 1},
+		{Name: "stress", Type: field.TypeInt, Default: 0},
+	}
+	// GearShiftsTable holds the schema information for the "gear_shifts" table.
+	GearShiftsTable = &schema.Table{
+		Name:       "gear_shifts",
+		Columns:    GearShiftsColumns,
+		PrimaryKey: []*schema.Column{GearShiftsColumns[0]},
+	}
+	// HeatCardsColumns holds the columns for the "heat_cards" table.
+	HeatCardsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "location", Type: field.TypeString, Default: "hand"},
+		{Name: "card_type", Type: field.TypeString, Default: "heat"},
+		{Name: "lap_added", Type: field.TypeInt, Default: 0},
+	}
+	// HeatCardsTable holds the schema information for the "heat_cards" table.
+	HeatCardsTable = &schema.Table{
+		Name:       "heat_cards",
+		Columns:    HeatCardsColumns,
+		PrimaryKey: []*schema.Column{HeatCardsColumns[0]},
+	}
+	// LapRecordsColumns holds the columns for the "lap_records" table.
+	LapRecordsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "race_id", Type: field.TypeInt, Default: 0},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "lap_number", Type: field.TypeInt},
+		{Name: "position", Type: field.TypeInt},
+		{Name: "gear_used", Type: field.TypeInt, Default: 1},
+		{Name: "heat_generated", Type: field.TypeInt, Default: 0},
+		{Name: "turbo_used", Type: field.TypeInt, Default: 0},
+		{Name: "timestamp", Type: field.TypeString, Default: ""},
+	}
+	// LapRecordsTable holds the schema information for the "lap_records" table.
+	LapRecordsTable = &schema.Table{
+		Name:       "lap_records",
+		Columns:    LapRecordsColumns,
+		PrimaryKey: []*schema.Column{LapRecordsColumns[0]},
+	}
+	// LegendAbilitiesColumns holds the columns for the "legend_abilities" table.
+	LegendAbilitiesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString},
+		{Name: "ability_type", Type: field.TypeString},
+		{Name: "racer_name", Type: field.TypeString},
+	}
+	// LegendAbilitiesTable holds the schema information for the "legend_abilities" table.
+	LegendAbilitiesTable = &schema.Table{
+		Name:       "legend_abilities",
+		Columns:    LegendAbilitiesColumns,
+		PrimaryKey: []*schema.Column{LegendAbilitiesColumns[0]},
+	}
+	// NotificationSettingsColumns holds the columns for the "notification_settings" table.
+	NotificationSettingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "gotify_url", Type: field.TypeString, Nullable: true},
+		{Name: "gotify_token", Type: field.TypeString, Nullable: true},
+		{Name: "notify_winner", Type: field.TypeInt, Default: 1},
+		{Name: "notify_race_start", Type: field.TypeInt, Default: 0},
+		{Name: "notify_podium", Type: field.TypeInt, Default: 0},
+	}
+	// NotificationSettingsTable holds the schema information for the "notification_settings" table.
+	NotificationSettingsTable = &schema.Table{
+		Name:       "notification_settings",
+		Columns:    NotificationSettingsColumns,
+		PrimaryKey: []*schema.Column{NotificationSettingsColumns[0]},
+	}
+	// PlayerSessionsColumns holds the columns for the "player_sessions" table.
+	PlayerSessionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "racer_id", Type: field.TypeInt, Unique: true},
+		{Name: "token", Type: field.TypeString, Unique: true},
+		{Name: "device_name", Type: field.TypeString, Default: ""},
+		{Name: "last_seen", Type: field.TypeString, Default: ""},
+		{Name: "created_at", Type: field.TypeString, Default: ""},
+	}
+	// PlayerSessionsTable holds the schema information for the "player_sessions" table.
+	PlayerSessionsTable = &schema.Table{
+		Name:       "player_sessions",
+		Columns:    PlayerSessionsColumns,
+		PrimaryKey: []*schema.Column{PlayerSessionsColumns[0]},
+	}
+	// PlayerUpgradesColumns holds the columns for the "player_upgrades" table.
+	PlayerUpgradesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "upgrade_id", Type: field.TypeInt},
+		{Name: "season_id", Type: field.TypeInt, Default: 0},
+		{Name: "equipped", Type: field.TypeInt, Default: 1},
+		{Name: "round_bought", Type: field.TypeInt, Default: 0},
+	}
+	// PlayerUpgradesTable holds the schema information for the "player_upgrades" table.
+	PlayerUpgradesTable = &schema.Table{
+		Name:       "player_upgrades",
+		Columns:    PlayerUpgradesColumns,
+		PrimaryKey: []*schema.Column{PlayerUpgradesColumns[0]},
 	}
 	// QuotesColumns holds the columns for the "quotes" table.
 	QuotesColumns = []*schema.Column{
@@ -33,8 +199,25 @@ var (
 		Columns:    QuotesColumns,
 		PrimaryKey: []*schema.Column{QuotesColumns[0]},
 	}
-	// RaceHistoriesColumns holds the columns for the "race_histories" table.
-	RaceHistoriesColumns = []*schema.Column{
+	// RaceEventsColumns holds the columns for the "race_events" table.
+	RaceEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "race_id", Type: field.TypeInt, Default: 0},
+		{Name: "lap", Type: field.TypeInt, Default: 1},
+		{Name: "event_type", Type: field.TypeString},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "racer_id2", Type: field.TypeInt, Default: 0},
+		{Name: "note", Type: field.TypeString, Default: ""},
+		{Name: "timestamp", Type: field.TypeString, Default: ""},
+	}
+	// RaceEventsTable holds the schema information for the "race_events" table.
+	RaceEventsTable = &schema.Table{
+		Name:       "race_events",
+		Columns:    RaceEventsColumns,
+		PrimaryKey: []*schema.Column{RaceEventsColumns[0]},
+	}
+	// RaceHistoryColumns holds the columns for the "race_history" table.
+	RaceHistoryColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "race_date", Type: field.TypeString},
@@ -44,11 +227,39 @@ var (
 		{Name: "total_laps", Type: field.TypeInt},
 		{Name: "race_type", Type: field.TypeString, Default: "season"},
 	}
-	// RaceHistoriesTable holds the schema information for the "race_histories" table.
-	RaceHistoriesTable = &schema.Table{
-		Name:       "race_histories",
-		Columns:    RaceHistoriesColumns,
-		PrimaryKey: []*schema.Column{RaceHistoriesColumns[0]},
+	// RaceHistoryTable holds the schema information for the "race_history" table.
+	RaceHistoryTable = &schema.Table{
+		Name:       "race_history",
+		Columns:    RaceHistoryColumns,
+		PrimaryKey: []*schema.Column{RaceHistoryColumns[0]},
+	}
+	// RaceInfoColumns holds the columns for the "race_info" table.
+	RaceInfoColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "country", Type: field.TypeString, Default: ""},
+		{Name: "track", Type: field.TypeString, Default: ""},
+		{Name: "track_id", Type: field.TypeString, Default: "monza"},
+		{Name: "laps", Type: field.TypeInt, Default: 0},
+	}
+	// RaceInfoTable holds the schema information for the "race_info" table.
+	RaceInfoTable = &schema.Table{
+		Name:       "race_info",
+		Columns:    RaceInfoColumns,
+		PrimaryKey: []*schema.Column{RaceInfoColumns[0]},
+	}
+	// RaceRadioColumns holds the columns for the "race_radio" table.
+	RaceRadioColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "race_id", Type: field.TypeInt, Default: 0},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "message", Type: field.TypeString},
+		{Name: "timestamp", Type: field.TypeString, Default: ""},
+	}
+	// RaceRadioTable holds the schema information for the "race_radio" table.
+	RaceRadioTable = &schema.Table{
+		Name:       "race_radio",
+		Columns:    RaceRadioColumns,
+		PrimaryKey: []*schema.Column{RaceRadioColumns[0]},
 	}
 	// RaceResultsColumns holds the columns for the "race_results" table.
 	RaceResultsColumns = []*schema.Column{
@@ -85,6 +296,47 @@ var (
 		Columns:    RacersColumns,
 		PrimaryKey: []*schema.Column{RacersColumns[0]},
 	}
+	// RacerEmailsColumns holds the columns for the "racer_emails" table.
+	RacerEmailsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "racer_id", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "email", Type: field.TypeString, Nullable: true},
+	}
+	// RacerEmailsTable holds the schema information for the "racer_emails" table.
+	RacerEmailsTable = &schema.Table{
+		Name:       "racer_emails",
+		Columns:    RacerEmailsColumns,
+		PrimaryKey: []*schema.Column{RacerEmailsColumns[0]},
+	}
+	// RacerLegendAbilitiesColumns holds the columns for the "racer_legend_abilities" table.
+	RacerLegendAbilitiesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "ability_id", Type: field.TypeInt},
+		{Name: "active", Type: field.TypeInt, Default: 1},
+	}
+	// RacerLegendAbilitiesTable holds the schema information for the "racer_legend_abilities" table.
+	RacerLegendAbilitiesTable = &schema.Table{
+		Name:       "racer_legend_abilities",
+		Columns:    RacerLegendAbilitiesColumns,
+		PrimaryKey: []*schema.Column{RacerLegendAbilitiesColumns[0]},
+	}
+	// RacerSectorsColumns holds the columns for the "racer_sectors" table.
+	RacerSectorsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "race_id", Type: field.TypeInt, Default: 0},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "sector_id", Type: field.TypeInt},
+		{Name: "lap", Type: field.TypeInt, Default: 1},
+		{Name: "entry_time", Type: field.TypeString, Default: ""},
+		{Name: "exit_time", Type: field.TypeString, Default: ""},
+	}
+	// RacerSectorsTable holds the schema information for the "racer_sectors" table.
+	RacerSectorsTable = &schema.Table{
+		Name:       "racer_sectors",
+		Columns:    RacerSectorsColumns,
+		PrimaryKey: []*schema.Column{RacerSectorsColumns[0]},
+	}
 	// RacerStatsColumns holds the columns for the "racer_stats" table.
 	RacerStatsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -105,6 +357,36 @@ var (
 		Columns:    RacerStatsColumns,
 		PrimaryKey: []*schema.Column{RacerStatsColumns[0]},
 	}
+	// RoundSnapshotsColumns holds the columns for the "round_snapshots" table.
+	RoundSnapshotsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "race_name", Type: field.TypeString},
+		{Name: "race_date", Type: field.TypeString},
+		{Name: "round", Type: field.TypeInt, Default: 1},
+		{Name: "created_at", Type: field.TypeString, Default: ""},
+		{Name: "season_id", Type: field.TypeInt, Nullable: true, Default: 1},
+	}
+	// RoundSnapshotsTable holds the schema information for the "round_snapshots" table.
+	RoundSnapshotsTable = &schema.Table{
+		Name:       "round_snapshots",
+		Columns:    RoundSnapshotsColumns,
+		PrimaryKey: []*schema.Column{RoundSnapshotsColumns[0]},
+	}
+	// RoundSnapshotScoresColumns holds the columns for the "round_snapshot_scores" table.
+	RoundSnapshotScoresColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "snapshot_id", Type: field.TypeInt},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "racer_name", Type: field.TypeString},
+		{Name: "points", Type: field.TypeInt, Default: 0},
+		{Name: "position", Type: field.TypeInt, Default: 0},
+	}
+	// RoundSnapshotScoresTable holds the schema information for the "round_snapshot_scores" table.
+	RoundSnapshotScoresTable = &schema.Table{
+		Name:       "round_snapshot_scores",
+		Columns:    RoundSnapshotScoresColumns,
+		PrimaryKey: []*schema.Column{RoundSnapshotScoresColumns[0]},
+	}
 	// SeasonsColumns holds the columns for the "seasons" table.
 	SeasonsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -119,6 +401,19 @@ var (
 		Name:       "seasons",
 		Columns:    SeasonsColumns,
 		PrimaryKey: []*schema.Column{SeasonsColumns[0]},
+	}
+	// SectorsColumns holds the columns for the "sectors" table.
+	SectorsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "track_id", Type: field.TypeString},
+		{Name: "order", Type: field.TypeInt, Default: 0},
+	}
+	// SectorsTable holds the schema information for the "sectors" table.
+	SectorsTable = &schema.Table{
+		Name:       "sectors",
+		Columns:    SectorsColumns,
+		PrimaryKey: []*schema.Column{SectorsColumns[0]},
 	}
 	// TeamsColumns holds the columns for the "teams" table.
 	TeamsColumns = []*schema.Column{
@@ -151,19 +446,126 @@ var (
 		Columns:    TracksColumns,
 		PrimaryKey: []*schema.Column{TracksColumns[0]},
 	}
+	// TurboLogsColumns holds the columns for the "turbo_logs" table.
+	TurboLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "racer_id", Type: field.TypeInt},
+		{Name: "race_id", Type: field.TypeInt, Default: 0},
+		{Name: "lap", Type: field.TypeInt, Default: 1},
+		{Name: "times_used", Type: field.TypeInt, Default: 1},
+	}
+	// TurboLogsTable holds the schema information for the "turbo_logs" table.
+	TurboLogsTable = &schema.Table{
+		Name:       "turbo_logs",
+		Columns:    TurboLogsColumns,
+		PrimaryKey: []*schema.Column{TurboLogsColumns[0]},
+	}
+	// UmamiSettingsColumns holds the columns for the "umami_settings" table.
+	UmamiSettingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "url", Type: field.TypeString, Nullable: true},
+		{Name: "website_id", Type: field.TypeString, Nullable: true},
+		{Name: "enabled", Type: field.TypeInt, Default: 0},
+	}
+	// UmamiSettingsTable holds the schema information for the "umami_settings" table.
+	UmamiSettingsTable = &schema.Table{
+		Name:       "umami_settings",
+		Columns:    UmamiSettingsColumns,
+		PrimaryKey: []*schema.Column{UmamiSettingsColumns[0]},
+	}
+	// UpgradeCardsColumns holds the columns for the "upgrade_cards" table.
+	UpgradeCardsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString},
+		{Name: "card_type", Type: field.TypeString, Default: "upgrade"},
+		{Name: "cost", Type: field.TypeInt, Default: 0},
+		{Name: "effects", Type: field.TypeString, Default: "{}"},
+	}
+	// UpgradeCardsTable holds the schema information for the "upgrade_cards" table.
+	UpgradeCardsTable = &schema.Table{
+		Name:       "upgrade_cards",
+		Columns:    UpgradeCardsColumns,
+		PrimaryKey: []*schema.Column{UpgradeCardsColumns[0]},
+	}
+	// UploadsColumns holds the columns for the "uploads" table.
+	UploadsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "hash", Type: field.TypeString, Unique: true, Nullable: true},
+		{Name: "ext", Type: field.TypeString, Nullable: true},
+		{Name: "url", Type: field.TypeString, Nullable: true},
+		{Name: "resized_url", Type: field.TypeString, Nullable: true},
+		{Name: "thumbnail_url", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeString, Default: ""},
+	}
+	// UploadsTable holds the schema information for the "uploads" table.
+	UploadsTable = &schema.Table{
+		Name:       "uploads",
+		Columns:    UploadsColumns,
+		PrimaryKey: []*schema.Column{UploadsColumns[0]},
+	}
+	// WeatherConditionsColumns holds the columns for the "weather_conditions" table.
+	WeatherConditionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "race_id", Type: field.TypeInt, Default: 0},
+		{Name: "condition", Type: field.TypeString, Default: "dry"},
+		{Name: "lap_start", Type: field.TypeInt, Default: 1},
+		{Name: "lap_end", Type: field.TypeInt, Default: 999},
+		{Name: "grip_modifier", Type: field.TypeFloat64, Default: 1},
+	}
+	// WeatherConditionsTable holds the schema information for the "weather_conditions" table.
+	WeatherConditionsTable = &schema.Table{
+		Name:       "weather_conditions",
+		Columns:    WeatherConditionsColumns,
+		PrimaryKey: []*schema.Column{WeatherConditionsColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AiSettingsTable,
 		AdminUsersTable,
+		BackupSettingsTable,
+		DriverSharesTable,
+		EmailSettingsTable,
+		GearShiftsTable,
+		HeatCardsTable,
+		LapRecordsTable,
+		LegendAbilitiesTable,
+		NotificationSettingsTable,
+		PlayerSessionsTable,
+		PlayerUpgradesTable,
 		QuotesTable,
-		RaceHistoriesTable,
+		RaceEventsTable,
+		RaceHistoryTable,
+		RaceInfoTable,
+		RaceRadioTable,
 		RaceResultsTable,
 		RacersTable,
+		RacerEmailsTable,
+		RacerLegendAbilitiesTable,
+		RacerSectorsTable,
 		RacerStatsTable,
+		RoundSnapshotsTable,
+		RoundSnapshotScoresTable,
 		SeasonsTable,
+		SectorsTable,
 		TeamsTable,
 		TracksTable,
+		TurboLogsTable,
+		UmamiSettingsTable,
+		UpgradeCardsTable,
+		UploadsTable,
+		WeatherConditionsTable,
 	}
 )
 
 func init() {
+	RaceHistoryTable.Annotation = &entsql.Annotation{
+		Table: "race_history",
+	}
+	RaceInfoTable.Annotation = &entsql.Annotation{
+		Table: "race_info",
+	}
+	RaceRadioTable.Annotation = &entsql.Annotation{
+		Table: "race_radio",
+	}
 }
