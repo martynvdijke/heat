@@ -1,3 +1,10 @@
+## [1.29.1](https://github.com/martynvdijke/heat/compare/v1.29.0...v1.29.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([#29](https://github.com/martynvdijke/heat/issues/29)) ([f7e9140](https://github.com/martynvdijke/heat/commit/f7e9140fa004ea383a2edc87da19f6f3f8b0229c))
+
 # [1.29.0](https://github.com/martynvdijke/heat/compare/v1.28.1...v1.29.0) (2026-05-21)
 
 
