@@ -11,26 +11,34 @@ import (
 	"heat/models"
 )
 
-func HandleWebSocket(c *gin.Context) {
-	ws, err := app.Upgrader.Upgrade(c.Writer, c.Request, nil)
+type Manager struct {
+	S *app.Server
+}
+
+func NewManager(s *app.Server) *Manager {
+	return &Manager{S: s}
+}
+
+func (m *Manager) HandleWebSocket(c *gin.Context) {
+	ws, err := m.S.Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("error upgrading: %v", err)
 		return
 	}
 	defer ws.Close()
 
-	app.ClientsMu.Lock()
-	app.Clients[ws] = true
-	app.ClientsMu.Unlock()
-	log.Printf("[WS] New client connected. Total clients: %d", len(app.Clients))
+	m.S.ClientsMu.Lock()
+	m.S.Clients[ws] = true
+	m.S.ClientsMu.Unlock()
+	log.Printf("[WS] New client connected. Total clients: %d", len(m.S.Clients))
 
 	for {
 		_, msgBytes, err := ws.ReadMessage()
 		if err != nil {
 			log.Printf("[WS] Client disconnected: %v", err)
-			app.ClientsMu.Lock()
-			delete(app.Clients, ws)
-			app.ClientsMu.Unlock()
+			m.S.ClientsMu.Lock()
+			delete(m.S.Clients, ws)
+			m.S.ClientsMu.Unlock()
 			break
 		}
 
@@ -44,32 +52,32 @@ func HandleWebSocket(c *gin.Context) {
 			case "flag":
 				var cmd models.FlagCommand
 				if err := json.Unmarshal(msgBytes, &cmd); err == nil {
-					app.FlagBroadcast <- cmd
+					m.S.FlagBroadcast <- cmd
 				}
 			case "self_service":
 				var action models.SelfServiceAction
 				if err := json.Unmarshal(msgBytes, &action); err == nil {
-					BroadcastSelfService(action)
+					m.BroadcastSelfService(action)
 				}
 			case "lap_update":
 				var frame models.LapReplayFrame
 				if err := json.Unmarshal(msgBytes, &frame); err == nil {
-					app.LapReplayBroadcast <- frame
+					m.S.LapReplayBroadcast <- frame
 				}
 			case "weather_update":
 				var wc models.WeatherCondition
 				if err := json.Unmarshal(msgBytes, &wc); err == nil {
-					app.WeatherBroadcast <- wc
+					m.S.WeatherBroadcast <- wc
 				}
 			}
 		}
 	}
 }
 
-func broadcastToClients(msg interface{}) {
+func (m *Manager) broadcastToClients(msg interface{}) {
 	var failed []*websocket.Conn
-	app.ClientsMu.RLock()
-	for client := range app.Clients {
+	m.S.ClientsMu.RLock()
+	for client := range m.S.Clients {
 		err := client.WriteJSON(msg)
 		if err != nil {
 			log.Printf("[WS] error broadcasting to client: %v", err)
@@ -77,62 +85,62 @@ func broadcastToClients(msg interface{}) {
 			failed = append(failed, client)
 		}
 	}
-	app.ClientsMu.RUnlock()
+	m.S.ClientsMu.RUnlock()
 	if len(failed) > 0 {
-		app.ClientsMu.Lock()
+		m.S.ClientsMu.Lock()
 		for _, client := range failed {
-			delete(app.Clients, client)
+			delete(m.S.Clients, client)
 		}
-		app.ClientsMu.Unlock()
+		m.S.ClientsMu.Unlock()
 	}
 }
 
-func BroadcastManager() {
+func (m *Manager) BroadcastManager() {
 	for {
-		racers := <-app.Broadcast
-		broadcastToClients(racers)
+		racers := <-m.S.Broadcast
+		m.broadcastToClients(racers)
 	}
 }
 
-func BroadcastFlags() {
+func (m *Manager) BroadcastFlags() {
 	for {
-		cmd := <-app.FlagBroadcast
-		broadcastToClients(cmd)
+		cmd := <-m.S.FlagBroadcast
+		m.broadcastToClients(cmd)
 	}
 }
 
-func BroadcastGameMechanics() {
+func (m *Manager) BroadcastGameMechanics() {
 	for {
-		update := <-app.GameMechanicsBroadcast
-		broadcastToClients(update)
+		update := <-m.S.GameMechanicsBroadcast
+		m.broadcastToClients(update)
 	}
 }
 
-func BroadcastWeather() {
+func (m *Manager) BroadcastWeather() {
 	for {
-		wc := <-app.WeatherBroadcast
-		broadcastToClients(wc)
+		wc := <-m.S.WeatherBroadcast
+		m.broadcastToClients(wc)
 	}
 }
 
-func BroadcastLapReplay() {
+func (m *Manager) BroadcastLapReplay() {
 	for {
-		frame := <-app.LapReplayBroadcast
-		broadcastToClients(frame)
+		frame := <-m.S.LapReplayBroadcast
+		m.broadcastToClients(frame)
 	}
 }
 
-func BroadcastSound() {
+func (m *Manager) BroadcastSound() {
 	for {
-		cmd := <-app.SoundBroadcast
-		broadcastToClients(cmd)
+		cmd := <-m.S.SoundBroadcast
+		m.broadcastToClients(cmd)
 	}
 }
 
-func BroadcastRaceRadio() {
+func (m *Manager) BroadcastRaceRadio() {
 	for {
-		msg := <-app.RaceRadioBroadcast
-		broadcastToClients(map[string]interface{}{
+		msg := <-m.S.RaceRadioBroadcast
+		m.broadcastToClients(map[string]interface{}{
 			"type":       "race_radio",
 			"id":         msg.ID,
 			"racer_id":   msg.RacerID,
@@ -143,7 +151,7 @@ func BroadcastRaceRadio() {
 	}
 }
 
-func BroadcastSelfService(action models.SelfServiceAction) {
+func (m *Manager) BroadcastSelfService(action models.SelfServiceAction) {
 	msg := map[string]interface{}{
 		"type":     "self_service",
 		"action":   action.Type,
@@ -153,11 +161,11 @@ func BroadcastSelfService(action models.SelfServiceAction) {
 		"stress":   action.Stress,
 		"turbo":    action.TurboUsed,
 	}
-	broadcastToClients(msg)
+	m.broadcastToClients(msg)
 }
 
-func BroadcastRacers() {
-	rows, err := app.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
+func (m *Manager) BroadcastRacers() {
+	rows, err := m.S.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
 	if err != nil {
 		log.Printf("error fetching racers for broadcast: %v", err)
 		return
@@ -175,7 +183,7 @@ func BroadcastRacers() {
 		racers = append(racers, r)
 	}
 	select {
-	case app.Broadcast <- racers:
+	case m.S.Broadcast <- racers:
 	default:
 	}
 }

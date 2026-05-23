@@ -7,14 +7,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/ent/racer"
 	"heat/ent/team"
 	"heat/models"
 )
 
-func GetTeams(c *gin.Context) {
-	teams, err := app.Ent.Team.Query().Order(team.ByName()).All(c.Request.Context())
+func (h *Handler) GetTeams(c *gin.Context) {
+	teams, err := h.S.Ent.Team.Query().Order(team.ByName()).All(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -32,7 +31,7 @@ func GetTeams(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-func SaveTeam(c *gin.Context) {
+func (h *Handler) SaveTeam(c *gin.Context) {
 	var team models.Team
 	if err := c.ShouldBindJSON(&team); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -49,9 +48,9 @@ func SaveTeam(c *gin.Context) {
 
 	var err error
 	if team.ID == 0 {
-		_, err = app.Ent.Team.Create().SetName(team.Name).SetColor(team.Color).Save(c.Request.Context())
+		_, err = h.S.Ent.Team.Create().SetName(team.Name).SetColor(team.Color).Save(c.Request.Context())
 	} else {
-		err = app.Ent.Team.UpdateOneID(team.ID).SetName(team.Name).SetColor(team.Color).Exec(c.Request.Context())
+		err = h.S.Ent.Team.UpdateOneID(team.ID).SetName(team.Name).SetColor(team.Color).Exec(c.Request.Context())
 	}
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -60,40 +59,40 @@ func SaveTeam(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func DeleteTeam(c *gin.Context) {
+func (h *Handler) DeleteTeam(c *gin.Context) {
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
 		return
 	}
-	app.Ent.Racer.Update().Where(racer.TeamID(id)).SetTeamID(0).Exec(c.Request.Context())
-	app.Ent.Team.DeleteOneID(id).Exec(c.Request.Context())
+	h.S.Ent.Racer.Update().Where(racer.TeamID(id)).SetTeamID(0).Exec(c.Request.Context())
+	h.S.Ent.Team.DeleteOneID(id).Exec(c.Request.Context())
 	c.Status(http.StatusOK)
 }
 
-func GetConstructorStandings(c *gin.Context) {
+func (h *Handler) GetConstructorStandings(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	teams, err := app.Ent.Team.Query().All(ctx)
+	teams, err := h.S.Ent.Team.Query().All(ctx)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	racers, err := app.Ent.Racer.Query().All(ctx)
+	racers, err := h.S.Ent.Racer.Query().All(ctx)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	raceHistories, err := app.Ent.RaceHistory.Query().All(ctx)
+	raceHistories, err := h.S.Ent.RaceHistory.Query().All(ctx)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	raceResults, err := app.Ent.RaceResult.Query().All(ctx)
+	raceResults, err := h.S.Ent.RaceResult.Query().All(ctx)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -165,7 +164,7 @@ func GetConstructorStandings(c *gin.Context) {
 	c.JSON(http.StatusOK, standings)
 }
 
-func AssignTeam(c *gin.Context) {
+func (h *Handler) AssignTeam(c *gin.Context) {
 	var req struct {
 		RacerID int `json:"racer_id"`
 		TeamID  int `json:"team_id"`
@@ -174,7 +173,7 @@ func AssignTeam(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	err := app.Ent.Racer.UpdateOneID(req.RacerID).SetTeamID(req.TeamID).Exec(c.Request.Context())
+	err := h.S.Ent.Racer.UpdateOneID(req.RacerID).SetTeamID(req.TeamID).Exec(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -8,9 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/models"
-	"heat/ws"
 )
 
 var racersTableTmpl = template.Must(template.New("racers_table").Parse(`<tbody id="racer-list">
@@ -83,9 +81,9 @@ type racerRow struct {
 	ShareLink string
 }
 
-func HtmxRacersTable(c *gin.Context) {
+func (h *Handler) HtmxRacersTable(c *gin.Context) {
 	shares := make(map[int]string)
-	srows, err := app.DB.Query("SELECT racer_id, token FROM driver_shares")
+	srows, err := h.S.DB.Query("SELECT racer_id, token FROM driver_shares")
 	if err == nil {
 		for srows.Next() {
 			var rid int
@@ -97,7 +95,7 @@ func HtmxRacersTable(c *gin.Context) {
 		srows.Close()
 	}
 
-	rows, err := app.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
+	rows, err := h.S.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -126,7 +124,7 @@ func HtmxRacersTable(c *gin.Context) {
 	racersTableTmpl.Execute(c.Writer, racers)
 }
 
-func HtmxRacersEditForm(c *gin.Context) {
+func (h *Handler) HtmxRacersEditForm(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -141,7 +139,7 @@ func HtmxRacersEditForm(c *gin.Context) {
 	}
 
 	var r models.Racer
-	err = app.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers WHERE id=?", id).
+	err = h.S.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers WHERE id=?", id).
 		Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID)
 	if err != nil {
 		racerEditFormTmpl.Execute(c.Writer, nil)
@@ -151,7 +149,7 @@ func HtmxRacersEditForm(c *gin.Context) {
 	racerEditFormTmpl.Execute(c.Writer, &r)
 }
 
-func HtmxRacersSave(c *gin.Context) {
+func (h *Handler) HtmxRacersSave(c *gin.Context) {
 	idStr := strings.TrimSpace(c.PostForm("id"))
 	name := strings.TrimSpace(c.PostForm("name"))
 	profilePicture := strings.TrimSpace(c.PostForm("profile_picture"))
@@ -176,51 +174,51 @@ func HtmxRacersSave(c *gin.Context) {
 
 	id, _ := strconv.Atoi(idStr)
 	if id == 0 {
-		_, err := app.DB.Exec("INSERT INTO racers (name, profile_picture, car_color, car_name, points, rank, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		_, err := h.S.DB.Exec("INSERT INTO racers (name, profile_picture, car_color, car_name, points, rank, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			name, profilePicture, carColor, carName, points, rank, position)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
-		_, err := app.DB.Exec("UPDATE racers SET name=?, profile_picture=?, car_color=?, car_name=?, points=?, rank=?, position=? WHERE id=?",
+		_, err := h.S.DB.Exec("UPDATE racers SET name=?, profile_picture=?, car_color=?, car_name=?, points=?, rank=?, position=? WHERE id=?",
 			name, profilePicture, carColor, carName, points, rank, position, id)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	}
-	ws.BroadcastRacers()
+	h.S.BroadcastRacers()
 	c.Header("HX-Trigger", `{"closeRacerModal":true}`)
-	HtmxRacersTable(c)
+	h.HtmxRacersTable(c)
 }
 
-func HtmxRacersDelete(c *gin.Context) {
+func (h *Handler) HtmxRacersDelete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
-	app.DB.Exec("DELETE FROM racers WHERE id=?", id)
-	ws.BroadcastRacers()
-	HtmxRacersTable(c)
+	h.S.DB.Exec("DELETE FROM racers WHERE id=?", id)
+	h.S.BroadcastRacers()
+	h.HtmxRacersTable(c)
 }
 
-func HtmxRacersGenerateShare(c *gin.Context) {
+func (h *Handler) HtmxRacersGenerateShare(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
-	_, err = app.DB.Exec("DELETE FROM driver_shares WHERE racer_id=?", id)
+	_, err = h.S.DB.Exec("DELETE FROM driver_shares WHERE racer_id=?", id)
 	if err == nil {
 		var token string
-		app.DB.QueryRow("SELECT hex(randomblob(16))").Scan(&token)
-		app.DB.Exec("INSERT INTO driver_shares (racer_id, token) VALUES (?, ?)", id, token)
+		h.S.DB.QueryRow("SELECT hex(randomblob(16))").Scan(&token)
+		h.S.DB.Exec("INSERT INTO driver_shares (racer_id, token) VALUES (?, ?)", id, token)
 	}
-	HtmxRacersTable(c)
+	h.HtmxRacersTable(c)
 }
 
 // Tracks
@@ -272,8 +270,8 @@ var trackEditFormTmpl = template.Must(template.New("track_form").Parse(`<form id
     <button type="submit" class="btn btn-primary w-100">Save Track</button>
 </form>`))
 
-func HtmxTracksTable(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, name, country, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks ORDER BY name")
+func (h *Handler) HtmxTracksTable(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT id, name, country, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks ORDER BY name")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -296,12 +294,12 @@ func HtmxTracksTable(c *gin.Context) {
 	tracksTableTmpl.Execute(c.Writer, tracks)
 }
 
-func HtmxTracksEditForm(c *gin.Context) {
+func (h *Handler) HtmxTracksEditForm(c *gin.Context) {
 	id := c.Param("id")
 
 	var t models.Track
 	var useMapImage, refreshGeoJSON int
-	err := app.DB.QueryRow("SELECT id, name, country, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks WHERE id=?", id).
+	err := h.S.DB.QueryRow("SELECT id, name, country, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks WHERE id=?", id).
 		Scan(&t.ID, &t.Name, &t.Country, &t.Length, &t.LapRecord, &useMapImage, &t.MapImageURL, &refreshGeoJSON)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "track not found"})
@@ -314,7 +312,7 @@ func HtmxTracksEditForm(c *gin.Context) {
 	trackEditFormTmpl.Execute(c.Writer, &t)
 }
 
-func HtmxTracksSave(c *gin.Context) {
+func (h *Handler) HtmxTracksSave(c *gin.Context) {
 	id := strings.TrimSpace(c.PostForm("id"))
 	idVisible := strings.TrimSpace(c.PostForm("id_visible"))
 	name := strings.TrimSpace(c.PostForm("name"))
@@ -336,7 +334,7 @@ func HtmxTracksSave(c *gin.Context) {
 		id = idVisible
 	}
 
-	_, err := app.DB.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson) VALUES (?, ?, ?, ?, ?, ?, 0, '', 1)`,
+	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson) VALUES (?, ?, ?, ?, ?, ?, 0, '', 1)`,
 		id, name, country, id, length, lapRecord)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -344,17 +342,17 @@ func HtmxTracksSave(c *gin.Context) {
 	}
 
 	c.Header("HX-Trigger", `{"closeTrackModal":true}`)
-	HtmxTracksTable(c)
+	h.HtmxTracksTable(c)
 }
 
-func HtmxTracksDelete(c *gin.Context) {
+func (h *Handler) HtmxTracksDelete(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
 		return
 	}
-	app.DB.Exec("DELETE FROM tracks WHERE id = ?", id)
-	HtmxTracksTable(c)
+	h.S.DB.Exec("DELETE FROM tracks WHERE id = ?", id)
+	h.HtmxTracksTable(c)
 }
 
 // Quotes
@@ -385,8 +383,8 @@ var quoteEditFormTmpl = template.Must(template.New("quote_form").Parse(`<form id
     <button type="submit" class="btn btn-primary w-100">Save Quote</button>
 </form>`))
 
-func HtmxQuotesTable(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, text, author FROM quotes ORDER BY id")
+func (h *Handler) HtmxQuotesTable(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT id, text, author FROM quotes ORDER BY id")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -406,7 +404,7 @@ func HtmxQuotesTable(c *gin.Context) {
 	quotesTableTmpl.Execute(c.Writer, quotes)
 }
 
-func HtmxQuotesEditForm(c *gin.Context) {
+func (h *Handler) HtmxQuotesEditForm(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -415,7 +413,7 @@ func HtmxQuotesEditForm(c *gin.Context) {
 	}
 
 	var q models.Quote
-	err = app.DB.QueryRow("SELECT id, text, author FROM quotes WHERE id=?", id).Scan(&q.ID, &q.Text, &q.Author)
+	err = h.S.DB.QueryRow("SELECT id, text, author FROM quotes WHERE id=?", id).Scan(&q.ID, &q.Text, &q.Author)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "quote not found"})
 		return
@@ -425,7 +423,7 @@ func HtmxQuotesEditForm(c *gin.Context) {
 	quoteEditFormTmpl.Execute(c.Writer, &q)
 }
 
-func HtmxQuotesSave(c *gin.Context) {
+func (h *Handler) HtmxQuotesSave(c *gin.Context) {
 	idStr := strings.TrimSpace(c.PostForm("id"))
 	text := strings.TrimSpace(c.PostForm("text"))
 	author := strings.TrimSpace(c.PostForm("author"))
@@ -440,13 +438,13 @@ func HtmxQuotesSave(c *gin.Context) {
 
 	id, _ := strconv.Atoi(idStr)
 	if id == 0 {
-		_, err := app.DB.Exec("INSERT INTO quotes (text, author) VALUES (?, ?)", text, author)
+		_, err := h.S.DB.Exec("INSERT INTO quotes (text, author) VALUES (?, ?)", text, author)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
-		_, err := app.DB.Exec("UPDATE quotes SET text=?, author=? WHERE id=?", text, author, id)
+		_, err := h.S.DB.Exec("UPDATE quotes SET text=?, author=? WHERE id=?", text, author, id)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -454,18 +452,18 @@ func HtmxQuotesSave(c *gin.Context) {
 	}
 
 	c.Header("HX-Trigger", `{"closeQuoteModal":true}`)
-	HtmxQuotesTable(c)
+	h.HtmxQuotesTable(c)
 }
 
-func HtmxQuotesDelete(c *gin.Context) {
+func (h *Handler) HtmxQuotesDelete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
-	app.DB.Exec("DELETE FROM quotes WHERE id=?", id)
-	HtmxQuotesTable(c)
+	h.S.DB.Exec("DELETE FROM quotes WHERE id=?", id)
+	h.HtmxQuotesTable(c)
 }
 
 // Seasons
@@ -487,8 +485,8 @@ var seasonsTableTmpl = template.Must(template.New("seasons_table").Parse(`<tbody
 {{end}}
 </tbody>`))
 
-func HtmxSeasonsTable(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, name, start_date, COALESCE(end_date, ''), status FROM seasons ORDER BY id DESC")
+func (h *Handler) HtmxSeasonsTable(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT id, name, start_date, COALESCE(end_date, ''), status FROM seasons ORDER BY id DESC")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -512,46 +510,46 @@ func HtmxSeasonsTable(c *gin.Context) {
 	seasonsTableTmpl.Execute(c.Writer, seasons)
 }
 
-func HtmxSeasonsCreate(c *gin.Context) {
+func (h *Handler) HtmxSeasonsCreate(c *gin.Context) {
 	name := strings.TrimSpace(c.PostForm("name"))
 	if name == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "name required"})
 		return
 	}
 
-	_, err := app.DB.Exec("INSERT INTO seasons (name, start_date, status) VALUES (?, date('now'), 'active')", name)
+	_, err := h.S.DB.Exec("INSERT INTO seasons (name, start_date, status) VALUES (?, date('now'), 'active')", name)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	HtmxSeasonsTable(c)
+	h.HtmxSeasonsTable(c)
 }
 
-func HtmxSeasonsArchive(c *gin.Context) {
+func (h *Handler) HtmxSeasonsArchive(c *gin.Context) {
 	idStr := c.Param("id")
 	if idStr == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
 		return
 	}
-	_, err := app.DB.Exec("UPDATE seasons SET status = 'archived', end_date = date('now') WHERE id = ?", idStr)
+	_, err := h.S.DB.Exec("UPDATE seasons SET status = 'archived', end_date = date('now') WHERE id = ?", idStr)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	HtmxSeasonsTable(c)
+	h.HtmxSeasonsTable(c)
 }
 
-func HtmxSeasonsDelete(c *gin.Context) {
+func (h *Handler) HtmxSeasonsDelete(c *gin.Context) {
 	idStr := c.Param("id")
 	if idStr == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
 		return
 	}
-	app.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id IN (SELECT id FROM round_snapshots WHERE season_id = ?)", idStr)
-	app.DB.Exec("DELETE FROM round_snapshots WHERE season_id = ?", idStr)
-	app.DB.Exec("DELETE FROM seasons WHERE id = ?", idStr)
-	HtmxSeasonsTable(c)
+	h.S.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id IN (SELECT id FROM round_snapshots WHERE season_id = ?)", idStr)
+	h.S.DB.Exec("DELETE FROM round_snapshots WHERE season_id = ?", idStr)
+	h.S.DB.Exec("DELETE FROM seasons WHERE id = ?", idStr)
+	h.HtmxSeasonsTable(c)
 }
 
 // Teams
@@ -582,8 +580,8 @@ var teamEditFormTmpl = template.Must(template.New("team_form").Parse(`<form id="
     <button type="submit" class="btn btn-primary w-100">Save Team</button>
 </form>`))
 
-func HtmxTeamsTable(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, name, color FROM teams ORDER BY name")
+func (h *Handler) HtmxTeamsTable(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT id, name, color FROM teams ORDER BY name")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -603,7 +601,7 @@ func HtmxTeamsTable(c *gin.Context) {
 	teamsTableTmpl.Execute(c.Writer, teams)
 }
 
-func HtmxTeamsEditForm(c *gin.Context) {
+func (h *Handler) HtmxTeamsEditForm(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -612,7 +610,7 @@ func HtmxTeamsEditForm(c *gin.Context) {
 	}
 
 	var t models.Team
-	err = app.DB.QueryRow("SELECT id, name, color FROM teams WHERE id=?", id).Scan(&t.ID, &t.Name, &t.Color)
+	err = h.S.DB.QueryRow("SELECT id, name, color FROM teams WHERE id=?", id).Scan(&t.ID, &t.Name, &t.Color)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "team not found"})
 		return
@@ -622,7 +620,7 @@ func HtmxTeamsEditForm(c *gin.Context) {
 	teamEditFormTmpl.Execute(c.Writer, &t)
 }
 
-func HtmxTeamsSave(c *gin.Context) {
+func (h *Handler) HtmxTeamsSave(c *gin.Context) {
 	idStr := strings.TrimSpace(c.PostForm("id"))
 	name := strings.TrimSpace(c.PostForm("name"))
 	color := strings.TrimSpace(c.PostForm("color"))
@@ -637,13 +635,13 @@ func HtmxTeamsSave(c *gin.Context) {
 
 	id, _ := strconv.Atoi(idStr)
 	if id == 0 {
-		_, err := app.DB.Exec("INSERT INTO teams (name, color) VALUES (?, ?)", name, color)
+		_, err := h.S.DB.Exec("INSERT INTO teams (name, color) VALUES (?, ?)", name, color)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
-		_, err := app.DB.Exec("UPDATE teams SET name=?, color=? WHERE id=?", name, color, id)
+		_, err := h.S.DB.Exec("UPDATE teams SET name=?, color=? WHERE id=?", name, color, id)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -651,19 +649,19 @@ func HtmxTeamsSave(c *gin.Context) {
 	}
 
 	c.Header("HX-Trigger", `{"closeTeamModal":true}`)
-	HtmxTeamsTable(c)
+	h.HtmxTeamsTable(c)
 }
 
-func HtmxTeamsDelete(c *gin.Context) {
+func (h *Handler) HtmxTeamsDelete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
-	app.DB.Exec("UPDATE racers SET team_id = 0 WHERE team_id = ?", id)
-	app.DB.Exec("DELETE FROM teams WHERE id = ?", id)
-	HtmxTeamsTable(c)
+	h.S.DB.Exec("UPDATE racers SET team_id = 0 WHERE team_id = ?", id)
+	h.S.DB.Exec("DELETE FROM teams WHERE id = ?", id)
+	h.HtmxTeamsTable(c)
 }
 
 var seasonNewFormTmpl = template.Must(template.New("season_form").Parse(`<form id="season-form" hx-post="/api/html/seasons" hx-target="#seasons-list" hx-swap="outerHTML" hx-trigger="submit">
@@ -674,7 +672,7 @@ var seasonNewFormTmpl = template.Must(template.New("season_form").Parse(`<form i
     <button type="submit" class="btn btn-primary w-100">Create Season</button>
 </form>`))
 
-func HtmxSeasonsNewForm(c *gin.Context) {
+func (h *Handler) HtmxSeasonsNewForm(c *gin.Context) {
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	seasonNewFormTmpl.Execute(c.Writer, nil)
 }

@@ -7,9 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/models"
-	"heat/ws"
 )
 
 // @Summary Take round snapshot
@@ -21,7 +19,7 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Router /api/rounds [post]
-func TakeRoundSnapshot(c *gin.Context) {
+func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 	var input struct {
 		RaceName string `json:"race_name"`
 		Round    int    `json:"round"`
@@ -41,12 +39,12 @@ func TakeRoundSnapshot(c *gin.Context) {
 	raceDate := time.Now().Format("2006-01-02")
 
 	var roundNum int
-	app.DB.QueryRow("SELECT COALESCE(MAX(round), 0) + 1 FROM round_snapshots WHERE season_id = ?", input.SeasonID).Scan(&roundNum)
+	h.S.DB.QueryRow("SELECT COALESCE(MAX(round), 0) + 1 FROM round_snapshots WHERE season_id = ?", input.SeasonID).Scan(&roundNum)
 	if input.Round > 0 {
 		roundNum = input.Round
 	}
 
-	rows, err := app.DB.Query("SELECT id, name, points FROM racers ORDER BY points DESC, name ASC")
+	rows, err := h.S.DB.Query("SELECT id, name, points FROM racers ORDER BY points DESC, name ASC")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -68,7 +66,7 @@ func TakeRoundSnapshot(c *gin.Context) {
 	}
 	rows.Close()
 
-	tx, err := app.DB.Begin()
+	tx, err := h.S.DB.Begin()
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -93,7 +91,7 @@ func TakeRoundSnapshot(c *gin.Context) {
 		return
 	}
 
-	ws.BroadcastRacers()
+	h.S.BroadcastRacers()
 	c.JSON(http.StatusOK, gin.H{"id": snapshotID, "round": roundNum})
 }
 
@@ -105,21 +103,21 @@ func TakeRoundSnapshot(c *gin.Context) {
 // @Param season_id query int false "Season ID"
 // @Success 200 {array} models.RoundSnapshot
 // @Router /api/rounds [get]
-func GetRoundSnapshots(c *gin.Context) {
+func (h *Handler) GetRoundSnapshots(c *gin.Context) {
 	idStr := c.Query("id")
 	seasonIDStr := c.Query("season_id")
 
 	if idStr != "" {
 		id, _ := strconv.Atoi(idStr)
 		var s models.RoundSnapshot
-		err := app.DB.QueryRow("SELECT id, season_id, race_name, race_date, round, created_at FROM round_snapshots WHERE id = ?", id).
+		err := h.S.DB.QueryRow("SELECT id, season_id, race_name, race_date, round, created_at FROM round_snapshots WHERE id = ?", id).
 			Scan(&s.ID, &s.SeasonID, &s.RaceName, &s.RaceDate, &s.Round, &s.CreatedAt)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "snapshot not found"})
 			return
 		}
 
-		scoreRows, err := app.DB.Query("SELECT id, snapshot_id, racer_id, racer_name, points, position FROM round_snapshot_scores WHERE snapshot_id = ? ORDER BY position", id)
+		scoreRows, err := h.S.DB.Query("SELECT id, snapshot_id, racer_id, racer_name, points, position FROM round_snapshot_scores WHERE snapshot_id = ? ORDER BY position", id)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -145,7 +143,7 @@ func GetRoundSnapshots(c *gin.Context) {
 		args = append(args, seasonIDStr)
 	}
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -171,14 +169,14 @@ func GetRoundSnapshots(c *gin.Context) {
 // @Success 200
 // @Failure 400 {object} map[string]string
 // @Router /api/rounds [delete]
-func DeleteRoundSnapshot(c *gin.Context) {
+func (h *Handler) DeleteRoundSnapshot(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
 		return
 	}
-	app.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id = ?", id)
-	app.DB.Exec("DELETE FROM round_snapshots WHERE id = ?", id)
+	h.S.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id = ?", id)
+	h.S.DB.Exec("DELETE FROM round_snapshots WHERE id = ?", id)
 	c.Status(http.StatusOK)
 }
 
@@ -188,8 +186,8 @@ func DeleteRoundSnapshot(c *gin.Context) {
 // @Produce json
 // @Success 200 {array} models.Season
 // @Router /api/seasons [get]
-func GetSeasons(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, name, start_date, COALESCE(end_date, ''), status, created_at FROM seasons ORDER BY id DESC")
+func (h *Handler) GetSeasons(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT id, name, start_date, COALESCE(end_date, ''), status, created_at FROM seasons ORDER BY id DESC")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -217,7 +215,7 @@ func GetSeasons(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/seasons [post]
-func CreateSeason(c *gin.Context) {
+func (h *Handler) CreateSeason(c *gin.Context) {
 	var input struct {
 		Name string `json:"name"`
 	}
@@ -226,7 +224,7 @@ func CreateSeason(c *gin.Context) {
 		return
 	}
 
-	res, err := app.DB.Exec("INSERT INTO seasons (name, start_date, status) VALUES (?, date('now'), 'active')", input.Name)
+	res, err := h.S.DB.Exec("INSERT INTO seasons (name, start_date, status) VALUES (?, date('now'), 'active')", input.Name)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -243,15 +241,15 @@ func CreateSeason(c *gin.Context) {
 // @Success 200
 // @Security cookieAuth
 // @Router /api/seasons [delete]
-func DeleteSeason(c *gin.Context) {
+func (h *Handler) DeleteSeason(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
 		return
 	}
-	app.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id IN (SELECT id FROM round_snapshots WHERE season_id = ?)", id)
-	app.DB.Exec("DELETE FROM round_snapshots WHERE season_id = ?", id)
-	app.DB.Exec("DELETE FROM seasons WHERE id = ?", id)
+	h.S.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id IN (SELECT id FROM round_snapshots WHERE season_id = ?)", id)
+	h.S.DB.Exec("DELETE FROM round_snapshots WHERE season_id = ?", id)
+	h.S.DB.Exec("DELETE FROM seasons WHERE id = ?", id)
 	c.Status(http.StatusOK)
 }
 
@@ -264,13 +262,13 @@ func DeleteSeason(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/seasons/archive [post]
-func ArchiveSeason(c *gin.Context) {
+func (h *Handler) ArchiveSeason(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
 		return
 	}
-	_, err := app.DB.Exec("UPDATE seasons SET status = 'archived', end_date = date('now') WHERE id = ?", id)
+	_, err := h.S.DB.Exec("UPDATE seasons SET status = 'archived', end_date = date('now') WHERE id = ?", id)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

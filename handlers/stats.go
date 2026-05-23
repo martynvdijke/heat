@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/models"
 )
 
@@ -21,9 +20,9 @@ import (
 // @Param season_id query int false "Season ID"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/racer-stats [get]
-func getRacerStatsFallback() []models.RacerStats {
+func (h *Handler) getRacerStatsFallback() []models.RacerStats {
 	stats := make([]models.RacerStats, 0)
-	rows, err := app.DB.Query("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_stats.racer_id) as pts, dnf, dns FROM racer_stats")
+	rows, err := h.S.DB.Query("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_stats.racer_id) as pts, dnf, dns FROM racer_stats")
 	if err != nil {
 		return stats
 	}
@@ -36,20 +35,20 @@ func getRacerStatsFallback() []models.RacerStats {
 	return stats
 }
 
-func GetRacerStats(c *gin.Context) {
+func (h *Handler) GetRacerStats(c *gin.Context) {
 	id := c.Query("id")
 	seasonID := c.Query("season_id")
 
 	if seasonID != "" {
 		var startDate, endDate string
-		err := app.DB.QueryRow("SELECT start_date, COALESCE(end_date, '9999-12-31') FROM seasons WHERE id = ?", seasonID).Scan(&startDate, &endDate)
+		err := h.S.DB.QueryRow("SELECT start_date, COALESCE(end_date, '9999-12-31') FROM seasons WHERE id = ?", seasonID).Scan(&startDate, &endDate)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
 			return
 		}
 
 		if id == "" {
-			rows, err := app.DB.Query(`
+			rows, err := h.S.DB.Query(`
 				SELECT rr.racer_id,
 					COUNT(*) as races,
 					SUM(CASE WHEN rr.position = 1 THEN 1 ELSE 0 END) as wins,
@@ -79,14 +78,14 @@ func GetRacerStats(c *gin.Context) {
 				stats = append(stats, s)
 			}
 			if len(stats) == 0 {
-				stats = getRacerStatsFallback()
+				stats = h.getRacerStatsFallback()
 			}
 			c.JSON(http.StatusOK, stats)
 			return
 		}
 
 		var s models.RacerStats
-		err = app.DB.QueryRow(`
+		err = h.S.DB.QueryRow(`
 			SELECT rr.racer_id,
 				COUNT(*) as races,
 				SUM(CASE WHEN rr.position = 1 THEN 1 ELSE 0 END) as wins,
@@ -103,11 +102,11 @@ func GetRacerStats(c *gin.Context) {
 			GROUP BY rr.racer_id
 		`, id, startDate, endDate).Scan(&s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 		if err != nil {
-			app.DB.QueryRow("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf, dns FROM racer_stats WHERE racer_id = ?", id).Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
+			h.S.DB.QueryRow("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf, dns FROM racer_stats WHERE racer_id = ?", id).Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 		}
 
 		var rInfo models.Racer
-		app.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points FROM racers WHERE id = ?", id).Scan(&rInfo.ID, &rInfo.Name, &rInfo.ProfilePicture, &rInfo.CarColor, &rInfo.CarName, &rInfo.Points)
+		h.S.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points FROM racers WHERE id = ?", id).Scan(&rInfo.ID, &rInfo.Name, &rInfo.ProfilePicture, &rInfo.CarColor, &rInfo.CarName, &rInfo.Points)
 
 		c.JSON(http.StatusOK, gin.H{"stats": s, "racer": rInfo})
 		return
@@ -115,7 +114,7 @@ func GetRacerStats(c *gin.Context) {
 
 	if id == "" {
 		stats := make([]models.RacerStats, 0)
-		rows, _ := app.DB.Query("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf, dns FROM racer_stats")
+		rows, _ := h.S.DB.Query("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, (SELECT SUM(points) FROM racers WHERE id = racer_id) as pts, dnf, dns FROM racer_stats")
 		if rows != nil {
 			for rows.Next() {
 				var s models.RacerStats
@@ -129,13 +128,13 @@ func GetRacerStats(c *gin.Context) {
 	}
 
 	var s models.RacerStats
-	err := app.DB.QueryRow("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, COALESCE((SELECT SUM(points) FROM racers WHERE id = racer_id), 0) as pts, dnf, dns FROM racer_stats WHERE racer_id = ?", id).Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
+	err := h.S.DB.QueryRow("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, COALESCE((SELECT SUM(points) FROM racers WHERE id = racer_id), 0) as pts, dnf, dns FROM racer_stats WHERE racer_id = ?", id).Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
 	if err != nil {
 		s = models.RacerStats{RacerID: 0}
 	}
 
 	var rInfo models.Racer
-	app.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points FROM racers WHERE id = ?", id).Scan(&rInfo.ID, &rInfo.Name, &rInfo.ProfilePicture, &rInfo.CarColor, &rInfo.CarName, &rInfo.Points)
+	h.S.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points FROM racers WHERE id = ?", id).Scan(&rInfo.ID, &rInfo.Name, &rInfo.ProfilePicture, &rInfo.CarColor, &rInfo.CarName, &rInfo.Points)
 
 	c.JSON(http.StatusOK, gin.H{"stats": s, "racer": rInfo})
 }
@@ -150,7 +149,7 @@ func GetRacerStats(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/racer-stats [post]
-func UpdateRacerStats(c *gin.Context) {
+func (h *Handler) UpdateRacerStats(c *gin.Context) {
 	var stats models.RacerStats
 	if err := c.ShouldBindJSON(&stats); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -158,14 +157,14 @@ func UpdateRacerStats(c *gin.Context) {
 	}
 
 	if stats.ID == 0 {
-		_, err := app.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		_, err := h.S.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			stats.RacerID, stats.Races, stats.Wins, stats.Gold, stats.Silver, stats.Bronze, stats.FastestLaps, stats.DNF, stats.DNS)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
-		_, err := app.DB.Exec("UPDATE racer_stats SET races = ?, wins = ?, gold = ?, silver = ?, bronze = ?, fastest_laps = ?, dnf = ?, dns = ? WHERE id = ?",
+		_, err := h.S.DB.Exec("UPDATE racer_stats SET races = ?, wins = ?, gold = ?, silver = ?, bronze = ?, fastest_laps = ?, dnf = ?, dns = ? WHERE id = ?",
 			stats.Races, stats.Wins, stats.Gold, stats.Silver, stats.Bronze, stats.FastestLaps, stats.DNF, stats.DNS, stats.ID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -181,8 +180,8 @@ func UpdateRacerStats(c *gin.Context) {
 // @Produce json
 // @Success 200 {array} models.TrackStats
 // @Router /api/track-stats [get]
-func GetTrackStats(c *gin.Context) {
-	rows, err := app.DB.Query(`
+func (h *Handler) GetTrackStats(c *gin.Context) {
+	rows, err := h.S.DB.Query(`
 		SELECT rh.track_id, rh.track, rh.country, COUNT(*) as races_count,
 			COALESCE((SELECT rr.racer_name FROM race_results rr WHERE rr.race_id = rh.id AND rr.position = 1 LIMIT 1), '') as winner,
 			COALESCE((SELECT rr.racer_name FROM race_results rr WHERE rr.race_id = rh.id AND rr.fastest_lap = 1 LIMIT 1), '') as fastest_lap
@@ -217,7 +216,7 @@ func GetTrackStats(c *gin.Context) {
 // @Success 200 {object} models.HeadToHead
 // @Failure 400 {object} map[string]string
 // @Router /api/stats/head-to-head [get]
-func GetHeadToHead(c *gin.Context) {
+func (h *Handler) GetHeadToHead(c *gin.Context) {
 	racer1Str := c.Query("racer1")
 	racer2Str := c.Query("racer2")
 
@@ -229,10 +228,10 @@ func GetHeadToHead(c *gin.Context) {
 	}
 
 	var name1, name2 string
-	app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", racer1).Scan(&name1)
-	app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", racer2).Scan(&name2)
+	h.S.DB.QueryRow("SELECT name FROM racers WHERE id = ?", racer1).Scan(&name1)
+	h.S.DB.QueryRow("SELECT name FROM racers WHERE id = ?", racer2).Scan(&name2)
 
-	rows, err := app.DB.Query(`
+	rows, err := h.S.DB.Query(`
 		SELECT rr1.race_id, rr1.position as pos1, rr2.position as pos2
 		FROM race_results rr1
 		JOIN race_results rr2 ON rr1.race_id = rr2.race_id
@@ -288,7 +287,7 @@ func GetHeadToHead(c *gin.Context) {
 // @Success 200 {array} models.PointsProgression
 // @Failure 400 {object} map[string]string
 // @Router /api/stats/points-progression [get]
-func GetPointsProgression(c *gin.Context) {
+func (h *Handler) GetPointsProgression(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 	racerID, err := strconv.Atoi(racerIDStr)
 	if err != nil || racerID <= 0 {
@@ -296,7 +295,7 @@ func GetPointsProgression(c *gin.Context) {
 		return
 	}
 
-	rows, err := app.DB.Query(`
+	rows, err := h.S.DB.Query(`
 		SELECT rh.id, COALESCE(rh.name, ''), rh.race_date, rr.points
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
@@ -329,8 +328,8 @@ func GetPointsProgression(c *gin.Context) {
 // @Produce json
 // @Success 200 {array} models.StreakInfo
 // @Router /api/stats/streaks [get]
-func GetStreaks(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, name FROM racers ORDER BY rank")
+func (h *Handler) GetStreaks(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT id, name FROM racers ORDER BY rank")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -350,7 +349,7 @@ func GetStreaks(c *gin.Context) {
 
 	allStreaks := make([]models.StreakInfo, 0)
 	for _, racer := range racers {
-		raceRows, err := app.DB.Query(`
+		raceRows, err := h.S.DB.Query(`
 			SELECT rr.position, rh.race_date
 			FROM race_results rr
 			JOIN race_history rh ON rh.id = rr.race_id
@@ -380,15 +379,15 @@ func GetStreaks(c *gin.Context) {
 			continue
 		}
 
-		calcStreak(positions, 1, "wins", racer.Name, &allStreaks)
-		calcStreak(positions, 3, "podiums", racer.Name, &allStreaks)
-		calcStreak(positions, 999, "dnf", racer.Name, &allStreaks)
+		h.calcStreak(positions, 1, "wins", racer.Name, &allStreaks)
+		h.calcStreak(positions, 3, "podiums", racer.Name, &allStreaks)
+		h.calcStreak(positions, 999, "dnf", racer.Name, &allStreaks)
 	}
 
 	c.JSON(http.StatusOK, allStreaks)
 }
 
-func calcStreak(positions []struct {
+func (h *Handler) calcStreak(positions []struct {
 	pos  int
 	date string
 }, threshold int, streakType, racerName string, results *[]models.StreakInfo) {
@@ -456,14 +455,14 @@ func calcStreak(positions []struct {
 // @Produce json
 // @Success 200 {array} models.ELORating
 // @Router /api/stats/elo [get]
-func GetELORatings(c *gin.Context) {
+func (h *Handler) GetELORatings(c *gin.Context) {
 	type raceEntry struct {
 		RaceID   int
 		RacerID  int
 		Position int
 	}
 
-	rows, err := app.DB.Query(`
+	rows, err := h.S.DB.Query(`
 		SELECT rr.race_id, rr.racer_id, rr.position
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
@@ -538,7 +537,7 @@ func GetELORatings(c *gin.Context) {
 	result := make([]models.ELORating, 0)
 	for rid, r := range ratings {
 		var name string
-		app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", rid).Scan(&name)
+		h.S.DB.QueryRow("SELECT name FROM racers WHERE id = ?", rid).Scan(&name)
 		result = append(result, models.ELORating{
 			RacerID:   rid,
 			RacerName: name,
@@ -560,13 +559,13 @@ func GetELORatings(c *gin.Context) {
 // @Produce text/csv
 // @Success 200 {file} text/csv
 // @Router /api/stats/export [get]
-func ExportStatsCSV(c *gin.Context) {
+func (h *Handler) ExportStatsCSV(c *gin.Context) {
 	format := c.Query("format")
 	if format == "" {
 		format = "csv"
 	}
 
-	rows, err := app.DB.Query("SELECT r.id, r.name, r.car_name, r.points, r.rank, COALESCE(rs.races, 0), COALESCE(rs.wins, 0), COALESCE(rs.gold, 0), COALESCE(rs.silver, 0), COALESCE(rs.bronze, 0), COALESCE(rs.fastest_laps, 0), COALESCE(rs.dnf, 0), COALESCE(rs.dns, 0) FROM racers r LEFT JOIN racer_stats rs ON rs.racer_id = r.id ORDER BY r.rank")
+	rows, err := h.S.DB.Query("SELECT r.id, r.name, r.car_name, r.points, r.rank, COALESCE(rs.races, 0), COALESCE(rs.wins, 0), COALESCE(rs.gold, 0), COALESCE(rs.silver, 0), COALESCE(rs.bronze, 0), COALESCE(rs.fastest_laps, 0), COALESCE(rs.dnf, 0), COALESCE(rs.dns, 0) FROM racers r LEFT JOIN racer_stats rs ON rs.racer_id = r.id ORDER BY r.rank")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -601,12 +600,12 @@ func ExportStatsCSV(c *gin.Context) {
 // @Param racer_id query int false "Racer ID"
 // @Success 200 {array} object
 // @Router /api/stats/track-performance [get]
-func GetTrackPerformance(c *gin.Context) {
+func (h *Handler) GetTrackPerformance(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 
 	if racerIDStr != "" {
 		racerID, _ := strconv.Atoi(racerIDStr)
-		rows, err := app.DB.Query(`
+		rows, err := h.S.DB.Query(`
 			SELECT rh.track_id, rh.track, rh.country,
 				COUNT(*) as races,
 				SUM(CASE WHEN rr.position = 1 THEN 1 ELSE 0 END) as wins,
@@ -644,7 +643,7 @@ func GetTrackPerformance(c *gin.Context) {
 		c.JSON(http.StatusOK, perf)
 		return
 	} else {
-		rows, err := app.DB.Query(`
+		rows, err := h.S.DB.Query(`
 			SELECT rh.track_id, rh.track, rh.country,
 				COUNT(DISTINCT rr.racer_id) as unique_drivers,
 				COUNT(*) as total_entries,
@@ -682,7 +681,7 @@ func GetTrackPerformance(c *gin.Context) {
 }
 
 // Qualifying vs Race Delta
-func GetQualifyingRaceDelta(c *gin.Context) {
+func (h *Handler) GetQualifyingRaceDelta(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 
 	query := `
@@ -700,7 +699,7 @@ func GetQualifyingRaceDelta(c *gin.Context) {
 	}
 	query += " ORDER BY rh.race_date"
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -773,7 +772,7 @@ func GetQualifyingRaceDelta(c *gin.Context) {
 }
 
 // Consistency Rating
-func GetConsistencyRatings(c *gin.Context) {
+func (h *Handler) GetConsistencyRatings(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 
 	query := `
@@ -789,7 +788,7 @@ func GetConsistencyRatings(c *gin.Context) {
 	}
 	query += " ORDER BY rr.racer_id, rh.race_date"
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -873,7 +872,7 @@ func GetConsistencyRatings(c *gin.Context) {
 }
 
 // Race Incidents Report
-func GetRaceIncidentsReport(c *gin.Context) {
+func (h *Handler) GetRaceIncidentsReport(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	racerIDStr := c.Query("racer_id")
 
@@ -895,7 +894,7 @@ func GetRaceIncidentsReport(c *gin.Context) {
 	}
 	query += " ORDER BY re.lap, re.id"
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -920,7 +919,7 @@ func GetRaceIncidentsReport(c *gin.Context) {
 }
 
 // Pace Heatmap
-func GetPaceHeatmap(c *gin.Context) {
+func (h *Handler) GetPaceHeatmap(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 
 	query := `SELECT lr.racer_id, COALESCE(r.name, ''), lr.lap_number, lr.position, lr.gear_used, lr.heat_generated, lr.turbo_used
@@ -935,7 +934,7 @@ func GetPaceHeatmap(c *gin.Context) {
 	}
 	query += " ORDER BY lr.racer_id, lr.lap_number"
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -966,25 +965,25 @@ func GetPaceHeatmap(c *gin.Context) {
 }
 
 // Printable Race Report
-func GetRaceReport(c *gin.Context) {
+func (h *Handler) GetRaceReport(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 
 	var raceID int
 	if raceIDStr == "" {
-		app.DB.QueryRow("SELECT COALESCE(MAX(id), 0) FROM race_history").Scan(&raceID)
+		h.S.DB.QueryRow("SELECT COALESCE(MAX(id), 0) FROM race_history").Scan(&raceID)
 	} else {
 		raceID, _ = strconv.Atoi(raceIDStr)
 	}
 
 	var rh models.RaceHistory
-	err := app.DB.QueryRow("SELECT id, name, race_date, country, track, track_id, total_laps, race_type FROM race_history WHERE id = ?", raceID).
+	err := h.S.DB.QueryRow("SELECT id, name, race_date, country, track, track_id, total_laps, race_type FROM race_history WHERE id = ?", raceID).
 		Scan(&rh.ID, &rh.Name, &rh.Date, &rh.Country, &rh.Track, &rh.TrackID, &rh.TotalLaps, &rh.RaceType)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "race not found"})
 		return
 	}
 
-	rows, err := app.DB.Query("SELECT id, race_id, racer_id, racer_name, position, points, fastest_lap, finished FROM race_results WHERE race_id = ? ORDER BY position", raceID)
+	rows, err := h.S.DB.Query("SELECT id, race_id, racer_id, racer_name, position, points, fastest_lap, finished FROM race_results WHERE race_id = ? ORDER BY position", raceID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

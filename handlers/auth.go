@@ -23,9 +23,9 @@ import (
 // @Produce json
 // @Success 200 {object} map[string]bool
 // @Router /api/check-setup [get]
-func HandleCheckSetup(c *gin.Context) {
+func (h *Handler) HandleCheckSetup(c *gin.Context) {
 	var count int
-	app.DB.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
+	h.S.DB.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
 	c.JSON(http.StatusOK, gin.H{"setup": count > 0})
 }
 
@@ -38,7 +38,7 @@ func HandleCheckSetup(c *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Router /api/login [post]
-func HandleLogin(c *gin.Context) {
+func (h *Handler) HandleLogin(c *gin.Context) {
 	var input struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -51,7 +51,7 @@ func HandleLogin(c *gin.Context) {
 	}
 
 	var count int
-	app.DB.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
+	h.S.DB.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
 
 	if input.Setup && count > 0 {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Setup already completed"})
@@ -64,23 +64,23 @@ func HandleLogin(c *gin.Context) {
 			return
 		}
 		hashed := hashPassword(input.Password)
-		_, err := app.DB.Exec("INSERT INTO admin_users (username, password) VALUES (?, ?)", input.Username, hashed)
+		_, err := h.S.DB.Exec("INSERT INTO admin_users (username, password) VALUES (?, ?)", input.Username, hashed)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
 		sessionID := generateSessionID()
-		app.SessionStoreMu.Lock()
-		app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
-		app.SessionStoreMu.Unlock()
-		setSessionCookie(c, sessionID)
+		h.S.SessionStoreMu.Lock()
+		h.S.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
+		h.S.SessionStoreMu.Unlock()
+		setSessionCookie(c, sessionID, h.S.SecureCookies)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		return
 	}
 
 	var user models.AdminUser
-	err := app.DB.QueryRow("SELECT id, username, password FROM admin_users WHERE username = ?", input.Username).Scan(&user.ID, &user.Username, &user.Password)
+	err := h.S.DB.QueryRow("SELECT id, username, password FROM admin_users WHERE username = ?", input.Username).Scan(&user.ID, &user.Username, &user.Password)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
@@ -95,14 +95,14 @@ func HandleLogin(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
-		upgradePassword(user.ID, input.Password)
+		upgradePassword(user.ID, input.Password, h.S.DB)
 	}
 
 	sessionID := generateSessionID()
-	app.SessionStoreMu.Lock()
-	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
-	app.SessionStoreMu.Unlock()
-	setSessionCookie(c, sessionID)
+	h.S.SessionStoreMu.Lock()
+	h.S.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
+	h.S.SessionStoreMu.Unlock()
+	setSessionCookie(c, sessionID, h.S.SecureCookies)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
@@ -113,14 +113,14 @@ func HandleLogin(c *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/logout [post]
-func HandleLogout(c *gin.Context) {
+func (h *Handler) HandleLogout(c *gin.Context) {
 	cookie, err := c.Request.Cookie("session")
 	if err == nil {
-		app.SessionStoreMu.Lock()
-		delete(app.SessionStore, cookie.Value)
-		app.SessionStoreMu.Unlock()
+		h.S.SessionStoreMu.Lock()
+		delete(h.S.SessionStore, cookie.Value)
+		h.S.SessionStoreMu.Unlock()
 	}
-	c.SetCookie("session", "", -1, "/", "", app.SecureCookies, true)
+	c.SetCookie("session", "", -1, "/", "", h.S.SecureCookies, true)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
@@ -132,9 +132,9 @@ func generateSessionID() string {
 	return hex.EncodeToString(b)
 }
 
-func setSessionCookie(c *gin.Context, sessionID string) {
+func setSessionCookie(c *gin.Context, sessionID string, secureCookies bool) {
 	c.SetSameSite(http.SameSiteStrictMode)
-	c.SetCookie("session", sessionID, 86400, "/", "", app.SecureCookies, true)
+	c.SetCookie("session", sessionID, 86400, "/", "", secureCookies, true)
 }
 
 func hashPassword(password string) string {
@@ -153,10 +153,10 @@ func checkLegacyPassword(stored, input string) bool {
 	return base64.StdEncoding.EncodeToString(hash[:]) == stored
 }
 
-func upgradePassword(userID int, password string) {
+func upgradePassword(userID int, password string, db *sql.DB) {
 	newHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return
 	}
-	app.DB.Exec("UPDATE admin_users SET password = ? WHERE id = ?", string(newHash), userID)
+	db.Exec("UPDATE admin_users SET password = ? WHERE id = ?", string(newHash), userID)
 }

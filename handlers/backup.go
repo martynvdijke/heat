@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/db"
 	"heat/models"
 )
@@ -19,9 +18,9 @@ import (
 // @Produce json
 // @Success 200 {object} models.BackupSettings
 // @Router /api/backup-settings [get]
-func GetBackupSettings(c *gin.Context) {
+func (h *Handler) GetBackupSettings(c *gin.Context) {
 	var s models.BackupSettings
-	err := app.DB.QueryRow("SELECT id, enabled, interval_hrs, retention_count FROM backup_settings WHERE id = 1").Scan(&s.ID, &s.Enabled, &s.IntervalHrs, &s.RetentionCount)
+	err := h.S.DB.QueryRow("SELECT id, enabled, interval_hrs, retention_count FROM backup_settings WHERE id = 1").Scan(&s.ID, &s.Enabled, &s.IntervalHrs, &s.RetentionCount)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -41,7 +40,7 @@ func GetBackupSettings(c *gin.Context) {
 // @Success 200
 // @Failure 400 {object} map[string]string
 // @Router /api/backup-settings [post]
-func SaveBackupSettings(c *gin.Context) {
+func (h *Handler) SaveBackupSettings(c *gin.Context) {
 	var s models.BackupSettings
 	if err := c.ShouldBindJSON(&s); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -55,7 +54,7 @@ func SaveBackupSettings(c *gin.Context) {
 	if s.RetentionCount <= 0 {
 		s.RetentionCount = 7
 	}
-	_, err := app.DB.Exec("UPDATE backup_settings SET enabled = ?, interval_hrs = ?, retention_count = ? WHERE id = 1", enabled, s.IntervalHrs, s.RetentionCount)
+	_, err := h.S.DB.Exec("UPDATE backup_settings SET enabled = ?, interval_hrs = ?, retention_count = ? WHERE id = 1", enabled, s.IntervalHrs, s.RetentionCount)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -72,7 +71,7 @@ func SaveBackupSettings(c *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/backup/manual [post]
-func TriggerManualBackup(c *gin.Context) {
+func (h *Handler) TriggerManualBackup(c *gin.Context) {
 	if err := db.CreateBackup(); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -89,8 +88,8 @@ func TriggerManualBackup(c *gin.Context) {
 // @Produce json
 // @Success 200 {array} object
 // @Router /api/backup/list [get]
-func ListBackups(c *gin.Context) {
-	backupDir := filepath.Join(filepath.Dir(app.DBPath), "backups")
+func (h *Handler) ListBackups(c *gin.Context) {
+	backupDir := filepath.Join(filepath.Dir(h.S.DBPath), "backups")
 	entries, err := os.ReadDir(backupDir)
 	if err != nil {
 		c.JSON(http.StatusOK, []gin.H{})

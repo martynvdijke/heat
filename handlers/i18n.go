@@ -9,8 +9,6 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-
-	"heat/app"
 )
 
 var (
@@ -18,7 +16,7 @@ var (
 	translationsMu sync.RWMutex
 )
 
-func loadTranslations(lang string) map[string]string {
+func (h *Handler) loadTranslations(lang string) map[string]string {
 	translationsMu.RLock()
 	cached, ok := translations[lang]
 	translationsMu.RUnlock()
@@ -26,10 +24,10 @@ func loadTranslations(lang string) map[string]string {
 		return cached
 	}
 
-	path := filepath.Join(app.BasePath, "static", "locales", lang+".json")
+	path := filepath.Join(h.S.BasePath, "static", "locales", lang+".json")
 	data, err := os.ReadFile(path)
 	if err != nil {
-		path = filepath.Join(app.BasePath, "static", "locales", "en.json")
+		path = filepath.Join(h.S.BasePath, "static", "locales", "en.json")
 		data, err = os.ReadFile(path)
 		if err != nil {
 			return nil
@@ -48,7 +46,7 @@ func loadTranslations(lang string) map[string]string {
 	return t
 }
 
-func detectLanguage(c *gin.Context) string {
+func (h *Handler) detectLanguage(c *gin.Context) string {
 	lang := c.Query("lang")
 	if lang != "" {
 		return lang
@@ -73,17 +71,17 @@ func detectLanguage(c *gin.Context) string {
 	return "en"
 }
 
-func GetTranslations(c *gin.Context) {
-	lang := detectLanguage(c)
-	t := loadTranslations(lang)
+func (h *Handler) GetTranslations(c *gin.Context) {
+	lang := h.detectLanguage(c)
+	t := h.loadTranslations(lang)
 	if t == nil {
-		t = loadTranslations("en")
+		t = h.loadTranslations("en")
 	}
 	t["_lang"] = lang
 	c.JSON(http.StatusOK, t)
 }
 
-func SetLanguage(c *gin.Context) {
+func (h *Handler) SetLanguage(c *gin.Context) {
 	var req struct {
 		Lang string `json:"lang"`
 	}
@@ -98,13 +96,13 @@ func SetLanguage(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("lang", req.Lang, 365*24*3600, "/", "", app.SecureCookies, true)
+	c.SetCookie("lang", req.Lang, 365*24*3600, "/", "", h.S.SecureCookies, true)
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "lang": req.Lang})
 }
 
-func I18nMiddleware() gin.HandlerFunc {
+func (h *Handler) I18nMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		lang := detectLanguage(c)
+		lang := h.detectLanguage(c)
 		c.Set("lang", lang)
 		c.Next()
 	}

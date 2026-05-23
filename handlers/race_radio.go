@@ -5,11 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/models"
 )
 
-func GetRaceRadio(c *gin.Context) {
+func (h *Handler) GetRaceRadio(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	racerIDStr := c.Query("racer_id")
 	limitStr := c.DefaultQuery("limit", "50")
@@ -30,7 +29,7 @@ func GetRaceRadio(c *gin.Context) {
 	query += " ORDER BY rr.id DESC LIMIT ?"
 	args = append(args, limitStr)
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -53,7 +52,7 @@ func GetRaceRadio(c *gin.Context) {
 	c.JSON(http.StatusOK, messages)
 }
 
-func AddRaceRadio(c *gin.Context) {
+func (h *Handler) AddRaceRadio(c *gin.Context) {
 	var msg models.RaceRadioMessage
 	if err := c.ShouldBindJSON(&msg); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -68,7 +67,7 @@ func AddRaceRadio(c *gin.Context) {
 		return
 	}
 
-	result, err := app.DB.Exec("INSERT INTO race_radio (race_id, racer_id, message) VALUES (?, ?, ?)",
+	result, err := h.S.DB.Exec("INSERT INTO race_radio (race_id, racer_id, message) VALUES (?, ?, ?)",
 		msg.RaceID, msg.RacerID, msg.Message)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -78,11 +77,11 @@ func AddRaceRadio(c *gin.Context) {
 	msg.ID = int(id)
 
 	var name string
-	app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", msg.RacerID).Scan(&name)
+	h.S.DB.QueryRow("SELECT name FROM racers WHERE id = ?", msg.RacerID).Scan(&name)
 	msg.RacerName = name
 
 	select {
-	case app.RaceRadioBroadcast <- msg:
+	case h.S.RaceRadioBroadcast <- msg:
 	default:
 	}
 

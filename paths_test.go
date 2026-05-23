@@ -5,32 +5,30 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"heat/app"
 )
 
 func TestPathsConfiguration(t *testing.T) {
 	t.Run("LocalPaths", func(t *testing.T) {
 		os.Unsetenv("DOCKER")
 
-		app.BasePath = "/app"
-		app.DBPath = "/db/heat.db"
-		app.MediaPath = "/app/media"
+		testServer.BasePath = "/app"
+		testServer.DBPath = "/db/heat.db"
+		testServer.MediaPath = "/app/media"
 
 		if os.Getenv("DOCKER") != "true" {
-			app.BasePath = "."
-			app.DBPath = "./heat.db"
+			testServer.BasePath = "."
+			testServer.DBPath = "./heat.db"
 		}
-		app.MediaPath = filepath.Join(app.BasePath, "media")
+		testServer.MediaPath = filepath.Join(testServer.BasePath, "media")
 
-		if app.BasePath != "." {
-			t.Errorf("expected local basePath '.', got %s", app.BasePath)
+		if testServer.BasePath != "." {
+			t.Errorf("expected local basePath '.', got %s", testServer.BasePath)
 		}
-		if app.DBPath != "./heat.db" {
-			t.Errorf("expected local dbPath './heat.db', got %s", app.DBPath)
+		if testServer.DBPath != "./heat.db" {
+			t.Errorf("expected local dbPath './heat.db', got %s", testServer.DBPath)
 		}
-		if app.MediaPath != "media" {
-			t.Errorf("expected mediaPath 'media', got %s", app.MediaPath)
+		if testServer.MediaPath != "media" {
+			t.Errorf("expected mediaPath 'media', got %s", testServer.MediaPath)
 		}
 	})
 
@@ -38,24 +36,24 @@ func TestPathsConfiguration(t *testing.T) {
 		os.Setenv("DOCKER", "true")
 		defer os.Unsetenv("DOCKER")
 
-		app.BasePath = "/app"
-		app.DBPath = "/db/heat.db"
-		app.MediaPath = "/app/media"
+		testServer.BasePath = "/app"
+		testServer.DBPath = "/db/heat.db"
+		testServer.MediaPath = "/app/media"
 
 		if os.Getenv("DOCKER") != "true" {
-			app.BasePath = "."
-			app.DBPath = "./heat.db"
+			testServer.BasePath = "."
+			testServer.DBPath = "./heat.db"
 		}
-		app.MediaPath = filepath.Join(app.BasePath, "media")
+		testServer.MediaPath = filepath.Join(testServer.BasePath, "media")
 
-		if app.BasePath != "/app" {
-			t.Errorf("expected Docker basePath '/app', got %s", app.BasePath)
+		if testServer.BasePath != "/app" {
+			t.Errorf("expected Docker basePath '/app', got %s", testServer.BasePath)
 		}
-		if app.DBPath != "/db/heat.db" {
-			t.Errorf("expected Docker dbPath '/db/heat.db', got %s", app.DBPath)
+		if testServer.DBPath != "/db/heat.db" {
+			t.Errorf("expected Docker dbPath '/db/heat.db', got %s", testServer.DBPath)
 		}
-		if app.MediaPath != "/app/media" {
-			t.Errorf("expected Docker mediaPath '/app/media', got %s", app.MediaPath)
+		if testServer.MediaPath != "/app/media" {
+			t.Errorf("expected Docker mediaPath '/app/media', got %s", testServer.MediaPath)
 		}
 	})
 }

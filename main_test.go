@@ -33,36 +33,47 @@ import (
 	"heat/ws"
 )
 
+var testServer *app.Server
+var testHandler *handlers.Handler
+var wsManager *ws.Manager
+
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 
+	testServer = app.NewServer()
 	os.Unsetenv("DOCKER")
-	app.BasePath = "."
-	app.DBPath = ":memory:"
-	app.MediaPath = filepath.Join(app.BasePath, "media")
+	testServer.BasePath = "."
+	testServer.DBPath = ":memory:"
+	testServer.MediaPath = filepath.Join(testServer.BasePath, "media")
 
 	var err error
-	app.DB, err = sql.Open("sqlite3", app.DBPath+"?_fk=1")
+	testServer.DB, err = sql.Open("sqlite3", testServer.DBPath+"?_fk=1")
 	if err != nil {
 		log.Fatalf("failed to open in-memory db: %v", err)
 	}
-	app.DB.SetMaxOpenConns(1)
+	testServer.DB.SetMaxOpenConns(1)
 
-	drv := entsql.OpenDB(dialect.SQLite, app.DB)
-	app.Ent = ent.NewClient(ent.Driver(drv))
+	drv := entsql.OpenDB(dialect.SQLite, testServer.DB)
+	testServer.Ent = ent.NewClient(ent.Driver(drv))
+	testServer.BroadcastRacers = func() {}
 
-	db.Init()
-	go ws.BroadcastManager()
-	go ws.BroadcastFlags()
-	go ws.BroadcastGameMechanics()
-	go ws.BroadcastWeather()
-	go ws.BroadcastLapReplay()
-	go ws.BroadcastSound()
-	go ws.BroadcastRaceRadio()
+	db.Init(testServer)
 
-	if err := os.MkdirAll(app.MediaPath, 0755); err != nil {
+	wsManager = ws.NewManager(testServer)
+	testServer.BroadcastSelfService = wsManager.BroadcastSelfService
+	go wsManager.BroadcastManager()
+	go wsManager.BroadcastFlags()
+	go wsManager.BroadcastGameMechanics()
+	go wsManager.BroadcastWeather()
+	go wsManager.BroadcastLapReplay()
+	go wsManager.BroadcastSound()
+	go wsManager.BroadcastRaceRadio()
+
+	if err := os.MkdirAll(testServer.MediaPath, 0755); err != nil {
 		log.Fatalf("failed to create media directory: %v", err)
 	}
+
+	testHandler = handlers.New(testServer)
 
 	os.Exit(m.Run())
 }
@@ -87,7 +98,7 @@ func TestHashPassword(t *testing.T) {
 
 func TestHandleCheckSetup(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/check-setup", handlers.HandleCheckSetup)
+	r.GET("/api/check-setup", testHandler.HandleCheckSetup)
 
 	req, err := http.NewRequest("GET", "/api/check-setup", nil)
 	if err != nil {
@@ -115,7 +126,7 @@ func TestHandleCheckSetup(t *testing.T) {
 
 func TestGetRacers(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/racers", handlers.GetRacers)
+	r.GET("/api/racers", testHandler.GetRacers)
 
 	req, err := http.NewRequest("GET", "/api/racers", nil)
 	if err != nil {
@@ -143,7 +154,7 @@ func TestGetRacers(t *testing.T) {
 
 func TestAuthMiddleware(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/test", middleware.AuthMiddleware(), func(c *gin.Context) {
+	r.GET("/api/test", middleware.AuthMiddleware(testServer), func(c *gin.Context) {
 		c.String(http.StatusOK, "Authorized")
 	})
 
@@ -159,13 +170,13 @@ func TestAuthMiddleware(t *testing.T) {
 
 	t.Run("Authorized", func(t *testing.T) {
 		sessionID := "test-session"
-		app.SessionStoreMu.Lock()
-		app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
-		app.SessionStoreMu.Unlock()
+		testServer.SessionStoreMu.Lock()
+		testServer.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
+		testServer.SessionStoreMu.Unlock()
 		defer func() {
-			app.SessionStoreMu.Lock()
-			delete(app.SessionStore, sessionID)
-			app.SessionStoreMu.Unlock()
+			testServer.SessionStoreMu.Lock()
+			delete(testServer.SessionStore, sessionID)
+			testServer.SessionStoreMu.Unlock()
 		}()
 
 		req, _ := http.NewRequest("GET", "/api/test", nil)
@@ -186,7 +197,7 @@ func TestAuthMiddleware(t *testing.T) {
 func TestRaceInfo(t *testing.T) {
 	t.Run("GetRaceInfo", func(t *testing.T) {
 		r := gin.New()
-		r.GET("/api/race-info", handlers.GetRaceInfo)
+		r.GET("/api/race-info", testHandler.GetRaceInfo)
 
 		req, _ := http.NewRequest("GET", "/api/race-info", nil)
 		rr := httptest.NewRecorder()
@@ -205,8 +216,8 @@ func TestRaceInfo(t *testing.T) {
 
 	t.Run("UpdateRaceInfo", func(t *testing.T) {
 		r := gin.New()
-		r.POST("/api/race-info", handlers.UpdateRaceInfo)
-		r.GET("/api/race-info", handlers.GetRaceInfo)
+		r.POST("/api/race-info", testHandler.UpdateRaceInfo)
+		r.GET("/api/race-info", testHandler.GetRaceInfo)
 
 		ri := models.RaceInfo{Country: "Belgium", Track: "Spa", Laps: 44, TrackID: "spa"}
 		body, _ := json.Marshal(ri)
@@ -232,9 +243,9 @@ func TestRaceInfo(t *testing.T) {
 
 func TestRaceHistory(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/race-history", handlers.SaveRaceToHistory)
-	r.GET("/api/race-history", handlers.GetRaceHistory)
-	r.DELETE("/api/race-history", handlers.DeleteRaceHistory)
+	r.POST("/api/race-history", testHandler.SaveRaceToHistory)
+	r.GET("/api/race-history", testHandler.GetRaceHistory)
+	r.DELETE("/api/race-history", testHandler.DeleteRaceHistory)
 
 	t.Run("SaveAndGet", func(t *testing.T) {
 		payload := map[string]interface{}{
@@ -286,8 +297,8 @@ func TestRaceHistory(t *testing.T) {
 
 func TestQuotes(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/quotes", handlers.GetQuotes)
-	r.GET("/api/quote/random", handlers.GetRandomQuote)
+	r.GET("/api/quotes", testHandler.GetQuotes)
+	r.GET("/api/quote/random", testHandler.GetRandomQuote)
 
 	t.Run("GetQuotes", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/quotes", nil)
@@ -323,12 +334,12 @@ func TestQuotes(t *testing.T) {
 }
 
 func TestGetRacerStatsSeasonFallback(t *testing.T) {
-	app.DB.Exec("INSERT OR REPLACE INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (1, 5, 3, 3, 1, 0, 2, 0, 0)")
-	app.DB.Exec("INSERT OR REPLACE INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (2, 5, 1, 1, 2, 1, 0, 1, 0)")
-	defer app.DB.Exec("DELETE FROM racer_stats WHERE racer_id IN (1, 2)")
+	testServer.DB.Exec("INSERT OR REPLACE INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (1, 5, 3, 3, 1, 0, 2, 0, 0)")
+	testServer.DB.Exec("INSERT OR REPLACE INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (2, 5, 1, 1, 2, 1, 0, 1, 0)")
+	defer testServer.DB.Exec("DELETE FROM racer_stats WHERE racer_id IN (1, 2)")
 
 	r := gin.New()
-	r.GET("/api/racer-stats", handlers.GetRacerStats)
+	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
 	t.Run("SeasonFilterFallsBackToRacerStats", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/racer-stats?season_id=1", nil)
@@ -389,7 +400,7 @@ func TestGetRacerStatsSeasonFallback(t *testing.T) {
 
 func TestGetRacerStats(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/racer-stats", handlers.GetRacerStats)
+	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
 	req, _ := http.NewRequest("GET", "/api/racer-stats", nil)
 	rr := httptest.NewRecorder()
@@ -408,8 +419,8 @@ func TestGetRacerStats(t *testing.T) {
 
 func TestUpdateRacerStats(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/racer-stats", handlers.UpdateRacerStats)
-	r.GET("/api/racer-stats", handlers.GetRacerStats)
+	r.POST("/api/racer-stats", testHandler.UpdateRacerStats)
+	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
 	// Create new stats for racer 3 (no existing stats yet)
 	createBody, _ := json.Marshal(models.RacerStats{
@@ -440,7 +451,7 @@ func TestUpdateRacerStats(t *testing.T) {
 
 	// Find the actual DB id for the update
 	var statsID int
-	app.DB.QueryRow("SELECT id FROM racer_stats WHERE racer_id = 3").Scan(&statsID)
+	testServer.DB.QueryRow("SELECT id FROM racer_stats WHERE racer_id = 3").Scan(&statsID)
 
 	// Update existing stats
 	updateBody, _ := json.Marshal(models.RacerStats{
@@ -467,8 +478,8 @@ func TestUpdateRacerStats(t *testing.T) {
 
 func TestRaceHistoryWithDNS(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/race-history", handlers.SaveRaceToHistory)
-	r.GET("/api/racer-stats", handlers.GetRacerStats)
+	r.POST("/api/race-history", testHandler.SaveRaceToHistory)
+	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
 	// Save a race with one DNF and one DNS
 	payload := map[string]interface{}{
@@ -525,13 +536,13 @@ func TestRaceHistoryWithDNS(t *testing.T) {
 	}
 
 	// Cleanup: remove the test race
-	app.DB.Exec("DELETE FROM race_results WHERE race_id IN (SELECT id FROM race_history WHERE name = 'DNS Test Race')")
-	app.DB.Exec("DELETE FROM race_history WHERE name = 'DNS Test Race'")
+	testServer.DB.Exec("DELETE FROM race_results WHERE race_id IN (SELECT id FROM race_history WHERE name = 'DNS Test Race')")
+	testServer.DB.Exec("DELETE FROM race_history WHERE name = 'DNS Test Race'")
 }
 
 func TestGetTracks(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/tracks", handlers.GetTracks)
+	r.GET("/api/tracks", testHandler.GetTracks)
 
 	req, _ := http.NewRequest("GET", "/api/tracks", nil)
 	rr := httptest.NewRecorder()
@@ -550,7 +561,7 @@ func TestGetTracks(t *testing.T) {
 
 func TestGetTrackStats(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/track-stats", handlers.GetTrackStats)
+	r.GET("/api/track-stats", testHandler.GetTrackStats)
 
 	req, _ := http.NewRequest("GET", "/api/track-stats", nil)
 	rr := httptest.NewRecorder()
@@ -569,7 +580,7 @@ func TestGetTrackStats(t *testing.T) {
 
 func TestOneOffRaces(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/oneoff-races", handlers.GetOneOffRaces)
+	r.GET("/api/oneoff-races", testHandler.GetOneOffRaces)
 
 	req, _ := http.NewRequest("GET", "/api/oneoff-races", nil)
 	rr := httptest.NewRecorder()
@@ -588,7 +599,7 @@ func TestOneOffRaces(t *testing.T) {
 
 func TestGetUploads(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/uploads", handlers.GetUploads)
+	r.GET("/api/uploads", testHandler.GetUploads)
 
 	req, _ := http.NewRequest("GET", "/api/uploads", nil)
 	rr := httptest.NewRecorder()
@@ -609,19 +620,19 @@ func TestHandleUpload(t *testing.T) {
 	// Create test routes with CSRF + Auth middleware
 	r := gin.New()
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-	admin.POST("/upload", handlers.HandleUpload)
-	r.GET("/api/racers", handlers.GetRacers)
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+	admin.POST("/upload", testHandler.HandleUpload)
+	r.GET("/api/racers", testHandler.GetRacers)
 
 	// Create a valid session for auth
 	sessionID := "upload-test-session"
-	app.SessionStoreMu.Lock()
-	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
-	app.SessionStoreMu.Unlock()
+	testServer.SessionStoreMu.Lock()
+	testServer.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
+	testServer.SessionStoreMu.Unlock()
 	defer func() {
-		app.SessionStoreMu.Lock()
-		delete(app.SessionStore, sessionID)
-		app.SessionStoreMu.Unlock()
+		testServer.SessionStoreMu.Lock()
+		delete(testServer.SessionStore, sessionID)
+		testServer.SessionStoreMu.Unlock()
 	}()
 
 	// Create a minimal valid PNG for testing
@@ -687,12 +698,12 @@ func TestHandleUpload(t *testing.T) {
 		}
 
 		// Verify file exists on disk
-		filePath := filepath.Join(app.MediaPath, parts[0], parts[1])
+		filePath := filepath.Join(testServer.MediaPath, parts[0], parts[1])
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			t.Errorf("uploaded file not found at %s", filePath)
 		} else {
 			// Clean up test file
-			defer os.RemoveAll(filepath.Join(app.MediaPath, parts[0]))
+			defer os.RemoveAll(filepath.Join(testServer.MediaPath, parts[0]))
 		}
 
 		// Verify upload is stored in DB
@@ -701,7 +712,7 @@ func TestHandleUpload(t *testing.T) {
 			t.Fatal("expected hash in response")
 		}
 		var storedURL string
-		err = app.DB.QueryRow("SELECT url FROM uploads WHERE hash = ?", hash).Scan(&storedURL)
+		err = testServer.DB.QueryRow("SELECT url FROM uploads WHERE hash = ?", hash).Scan(&storedURL)
 		if err != nil {
 			t.Errorf("upload not found in database: %v", err)
 		} else if storedURL != url {
@@ -713,9 +724,9 @@ func TestHandleUpload(t *testing.T) {
 		// Need a separate router with racer POST route for this test
 		r2 := gin.New()
 		admin2 := r2.Group("/api")
-		admin2.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-		admin2.POST("/upload", handlers.HandleUpload)
-		admin2.POST("/racers", handlers.UpdateRacer)
+		admin2.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+		admin2.POST("/upload", testHandler.HandleUpload)
+		admin2.POST("/racers", testHandler.UpdateRacer)
 
 		body := new(bytes.Buffer)
 		writer := multipart.NewWriter(body)
@@ -775,7 +786,7 @@ func TestHandleUpload(t *testing.T) {
 
 		// Verify racer's profile_picture in DB
 		var profilePicture string
-		err = app.DB.QueryRow("SELECT profile_picture FROM racers WHERE id = 1").Scan(&profilePicture)
+		err = testServer.DB.QueryRow("SELECT profile_picture FROM racers WHERE id = 1").Scan(&profilePicture)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -786,7 +797,7 @@ func TestHandleUpload(t *testing.T) {
 		// Clean up uploaded file
 		parts := strings.Split(strings.TrimPrefix(uploadURL, "/media/"), "/")
 		if len(parts) == 2 {
-			os.RemoveAll(filepath.Join(app.MediaPath, parts[0]))
+			os.RemoveAll(filepath.Join(testServer.MediaPath, parts[0]))
 		}
 	})
 }
@@ -808,19 +819,19 @@ func makeUniquePNGData(seed byte) []byte {
 func TestProfilePictureUpload(t *testing.T) {
 	r := gin.New()
 	r.MaxMultipartMemory = 32 << 20
-	r.POST("/api/upload", middleware.CSRFMiddleware(), middleware.AuthMiddleware(), handlers.HandleUpload)
-	r.POST("/api/racers", middleware.CSRFMiddleware(), middleware.AuthMiddleware(), handlers.UpdateRacer)
-	r.GET("/api/racers", handlers.GetRacers)
-	r.Static("/media", app.MediaPath)
+	r.POST("/api/upload", middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer), testHandler.HandleUpload)
+	r.POST("/api/racers", middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer), testHandler.UpdateRacer)
+	r.GET("/api/racers", testHandler.GetRacers)
+	r.Static("/media", testServer.MediaPath)
 
 	sessionID := "profile-pic-test-session"
-	app.SessionStoreMu.Lock()
-	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
-	app.SessionStoreMu.Unlock()
+	testServer.SessionStoreMu.Lock()
+	testServer.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
+	testServer.SessionStoreMu.Unlock()
 	defer func() {
-		app.SessionStoreMu.Lock()
-		delete(app.SessionStore, sessionID)
-		app.SessionStoreMu.Unlock()
+		testServer.SessionStoreMu.Lock()
+		delete(testServer.SessionStore, sessionID)
+		testServer.SessionStoreMu.Unlock()
 	}()
 
 	// Each subtest uses unique image data to avoid hash collisions
@@ -875,7 +886,7 @@ func TestProfilePictureUpload(t *testing.T) {
 		// Clean up
 		parts := strings.Split(strings.TrimPrefix(uploadURL, "/media/"), "/")
 		if len(parts) == 2 {
-			defer os.RemoveAll(filepath.Join(app.MediaPath, parts[0]))
+			defer os.RemoveAll(filepath.Join(testServer.MediaPath, parts[0]))
 		}
 	})
 
@@ -905,7 +916,7 @@ func TestProfilePictureUpload(t *testing.T) {
 		defer func() {
 			parts := strings.Split(strings.TrimPrefix(uploadURL, "/media/"), "/")
 			if len(parts) == 2 {
-				os.RemoveAll(filepath.Join(app.MediaPath, parts[0]))
+				os.RemoveAll(filepath.Join(testServer.MediaPath, parts[0]))
 			}
 		}()
 
@@ -987,7 +998,7 @@ func TestProfilePictureUpload(t *testing.T) {
 		defer func() {
 			parts := strings.Split(strings.TrimPrefix(firstURL, "/media/"), "/")
 			if len(parts) == 2 {
-				os.RemoveAll(filepath.Join(app.MediaPath, parts[0]))
+				os.RemoveAll(filepath.Join(testServer.MediaPath, parts[0]))
 			}
 		}()
 
@@ -1093,8 +1104,8 @@ func TestSecurityHeaders(t *testing.T) {
 
 func TestLoginLogout(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/login", handlers.HandleLogin)
-	r.POST("/api/logout", handlers.HandleLogout)
+	r.POST("/api/login", testHandler.HandleLogin)
+	r.POST("/api/logout", testHandler.HandleLogout)
 
 	t.Run("SetupNewAdmin", func(t *testing.T) {
 		payload := map[string]interface{}{
@@ -1148,7 +1159,7 @@ func TestLoginLogout(t *testing.T) {
 
 func TestHeadToHead(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/stats/head-to-head", handlers.GetHeadToHead)
+	r.GET("/api/stats/head-to-head", testHandler.GetHeadToHead)
 
 	req, _ := http.NewRequest("GET", "/api/stats/head-to-head?racer1=1&racer2=2", nil)
 	rr := httptest.NewRecorder()
@@ -1167,7 +1178,7 @@ func TestHeadToHead(t *testing.T) {
 
 func TestPointsProgression(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/stats/points-progression", handlers.GetPointsProgression)
+	r.GET("/api/stats/points-progression", testHandler.GetPointsProgression)
 
 	req, _ := http.NewRequest("GET", "/api/stats/points-progression?racer_id=1", nil)
 	rr := httptest.NewRecorder()
@@ -1186,7 +1197,7 @@ func TestPointsProgression(t *testing.T) {
 
 func TestStreaks(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/stats/streaks", handlers.GetStreaks)
+	r.GET("/api/stats/streaks", testHandler.GetStreaks)
 
 	req, _ := http.NewRequest("GET", "/api/stats/streaks", nil)
 	rr := httptest.NewRecorder()
@@ -1205,7 +1216,7 @@ func TestStreaks(t *testing.T) {
 
 func TestELORatings(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/stats/elo", handlers.GetELORatings)
+	r.GET("/api/stats/elo", testHandler.GetELORatings)
 
 	req, _ := http.NewRequest("GET", "/api/stats/elo", nil)
 	rr := httptest.NewRecorder()
@@ -1224,7 +1235,7 @@ func TestELORatings(t *testing.T) {
 
 func TestExportStatsCSV(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/stats/export", handlers.ExportStatsCSV)
+	r.GET("/api/stats/export", testHandler.ExportStatsCSV)
 
 	req, _ := http.NewRequest("GET", "/api/stats/export", nil)
 	rr := httptest.NewRecorder()
@@ -1250,7 +1261,7 @@ func TestExportStatsCSV(t *testing.T) {
 
 func TestTrackPerformance(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/stats/track-performance", handlers.GetTrackPerformance)
+	r.GET("/api/stats/track-performance", testHandler.GetTrackPerformance)
 
 	t.Run("AllRacers", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/stats/track-performance", nil)
@@ -1275,9 +1286,9 @@ func TestTrackPerformance(t *testing.T) {
 
 func TestDeleteRaceHistory(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/race-history", handlers.SaveRaceToHistory)
-	r.DELETE("/api/race-history", handlers.DeleteRaceHistory)
-	r.GET("/api/race-history", handlers.GetRaceHistory)
+	r.POST("/api/race-history", testHandler.SaveRaceToHistory)
+	r.DELETE("/api/race-history", testHandler.DeleteRaceHistory)
+	r.GET("/api/race-history", testHandler.GetRaceHistory)
 
 	t.Run("DeleteNonExistent", func(t *testing.T) {
 		req, _ := http.NewRequest("DELETE", "/api/race-history?id=999", nil)
@@ -1344,7 +1355,7 @@ func TestDeleteRaceHistory(t *testing.T) {
 
 func TestDeleteOneOffRace(t *testing.T) {
 	r := gin.New()
-	r.DELETE("/api/oneoff-races", handlers.DeleteOneOffRace)
+	r.DELETE("/api/oneoff-races", testHandler.DeleteOneOffRace)
 
 	req, _ := http.NewRequest("DELETE", "/api/oneoff-races?id=999", nil)
 	rr := httptest.NewRecorder()
@@ -1391,7 +1402,7 @@ func TestEscapeHTML(t *testing.T) {
 
 func TestRateLimit(t *testing.T) {
 	r := gin.New()
-	r.Use(middleware.RateLimitMiddleware())
+	r.Use(middleware.RateLimitMiddleware(testServer))
 	hitCount := 0
 	r.GET("/test", func(c *gin.Context) {
 		hitCount++
@@ -1408,7 +1419,7 @@ func TestRateLimit(t *testing.T) {
 
 func TestGetAISettings(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/ai-settings", middleware.AuthMiddleware(), handlers.GetAISettings)
+	r.GET("/api/ai-settings", middleware.AuthMiddleware(testServer), testHandler.GetAISettings)
 
 	t.Run("Unauthorized", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/ai-settings", nil)
@@ -1423,7 +1434,7 @@ func TestGetAISettings(t *testing.T) {
 
 func TestGetNotificationSettings(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/notification-settings", middleware.AuthMiddleware(), handlers.GetNotificationSettings)
+	r.GET("/api/notification-settings", middleware.AuthMiddleware(testServer), testHandler.GetNotificationSettings)
 
 	t.Run("Unauthorized", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/notification-settings", nil)
@@ -1438,7 +1449,7 @@ func TestGetNotificationSettings(t *testing.T) {
 
 func TestGetEmailSettings(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/email-settings", middleware.AuthMiddleware(), handlers.GetEmailSettings)
+	r.GET("/api/email-settings", middleware.AuthMiddleware(testServer), testHandler.GetEmailSettings)
 
 	t.Run("Unauthorized", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/email-settings", nil)
@@ -1453,7 +1464,7 @@ func TestGetEmailSettings(t *testing.T) {
 
 func TestGetRacerEmails(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/racer-emails", middleware.AuthMiddleware(), handlers.GetRacerEmails)
+	r.GET("/api/racer-emails", middleware.AuthMiddleware(testServer), testHandler.GetRacerEmails)
 
 	t.Run("Unauthorized", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/racer-emails", nil)
@@ -1469,7 +1480,7 @@ func TestGetRacerEmails(t *testing.T) {
 func TestVersion(t *testing.T) {
 	r := gin.New()
 	r.GET("/api/version", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
+		c.JSON(http.StatusOK, gin.H{"version": testServer.CurrentVersion})
 	})
 
 	req, _ := http.NewRequest("GET", "/api/version", nil)
@@ -1482,14 +1493,14 @@ func TestVersion(t *testing.T) {
 
 	var resp map[string]string
 	json.Unmarshal(rr.Body.Bytes(), &resp)
-	if resp["version"] != app.CurrentVersion {
-		t.Errorf("expected version %q, got %q", app.CurrentVersion, resp["version"])
+	if resp["version"] != testServer.CurrentVersion {
+		t.Errorf("expected version %q, got %q", testServer.CurrentVersion, resp["version"])
 	}
 }
 
 func TestGetUmamiSettings(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/umami-settings", middleware.AuthMiddleware(), handlers.GetUmamiSettings)
+	r.GET("/api/umami-settings", middleware.AuthMiddleware(testServer), testHandler.GetUmamiSettings)
 
 	t.Run("Unauthorized", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/umami-settings", nil)
@@ -1504,10 +1515,10 @@ func TestGetUmamiSettings(t *testing.T) {
 
 func TestBackupSettings(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/backup-settings", handlers.GetBackupSettings)
-	r.POST("/api/backup-settings", handlers.SaveBackupSettings)
-	r.POST("/api/backup/manual", handlers.TriggerManualBackup)
-	r.GET("/api/backup/list", handlers.ListBackups)
+	r.GET("/api/backup-settings", testHandler.GetBackupSettings)
+	r.POST("/api/backup-settings", testHandler.SaveBackupSettings)
+	r.POST("/api/backup/manual", testHandler.TriggerManualBackup)
+	r.GET("/api/backup/list", testHandler.ListBackups)
 
 	t.Run("GetSettings", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/backup-settings", nil)
@@ -1574,7 +1585,7 @@ func TestBackupSettings(t *testing.T) {
 	})
 
 	t.Run("PruneBackups", func(t *testing.T) {
-		backupDir := filepath.Join(filepath.Dir(app.DBPath), "backups")
+		backupDir := filepath.Join(filepath.Dir(testServer.DBPath), "backups")
 		os.MkdirAll(backupDir, 0755)
 
 		for i := 1; i <= 10; i++ {
@@ -1613,16 +1624,16 @@ func TestBackupSettings(t *testing.T) {
 func createAdminSession(t *testing.T) string {
 	t.Helper()
 	sessionID := "admin-session-" + strconv.FormatInt(time.Now().UnixNano(), 36)
-	app.SessionStoreMu.Lock()
-	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
-	app.SessionStoreMu.Unlock()
+	testServer.SessionStoreMu.Lock()
+	testServer.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
+	testServer.SessionStoreMu.Unlock()
 	return sessionID
 }
 
 func removeAdminSession(sessionID string) {
-	app.SessionStoreMu.Lock()
-	delete(app.SessionStore, sessionID)
-	app.SessionStoreMu.Unlock()
+	testServer.SessionStoreMu.Lock()
+	delete(testServer.SessionStore, sessionID)
+	testServer.SessionStoreMu.Unlock()
 }
 
 func newAdminRequest(method, path string, body []byte, sessionID string) *http.Request {
@@ -1639,20 +1650,20 @@ func newAdminRequest(method, path string, body []byte, sessionID string) *http.R
 func setupAdminRouter() (*gin.Engine, string) {
 	r := gin.New()
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-	r.GET("/api/racers", handlers.GetRacers)
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+	r.GET("/api/racers", testHandler.GetRacers)
 	return r, ""
 }
 
 func TestTeamsAPI(t *testing.T) {
 	r := gin.New()
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-	admin.POST("/teams", handlers.SaveTeam)
-	admin.DELETE("/teams", handlers.DeleteTeam)
-	admin.POST("/teams/assign", handlers.AssignTeam)
-	r.GET("/api/teams", handlers.GetTeams)
-	r.GET("/api/teams/standings", handlers.GetConstructorStandings)
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+	admin.POST("/teams", testHandler.SaveTeam)
+	admin.DELETE("/teams", testHandler.DeleteTeam)
+	admin.POST("/teams/assign", testHandler.AssignTeam)
+	r.GET("/api/teams", testHandler.GetTeams)
+	r.GET("/api/teams/standings", testHandler.GetConstructorStandings)
 
 	sessionID := createAdminSession(t)
 	defer removeAdminSession(sessionID)
@@ -1680,7 +1691,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
 		}
 		var name string
-		app.DB.QueryRow("SELECT name FROM teams WHERE name = 'Test Team'").Scan(&name)
+		testServer.DB.QueryRow("SELECT name FROM teams WHERE name = 'Test Team'").Scan(&name)
 		if name != "Test Team" {
 			t.Errorf("expected 'Test Team', got %q", name)
 		}
@@ -1705,7 +1716,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
 		}
 		var teamID int
-		app.DB.QueryRow("SELECT team_id FROM racers WHERE id = 1").Scan(&teamID)
+		testServer.DB.QueryRow("SELECT team_id FROM racers WHERE id = 1").Scan(&teamID)
 		if teamID != 1 {
 			t.Errorf("expected team_id=1, got %d", teamID)
 		}
@@ -1733,17 +1744,17 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("expected 200, got %d", rr.Code)
 		}
 		var count int
-		app.DB.QueryRow("SELECT COUNT(*) FROM teams WHERE id = 1").Scan(&count)
+		testServer.DB.QueryRow("SELECT COUNT(*) FROM teams WHERE id = 1").Scan(&count)
 		if count != 0 {
 			t.Error("team should be deleted")
 		}
 		var teamID int
-		app.DB.QueryRow("SELECT COALESCE(team_id, 0) FROM racers WHERE id = 1").Scan(&teamID)
+		testServer.DB.QueryRow("SELECT COALESCE(team_id, 0) FROM racers WHERE id = 1").Scan(&teamID)
 		if teamID != 0 {
 			t.Errorf("expected racer team_id reset to 0, got %d", teamID)
 		}
 		// Re-seed for other tests
-		app.DB.Exec("INSERT OR IGNORE INTO teams (id, name, color) VALUES (1, 'Scuderia Ferrari', '#d40000')")
+		testServer.DB.Exec("INSERT OR IGNORE INTO teams (id, name, color) VALUES (1, 'Scuderia Ferrari', '#d40000')")
 	})
 
 	t.Run("delete team without auth", func(t *testing.T) {
@@ -1783,10 +1794,10 @@ func TestTeamsAPI(t *testing.T) {
 func TestRacerCRUD(t *testing.T) {
 	r := gin.New()
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-	admin.POST("/racers", handlers.UpdateRacer)
-	admin.DELETE("/racers", handlers.DeleteRacer)
-	r.GET("/api/racers", handlers.GetRacers)
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+	admin.POST("/racers", testHandler.UpdateRacer)
+	admin.DELETE("/racers", testHandler.DeleteRacer)
+	r.GET("/api/racers", testHandler.GetRacers)
 
 	sessionID := createAdminSession(t)
 	defer removeAdminSession(sessionID)
@@ -1842,7 +1853,7 @@ func TestRacerCRUD(t *testing.T) {
 			t.Fatalf("update: expected 200, got %d", rr.Code)
 		}
 		var name string
-		app.DB.QueryRow("SELECT name FROM racers WHERE id = 1").Scan(&name)
+		testServer.DB.QueryRow("SELECT name FROM racers WHERE id = 1").Scan(&name)
 		if name != "Updated Racer" {
 			t.Errorf("expected name 'Updated Racer', got %q", name)
 		}
@@ -1856,7 +1867,7 @@ func TestRacerCRUD(t *testing.T) {
 			t.Fatalf("delete: expected 200, got %d", rr.Code)
 		}
 		var count int
-		app.DB.QueryRow("SELECT COUNT(*) FROM racers WHERE id = 2").Scan(&count)
+		testServer.DB.QueryRow("SELECT COUNT(*) FROM racers WHERE id = 2").Scan(&count)
 		if count != 0 {
 			t.Error("racer should be deleted")
 		}
@@ -1898,10 +1909,10 @@ func TestRacerCRUD(t *testing.T) {
 func TestTrackCRUD(t *testing.T) {
 	r := gin.New()
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-	admin.POST("/tracks", handlers.SaveTrack)
-	admin.DELETE("/tracks", handlers.DeleteTrack)
-	r.GET("/api/tracks", handlers.GetTracks)
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+	admin.POST("/tracks", testHandler.SaveTrack)
+	admin.DELETE("/tracks", testHandler.DeleteTrack)
+	r.GET("/api/tracks", testHandler.GetTracks)
 
 	sessionID := createAdminSession(t)
 	defer removeAdminSession(sessionID)
@@ -1916,7 +1927,7 @@ func TestTrackCRUD(t *testing.T) {
 			t.Fatalf("save: expected 200, got %d: %s", rr.Code, rr.Body.String())
 		}
 		var name string
-		app.DB.QueryRow("SELECT name FROM tracks WHERE id = 'test-track'").Scan(&name)
+		testServer.DB.QueryRow("SELECT name FROM tracks WHERE id = 'test-track'").Scan(&name)
 		if name != "Test Circuit" {
 			t.Errorf("expected track name 'Test Circuit', got %q", name)
 		}
@@ -1958,11 +1969,11 @@ func TestTrackCRUD(t *testing.T) {
 func TestQuoteCRUD(t *testing.T) {
 	r := gin.New()
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-	admin.POST("/quotes", handlers.HandleQuotes)
-	admin.PUT("/quotes", handlers.HandleQuotes)
-	admin.DELETE("/quotes", handlers.HandleQuotes)
-	r.GET("/api/quotes", handlers.GetQuotes)
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+	admin.POST("/quotes", testHandler.HandleQuotes)
+	admin.PUT("/quotes", testHandler.HandleQuotes)
+	admin.DELETE("/quotes", testHandler.HandleQuotes)
+	r.GET("/api/quotes", testHandler.GetQuotes)
 
 	sessionID := createAdminSession(t)
 	defer removeAdminSession(sessionID)
@@ -2018,7 +2029,7 @@ func TestQuoteCRUD(t *testing.T) {
 			t.Fatalf("update: expected 200, got %d: %s", rr.Code, rr.Body.String())
 		}
 		var text string
-		app.DB.QueryRow("SELECT text FROM quotes WHERE id = 1").Scan(&text)
+		testServer.DB.QueryRow("SELECT text FROM quotes WHERE id = 1").Scan(&text)
 		if text != "Updated quote text" {
 			t.Errorf("expected text 'Updated quote text', got %q", text)
 		}
@@ -2052,7 +2063,7 @@ func TestQuoteCRUD(t *testing.T) {
 			t.Fatalf("delete: expected 200, got %d", rr.Code)
 		}
 		var count int
-		app.DB.QueryRow("SELECT COUNT(*) FROM quotes WHERE id = ?", created.ID).Scan(&count)
+		testServer.DB.QueryRow("SELECT COUNT(*) FROM quotes WHERE id = ?", created.ID).Scan(&count)
 		if count != 0 {
 			t.Error("quote should be deleted")
 		}
@@ -2075,9 +2086,9 @@ func TestSettingsSave(t *testing.T) {
 	t.Run("save notification settings", func(t *testing.T) {
 		r := gin.New()
 		admin := r.Group("/api")
-		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-		admin.POST("/notification-settings", handlers.SaveNotificationSettings)
-		admin.GET("/notification-settings", handlers.GetNotificationSettings)
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+		admin.POST("/notification-settings", testHandler.SaveNotificationSettings)
+		admin.GET("/notification-settings", testHandler.GetNotificationSettings)
 
 		s := models.NotificationSettings{GotiFyURL: "https://gotify.example.com", GotiFyToken: "token123", NotifyWinner: true, NotifyPodium: true}
 		body, _ := json.Marshal(s)
@@ -2105,9 +2116,9 @@ func TestSettingsSave(t *testing.T) {
 	t.Run("save AI settings", func(t *testing.T) {
 		r := gin.New()
 		admin := r.Group("/api")
-		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-		admin.POST("/ai-settings", handlers.SaveAISettings)
-		admin.GET("/ai-settings", handlers.GetAISettings)
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+		admin.POST("/ai-settings", testHandler.SaveAISettings)
+		admin.GET("/ai-settings", testHandler.GetAISettings)
 
 		s := models.AISettings{TrackExtractURL: "https://ai.example.com/extract", APIKey: "key123", Enabled: true}
 		body, _ := json.Marshal(s)
@@ -2135,9 +2146,9 @@ func TestSettingsSave(t *testing.T) {
 	t.Run("save email settings", func(t *testing.T) {
 		r := gin.New()
 		admin := r.Group("/api")
-		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-		admin.POST("/email-settings", handlers.SaveEmailSettings)
-		admin.GET("/email-settings", handlers.GetEmailSettings)
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+		admin.POST("/email-settings", testHandler.SaveEmailSettings)
+		admin.GET("/email-settings", testHandler.GetEmailSettings)
 
 		s := models.EmailSettings{SMTPHost: "smtp.example.com", SMTPPort: 587, Username: "user", Password: "pass123", FromAddr: "from@example.com", Enabled: true}
 		body, _ := json.Marshal(s)
@@ -2165,9 +2176,9 @@ func TestSettingsSave(t *testing.T) {
 	t.Run("save umami settings", func(t *testing.T) {
 		r := gin.New()
 		admin := r.Group("/api")
-		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-		admin.POST("/umami-settings", handlers.SaveUmamiSettings)
-		admin.GET("/umami-settings", handlers.GetUmamiSettings)
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+		admin.POST("/umami-settings", testHandler.SaveUmamiSettings)
+		admin.GET("/umami-settings", testHandler.GetUmamiSettings)
 
 		s := models.UmamiSettings{URL: "https://analytics.example.com", WebsiteID: "abc-123", Enabled: true}
 		body, _ := json.Marshal(s)
@@ -2199,9 +2210,9 @@ func TestSettingsSave(t *testing.T) {
 func TestRacerEmailCRUD(t *testing.T) {
 	r := gin.New()
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-	admin.GET("/racer-emails", handlers.GetRacerEmails)
-	admin.POST("/racer-emails", handlers.SaveRacerEmail)
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+	admin.GET("/racer-emails", testHandler.GetRacerEmails)
+	admin.POST("/racer-emails", testHandler.SaveRacerEmail)
 
 	sessionID := createAdminSession(t)
 	defer removeAdminSession(sessionID)
@@ -2254,14 +2265,14 @@ func TestRacerEmailCRUD(t *testing.T) {
 	})
 
 	// cleanup
-	app.DB.Exec("DELETE FROM racer_emails WHERE racer_id = 1 AND email = 'test@example.com'")
+	testServer.DB.Exec("DELETE FROM racer_emails WHERE racer_id = 1 AND email = 'test@example.com'")
 }
 
 func TestDeleteSeason(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/seasons", handlers.GetSeasons)
-	r.POST("/api/seasons", handlers.CreateSeason)
-	r.DELETE("/api/seasons", handlers.DeleteSeason)
+	r.GET("/api/seasons", testHandler.GetSeasons)
+	r.POST("/api/seasons", testHandler.CreateSeason)
+	r.DELETE("/api/seasons", testHandler.DeleteSeason)
 
 	sessionID := createAdminSession(t)
 	defer removeAdminSession(sessionID)
@@ -2397,8 +2408,8 @@ func TestPWAManifest(t *testing.T) {
 
 func TestI18nAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/translations", handlers.GetTranslations)
-	r.POST("/api/language", handlers.SetLanguage)
+	r.GET("/api/translations", testHandler.GetTranslations)
+	r.POST("/api/language", testHandler.SetLanguage)
 
 	t.Run("get translations default", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/translations", nil)
@@ -2530,7 +2541,7 @@ func TestRaceReportPage(t *testing.T) {
 
 	t.Run("race report API returns data", func(t *testing.T) {
 		r := gin.New()
-		r.GET("/api/race-report", handlers.GetRaceReport)
+		r.GET("/api/race-report", testHandler.GetRaceReport)
 		req, _ := http.NewRequest("GET", "/api/race-report", nil)
 		rr := httptest.NewRecorder()
 		r.ServeHTTP(rr, req)
@@ -2542,7 +2553,7 @@ func TestRaceReportPage(t *testing.T) {
 
 func TestFlagEndpoint(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/flags", handlers.HandleFlag)
+	r.POST("/api/flags", testHandler.HandleFlag)
 
 	t.Run("valid safety car flag", func(t *testing.T) {
 		body, _ := json.Marshal(models.FlagCommand{Type: "flag", Flag: "safety"})
@@ -2601,11 +2612,11 @@ func TestFlagEndpoint(t *testing.T) {
 }
 
 func TestRaceHistoryWithGoldSilverBronze(t *testing.T) {
-	app.DB.Exec("DELETE FROM racer_stats")
+	testServer.DB.Exec("DELETE FROM racer_stats")
 
 	r := gin.New()
-	r.POST("/api/race-history", handlers.SaveRaceToHistory)
-	r.GET("/api/racer-stats", handlers.GetRacerStats)
+	r.POST("/api/race-history", testHandler.SaveRaceToHistory)
+	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
 	payload := map[string]interface{}{
 		"name":       "Gold Silver Bronze Test",
@@ -2660,15 +2671,15 @@ func TestRaceHistoryWithGoldSilverBronze(t *testing.T) {
 	checkStats(3, 0, 0, 1, 0)
 	checkStats(4, 0, 0, 0, 0)
 
-	app.DB.Exec("DELETE FROM race_results WHERE race_id IN (SELECT id FROM race_history WHERE name = 'Gold Silver Bronze Test')")
-	app.DB.Exec("DELETE FROM race_history WHERE name = 'Gold Silver Bronze Test'")
-	app.DB.Exec("DELETE FROM racer_stats WHERE racer_id IN (1,2,3,4,5)")
+	testServer.DB.Exec("DELETE FROM race_results WHERE race_id IN (SELECT id FROM race_history WHERE name = 'Gold Silver Bronze Test')")
+	testServer.DB.Exec("DELETE FROM race_history WHERE name = 'Gold Silver Bronze Test'")
+	testServer.DB.Exec("DELETE FROM racer_stats WHERE racer_id IN (1,2,3,4,5)")
 }
 
 func TestOneOffRaceDoesNotUpdateStats(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/race-history", handlers.SaveRaceToHistory)
-	r.GET("/api/racer-stats", handlers.GetRacerStats)
+	r.POST("/api/race-history", testHandler.SaveRaceToHistory)
+	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
 	payload := map[string]interface{}{
 		"name":       "One-Off Test",
@@ -2702,15 +2713,15 @@ func TestOneOffRaceDoesNotUpdateStats(t *testing.T) {
 		t.Errorf("one-off race should not update stats, got races=%d", s.Races)
 	}
 
-	app.DB.Exec("DELETE FROM race_results WHERE race_id IN (SELECT id FROM race_history WHERE name = 'One-Off Test')")
-	app.DB.Exec("DELETE FROM race_history WHERE name = 'One-Off Test'")
+	testServer.DB.Exec("DELETE FROM race_results WHERE race_id IN (SELECT id FROM race_history WHERE name = 'One-Off Test')")
+	testServer.DB.Exec("DELETE FROM race_history WHERE name = 'One-Off Test'")
 }
 
 func TestGetRacerStatsAll(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/racer-stats", handlers.GetRacerStats)
+	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
-	app.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (1, 5, 3, 3, 1, 0, 2, 0, 0)")
+	testServer.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (1, 5, 3, 3, 1, 0, 2, 0, 0)")
 
 	req, _ := http.NewRequest("GET", "/api/racer-stats", nil)
 	rr := httptest.NewRecorder()
@@ -2737,15 +2748,15 @@ func TestGetRacerStatsAll(t *testing.T) {
 		t.Error("expected racer 1 stats to be returned")
 	}
 
-	app.DB.Exec("DELETE FROM racer_stats WHERE racer_id = 1")
+	testServer.DB.Exec("DELETE FROM racer_stats WHERE racer_id = 1")
 }
 
 func TestCreateSeason(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/seasons", handlers.GetSeasons)
-	r.POST("/api/seasons", handlers.CreateSeason)
-	r.POST("/api/seasons/archive", handlers.ArchiveSeason)
-	r.DELETE("/api/seasons", handlers.DeleteSeason)
+	r.GET("/api/seasons", testHandler.GetSeasons)
+	r.POST("/api/seasons", testHandler.CreateSeason)
+	r.POST("/api/seasons/archive", testHandler.ArchiveSeason)
+	r.DELETE("/api/seasons", testHandler.DeleteSeason)
 
 	t.Run("create season", func(t *testing.T) {
 		body, _ := json.Marshal(map[string]string{"name": "Test Season 2025"})
@@ -2805,13 +2816,13 @@ func TestCreateSeason(t *testing.T) {
 }
 
 func TestCreateRoundSnapshot(t *testing.T) {
-	app.DB.Exec("DELETE FROM round_snapshot_scores")
-	app.DB.Exec("DELETE FROM round_snapshots")
+	testServer.DB.Exec("DELETE FROM round_snapshot_scores")
+	testServer.DB.Exec("DELETE FROM round_snapshots")
 
 	r := gin.New()
-	r.POST("/api/rounds", handlers.TakeRoundSnapshot)
-	r.GET("/api/rounds", handlers.GetRoundSnapshots)
-	r.DELETE("/api/rounds", handlers.DeleteRoundSnapshot)
+	r.POST("/api/rounds", testHandler.TakeRoundSnapshot)
+	r.GET("/api/rounds", testHandler.GetRoundSnapshots)
+	r.DELETE("/api/rounds", testHandler.DeleteRoundSnapshot)
 
 	t.Run("take round snapshot", func(t *testing.T) {
 		body, _ := json.Marshal(map[string]interface{}{
@@ -2877,15 +2888,15 @@ func TestCreateRoundSnapshot(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM round_snapshot_scores")
-	app.DB.Exec("DELETE FROM round_snapshots")
+	testServer.DB.Exec("DELETE FROM round_snapshot_scores")
+	testServer.DB.Exec("DELETE FROM round_snapshots")
 }
 
 func TestPlayerLogin(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/player/login", handlers.PlayerLogin)
-	r.GET("/api/player/validate", handlers.ValidatePlayerToken)
-	r.POST("/api/player/logout", handlers.PlayerLogout)
+	r.POST("/api/player/login", testHandler.PlayerLogin)
+	r.GET("/api/player/validate", testHandler.ValidatePlayerToken)
+	r.POST("/api/player/logout", testHandler.PlayerLogout)
 
 	var token string
 	t.Run("login valid racer", func(t *testing.T) {
@@ -2954,11 +2965,11 @@ func TestPlayerLogin(t *testing.T) {
 
 func TestHeatCardAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/heat-cards", handlers.GetHeatCards)
-	r.POST("/api/heat-cards", handlers.AddHeatCard)
-	r.PUT("/api/heat-cards/move", handlers.MoveHeatCard)
-	r.DELETE("/api/heat-cards", handlers.DeleteHeatCard)
-	r.POST("/api/heat-cards/init-decks", handlers.InitializeHeatDecks)
+	r.GET("/api/heat-cards", testHandler.GetHeatCards)
+	r.POST("/api/heat-cards", testHandler.AddHeatCard)
+	r.PUT("/api/heat-cards/move", testHandler.MoveHeatCard)
+	r.DELETE("/api/heat-cards", testHandler.DeleteHeatCard)
+	r.POST("/api/heat-cards/init-decks", testHandler.InitializeHeatDecks)
 
 	t.Run("init decks", func(t *testing.T) {
 		body := `{"race_id":0,"racer_ids":[1,2]}`
@@ -3031,13 +3042,13 @@ func TestHeatCardAPI(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM heat_cards")
+	testServer.DB.Exec("DELETE FROM heat_cards")
 }
 
 func TestGearShiftAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/gear-shifts", handlers.GetGearShifts)
-	r.POST("/api/gear-shifts", handlers.AddGearShift)
+	r.GET("/api/gear-shifts", testHandler.GetGearShifts)
+	r.POST("/api/gear-shifts", testHandler.AddGearShift)
 
 	t.Run("add gear shift", func(t *testing.T) {
 		body := `{"racer_id":1,"race_id":0,"lap":1,"gear":3,"stress":1}`
@@ -3073,13 +3084,13 @@ func TestGearShiftAPI(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM gear_shifts")
+	testServer.DB.Exec("DELETE FROM gear_shifts")
 }
 
 func TestUpgradeAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/upgrade-cards", handlers.GetUpgradeCards)
-	r.GET("/api/legend-abilities", handlers.GetLegendAbilities)
+	r.GET("/api/upgrade-cards", testHandler.GetUpgradeCards)
+	r.GET("/api/legend-abilities", testHandler.GetLegendAbilities)
 
 	t.Run("list upgrade cards", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/upgrade-cards", nil)
@@ -3112,8 +3123,8 @@ func TestUpgradeAPI(t *testing.T) {
 
 func TestWeatherAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/weather", handlers.GetWeather)
-	r.POST("/api/weather", handlers.SetWeather)
+	r.GET("/api/weather", testHandler.GetWeather)
+	r.POST("/api/weather", testHandler.SetWeather)
 
 	t.Run("set weather", func(t *testing.T) {
 		body := `{"race_id":0,"condition":"wet","lap_start":1,"lap_end":999,"grip_modifier":0.7}`
@@ -3143,13 +3154,13 @@ func TestWeatherAPI(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM weather_conditions")
+	testServer.DB.Exec("DELETE FROM weather_conditions")
 }
 
 func TestTurboLogAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/turbo-logs", handlers.GetTurboLogs)
-	r.POST("/api/turbo-logs", handlers.AddTurboLog)
+	r.GET("/api/turbo-logs", testHandler.GetTurboLogs)
+	r.POST("/api/turbo-logs", testHandler.AddTurboLog)
 
 	t.Run("add turbo log", func(t *testing.T) {
 		body := `{"racer_id":1,"race_id":0,"lap":1,"times_used":1}`
@@ -3176,14 +3187,14 @@ func TestTurboLogAPI(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM turbo_logs")
+	testServer.DB.Exec("DELETE FROM turbo_logs")
 }
 
 func TestLapRecordAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/lap-records", handlers.GetLapRecords)
-	r.POST("/api/lap-records", handlers.RecordLap)
-	r.POST("/api/lap-records/batch", handlers.RecordLapBatch)
+	r.GET("/api/lap-records", testHandler.GetLapRecords)
+	r.POST("/api/lap-records", testHandler.RecordLap)
+	r.POST("/api/lap-records/batch", testHandler.RecordLapBatch)
 
 	t.Run("record single lap", func(t *testing.T) {
 		body := `{"race_id":0,"racer_id":1,"lap_number":1,"position":1,"gear_used":3,"heat_generated":2,"turbo_used":false}`
@@ -3224,13 +3235,13 @@ func TestLapRecordAPI(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM lap_records")
+	testServer.DB.Exec("DELETE FROM lap_records")
 }
 
 func TestRaceEventAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/race-events", handlers.GetRaceEvents)
-	r.POST("/api/race-events", handlers.AddRaceEvent)
+	r.GET("/api/race-events", testHandler.GetRaceEvents)
+	r.POST("/api/race-events", testHandler.AddRaceEvent)
 
 	t.Run("add race event", func(t *testing.T) {
 		body := `{"race_id":0,"lap":1,"event_type":"overtake","racer_id":1,"racer_id2":2,"note":"Great pass!"}`
@@ -3260,12 +3271,12 @@ func TestRaceEventAPI(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM race_events")
+	testServer.DB.Exec("DELETE FROM race_events")
 }
 
 func TestSpectatorState(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/spectator/state", handlers.GetSpectatorState)
+	r.GET("/api/spectator/state", testHandler.GetSpectatorState)
 
 	t.Run("get spectator state", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/spectator/state", nil)
@@ -3290,7 +3301,7 @@ func TestSpectatorState(t *testing.T) {
 
 func TestSoundFX(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/sound", handlers.PlaySound)
+	r.POST("/api/sound", testHandler.PlaySound)
 
 	t.Run("play engine sound", func(t *testing.T) {
 		body := `{"sound":"engine"}`
@@ -3317,8 +3328,8 @@ func TestSoundFX(t *testing.T) {
 
 func TestRaceRadioAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/race-radio", handlers.GetRaceRadio)
-	r.POST("/api/race-radio", handlers.AddRaceRadio)
+	r.GET("/api/race-radio", testHandler.GetRaceRadio)
+	r.POST("/api/race-radio", testHandler.AddRaceRadio)
 
 	t.Run("add radio message", func(t *testing.T) {
 		body := `{"race_id":1,"racer_id":1,"message":"Box box, box now!"}`
@@ -3394,16 +3405,16 @@ func TestRaceRadioAPI(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM race_radio")
+	testServer.DB.Exec("DELETE FROM race_radio")
 }
 
 func TestDeeperStats(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/stats/qualifying-delta", handlers.GetQualifyingRaceDelta)
-	r.GET("/api/stats/consistency", handlers.GetConsistencyRatings)
-	r.GET("/api/stats/incidents", handlers.GetRaceIncidentsReport)
-	r.GET("/api/stats/pace-heatmap", handlers.GetPaceHeatmap)
-	r.GET("/api/race-report", handlers.GetRaceReport)
+	r.GET("/api/stats/qualifying-delta", testHandler.GetQualifyingRaceDelta)
+	r.GET("/api/stats/consistency", testHandler.GetConsistencyRatings)
+	r.GET("/api/stats/incidents", testHandler.GetRaceIncidentsReport)
+	r.GET("/api/stats/pace-heatmap", testHandler.GetPaceHeatmap)
+	r.GET("/api/race-report", testHandler.GetRaceReport)
 
 	t.Run("qualifying delta", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/stats/qualifying-delta", nil)
@@ -3460,11 +3471,11 @@ func TestDeeperStats(t *testing.T) {
 
 func TestPlayerSelfServiceEndpoints(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/player/gear", handlers.PlayerReportGear)
-	r.POST("/api/player/heat", handlers.PlayerReportHeat)
-	r.POST("/api/player/turbo", handlers.PlayerReportTurbo)
-	r.GET("/api/player/status", handlers.PlayerGetStatus)
-	r.POST("/api/player/login", handlers.PlayerLogin)
+	r.POST("/api/player/gear", testHandler.PlayerReportGear)
+	r.POST("/api/player/heat", testHandler.PlayerReportHeat)
+	r.POST("/api/player/turbo", testHandler.PlayerReportTurbo)
+	r.GET("/api/player/status", testHandler.PlayerGetStatus)
+	r.POST("/api/player/login", testHandler.PlayerLogin)
 
 	var token string
 	loginBody := `{"racer_id":1,"device_name":"Test"}`
@@ -3540,15 +3551,15 @@ func TestPlayerSelfServiceEndpoints(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM gear_shifts")
-	app.DB.Exec("DELETE FROM heat_cards WHERE racer_id=1 AND lap_added=0")
-	app.DB.Exec("DELETE FROM turbo_logs")
-	app.DB.Exec("DELETE FROM player_sessions")
+	testServer.DB.Exec("DELETE FROM gear_shifts")
+	testServer.DB.Exec("DELETE FROM heat_cards WHERE racer_id=1 AND lap_added=0")
+	testServer.DB.Exec("DELETE FROM turbo_logs")
+	testServer.DB.Exec("DELETE FROM player_sessions")
 }
 
 func TestPlayerUpgradeBuy(t *testing.T) {
 	r := gin.New()
-	r.POST("/api/player-upgrades/buy", handlers.BuyUpgrade)
+	r.POST("/api/player-upgrades/buy", testHandler.BuyUpgrade)
 
 	t.Run("buy upgrade", func(t *testing.T) {
 		body := `{"racer_id":1,"upgrade_id":1,"season_id":1,"round":1}`
@@ -3561,13 +3572,13 @@ func TestPlayerUpgradeBuy(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM player_upgrades")
+	testServer.DB.Exec("DELETE FROM player_upgrades")
 }
 
 func TestSectorAPI(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/sectors", handlers.GetSectors)
-	r.POST("/api/racer-sectors", handlers.RecordRacerSector)
+	r.GET("/api/sectors", testHandler.GetSectors)
+	r.POST("/api/racer-sectors", testHandler.RecordRacerSector)
 
 	t.Run("list sectors for monza", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/sectors?track_id=monza", nil)
@@ -3594,12 +3605,12 @@ func TestSectorAPI(t *testing.T) {
 		}
 	})
 
-	app.DB.Exec("DELETE FROM racer_sectors")
+	testServer.DB.Exec("DELETE FROM racer_sectors")
 }
 
 func TestAvailableUpgrades(t *testing.T) {
 	r := gin.New()
-	r.GET("/api/available-upgrades", handlers.GetAvailableUpgradesForRacer)
+	r.GET("/api/available-upgrades", testHandler.GetAvailableUpgradesForRacer)
 
 	t.Run("list available upgrades", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/available-upgrades?racer_id=1", nil)
@@ -3620,27 +3631,27 @@ func TestDriverShare(t *testing.T) {
 	adminRouter := func() *gin.Engine {
 		r := gin.New()
 		admin := r.Group("/api")
-		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-		admin.POST("/driver-share", handlers.GenerateDriverShareToken)
-		admin.GET("/driver-shares", handlers.GetDriverShareTokens)
-		admin.DELETE("/driver-share", handlers.DeleteDriverShareToken)
+		admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+		admin.POST("/driver-share", testHandler.GenerateDriverShareToken)
+		admin.GET("/driver-shares", testHandler.GetDriverShareTokens)
+		admin.DELETE("/driver-share", testHandler.DeleteDriverShareToken)
 		return r
 	}
 
 	publicRouter := func() *gin.Engine {
 		r := gin.New()
-		r.GET("/api/shared/driver-stats", handlers.GetDriverStatsByToken)
+		r.GET("/api/shared/driver-stats", testHandler.GetDriverStatsByToken)
 		return r
 	}
 
 	sessionID := "test-share-session"
-	app.SessionStoreMu.Lock()
-	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
-	app.SessionStoreMu.Unlock()
+	testServer.SessionStoreMu.Lock()
+	testServer.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
+	testServer.SessionStoreMu.Unlock()
 	defer func() {
-		app.SessionStoreMu.Lock()
-		delete(app.SessionStore, sessionID)
-		app.SessionStoreMu.Unlock()
+		testServer.SessionStoreMu.Lock()
+		delete(testServer.SessionStore, sessionID)
+		testServer.SessionStoreMu.Unlock()
 	}()
 
 	addSessionCookie := func(req *http.Request) {
@@ -3778,33 +3789,33 @@ func TestDriverShare(t *testing.T) {
 func setupHtmxRouter() (*gin.Engine, string) {
 	r := gin.New()
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-	admin.GET("/html/racers", handlers.HtmxRacersTable)
-	admin.POST("/html/racers", handlers.HtmxRacersSave)
-	admin.GET("/html/racers/:id/edit", handlers.HtmxRacersEditForm)
-	admin.DELETE("/html/racers/:id", handlers.HtmxRacersDelete)
-	admin.POST("/html/racers/:id/share", handlers.HtmxRacersGenerateShare)
-	admin.GET("/html/tracks", handlers.HtmxTracksTable)
-	admin.POST("/html/tracks", handlers.HtmxTracksSave)
-	admin.GET("/html/tracks/:id/edit", handlers.HtmxTracksEditForm)
-	admin.DELETE("/html/tracks/:id", handlers.HtmxTracksDelete)
-	admin.GET("/html/quotes", handlers.HtmxQuotesTable)
-	admin.POST("/html/quotes", handlers.HtmxQuotesSave)
-	admin.GET("/html/quotes/:id/edit", handlers.HtmxQuotesEditForm)
-	admin.DELETE("/html/quotes/:id", handlers.HtmxQuotesDelete)
-	admin.GET("/html/teams", handlers.HtmxTeamsTable)
-	admin.POST("/html/teams", handlers.HtmxTeamsSave)
-	admin.GET("/html/teams/:id/edit", handlers.HtmxTeamsEditForm)
-	admin.DELETE("/html/teams/:id", handlers.HtmxTeamsDelete)
-	admin.GET("/html/seasons", handlers.HtmxSeasonsTable)
-	admin.GET("/html/seasons/new", handlers.HtmxSeasonsNewForm)
-	admin.POST("/html/seasons", handlers.HtmxSeasonsCreate)
-	admin.POST("/html/seasons/:id/archive", handlers.HtmxSeasonsArchive)
-	admin.DELETE("/html/seasons/:id", handlers.HtmxSeasonsDelete)
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+	admin.GET("/html/racers", testHandler.HtmxRacersTable)
+	admin.POST("/html/racers", testHandler.HtmxRacersSave)
+	admin.GET("/html/racers/:id/edit", testHandler.HtmxRacersEditForm)
+	admin.DELETE("/html/racers/:id", testHandler.HtmxRacersDelete)
+	admin.POST("/html/racers/:id/share", testHandler.HtmxRacersGenerateShare)
+	admin.GET("/html/tracks", testHandler.HtmxTracksTable)
+	admin.POST("/html/tracks", testHandler.HtmxTracksSave)
+	admin.GET("/html/tracks/:id/edit", testHandler.HtmxTracksEditForm)
+	admin.DELETE("/html/tracks/:id", testHandler.HtmxTracksDelete)
+	admin.GET("/html/quotes", testHandler.HtmxQuotesTable)
+	admin.POST("/html/quotes", testHandler.HtmxQuotesSave)
+	admin.GET("/html/quotes/:id/edit", testHandler.HtmxQuotesEditForm)
+	admin.DELETE("/html/quotes/:id", testHandler.HtmxQuotesDelete)
+	admin.GET("/html/teams", testHandler.HtmxTeamsTable)
+	admin.POST("/html/teams", testHandler.HtmxTeamsSave)
+	admin.GET("/html/teams/:id/edit", testHandler.HtmxTeamsEditForm)
+	admin.DELETE("/html/teams/:id", testHandler.HtmxTeamsDelete)
+	admin.GET("/html/seasons", testHandler.HtmxSeasonsTable)
+	admin.GET("/html/seasons/new", testHandler.HtmxSeasonsNewForm)
+	admin.POST("/html/seasons", testHandler.HtmxSeasonsCreate)
+	admin.POST("/html/seasons/:id/archive", testHandler.HtmxSeasonsArchive)
+	admin.DELETE("/html/seasons/:id", testHandler.HtmxSeasonsDelete)
 	sessionID := "htmx-test-session-" + strconv.FormatInt(time.Now().UnixNano(), 36)
-	app.SessionStoreMu.Lock()
-	app.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
-	app.SessionStoreMu.Unlock()
+	testServer.SessionStoreMu.Lock()
+	testServer.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(1 * time.Hour).Unix()}
+	testServer.SessionStoreMu.Unlock()
 	return r, sessionID
 }
 
@@ -3887,7 +3898,7 @@ func TestHtmxRacersDelete(t *testing.T) {
 	defer removeAdminSession(sid)
 
 	var id int
-	app.DB.QueryRow("SELECT id FROM racers LIMIT 1").Scan(&id)
+	testServer.DB.QueryRow("SELECT id FROM racers LIMIT 1").Scan(&id)
 	if id == 0 {
 		t.Fatal("no racers to delete")
 	}
@@ -3912,7 +3923,7 @@ func TestHtmxRacersEditForm(t *testing.T) {
 	defer removeAdminSession(sid)
 
 	var id int
-	app.DB.QueryRow("SELECT id FROM racers LIMIT 1").Scan(&id)
+	testServer.DB.QueryRow("SELECT id FROM racers LIMIT 1").Scan(&id)
 	if id == 0 {
 		t.Fatal("no racers")
 	}
@@ -3954,7 +3965,7 @@ func TestHtmxRacersGenerateShare(t *testing.T) {
 	defer removeAdminSession(sid)
 
 	var id int
-	app.DB.QueryRow("SELECT id FROM racers LIMIT 1").Scan(&id)
+	testServer.DB.QueryRow("SELECT id FROM racers LIMIT 1").Scan(&id)
 	if id == 0 {
 		t.Fatal("no racers")
 	}
@@ -3969,7 +3980,7 @@ func TestHtmxRacersGenerateShare(t *testing.T) {
 		t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
 	}
 	var token string
-	err := app.DB.QueryRow("SELECT token FROM driver_shares WHERE racer_id = ?", id).Scan(&token)
+	err := testServer.DB.QueryRow("SELECT token FROM driver_shares WHERE racer_id = ?", id).Scan(&token)
 	if err != nil {
 		t.Errorf("expected share token to exist: %v", err)
 	}
@@ -4016,14 +4027,14 @@ func TestHtmxTracksCreate(t *testing.T) {
 	if !strings.Contains(body, "HTMX Test Track") {
 		t.Errorf("expected new track in table, got: %s", body[:min(len(body), 300)])
 	}
-	app.DB.Exec("DELETE FROM tracks WHERE id = 'htmx-test-track'")
+	testServer.DB.Exec("DELETE FROM tracks WHERE id = 'htmx-test-track'")
 }
 
 func TestHtmxTracksDelete(t *testing.T) {
 	r, sid := setupHtmxRouter()
 	defer removeAdminSession(sid)
 
-	app.DB.Exec("INSERT OR REPLACE INTO tracks (id, name, country, length_km, lap_record) VALUES ('htmx-del-track', 'Del Track', 'Nowhere', 10, '--')")
+	testServer.DB.Exec("INSERT OR REPLACE INTO tracks (id, name, country, length_km, lap_record) VALUES ('htmx-del-track', 'Del Track', 'Nowhere', 10, '--')")
 
 	req, _ := http.NewRequest("DELETE", "/api/html/tracks/htmx-del-track", nil)
 	req.Header.Set("Origin", "http://127.0.0.1:6270")
@@ -4084,7 +4095,7 @@ func TestHtmxQuotesDelete(t *testing.T) {
 	defer removeAdminSession(sid)
 
 	var id int
-	app.DB.QueryRow("SELECT id FROM quotes LIMIT 1").Scan(&id)
+	testServer.DB.QueryRow("SELECT id FROM quotes LIMIT 1").Scan(&id)
 	if id == 0 {
 		t.Fatal("no quotes to delete")
 	}
@@ -4147,9 +4158,9 @@ func TestHtmxTeamsDelete(t *testing.T) {
 	r, sid := setupHtmxRouter()
 	defer removeAdminSession(sid)
 
-	app.DB.Exec("INSERT INTO teams (name, color) VALUES ('Del Team', '#000')")
+	testServer.DB.Exec("INSERT INTO teams (name, color) VALUES ('Del Team', '#000')")
 	var id int
-	app.DB.QueryRow("SELECT id FROM teams WHERE name = 'Del Team'").Scan(&id)
+	testServer.DB.QueryRow("SELECT id FROM teams WHERE name = 'Del Team'").Scan(&id)
 	if id == 0 {
 		t.Fatal("no team to delete")
 	}
@@ -4215,7 +4226,7 @@ func TestHtmxSeasonsArchive(t *testing.T) {
 	}
 
 	var id int
-	app.DB.QueryRow("SELECT id FROM seasons WHERE name = 'Archive Test Season'").Scan(&id)
+	testServer.DB.QueryRow("SELECT id FROM seasons WHERE name = 'Archive Test Season'").Scan(&id)
 	if id == 0 {
 		t.Fatal("no season created")
 	}
@@ -4230,7 +4241,7 @@ func TestHtmxSeasonsArchive(t *testing.T) {
 		t.Fatalf("archive: expected 200, got %d: %s", rr2.Code, rr2.Body.String())
 	}
 	var status string
-	app.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", id).Scan(&status)
+	testServer.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", id).Scan(&status)
 	if status != "archived" {
 		t.Errorf("expected status 'archived', got %q", status)
 	}
@@ -4248,7 +4259,7 @@ func TestHtmxSeasonsDelete(t *testing.T) {
 	}
 
 	var id int
-	app.DB.QueryRow("SELECT id FROM seasons WHERE name = 'Del Test Season'").Scan(&id)
+	testServer.DB.QueryRow("SELECT id FROM seasons WHERE name = 'Del Test Season'").Scan(&id)
 	if id == 0 {
 		t.Fatal("no season created")
 	}
@@ -4286,7 +4297,7 @@ func TestHtmxTracksEditForm(t *testing.T) {
 	r, sid := setupHtmxRouter()
 	defer removeAdminSession(sid)
 
-	app.DB.Exec("INSERT OR REPLACE INTO tracks (id, name, country, length_km, lap_record) VALUES ('edit-test', 'Edit Test', 'Test', 10, '--')")
+	testServer.DB.Exec("INSERT OR REPLACE INTO tracks (id, name, country, length_km, lap_record) VALUES ('edit-test', 'Edit Test', 'Test', 10, '--')")
 
 	req, _ := http.NewRequest("GET", "/api/html/tracks/edit-test/edit", nil)
 	req.AddCookie(&http.Cookie{Name: "session", Value: sid})
@@ -4300,7 +4311,7 @@ func TestHtmxTracksEditForm(t *testing.T) {
 	if !strings.Contains(body, "Save Track") {
 		t.Errorf("expected track edit form, got: %s", body[:min(len(body), 200)])
 	}
-	app.DB.Exec("DELETE FROM tracks WHERE id = 'edit-test'")
+	testServer.DB.Exec("DELETE FROM tracks WHERE id = 'edit-test'")
 }
 
 func TestHtmxQuotesEditForm(t *testing.T) {
@@ -4308,7 +4319,7 @@ func TestHtmxQuotesEditForm(t *testing.T) {
 	defer removeAdminSession(sid)
 
 	var id int
-	app.DB.QueryRow("SELECT id FROM quotes LIMIT 1").Scan(&id)
+	testServer.DB.QueryRow("SELECT id FROM quotes LIMIT 1").Scan(&id)
 	if id == 0 {
 		t.Fatal("no quotes")
 	}
@@ -4331,9 +4342,9 @@ func TestHtmxTeamsEditForm(t *testing.T) {
 	r, sid := setupHtmxRouter()
 	defer removeAdminSession(sid)
 
-	app.DB.Exec("INSERT INTO teams (name, color) VALUES ('Edit Team Test', '#fff')")
+	testServer.DB.Exec("INSERT INTO teams (name, color) VALUES ('Edit Team Test', '#fff')")
 	var id int
-	app.DB.QueryRow("SELECT id FROM teams WHERE name = 'Edit Team Test'").Scan(&id)
+	testServer.DB.QueryRow("SELECT id FROM teams WHERE name = 'Edit Team Test'").Scan(&id)
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("/api/html/teams/%d/edit", id), nil)
 	req.AddCookie(&http.Cookie{Name: "session", Value: sid})
@@ -4347,7 +4358,7 @@ func TestHtmxTeamsEditForm(t *testing.T) {
 	if !strings.Contains(body, "Save Team") {
 		t.Errorf("expected team edit form, got: %s", body[:min(len(body), 200)])
 	}
-	app.DB.Exec("DELETE FROM teams WHERE id = ?", id)
+	testServer.DB.Exec("DELETE FROM teams WHERE id = ?", id)
 }
 
 func TestHtmxRacersCreateMissingName(t *testing.T) {
@@ -4369,8 +4380,8 @@ func TestHtmxRacersCreateMissingName(t *testing.T) {
 func TestHtmxUnauthorized(t *testing.T) {
 	r := gin.New()
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
-	admin.GET("/html/racers", handlers.HtmxRacersTable)
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(testServer))
+	admin.GET("/html/racers", testHandler.HtmxRacersTable)
 
 	req, _ := http.NewRequest("GET", "/api/html/racers", nil)
 	rr := httptest.NewRecorder()

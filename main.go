@@ -83,68 +83,75 @@ var swaggerHandler = func() *webdav.Handler {
 	return h
 }()
 
-func servePage(c *gin.Context, path string) {
+func servePage(c *gin.Context, path string, s *app.Server) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	html := strings.Replace(string(content), "{{VERSION}}", app.CurrentVersion, 1)
+	html := strings.Replace(string(content), "{{VERSION}}", s.CurrentVersion, 1)
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }
 
 func main() {
-	if os.Getenv("DOCKER") != "true" {
-		app.BasePath = "."
-		app.DBPath = "./heat.db"
-	}
-	app.MediaPath = filepath.Join(app.BasePath, "media")
+	server := app.NewServer()
 
-	if err := os.MkdirAll(app.MediaPath, 0755); err != nil {
+	if os.Getenv("DOCKER") != "true" {
+		server.BasePath = "."
+		server.DBPath = "./heat.db"
+	}
+	server.MediaPath = filepath.Join(server.BasePath, "media")
+
+	if err := os.MkdirAll(server.MediaPath, 0755); err != nil {
 		log.Printf("Warning: could not create media directory: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Dir(app.DBPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(server.DBPath), 0755); err != nil {
 		log.Printf("Warning: could not create database directory: %v", err)
 	}
 
 	var err error
-	app.DB, err = sql.Open("sqlite3", app.DBPath+"?_fk=1")
+	server.DB, err = sql.Open("sqlite3", server.DBPath+"?_fk=1")
 	if err != nil {
 		log.Fatal(err)
 	}
-	app.DB.SetMaxOpenConns(1)
-	app.DB.Exec("PRAGMA journal_mode=WAL")
+	server.DB.SetMaxOpenConns(1)
+	server.DB.Exec("PRAGMA journal_mode=WAL")
 
-	drv := entsql.OpenDB(dialect.SQLite, app.DB)
-	app.Ent = ent.NewClient(ent.Driver(drv))
-	defer app.Ent.Close()
+	drv := entsql.OpenDB(dialect.SQLite, server.DB)
+	server.Ent = ent.NewClient(ent.Driver(drv))
+	defer server.Ent.Close()
 
-	db.Init()
-	go ws.BroadcastManager()
-	go ws.BroadcastFlags()
-	go ws.BroadcastGameMechanics()
-	go ws.BroadcastWeather()
-	go ws.BroadcastLapReplay()
-	go ws.BroadcastSound()
-	go ws.BroadcastRaceRadio()
+	h := handlers.New(server)
+	wsManager := ws.NewManager(server)
+	server.BroadcastRacers = wsManager.BroadcastRacers
+	server.BroadcastSelfService = wsManager.BroadcastSelfService
+
+	db.Init(server)
+	go wsManager.BroadcastManager()
+	go wsManager.BroadcastFlags()
+	go wsManager.BroadcastGameMechanics()
+	go wsManager.BroadcastWeather()
+	go wsManager.BroadcastLapReplay()
+	go wsManager.BroadcastSound()
+	go wsManager.BroadcastRaceRadio()
 	go func() {
 		for {
 			time.Sleep(15 * time.Minute)
 			now := time.Now().Unix()
-			app.SessionStoreMu.Lock()
-			for k, v := range app.SessionStore {
+			server.SessionStoreMu.Lock()
+			for k, v := range server.SessionStore {
 				if now > v.Expiry {
-					delete(app.SessionStore, k)
+					delete(server.SessionStore, k)
 				}
 			}
-			app.SessionStoreMu.Unlock()
+			server.SessionStoreMu.Unlock()
 		}
 	}()
 	go func() {
 		for {
 			var enabled int
 			var intervalHrs int
-			app.DB.QueryRow("SELECT enabled, interval_hrs FROM backup_settings WHERE id = 1").Scan(&enabled, &intervalHrs)
+			server.DB.QueryRow("SELECT enabled, interval_hrs FROM backup_settings WHERE id = 1").Scan(&enabled, &intervalHrs)
 			if enabled == 1 && intervalHrs > 0 {
 				if err := db.CreateBackup(); err != nil {
 					log.Printf("[BACKUP] Periodic backup failed: %v", err)
@@ -181,197 +188,197 @@ func main() {
 		}()
 	}
 
-	r.GET("/ws", ws.HandleWebSocket)
+	r.GET("/ws", wsManager.HandleWebSocket)
 
-	r.POST("/api/login", middleware.RateLimitMiddleware(), handlers.HandleLogin)
-	r.POST("/api/logout", middleware.CSRFMiddleware(), handlers.HandleLogout)
-	r.GET("/api/check-setup", handlers.HandleCheckSetup)
+	r.POST("/api/login", middleware.RateLimitMiddleware(server), h.HandleLogin)
+	r.POST("/api/logout", middleware.CSRFMiddleware(), h.HandleLogout)
+	r.GET("/api/check-setup", h.HandleCheckSetup)
 
-	r.GET("/api/racers", handlers.GetRacers)
+	r.GET("/api/racers", h.GetRacers)
 	admin := r.Group("/api")
-	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware())
+	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(server))
 	{
-		admin.POST("/racers", handlers.UpdateRacer)
-		admin.DELETE("/racers", handlers.DeleteRacer)
-		admin.POST("/race-info", handlers.UpdateRaceInfo)
-		admin.POST("/upload", handlers.HandleUpload)
-		admin.POST("/tracks", handlers.SaveTrack)
-		admin.DELETE("/tracks", handlers.DeleteTrack)
-		admin.POST("/tracks/ai-extract", handlers.HandleAIExtract)
-		admin.POST("/race-history", handlers.SaveRaceToHistory)
-		admin.DELETE("/race-history", handlers.DeleteRaceHistory)
-		admin.POST("/racer-stats", handlers.UpdateRacerStats)
-		admin.GET("/notification-settings", handlers.GetNotificationSettings)
-		admin.POST("/notification-settings", handlers.SaveNotificationSettings)
-		admin.POST("/test-notification", handlers.TestNotification)
-		admin.GET("/ai-settings", handlers.GetAISettings)
-		admin.POST("/ai-settings", handlers.SaveAISettings)
-		admin.GET("/email-settings", handlers.GetEmailSettings)
-		admin.POST("/email-settings", handlers.SaveEmailSettings)
-		admin.GET("/racer-emails", handlers.GetRacerEmails)
-		admin.POST("/racer-emails", handlers.SaveRacerEmail)
-		admin.POST("/send-race-email", handlers.SendRaceEmailManual)
-		admin.DELETE("/oneoff-races", handlers.DeleteOneOffRace)
-		admin.GET("/umami-settings", handlers.GetUmamiSettings)
-		admin.POST("/umami-settings", handlers.SaveUmamiSettings)
-		admin.POST("/quotes", handlers.HandleQuotes)
-		admin.PUT("/quotes", handlers.HandleQuotes)
-		admin.DELETE("/quotes", handlers.HandleQuotes)
-		admin.GET("/backup-settings", handlers.GetBackupSettings)
-		admin.POST("/backup-settings", handlers.SaveBackupSettings)
-		admin.POST("/backup/manual", handlers.TriggerManualBackup)
-		admin.GET("/backup/list", handlers.ListBackups)
-		admin.POST("/seasons", handlers.CreateSeason)
-		admin.POST("/seasons/archive", handlers.ArchiveSeason)
-		admin.DELETE("/seasons", handlers.DeleteSeason)
+		admin.POST("/racers", h.UpdateRacer)
+		admin.DELETE("/racers", h.DeleteRacer)
+		admin.POST("/race-info", h.UpdateRaceInfo)
+		admin.POST("/upload", h.HandleUpload)
+		admin.POST("/tracks", h.SaveTrack)
+		admin.DELETE("/tracks", h.DeleteTrack)
+		admin.POST("/tracks/ai-extract", h.HandleAIExtract)
+		admin.POST("/race-history", h.SaveRaceToHistory)
+		admin.DELETE("/race-history", h.DeleteRaceHistory)
+		admin.POST("/racer-stats", h.UpdateRacerStats)
+		admin.GET("/notification-settings", h.GetNotificationSettings)
+		admin.POST("/notification-settings", h.SaveNotificationSettings)
+		admin.POST("/test-notification", h.TestNotification)
+		admin.GET("/ai-settings", h.GetAISettings)
+		admin.POST("/ai-settings", h.SaveAISettings)
+		admin.GET("/email-settings", h.GetEmailSettings)
+		admin.POST("/email-settings", h.SaveEmailSettings)
+		admin.GET("/racer-emails", h.GetRacerEmails)
+		admin.POST("/racer-emails", h.SaveRacerEmail)
+		admin.POST("/send-race-email", h.SendRaceEmailManual)
+		admin.DELETE("/oneoff-races", h.DeleteOneOffRace)
+		admin.GET("/umami-settings", h.GetUmamiSettings)
+		admin.POST("/umami-settings", h.SaveUmamiSettings)
+		admin.POST("/quotes", h.HandleQuotes)
+		admin.PUT("/quotes", h.HandleQuotes)
+		admin.DELETE("/quotes", h.HandleQuotes)
+		admin.GET("/backup-settings", h.GetBackupSettings)
+		admin.POST("/backup-settings", h.SaveBackupSettings)
+		admin.POST("/backup/manual", h.TriggerManualBackup)
+		admin.GET("/backup/list", h.ListBackups)
+		admin.POST("/seasons", h.CreateSeason)
+		admin.POST("/seasons/archive", h.ArchiveSeason)
+		admin.DELETE("/seasons", h.DeleteSeason)
 
 		// Admin: Game Mechanics
-		admin.POST("/heat-cards", handlers.AddHeatCard)
-		admin.PUT("/heat-cards/move", handlers.MoveHeatCard)
-		admin.DELETE("/heat-cards", handlers.DeleteHeatCard)
-		admin.DELETE("/heat-cards/clear", handlers.ClearHeatCards)
-		admin.POST("/heat-cards/init-decks", handlers.InitializeHeatDecks)
-		admin.POST("/gear-shifts", handlers.AddGearShift)
-		admin.DELETE("/gear-shifts", handlers.DeleteGearShift)
-		admin.POST("/upgrade-cards", handlers.SaveUpgradeCard)
-		admin.DELETE("/upgrade-cards", handlers.DeleteUpgradeCard)
-		admin.POST("/player-upgrades/buy", handlers.BuyUpgrade)
-		admin.PUT("/player-upgrades/toggle", handlers.ToggleUpgrade)
-		admin.DELETE("/player-upgrades", handlers.DeletePlayerUpgrade)
-		admin.POST("/legend-abilities/assign", handlers.AssignLegendAbility)
-		admin.PUT("/legend-abilities/toggle", handlers.ToggleLegendAbility)
+		admin.POST("/heat-cards", h.AddHeatCard)
+		admin.PUT("/heat-cards/move", h.MoveHeatCard)
+		admin.DELETE("/heat-cards", h.DeleteHeatCard)
+		admin.DELETE("/heat-cards/clear", h.ClearHeatCards)
+		admin.POST("/heat-cards/init-decks", h.InitializeHeatDecks)
+		admin.POST("/gear-shifts", h.AddGearShift)
+		admin.DELETE("/gear-shifts", h.DeleteGearShift)
+		admin.POST("/upgrade-cards", h.SaveUpgradeCard)
+		admin.DELETE("/upgrade-cards", h.DeleteUpgradeCard)
+		admin.POST("/player-upgrades/buy", h.BuyUpgrade)
+		admin.PUT("/player-upgrades/toggle", h.ToggleUpgrade)
+		admin.DELETE("/player-upgrades", h.DeletePlayerUpgrade)
+		admin.POST("/legend-abilities/assign", h.AssignLegendAbility)
+		admin.PUT("/legend-abilities/toggle", h.ToggleLegendAbility)
 
 		// Admin: Multi-User
-		admin.GET("/player-sessions", handlers.GetPlayerSessions)
-		admin.DELETE("/player-sessions", handlers.DeletePlayerSession)
+		admin.GET("/player-sessions", h.GetPlayerSessions)
+		admin.DELETE("/player-sessions", h.DeletePlayerSession)
 
 		// Admin: Race Enhancements
-		admin.POST("/weather", handlers.SetWeather)
-		admin.DELETE("/weather", handlers.DeleteWeather)
-		admin.POST("/turbo-logs", handlers.AddTurboLog)
-		admin.DELETE("/turbo-logs", handlers.DeleteTurboLog)
-		admin.DELETE("/lap-records", handlers.DeleteLapRecords)
-		admin.DELETE("/race-events", handlers.DeleteRaceEvent)
-		admin.POST("/ai-difficulty", handlers.SetAIDifficulty)
+		admin.POST("/weather", h.SetWeather)
+		admin.DELETE("/weather", h.DeleteWeather)
+		admin.POST("/turbo-logs", h.AddTurboLog)
+		admin.DELETE("/turbo-logs", h.DeleteTurboLog)
+		admin.DELETE("/lap-records", h.DeleteLapRecords)
+		admin.DELETE("/race-events", h.DeleteRaceEvent)
+		admin.POST("/ai-difficulty", h.SetAIDifficulty)
 
 		// Admin: Driver Share
-		admin.POST("/driver-share", handlers.GenerateDriverShareToken)
-		admin.GET("/driver-shares", handlers.GetDriverShareTokens)
-		admin.DELETE("/driver-share", handlers.DeleteDriverShareToken)
+		admin.POST("/driver-share", h.GenerateDriverShareToken)
+		admin.GET("/driver-shares", h.GetDriverShareTokens)
+		admin.DELETE("/driver-share", h.DeleteDriverShareToken)
 
 		// Teams
-		admin.POST("/teams", handlers.SaveTeam)
-		admin.DELETE("/teams", handlers.DeleteTeam)
-		admin.POST("/teams/assign", handlers.AssignTeam)
+		admin.POST("/teams", h.SaveTeam)
+		admin.DELETE("/teams", h.DeleteTeam)
+		admin.POST("/teams/assign", h.AssignTeam)
 
 		// HTMX endpoints (under admin auth group)
-		admin.GET("/html/racers", handlers.HtmxRacersTable)
-		admin.POST("/html/racers", handlers.HtmxRacersSave)
-		admin.GET("/html/racers/:id/edit", handlers.HtmxRacersEditForm)
-		admin.DELETE("/html/racers/:id", handlers.HtmxRacersDelete)
-		admin.POST("/html/racers/:id/share", handlers.HtmxRacersGenerateShare)
+		admin.GET("/html/racers", h.HtmxRacersTable)
+		admin.POST("/html/racers", h.HtmxRacersSave)
+		admin.GET("/html/racers/:id/edit", h.HtmxRacersEditForm)
+		admin.DELETE("/html/racers/:id", h.HtmxRacersDelete)
+		admin.POST("/html/racers/:id/share", h.HtmxRacersGenerateShare)
 
-		admin.GET("/html/tracks", handlers.HtmxTracksTable)
-		admin.POST("/html/tracks", handlers.HtmxTracksSave)
-		admin.GET("/html/tracks/:id/edit", handlers.HtmxTracksEditForm)
-		admin.DELETE("/html/tracks/:id", handlers.HtmxTracksDelete)
+		admin.GET("/html/tracks", h.HtmxTracksTable)
+		admin.POST("/html/tracks", h.HtmxTracksSave)
+		admin.GET("/html/tracks/:id/edit", h.HtmxTracksEditForm)
+		admin.DELETE("/html/tracks/:id", h.HtmxTracksDelete)
 
-		admin.GET("/html/quotes", handlers.HtmxQuotesTable)
-		admin.POST("/html/quotes", handlers.HtmxQuotesSave)
-		admin.GET("/html/quotes/:id/edit", handlers.HtmxQuotesEditForm)
-		admin.DELETE("/html/quotes/:id", handlers.HtmxQuotesDelete)
+		admin.GET("/html/quotes", h.HtmxQuotesTable)
+		admin.POST("/html/quotes", h.HtmxQuotesSave)
+		admin.GET("/html/quotes/:id/edit", h.HtmxQuotesEditForm)
+		admin.DELETE("/html/quotes/:id", h.HtmxQuotesDelete)
 
-		admin.GET("/html/teams", handlers.HtmxTeamsTable)
-		admin.POST("/html/teams", handlers.HtmxTeamsSave)
-		admin.GET("/html/teams/:id/edit", handlers.HtmxTeamsEditForm)
-		admin.DELETE("/html/teams/:id", handlers.HtmxTeamsDelete)
+		admin.GET("/html/teams", h.HtmxTeamsTable)
+		admin.POST("/html/teams", h.HtmxTeamsSave)
+		admin.GET("/html/teams/:id/edit", h.HtmxTeamsEditForm)
+		admin.DELETE("/html/teams/:id", h.HtmxTeamsDelete)
 
-		admin.GET("/html/seasons", handlers.HtmxSeasonsTable)
-		admin.GET("/html/seasons/new", handlers.HtmxSeasonsNewForm)
-		admin.POST("/html/seasons", handlers.HtmxSeasonsCreate)
-		admin.POST("/html/seasons/:id/archive", handlers.HtmxSeasonsArchive)
-		admin.DELETE("/html/seasons/:id", handlers.HtmxSeasonsDelete)
+		admin.GET("/html/seasons", h.HtmxSeasonsTable)
+		admin.GET("/html/seasons/new", h.HtmxSeasonsNewForm)
+		admin.POST("/html/seasons", h.HtmxSeasonsCreate)
+		admin.POST("/html/seasons/:id/archive", h.HtmxSeasonsArchive)
+		admin.DELETE("/html/seasons/:id", h.HtmxSeasonsDelete)
 	}
 
-	r.GET("/api/uploads", handlers.GetUploads)
-	r.GET("/api/race-info", handlers.GetRaceInfo)
-	r.GET("/api/tracks", handlers.GetTracks)
-	r.GET("/api/race-history", handlers.GetRaceHistory)
-	r.GET("/api/racer-stats", handlers.GetRacerStats)
-	r.GET("/api/oneoff-races", handlers.GetOneOffRaces)
-	r.GET("/api/track-stats", handlers.GetTrackStats)
-	r.GET("/api/quotes", handlers.GetQuotes)
-	r.GET("/api/quote/random", handlers.GetRandomQuote)
-	r.GET("/api/stats/head-to-head", handlers.GetHeadToHead)
-	r.GET("/api/stats/points-progression", handlers.GetPointsProgression)
-	r.GET("/api/stats/streaks", handlers.GetStreaks)
-	r.GET("/api/stats/elo", handlers.GetELORatings)
-	r.GET("/api/stats/export", handlers.ExportStatsCSV)
-	r.GET("/api/stats/track-performance", handlers.GetTrackPerformance)
-	r.GET("/api/stats/qualifying-delta", handlers.GetQualifyingRaceDelta)
-	r.GET("/api/stats/consistency", handlers.GetConsistencyRatings)
-	r.GET("/api/stats/incidents", handlers.GetRaceIncidentsReport)
-	r.GET("/api/stats/pace-heatmap", handlers.GetPaceHeatmap)
-	r.GET("/api/race-report", handlers.GetRaceReport)
-	r.POST("/api/flags", handlers.HandleFlag)
-	r.POST("/api/rounds", handlers.TakeRoundSnapshot)
-	r.GET("/api/rounds", handlers.GetRoundSnapshots)
-	r.DELETE("/api/rounds", handlers.DeleteRoundSnapshot)
-	r.GET("/api/seasons", handlers.GetSeasons)
+	r.GET("/api/uploads", h.GetUploads)
+	r.GET("/api/race-info", h.GetRaceInfo)
+	r.GET("/api/tracks", h.GetTracks)
+	r.GET("/api/race-history", h.GetRaceHistory)
+	r.GET("/api/racer-stats", h.GetRacerStats)
+	r.GET("/api/oneoff-races", h.GetOneOffRaces)
+	r.GET("/api/track-stats", h.GetTrackStats)
+	r.GET("/api/quotes", h.GetQuotes)
+	r.GET("/api/quote/random", h.GetRandomQuote)
+	r.GET("/api/stats/head-to-head", h.GetHeadToHead)
+	r.GET("/api/stats/points-progression", h.GetPointsProgression)
+	r.GET("/api/stats/streaks", h.GetStreaks)
+	r.GET("/api/stats/elo", h.GetELORatings)
+	r.GET("/api/stats/export", h.ExportStatsCSV)
+	r.GET("/api/stats/track-performance", h.GetTrackPerformance)
+	r.GET("/api/stats/qualifying-delta", h.GetQualifyingRaceDelta)
+	r.GET("/api/stats/consistency", h.GetConsistencyRatings)
+	r.GET("/api/stats/incidents", h.GetRaceIncidentsReport)
+	r.GET("/api/stats/pace-heatmap", h.GetPaceHeatmap)
+	r.GET("/api/race-report", h.GetRaceReport)
+	r.POST("/api/flags", h.HandleFlag)
+	r.POST("/api/rounds", h.TakeRoundSnapshot)
+	r.GET("/api/rounds", h.GetRoundSnapshots)
+	r.DELETE("/api/rounds", h.DeleteRoundSnapshot)
+	r.GET("/api/seasons", h.GetSeasons)
 
 	// Game Mechanics routes
-	r.GET("/api/heat-cards", handlers.GetHeatCards)
-	r.GET("/api/gear-shifts", handlers.GetGearShifts)
-	r.GET("/api/upgrade-cards", handlers.GetUpgradeCards)
-	r.GET("/api/player-upgrades", handlers.GetPlayerUpgrades)
-	r.GET("/api/legend-abilities", handlers.GetLegendAbilities)
-	r.GET("/api/racer-legend-abilities", handlers.GetRacerLegendAbilities)
-	r.GET("/api/available-upgrades", handlers.GetAvailableUpgradesForRacer)
+	r.GET("/api/heat-cards", h.GetHeatCards)
+	r.GET("/api/gear-shifts", h.GetGearShifts)
+	r.GET("/api/upgrade-cards", h.GetUpgradeCards)
+	r.GET("/api/player-upgrades", h.GetPlayerUpgrades)
+	r.GET("/api/legend-abilities", h.GetLegendAbilities)
+	r.GET("/api/racer-legend-abilities", h.GetRacerLegendAbilities)
+	r.GET("/api/available-upgrades", h.GetAvailableUpgradesForRacer)
 
 	// Multi-User routes
-	r.POST("/api/player/login", handlers.PlayerLogin)
-	r.POST("/api/player/logout", handlers.PlayerLogout)
-	r.GET("/api/player/validate", handlers.ValidatePlayerToken)
-	r.GET("/api/player/status", handlers.PlayerGetStatus)
-	r.POST("/api/player/gear", handlers.PlayerReportGear)
-	r.POST("/api/player/heat", handlers.PlayerReportHeat)
-	r.POST("/api/player/turbo", handlers.PlayerReportTurbo)
-	r.GET("/api/spectator/state", handlers.GetSpectatorState)
+	r.POST("/api/player/login", h.PlayerLogin)
+	r.POST("/api/player/logout", h.PlayerLogout)
+	r.GET("/api/player/validate", h.ValidatePlayerToken)
+	r.GET("/api/player/status", h.PlayerGetStatus)
+	r.POST("/api/player/gear", h.PlayerReportGear)
+	r.POST("/api/player/heat", h.PlayerReportHeat)
+	r.POST("/api/player/turbo", h.PlayerReportTurbo)
+	r.GET("/api/spectator/state", h.GetSpectatorState)
 
 	// Race Enhancement routes
-	r.GET("/api/weather", handlers.GetWeather)
-	r.GET("/api/turbo-logs", handlers.GetTurboLogs)
-	r.GET("/api/lap-records", handlers.GetLapRecords)
-	r.POST("/api/lap-records", handlers.RecordLap)
-	r.POST("/api/lap-records/batch", handlers.RecordLapBatch)
-	r.GET("/api/sectors", handlers.GetSectors)
-	r.GET("/api/racer-sectors", handlers.GetRacerSectors)
-	r.POST("/api/racer-sectors", handlers.RecordRacerSector)
-	r.GET("/api/race-events", handlers.GetRaceEvents)
-	r.POST("/api/race-events", handlers.AddRaceEvent)
-	r.GET("/api/ai-difficulty", handlers.GetAIDifficulty)
-	r.POST("/api/sound", handlers.PlaySound)
-	r.GET("/api/race-radio", handlers.GetRaceRadio)
-	r.POST("/api/race-radio", handlers.AddRaceRadio)
+	r.GET("/api/weather", h.GetWeather)
+	r.GET("/api/turbo-logs", h.GetTurboLogs)
+	r.GET("/api/lap-records", h.GetLapRecords)
+	r.POST("/api/lap-records", h.RecordLap)
+	r.POST("/api/lap-records/batch", h.RecordLapBatch)
+	r.GET("/api/sectors", h.GetSectors)
+	r.GET("/api/racer-sectors", h.GetRacerSectors)
+	r.POST("/api/racer-sectors", h.RecordRacerSector)
+	r.GET("/api/race-events", h.GetRaceEvents)
+	r.POST("/api/race-events", h.AddRaceEvent)
+	r.GET("/api/ai-difficulty", h.GetAIDifficulty)
+	r.POST("/api/sound", h.PlaySound)
+	r.GET("/api/race-radio", h.GetRaceRadio)
+	r.POST("/api/race-radio", h.AddRaceRadio)
 
 	// i18n
-	r.GET("/api/translations", handlers.GetTranslations)
-	r.POST("/api/language", handlers.SetLanguage)
+	r.GET("/api/translations", h.GetTranslations)
+	r.POST("/api/language", h.SetLanguage)
 
 	// Driver Share (public, token-based)
-	r.GET("/api/shared/driver-stats", handlers.GetDriverStatsByToken)
-	r.GET("/api/teams", handlers.GetTeams)
-	r.GET("/api/teams/standings", handlers.GetConstructorStandings)
+	r.GET("/api/shared/driver-stats", h.GetDriverStatsByToken)
+	r.GET("/api/teams", h.GetTeams)
+	r.GET("/api/teams/standings", h.GetConstructorStandings)
 
 	r.GET("/api/version", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"version": app.CurrentVersion})
+		c.JSON(http.StatusOK, gin.H{"version": server.CurrentVersion})
 	})
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	r.GET("/api/admin/backup", middleware.CSRFMiddleware(), middleware.AuthMiddleware(), handlers.TriggerManualBackup)
+	r.GET("/api/admin/backup", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.TriggerManualBackup)
 
 	r.GET("/api-docs", func(c *gin.Context) {
-		c.File(filepath.Join(app.BasePath, "static/swagger.json"))
+		c.File(filepath.Join(server.BasePath, "static/swagger.json"))
 	})
 
 	r.GET("/docs", func(c *gin.Context) {
@@ -400,20 +407,21 @@ func main() {
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerHandler))
 
-	r.Static("/media", app.MediaPath)
-	r.Static("/static", filepath.Join(app.BasePath, "static"))
-	r.StaticFile("/sw.js", filepath.Join(app.BasePath, "static/sw.js"))
+	r.Static("/media", server.MediaPath)
+	r.Static("/static", filepath.Join(server.BasePath, "static"))
+	r.StaticFile("/sw.js", filepath.Join(server.BasePath, "static/sw.js"))
 
 	pages := r.Group("")
-	pages.Use(middleware.UmamiMiddleware(), handlers.I18nMiddleware())
+	pages.Use(middleware.UmamiMiddleware(server))
+	pages.Use(h.I18nMiddleware())
 	{
 		pages.GET("/admin.html", func(c *gin.Context) {
 			var validSession string
 			for _, cookie := range c.Request.Cookies() {
 				if cookie.Name == "session" {
-					app.SessionStoreMu.RLock()
-					_, ok := app.SessionStore[cookie.Value]
-					app.SessionStoreMu.RUnlock()
+					server.SessionStoreMu.RLock()
+					_, ok := server.SessionStore[cookie.Value]
+					server.SessionStoreMu.RUnlock()
 					if ok {
 						validSession = cookie.Value
 						break
@@ -425,46 +433,46 @@ func main() {
 				c.Redirect(http.StatusFound, "/login.html")
 				return
 			}
-			c.File(filepath.Join(app.BasePath, "static/admin.html"))
+			c.File(filepath.Join(server.BasePath, "static/admin.html"))
 		})
 
 		r.GET("/login.html", func(c *gin.Context) {
 			cookie, err := c.Request.Cookie("session")
 			if err == nil {
-				app.SessionStoreMu.RLock()
-				info, ok := app.SessionStore[cookie.Value]
-				app.SessionStoreMu.RUnlock()
+				server.SessionStoreMu.RLock()
+				info, ok := server.SessionStore[cookie.Value]
+				server.SessionStoreMu.RUnlock()
 				if ok && time.Now().Unix() <= info.Expiry {
 					c.Redirect(http.StatusFound, "/admin.html")
 					return
 				}
 			}
 			var count int
-			app.DB.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
+			server.DB.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
 			if count == 0 {
 				c.Redirect(http.StatusFound, "/setup")
 				return
 			}
-			c.File(filepath.Join(app.BasePath, "static/login.html"))
+			c.File(filepath.Join(server.BasePath, "static/login.html"))
 		})
 
 		r.GET("/setup", func(c *gin.Context) {
 			var count int
-			app.DB.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
+			server.DB.QueryRow("SELECT COUNT(*) FROM admin_users").Scan(&count)
 			if count > 0 {
 				c.Redirect(http.StatusFound, "/login.html")
 				return
 			}
-			c.File(filepath.Join(app.BasePath, "static/setup.html"))
+			c.File(filepath.Join(server.BasePath, "static/setup.html"))
 		})
 
 		pages.GET("/controller.html", func(c *gin.Context) {
 			var validSession string
 			for _, cookie := range c.Request.Cookies() {
 				if cookie.Name == "session" {
-					app.SessionStoreMu.RLock()
-					_, ok := app.SessionStore[cookie.Value]
-					app.SessionStoreMu.RUnlock()
+					server.SessionStoreMu.RLock()
+					_, ok := server.SessionStore[cookie.Value]
+					server.SessionStoreMu.RUnlock()
 					if ok {
 						validSession = cookie.Value
 						break
@@ -475,51 +483,51 @@ func main() {
 				c.Redirect(http.StatusFound, "/login.html")
 				return
 			}
-			c.File(filepath.Join(app.BasePath, "static/controller.html"))
+			c.File(filepath.Join(server.BasePath, "static/controller.html"))
 		})
 
 		pages.GET("/stats.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/stats.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/stats.html"), server)
 		})
 
 		pages.GET("/seasons.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/seasons.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/seasons.html"), server)
 		})
 
 		pages.GET("/trophies.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/trophies.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/trophies.html"), server)
 		})
 
 		pages.GET("/tv.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/tv.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/tv.html"), server)
 		})
 
 		pages.GET("/pitboard.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/pitboard.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/pitboard.html"), server)
 		})
 
 		pages.GET("/replay.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/replay.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/replay.html"), server)
 		})
 
 		pages.GET("/player.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/player.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/player.html"), server)
 		})
 
 		pages.GET("/spectator.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/spectator.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/spectator.html"), server)
 		})
 
 		pages.GET("/driver.html", func(c *gin.Context) {
-			c.File(filepath.Join(app.BasePath, "static/driver.html"))
+			c.File(filepath.Join(server.BasePath, "static/driver.html"))
 		})
 
 		pages.GET("/race-report.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/race-report.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/race-report.html"), server)
 		})
 
 		pages.GET("/", func(c *gin.Context) {
-			servePage(c, filepath.Join(app.BasePath, "static/index.html"))
+			servePage(c, filepath.Join(server.BasePath, "static/index.html"), server)
 		})
 	}
 

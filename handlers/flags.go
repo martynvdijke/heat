@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/models"
 )
 
@@ -18,7 +17,7 @@ import (
 // @Success 200
 // @Failure 400 {object} map[string]string
 // @Router /api/flags [post]
-func HandleFlag(c *gin.Context) {
+func (h *Handler) HandleFlag(c *gin.Context) {
 	var cmd models.FlagCommand
 	if err := c.ShouldBindJSON(&cmd); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -29,7 +28,7 @@ func HandleFlag(c *gin.Context) {
 		return
 	}
 	select {
-	case app.FlagBroadcast <- cmd:
+	case h.S.FlagBroadcast <- cmd:
 	default:
 	}
 	c.Status(http.StatusOK)

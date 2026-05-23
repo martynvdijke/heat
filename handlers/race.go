@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/db"
 	"heat/models"
 )
@@ -19,9 +18,9 @@ import (
 // @Produce json
 // @Success 200 {object} models.RaceInfo
 // @Router /api/race-info [get]
-func GetRaceInfo(c *gin.Context) {
+func (h *Handler) GetRaceInfo(c *gin.Context) {
 	var ri models.RaceInfo
-	err := app.DB.QueryRow("SELECT country, track, COALESCE(track_id, 'monza'), laps FROM race_info ORDER BY id DESC LIMIT 1").
+	err := h.S.DB.QueryRow("SELECT country, track, COALESCE(track_id, 'monza'), laps FROM race_info ORDER BY id DESC LIMIT 1").
 		Scan(&ri.Country, &ri.Track, &ri.TrackID, &ri.Laps)
 	if err != nil {
 		ri = models.RaceInfo{Country: "Italy", Track: "Monza", TrackID: "monza", Laps: 53}
@@ -39,7 +38,7 @@ func GetRaceInfo(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/race-info [post]
-func UpdateRaceInfo(c *gin.Context) {
+func (h *Handler) UpdateRaceInfo(c *gin.Context) {
 	var ri models.RaceInfo
 	if err := c.ShouldBindJSON(&ri); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -50,7 +49,7 @@ func UpdateRaceInfo(c *gin.Context) {
 		ri.TrackID = "monza"
 	}
 
-	_, err := app.DB.Exec("INSERT INTO race_info (country, track, track_id, laps) VALUES (?, ?, ?, ?)",
+	_, err := h.S.DB.Exec("INSERT INTO race_info (country, track, track_id, laps) VALUES (?, ?, ?, ?)",
 		ri.Country, ri.Track, ri.TrackID, ri.Laps)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -69,7 +68,7 @@ func UpdateRaceInfo(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/race-history [post]
-func SaveRaceToHistory(c *gin.Context) {
+func (h *Handler) SaveRaceToHistory(c *gin.Context) {
 	var input struct {
 		Name      string `json:"name"`
 		RaceDate  string `json:"race_date"`
@@ -105,7 +104,7 @@ func SaveRaceToHistory(c *gin.Context) {
 
 	isOneOff := input.RaceType == "oneoff"
 
-	result, err := app.DB.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps, race_type) VALUES (?, ?, ?, ?, ?, ?, ?)",
+	result, err := h.S.DB.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps, race_type) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		input.Name, input.RaceDate, input.Country, input.Track, input.TrackID, input.TotalLaps, input.RaceType)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -114,11 +113,11 @@ func SaveRaceToHistory(c *gin.Context) {
 	raceID, _ := result.LastInsertId()
 
 	for _, res := range input.Results {
-		app.DB.Exec("INSERT INTO race_results (race_id, racer_id, racer_name, position, points, fastest_lap) VALUES (?, ?, ?, ?, ?, ?)",
+		h.S.DB.Exec("INSERT INTO race_results (race_id, racer_id, racer_name, position, points, fastest_lap) VALUES (?, ?, ?, ?, ?, ?)",
 			raceID, res.RacerID, res.RacerName, res.Position, res.Points, db.BoolToInt(res.FastestLap))
 
 		if !isOneOff {
-			app.DB.Exec(`INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)
+			h.S.DB.Exec(`INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)
 					 ON CONFLICT(racer_id) DO UPDATE SET
 					 races = races + 1,
 					 wins = wins + excluded.wins,
@@ -152,9 +151,9 @@ func SaveRaceToHistory(c *gin.Context) {
 				third = res.RacerName
 			}
 		}
-		NotifyRaceWinner(winner, input.Track)
+		h.NotifyRaceWinner(winner, input.Track)
 		if second != "" && third != "" {
-			NotifyRacePodium(winner, second, third, input.Track)
+			h.NotifyRacePodium(winner, second, third, input.Track)
 		}
 	}
 
@@ -168,7 +167,7 @@ func SaveRaceToHistory(c *gin.Context) {
 			FastestLap: res.FastestLap,
 		}
 	}
-	go SendRaceEmail(input.Name, input.Country, input.Track, input.TotalLaps, results)
+	go h.SendRaceEmail(input.Name, input.Country, input.Track, input.TotalLaps, results)
 
 	c.JSON(http.StatusOK, gin.H{"id": raceID})
 }
@@ -181,7 +180,7 @@ func SaveRaceToHistory(c *gin.Context) {
 // @Param type query string false "Race type (season, oneoff)"
 // @Success 200 {array} models.RaceHistory
 // @Router /api/race-history [get]
-func GetRaceHistory(c *gin.Context) {
+func (h *Handler) GetRaceHistory(c *gin.Context) {
 	raceID := c.Query("id")
 	raceType := c.Query("type")
 
@@ -206,7 +205,7 @@ func GetRaceHistory(c *gin.Context) {
 		}
 	}
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -256,13 +255,13 @@ func GetRaceHistory(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/race-history [delete]
-func DeleteRaceHistory(c *gin.Context) {
+func (h *Handler) DeleteRaceHistory(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID required"})
 		return
 	}
-	app.DB.Exec("DELETE FROM race_results WHERE race_id = ?", id)
-	app.DB.Exec("DELETE FROM race_history WHERE id = ?", id)
+	h.S.DB.Exec("DELETE FROM race_results WHERE race_id = ?", id)
+	h.S.DB.Exec("DELETE FROM race_history WHERE id = ?", id)
 	c.Status(http.StatusOK)
 }

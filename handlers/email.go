@@ -13,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/db"
 	"heat/models"
 )
@@ -25,8 +24,8 @@ import (
 // @Success 200 {array} models.RacerEmail
 // @Security cookieAuth
 // @Router /api/racer-emails [get]
-func GetRacerEmails(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, racer_id, COALESCE(email, '') FROM racer_emails ORDER BY racer_id")
+func (h *Handler) GetRacerEmails(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT id, racer_id, COALESCE(email, '') FROM racer_emails ORDER BY racer_id")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -52,13 +51,13 @@ func GetRacerEmails(c *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/racer-emails [post]
-func SaveRacerEmail(c *gin.Context) {
+func (h *Handler) SaveRacerEmail(c *gin.Context) {
 	var e models.RacerEmail
 	if err := c.ShouldBindJSON(&e); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	_, err := app.DB.Exec("INSERT OR REPLACE INTO racer_emails (id, racer_id, email) VALUES ((SELECT id FROM racer_emails WHERE racer_id = ?), ?, ?)",
+	_, err := h.S.DB.Exec("INSERT OR REPLACE INTO racer_emails (id, racer_id, email) VALUES ((SELECT id FROM racer_emails WHERE racer_id = ?), ?, ?)",
 		e.RacerID, e.RacerID, e.Email)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -76,7 +75,7 @@ func SaveRacerEmail(c *gin.Context) {
 // @Failure 404 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/send-race-email [post]
-func SendRaceEmailManual(c *gin.Context) {
+func (h *Handler) SendRaceEmailManual(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	raceID := 0
 	if raceIDStr != "" {
@@ -89,14 +88,14 @@ func SendRaceEmailManual(c *gin.Context) {
 
 	var raceName, raceDate, country, track, trackID, raceType string
 	var totalLaps int
-	err := app.DB.QueryRow("SELECT COALESCE(name,''), race_date, country, track, track_id, total_laps, COALESCE(race_type,'season') FROM race_history WHERE id = ?", raceID).
+	err := h.S.DB.QueryRow("SELECT COALESCE(name,''), race_date, country, track, track_id, total_laps, COALESCE(race_type,'season') FROM race_history WHERE id = ?", raceID).
 		Scan(&raceName, &raceDate, &country, &track, &trackID, &totalLaps, &raceType)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Race not found"})
 		return
 	}
 
-	rRows, err := app.DB.Query("SELECT racer_id, racer_name, position, points, fastest_lap FROM race_results WHERE race_id = ? ORDER BY position", raceID)
+	rRows, err := h.S.DB.Query("SELECT racer_id, racer_name, position, points, fastest_lap FROM race_results WHERE race_id = ? ORDER BY position", raceID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -114,7 +113,7 @@ func SendRaceEmailManual(c *gin.Context) {
 		results = append(results, res)
 	}
 
-	SendRaceEmail(raceName, country, track, totalLaps, results)
+	h.SendRaceEmail(raceName, country, track, totalLaps, results)
 	c.JSON(http.StatusOK, gin.H{"status": "email sending initiated"})
 }
 
@@ -158,10 +157,10 @@ func buildRaceEmailContent(raceName, country, track string, totalLaps int, resul
 	return b.String()
 }
 
-func SendRaceEmail(raceName, country, track string, totalLaps int, results []models.RaceResult) {
+func (h *Handler) SendRaceEmail(raceName, country, track string, totalLaps int, results []models.RaceResult) {
 	var s models.EmailSettings
 	var enabled int
-	err := app.DB.QueryRow("SELECT smtp_host, COALESCE(smtp_port, 587), username, password, from_addr, COALESCE(enabled, 0) FROM email_settings WHERE id = 1").
+	err := h.S.DB.QueryRow("SELECT smtp_host, COALESCE(smtp_port, 587), username, password, from_addr, COALESCE(enabled, 0) FROM email_settings WHERE id = 1").
 		Scan(&s.SMTPHost, &s.SMTPPort, &s.Username, &s.Password, &s.FromAddr, &enabled)
 	if err != nil || enabled == 0 || s.SMTPHost == "" || s.FromAddr == "" {
 		return
@@ -169,7 +168,7 @@ func SendRaceEmail(raceName, country, track string, totalLaps int, results []mod
 
 	content := buildRaceEmailContent(raceName, country, track, totalLaps, results)
 
-	rows, err := app.DB.Query(`SELECT re.email, r.name FROM racer_emails re JOIN racers r ON r.id = re.racer_id WHERE re.email != ''`)
+	rows, err := h.S.DB.Query(`SELECT re.email, r.name FROM racer_emails re JOIN racers r ON r.id = re.racer_id WHERE re.email != ''`)
 	if err != nil {
 		return
 	}
@@ -203,9 +202,9 @@ func sendSMTP(s models.EmailSettings, to, content string) error {
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/test-notification [post]
-func TestNotification(c *gin.Context) {
+func (h *Handler) TestNotification(c *gin.Context) {
 	var s models.NotificationSettings
-	app.DB.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, '') FROM notification_settings WHERE id = 1").
+	h.S.DB.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, '') FROM notification_settings WHERE id = 1").
 		Scan(&s.GotiFyURL, &s.GotiFyToken)
 
 	if s.GotiFyURL == "" {
@@ -213,13 +212,13 @@ func TestNotification(c *gin.Context) {
 		return
 	}
 
-	NotifyRaceWinner("Test Driver", "Test Track")
+	h.NotifyRaceWinner("Test Driver", "Test Track")
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func NotifyRaceWinner(winnerName, trackName string) {
+func (h *Handler) NotifyRaceWinner(winnerName, trackName string) {
 	var s models.NotificationSettings
-	app.DB.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), notify_winner FROM notification_settings WHERE id = 1").
+	h.S.DB.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), notify_winner FROM notification_settings WHERE id = 1").
 		Scan(&s.GotiFyURL, &s.GotiFyToken, &s.NotifyWinner)
 
 	if s.NotifyWinner && s.GotiFyURL != "" {
@@ -227,9 +226,9 @@ func NotifyRaceWinner(winnerName, trackName string) {
 	}
 }
 
-func NotifyRacePodium(first, second, third, trackName string) {
+func (h *Handler) NotifyRacePodium(first, second, third, trackName string) {
 	var s models.NotificationSettings
-	app.DB.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), notify_podium FROM notification_settings WHERE id = 1").
+	h.S.DB.QueryRow("SELECT COALESCE(gotify_url, ''), COALESCE(gotify_token, ''), notify_podium FROM notification_settings WHERE id = 1").
 		Scan(&s.GotiFyURL, &s.GotiFyToken, &s.NotifyPodium)
 
 	if s.NotifyPodium && s.GotiFyURL != "" {

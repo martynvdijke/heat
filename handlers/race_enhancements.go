@@ -6,18 +6,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/models"
-	"heat/ws"
 )
 
 // Weather
 
-func GetWeather(c *gin.Context) {
+func (h *Handler) GetWeather(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	raceID, _ := strconv.Atoi(raceIDStr)
 
-	rows, err := app.DB.Query("SELECT id, race_id, condition, lap_start, lap_end, grip_modifier FROM weather_conditions WHERE race_id = ? ORDER BY lap_start", raceID)
+	rows, err := h.S.DB.Query("SELECT id, race_id, condition, lap_start, lap_end, grip_modifier FROM weather_conditions WHERE race_id = ? ORDER BY lap_start", raceID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -35,21 +33,21 @@ func GetWeather(c *gin.Context) {
 	c.JSON(http.StatusOK, weather)
 }
 
-func SetWeather(c *gin.Context) {
+func (h *Handler) SetWeather(c *gin.Context) {
 	var w models.WeatherCondition
 	if err := c.ShouldBindJSON(&w); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	if w.ID == 0 {
-		_, err := app.DB.Exec("INSERT INTO weather_conditions (race_id, condition, lap_start, lap_end, grip_modifier) VALUES (?, ?, ?, ?, ?)",
+		_, err := h.S.DB.Exec("INSERT INTO weather_conditions (race_id, condition, lap_start, lap_end, grip_modifier) VALUES (?, ?, ?, ?, ?)",
 			w.RaceID, w.Condition, w.LapStart, w.LapEnd, w.GripModifier)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
-		_, err := app.DB.Exec("UPDATE weather_conditions SET condition=?, lap_start=?, lap_end=?, grip_modifier=? WHERE id=?",
+		_, err := h.S.DB.Exec("UPDATE weather_conditions SET condition=?, lap_start=?, lap_end=?, grip_modifier=? WHERE id=?",
 			w.Condition, w.LapStart, w.LapEnd, w.GripModifier, w.ID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -57,26 +55,26 @@ func SetWeather(c *gin.Context) {
 		}
 	}
 	select {
-	case app.WeatherBroadcast <- w:
+	case h.S.WeatherBroadcast <- w:
 	default:
 	}
 	c.Status(http.StatusOK)
 }
 
-func DeleteWeather(c *gin.Context) {
+func (h *Handler) DeleteWeather(c *gin.Context) {
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid weather ID"})
 		return
 	}
-	app.DB.Exec("DELETE FROM weather_conditions WHERE id = ?", id)
+	h.S.DB.Exec("DELETE FROM weather_conditions WHERE id = ?", id)
 	c.Status(http.StatusOK)
 }
 
 // Turbo Logs
 
-func GetTurboLogs(c *gin.Context) {
+func (h *Handler) GetTurboLogs(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 	raceIDStr := c.Query("race_id")
 	racerID, _ := strconv.Atoi(racerIDStr)
@@ -94,7 +92,7 @@ func GetTurboLogs(c *gin.Context) {
 	}
 	query += " ORDER BY racer_id, lap"
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -112,20 +110,20 @@ func GetTurboLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, logs)
 }
 
-func AddTurboLog(c *gin.Context) {
+func (h *Handler) AddTurboLog(c *gin.Context) {
 	var tl models.TurboLog
 	if err := c.ShouldBindJSON(&tl); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	_, err := app.DB.Exec("INSERT INTO turbo_logs (racer_id, race_id, lap, times_used) VALUES (?, ?, ?, ?)",
+	_, err := h.S.DB.Exec("INSERT INTO turbo_logs (racer_id, race_id, lap, times_used) VALUES (?, ?, ?, ?)",
 		tl.RacerID, tl.RaceID, tl.Lap, tl.TimesUsed)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	select {
-	case app.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
+	case h.S.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
 		Type: "turbo", RacerID: tl.RacerID, Action: "used",
 		Data: map[string]int{"lap": tl.Lap, "times": tl.TimesUsed},
 	}:
@@ -134,20 +132,20 @@ func AddTurboLog(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func DeleteTurboLog(c *gin.Context) {
+func (h *Handler) DeleteTurboLog(c *gin.Context) {
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid turbo log ID"})
 		return
 	}
-	app.DB.Exec("DELETE FROM turbo_logs WHERE id = ?", id)
+	h.S.DB.Exec("DELETE FROM turbo_logs WHERE id = ?", id)
 	c.Status(http.StatusOK)
 }
 
 // Lap History
 
-func GetLapRecords(c *gin.Context) {
+func (h *Handler) GetLapRecords(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	racerIDStr := c.Query("racer_id")
 	raceID, _ := strconv.Atoi(raceIDStr)
@@ -165,7 +163,7 @@ func GetLapRecords(c *gin.Context) {
 	}
 	query += " ORDER BY race_id, lap_number, position"
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -183,25 +181,25 @@ func GetLapRecords(c *gin.Context) {
 	c.JSON(http.StatusOK, records)
 }
 
-func RecordLap(c *gin.Context) {
+func (h *Handler) RecordLap(c *gin.Context) {
 	var lr models.LapRecord
 	if err := c.ShouldBindJSON(&lr); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	_, err := app.DB.Exec("INSERT INTO lap_records (race_id, racer_id, lap_number, position, gear_used, heat_generated, turbo_used) VALUES (?, ?, ?, ?, ?, ?, ?)",
+	_, err := h.S.DB.Exec("INSERT INTO lap_records (race_id, racer_id, lap_number, position, gear_used, heat_generated, turbo_used) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		lr.RaceID, lr.RacerID, lr.LapNumber, lr.Position, lr.GearUsed, lr.HeatGenerated, lr.TurboUsed)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	// Also update racer position
-	app.DB.Exec("UPDATE racers SET position = ? WHERE id = ?", lr.Position, lr.RacerID)
-	ws.BroadcastRacers()
+	h.S.DB.Exec("UPDATE racers SET position = ? WHERE id = ?", lr.Position, lr.RacerID)
+	h.S.BroadcastRacers()
 	c.Status(http.StatusOK)
 }
 
-func RecordLapBatch(c *gin.Context) {
+func (h *Handler) RecordLapBatch(c *gin.Context) {
 	var req struct {
 		RaceID  int                `json:"race_id"`
 		Lap     int                `json:"lap"`
@@ -221,15 +219,15 @@ func RecordLapBatch(c *gin.Context) {
 	for _, lr := range req.Records {
 		lr.RaceID = req.RaceID
 		lr.LapNumber = req.Lap
-		_, err := app.DB.Exec("INSERT INTO lap_records (race_id, racer_id, lap_number, position, gear_used, heat_generated, turbo_used) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		_, err := h.S.DB.Exec("INSERT INTO lap_records (race_id, racer_id, lap_number, position, gear_used, heat_generated, turbo_used) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			lr.RaceID, lr.RacerID, lr.LapNumber, lr.Position, lr.GearUsed, lr.HeatGenerated, lr.TurboUsed)
 		if err != nil {
 			continue
 		}
-		app.DB.Exec("UPDATE racers SET position = ? WHERE id = ?", lr.Position, lr.RacerID)
+		h.S.DB.Exec("UPDATE racers SET position = ? WHERE id = ?", lr.Position, lr.RacerID)
 
 		var name, color string
-		app.DB.QueryRow("SELECT name, car_color FROM racers WHERE id = ?", lr.RacerID).Scan(&name, &color)
+		h.S.DB.QueryRow("SELECT name, car_color FROM racers WHERE id = ?", lr.RacerID).Scan(&name, &color)
 		frame.Positions = append(frame.Positions, models.RacerPosition{
 			RacerID: lr.RacerID, RacerName: name, Position: lr.Position,
 			CarColor: color, Lap: req.Lap,
@@ -237,27 +235,27 @@ func RecordLapBatch(c *gin.Context) {
 	}
 
 	select {
-	case app.LapReplayBroadcast <- frame:
+	case h.S.LapReplayBroadcast <- frame:
 	default:
 	}
-	ws.BroadcastRacers()
+	h.S.BroadcastRacers()
 	c.Status(http.StatusOK)
 }
 
-func DeleteLapRecords(c *gin.Context) {
+func (h *Handler) DeleteLapRecords(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	raceID, _ := strconv.Atoi(raceIDStr)
 	if raceID > 0 {
-		app.DB.Exec("DELETE FROM lap_records WHERE race_id = ?", raceID)
+		h.S.DB.Exec("DELETE FROM lap_records WHERE race_id = ?", raceID)
 	}
 	c.Status(http.StatusOK)
 }
 
 // Sectors
 
-func GetSectors(c *gin.Context) {
+func (h *Handler) GetSectors(c *gin.Context) {
 	trackID := c.Query("track_id")
-	rows, err := app.DB.Query("SELECT id, name, track_id, \"order\" FROM sectors WHERE track_id = ? ORDER BY \"order\"", trackID)
+	rows, err := h.S.DB.Query("SELECT id, name, track_id, \"order\" FROM sectors WHERE track_id = ? ORDER BY \"order\"", trackID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -275,7 +273,7 @@ func GetSectors(c *gin.Context) {
 	c.JSON(http.StatusOK, sectors)
 }
 
-func GetRacerSectors(c *gin.Context) {
+func (h *Handler) GetRacerSectors(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	racerIDStr := c.Query("racer_id")
 	raceID, _ := strconv.Atoi(raceIDStr)
@@ -296,7 +294,7 @@ func GetRacerSectors(c *gin.Context) {
 	}
 	query += " ORDER BY rs.racer_id, rs.lap, s.\"order\""
 
-	rows, err := app.DB.Query(query, args...)
+	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -320,13 +318,13 @@ func GetRacerSectors(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-func RecordRacerSector(c *gin.Context) {
+func (h *Handler) RecordRacerSector(c *gin.Context) {
 	var rs models.RacerSector
 	if err := c.ShouldBindJSON(&rs); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	_, err := app.DB.Exec("INSERT INTO racer_sectors (race_id, racer_id, sector_id, lap, entry_time, exit_time) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))",
+	_, err := h.S.DB.Exec("INSERT INTO racer_sectors (race_id, racer_id, sector_id, lap, entry_time, exit_time) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))",
 		rs.RaceID, rs.RacerID, rs.SectorID, rs.Lap)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -337,11 +335,11 @@ func RecordRacerSector(c *gin.Context) {
 
 // Race Events
 
-func GetRaceEvents(c *gin.Context) {
+func (h *Handler) GetRaceEvents(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	raceID, _ := strconv.Atoi(raceIDStr)
 
-	rows, err := app.DB.Query("SELECT id, race_id, lap, event_type, racer_id, racer_id2, note, timestamp FROM race_events WHERE race_id = ? ORDER BY lap, id", raceID)
+	rows, err := h.S.DB.Query("SELECT id, race_id, lap, event_type, racer_id, racer_id2, note, timestamp FROM race_events WHERE race_id = ? ORDER BY lap, id", raceID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -359,13 +357,13 @@ func GetRaceEvents(c *gin.Context) {
 	c.JSON(http.StatusOK, events)
 }
 
-func AddRaceEvent(c *gin.Context) {
+func (h *Handler) AddRaceEvent(c *gin.Context) {
 	var e models.RaceEvent
 	if err := c.ShouldBindJSON(&e); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	_, err := app.DB.Exec("INSERT INTO race_events (race_id, lap, event_type, racer_id, racer_id2, note) VALUES (?, ?, ?, ?, ?, ?)",
+	_, err := h.S.DB.Exec("INSERT INTO race_events (race_id, lap, event_type, racer_id, racer_id2, note) VALUES (?, ?, ?, ?, ?, ?)",
 		e.RaceID, e.Lap, e.EventType, e.RacerID, e.RacerID2, e.Note)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -374,23 +372,23 @@ func AddRaceEvent(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func DeleteRaceEvent(c *gin.Context) {
+func (h *Handler) DeleteRaceEvent(c *gin.Context) {
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid event ID"})
 		return
 	}
-	app.DB.Exec("DELETE FROM race_events WHERE id = ?", id)
+	h.S.DB.Exec("DELETE FROM race_events WHERE id = ?", id)
 	c.Status(http.StatusOK)
 }
 
 // AI Difficulty Presets (stored as settings)
 
-func GetAIDifficulty(c *gin.Context) {
+func (h *Handler) GetAIDifficulty(c *gin.Context) {
 	var difficulty string
 	var aggression, errorRate, consistency int
-	err := app.DB.QueryRow("SELECT COALESCE(difficulty, 'balanced'), COALESCE(aggression, 50), COALESCE(error_rate, 30), COALESCE(consistency, 50) FROM ai_settings WHERE id = 1").Scan(&difficulty, &aggression, &errorRate, &consistency)
+	err := h.S.DB.QueryRow("SELECT COALESCE(difficulty, 'balanced'), COALESCE(aggression, 50), COALESCE(error_rate, 30), COALESCE(consistency, 50) FROM ai_settings WHERE id = 1").Scan(&difficulty, &aggression, &errorRate, &consistency)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"difficulty":  "balanced",
@@ -409,7 +407,7 @@ func GetAIDifficulty(c *gin.Context) {
 	})
 }
 
-func SetAIDifficulty(c *gin.Context) {
+func (h *Handler) SetAIDifficulty(c *gin.Context) {
 	var req struct {
 		Difficulty  string `json:"difficulty"`
 		Aggression  int    `json:"aggression"`
@@ -421,7 +419,7 @@ func SetAIDifficulty(c *gin.Context) {
 		return
 	}
 
-	_, err := app.DB.Exec(`INSERT INTO ai_settings (id, track_extract_url, api_key, enabled)
+	_, err := h.S.DB.Exec(`INSERT INTO ai_settings (id, track_extract_url, api_key, enabled)
 		VALUES (1, '', '', 0)
 		ON CONFLICT(id) DO NOTHING`)
 	if err != nil {
@@ -429,7 +427,7 @@ func SetAIDifficulty(c *gin.Context) {
 		return
 	}
 
-	_, err = app.DB.Exec(`UPDATE ai_settings SET difficulty = ?, aggression = ?, error_rate = ?, consistency = ? WHERE id = 1`,
+	_, err = h.S.DB.Exec(`UPDATE ai_settings SET difficulty = ?, aggression = ?, error_rate = ?, consistency = ? WHERE id = 1`,
 		req.Difficulty, req.Aggression, req.ErrorRate, req.Consistency)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -440,7 +438,7 @@ func SetAIDifficulty(c *gin.Context) {
 }
 
 // Sound FX
-func PlaySound(c *gin.Context) {
+func (h *Handler) PlaySound(c *gin.Context) {
 	var req struct {
 		Sound string `json:"sound"`
 	}
@@ -449,7 +447,7 @@ func PlaySound(c *gin.Context) {
 		return
 	}
 	select {
-	case app.SoundBroadcast <- models.SoundCommand{Type: "sound", Sound: req.Sound}:
+	case h.S.SoundBroadcast <- models.SoundCommand{Type: "sound", Sound: req.Sound}:
 	default:
 	}
 	c.Status(http.StatusOK)

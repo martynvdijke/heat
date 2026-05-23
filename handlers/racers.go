@@ -6,10 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/ent/racer"
 	"heat/models"
-	"heat/ws"
 )
 
 // @Summary Get all racers
@@ -18,8 +16,8 @@ import (
 // @Produce json
 // @Success 200 {array} models.Racer
 // @Router /api/racers [get]
-func GetRacers(c *gin.Context) {
-	entRacers, err := app.Ent.Racer.Query().Order(racer.ByRank()).All(c.Request.Context())
+func (h *Handler) GetRacers(c *gin.Context) {
+	entRacers, err := h.S.Ent.Racer.Query().Order(racer.ByRank()).All(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -53,7 +51,7 @@ func GetRacers(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/racers [post]
-func UpdateRacer(c *gin.Context) {
+func (h *Handler) UpdateRacer(c *gin.Context) {
 	var r models.Racer
 	if err := c.ShouldBindJSON(&r); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -61,7 +59,7 @@ func UpdateRacer(c *gin.Context) {
 	}
 
 	if r.ID == 0 {
-		err := app.Ent.Racer.Create().
+		err := h.S.Ent.Racer.Create().
 			SetName(r.Name).
 			SetProfilePicture(r.ProfilePicture).
 			SetCarColor(r.CarColor).
@@ -76,7 +74,7 @@ func UpdateRacer(c *gin.Context) {
 			return
 		}
 	} else {
-		err := app.Ent.Racer.UpdateOneID(r.ID).
+		err := h.S.Ent.Racer.UpdateOneID(r.ID).
 			SetName(r.Name).
 			SetProfilePicture(r.ProfilePicture).
 			SetCarColor(r.CarColor).
@@ -92,7 +90,7 @@ func UpdateRacer(c *gin.Context) {
 		}
 	}
 
-	ws.BroadcastRacers()
+	h.S.BroadcastRacers()
 	c.Status(http.StatusOK)
 }
 
@@ -105,7 +103,7 @@ func UpdateRacer(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/racers [delete]
-func DeleteRacer(c *gin.Context) {
+func (h *Handler) DeleteRacer(c *gin.Context) {
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
@@ -113,12 +111,12 @@ func DeleteRacer(c *gin.Context) {
 		return
 	}
 
-	err = app.Ent.Racer.DeleteOneID(id).Exec(c.Request.Context())
+	err = h.S.Ent.Racer.DeleteOneID(id).Exec(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ws.BroadcastRacers()
+	h.S.BroadcastRacers()
 	c.Status(http.StatusOK)
 }

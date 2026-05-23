@@ -17,7 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/image/draw"
 
-	"heat/app"
 	"heat/models"
 )
 
@@ -32,7 +31,7 @@ import (
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth
 // @Router /api/upload [post]
-func HandleUpload(c *gin.Context) {
+func (h *Handler) HandleUpload(c *gin.Context) {
 	file, err := c.FormFile("image")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -81,13 +80,13 @@ func HandleUpload(c *gin.Context) {
 	}
 
 	subDir := hashStr[:2]
-	dir := filepath.Join(app.MediaPath, subDir)
+	dir := filepath.Join(h.S.MediaPath, subDir)
 
 	filename := hashStr + saveExt
 	url := fmt.Sprintf("/media/%s/%s", subDir, filename)
 	var thumbnailURL string
 
-	result, err := app.DB.Exec(
+	result, err := h.S.DB.Exec(
 		"INSERT OR IGNORE INTO uploads (hash, ext, url, resized_url, thumbnail_url) VALUES (?, ?, ?, ?, ?)",
 		hashStr, ext, url, url, thumbnailURL)
 	if err != nil {
@@ -100,7 +99,7 @@ func HandleUpload(c *gin.Context) {
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
 		var existingURL string
-		if err := app.DB.QueryRow("SELECT url FROM uploads WHERE hash = ?", hashStr).Scan(&existingURL); err == nil {
+		if err := h.S.DB.QueryRow("SELECT url FROM uploads WHERE hash = ?", hashStr).Scan(&existingURL); err == nil {
 			if _, statErr := os.Stat(uploadPath); statErr == nil {
 				c.JSON(http.StatusOK, gin.H{"url": existingURL, "duplicate": true})
 				return
@@ -151,7 +150,7 @@ func HandleUpload(c *gin.Context) {
 	}
 
 	if thumbnailURL != "" {
-		app.DB.Exec("UPDATE uploads SET thumbnail_url = ? WHERE hash = ?", thumbnailURL, hashStr)
+		h.S.DB.Exec("UPDATE uploads SET thumbnail_url = ? WHERE hash = ?", thumbnailURL, hashStr)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -165,15 +164,15 @@ func HandleUpload(c *gin.Context) {
 func resizeImage(img image.Image, maxDim int) image.Image {
 	bounds := img.Bounds()
 	w := bounds.Dx()
-	h := bounds.Dy()
+	ht := bounds.Dy()
 
-	if w <= maxDim && h <= maxDim {
+	if w <= maxDim && ht <= maxDim {
 		return img
 	}
 
-	ratio := float64(maxDim) / float64(max(w, h))
+	ratio := float64(maxDim) / float64(max(w, ht))
 	newW := int(float64(w) * ratio)
-	newH := int(float64(h) * ratio)
+	newH := int(float64(ht) * ratio)
 
 	dst := image.NewRGBA(image.Rect(0, 0, newW, newH))
 	draw.CatmullRom.Scale(dst, dst.Bounds(), img, bounds, draw.Over, nil)
@@ -203,8 +202,8 @@ func saveImage(path string, img image.Image, format string) error {
 // @Produce json
 // @Success 200 {array} models.Upload
 // @Router /api/uploads [get]
-func GetUploads(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, hash, ext, url, resized_url, thumbnail_url, COALESCE(created_at, '') FROM uploads ORDER BY created_at DESC LIMIT 50")
+func (h *Handler) GetUploads(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT id, hash, ext, url, resized_url, thumbnail_url, COALESCE(created_at, '') FROM uploads ORDER BY created_at DESC LIMIT 50")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

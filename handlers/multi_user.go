@@ -9,9 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/models"
-	"heat/ws"
 )
 
 func generateToken() string {
@@ -22,7 +20,7 @@ func generateToken() string {
 
 // Player Session Management
 
-func PlayerLogin(c *gin.Context) {
+func (h *Handler) PlayerLogin(c *gin.Context) {
 	var req struct {
 		RacerID    int    `json:"racer_id"`
 		DeviceName string `json:"device_name"`
@@ -33,7 +31,7 @@ func PlayerLogin(c *gin.Context) {
 	}
 
 	var name string
-	err := app.DB.QueryRow("SELECT name FROM racers WHERE id = ?", req.RacerID).Scan(&name)
+	err := h.S.DB.QueryRow("SELECT name FROM racers WHERE id = ?", req.RacerID).Scan(&name)
 	if err == sql.ErrNoRows {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Racer not found"})
 		return
@@ -42,7 +40,7 @@ func PlayerLogin(c *gin.Context) {
 	token := generateToken()
 
 	// Upsert session
-	_, err = app.DB.Exec(`INSERT INTO player_sessions (racer_id, token, device_name, last_seen, created_at)
+	_, err = h.S.DB.Exec(`INSERT INTO player_sessions (racer_id, token, device_name, last_seen, created_at)
 		VALUES (?, ?, ?, datetime('now'), datetime('now'))
 		ON CONFLICT(racer_id) DO UPDATE SET token = ?, device_name = ?, last_seen = datetime('now')`,
 		req.RacerID, token, req.DeviceName, token, req.DeviceName)
@@ -58,17 +56,17 @@ func PlayerLogin(c *gin.Context) {
 	})
 }
 
-func PlayerLogout(c *gin.Context) {
+func (h *Handler) PlayerLogout(c *gin.Context) {
 	token := c.GetHeader("X-Player-Token")
 	if token == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Missing player token"})
 		return
 	}
-	app.DB.Exec("DELETE FROM player_sessions WHERE token = ?", token)
+	h.S.DB.Exec("DELETE FROM player_sessions WHERE token = ?", token)
 	c.Status(http.StatusOK)
 }
 
-func ValidatePlayerToken(c *gin.Context) {
+func (h *Handler) ValidatePlayerToken(c *gin.Context) {
 	token := c.GetHeader("X-Player-Token")
 	if token == "" {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing player token"})
@@ -78,7 +76,7 @@ func ValidatePlayerToken(c *gin.Context) {
 	var racerID int
 	var racerName string
 	var lastSeen string
-	err := app.DB.QueryRow(`SELECT ps.racer_id, r.name, ps.last_seen
+	err := h.S.DB.QueryRow(`SELECT ps.racer_id, r.name, ps.last_seen
 		FROM player_sessions ps
 		JOIN racers r ON r.id = ps.racer_id
 		WHERE ps.token = ?`, token).Scan(&racerID, &racerName, &lastSeen)
@@ -93,7 +91,7 @@ func ValidatePlayerToken(c *gin.Context) {
 	}
 
 	// Update last seen
-	app.DB.Exec("UPDATE player_sessions SET last_seen = datetime('now') WHERE token = ?", token)
+	h.S.DB.Exec("UPDATE player_sessions SET last_seen = datetime('now') WHERE token = ?", token)
 
 	c.JSON(http.StatusOK, gin.H{
 		"racer_id":   racerID,
@@ -102,8 +100,8 @@ func ValidatePlayerToken(c *gin.Context) {
 	})
 }
 
-func GetPlayerSessions(c *gin.Context) {
-	rows, err := app.DB.Query(`SELECT ps.id, ps.racer_id, r.name, ps.token, ps.device_name, ps.last_seen, ps.created_at
+func (h *Handler) GetPlayerSessions(c *gin.Context) {
+	rows, err := h.S.DB.Query(`SELECT ps.id, ps.racer_id, r.name, ps.token, ps.device_name, ps.last_seen, ps.created_at
 		FROM player_sessions ps
 		JOIN racers r ON r.id = ps.racer_id
 		ORDER BY r.name`)
@@ -134,20 +132,20 @@ func GetPlayerSessions(c *gin.Context) {
 	c.JSON(http.StatusOK, sessions)
 }
 
-func DeletePlayerSession(c *gin.Context) {
+func (h *Handler) DeletePlayerSession(c *gin.Context) {
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid session ID"})
 		return
 	}
-	app.DB.Exec("DELETE FROM player_sessions WHERE id = ?", id)
+	h.S.DB.Exec("DELETE FROM player_sessions WHERE id = ?", id)
 	c.Status(http.StatusOK)
 }
 
 // Self-Service Actions (called by players from their device)
 
-func PlayerReportGear(c *gin.Context) {
+func (h *Handler) PlayerReportGear(c *gin.Context) {
 	var req struct {
 		Token  string `json:"token"`
 		Lap    int    `json:"lap"`
@@ -160,16 +158,16 @@ func PlayerReportGear(c *gin.Context) {
 	}
 
 	var racerID int
-	err := app.DB.QueryRow("SELECT racer_id FROM player_sessions WHERE token = ?", req.Token).Scan(&racerID)
+	err := h.S.DB.QueryRow("SELECT racer_id FROM player_sessions WHERE token = ?", req.Token).Scan(&racerID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
 
 	var raceID int
-	app.DB.QueryRow("SELECT COALESCE((SELECT id FROM race_history ORDER BY id DESC LIMIT 1), 0)").Scan(&raceID)
+	h.S.DB.QueryRow("SELECT COALESCE((SELECT id FROM race_history ORDER BY id DESC LIMIT 1), 0)").Scan(&raceID)
 
-	_, err = app.DB.Exec("INSERT INTO gear_shifts (racer_id, race_id, lap, gear, stress) VALUES (?, ?, ?, ?, ?)",
+	_, err = h.S.DB.Exec("INSERT INTO gear_shifts (racer_id, race_id, lap, gear, stress) VALUES (?, ?, ?, ?, ?)",
 		racerID, raceID, req.Lap, req.Gear, req.Stress)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -180,12 +178,12 @@ func PlayerReportGear(c *gin.Context) {
 		Type: "gear_report", RacerID: racerID, Lap: req.Lap,
 		Gear: req.Gear, Stress: req.Stress,
 	}
-	ws.BroadcastSelfService(action)
+	h.S.BroadcastSelfService(action)
 
 	c.Status(http.StatusOK)
 }
 
-func PlayerReportHeat(c *gin.Context) {
+func (h *Handler) PlayerReportHeat(c *gin.Context) {
 	var req struct {
 		Token    string `json:"token"`
 		CardType string `json:"card_type"`
@@ -198,19 +196,19 @@ func PlayerReportHeat(c *gin.Context) {
 	}
 
 	var racerID int
-	err := app.DB.QueryRow("SELECT racer_id FROM player_sessions WHERE token = ?", req.Token).Scan(&racerID)
+	err := h.S.DB.QueryRow("SELECT racer_id FROM player_sessions WHERE token = ?", req.Token).Scan(&racerID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
 
 	for i := 0; i < req.Count; i++ {
-		app.DB.Exec("INSERT INTO heat_cards (racer_id, location, card_type, lap_added) VALUES (?, ?, ?, ?)",
+		h.S.DB.Exec("INSERT INTO heat_cards (racer_id, location, card_type, lap_added) VALUES (?, ?, ?, ?)",
 			racerID, req.Location, req.CardType, 0)
 	}
 
 	select {
-	case app.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
+	case h.S.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
 		Type: "heat_cards", RacerID: racerID, Action: "added",
 		Data: map[string]interface{}{"count": req.Count, "location": req.Location},
 	}:
@@ -220,7 +218,7 @@ func PlayerReportHeat(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func PlayerReportTurbo(c *gin.Context) {
+func (h *Handler) PlayerReportTurbo(c *gin.Context) {
 	var req struct {
 		Token string `json:"token"`
 		Lap   int    `json:"lap"`
@@ -231,16 +229,16 @@ func PlayerReportTurbo(c *gin.Context) {
 	}
 
 	var racerID int
-	err := app.DB.QueryRow("SELECT racer_id FROM player_sessions WHERE token = ?", req.Token).Scan(&racerID)
+	err := h.S.DB.QueryRow("SELECT racer_id FROM player_sessions WHERE token = ?", req.Token).Scan(&racerID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
 
 	var raceID int
-	app.DB.QueryRow("SELECT COALESCE((SELECT id FROM race_history ORDER BY id DESC LIMIT 1), 0)").Scan(&raceID)
+	h.S.DB.QueryRow("SELECT COALESCE((SELECT id FROM race_history ORDER BY id DESC LIMIT 1), 0)").Scan(&raceID)
 
-	_, err = app.DB.Exec("INSERT INTO turbo_logs (racer_id, race_id, lap, times_used) VALUES (?, ?, ?, 1)",
+	_, err = h.S.DB.Exec("INSERT INTO turbo_logs (racer_id, race_id, lap, times_used) VALUES (?, ?, ?, 1)",
 		racerID, raceID, req.Lap)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -250,12 +248,12 @@ func PlayerReportTurbo(c *gin.Context) {
 	action := models.SelfServiceAction{
 		Type: "turbo", RacerID: racerID, Lap: req.Lap, TurboUsed: true,
 	}
-	ws.BroadcastSelfService(action)
+	h.S.BroadcastSelfService(action)
 
 	c.Status(http.StatusOK)
 }
 
-func PlayerGetStatus(c *gin.Context) {
+func (h *Handler) PlayerGetStatus(c *gin.Context) {
 	token := c.GetHeader("X-Player-Token")
 	if token == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Missing player token"})
@@ -263,17 +261,17 @@ func PlayerGetStatus(c *gin.Context) {
 	}
 
 	var racerID int
-	err := app.DB.QueryRow("SELECT racer_id FROM player_sessions WHERE token = ?", token).Scan(&racerID)
+	err := h.S.DB.QueryRow("SELECT racer_id FROM player_sessions WHERE token = ?", token).Scan(&racerID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
 
-	app.DB.Exec("UPDATE player_sessions SET last_seen = datetime('now') WHERE token = ?", token)
+	h.S.DB.Exec("UPDATE player_sessions SET last_seen = datetime('now') WHERE token = ?", token)
 
 	// Get racer info
 	var racer models.Racer
-	err = app.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers WHERE id = ?",
+	err = h.S.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers WHERE id = ?",
 		racerID).Scan(&racer.ID, &racer.Name, &racer.ProfilePicture, &racer.CarColor, &racer.CarName, &racer.Points, &racer.Rank, &racer.Position, &racer.TeamID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -282,14 +280,14 @@ func PlayerGetStatus(c *gin.Context) {
 
 	// Get heat card counts
 	var handCount, deckCount, discardCount, engineCount int
-	app.DB.QueryRow("SELECT COUNT(*) FROM heat_cards WHERE racer_id = ? AND location = 'hand'", racerID).Scan(&handCount)
-	app.DB.QueryRow("SELECT COUNT(*) FROM heat_cards WHERE racer_id = ? AND location = 'deck'", racerID).Scan(&deckCount)
-	app.DB.QueryRow("SELECT COUNT(*) FROM heat_cards WHERE racer_id = ? AND location = 'discard'", racerID).Scan(&discardCount)
-	app.DB.QueryRow("SELECT COUNT(*) FROM heat_cards WHERE racer_id = ? AND location = 'engine'", racerID).Scan(&engineCount)
+	h.S.DB.QueryRow("SELECT COUNT(*) FROM heat_cards WHERE racer_id = ? AND location = 'hand'", racerID).Scan(&handCount)
+	h.S.DB.QueryRow("SELECT COUNT(*) FROM heat_cards WHERE racer_id = ? AND location = 'deck'", racerID).Scan(&deckCount)
+	h.S.DB.QueryRow("SELECT COUNT(*) FROM heat_cards WHERE racer_id = ? AND location = 'discard'", racerID).Scan(&discardCount)
+	h.S.DB.QueryRow("SELECT COUNT(*) FROM heat_cards WHERE racer_id = ? AND location = 'engine'", racerID).Scan(&engineCount)
 
 	// Get race info
 	var raceInfo models.RaceInfo
-	app.DB.QueryRow("SELECT id, country, track, laps, track_id FROM race_info LIMIT 1").Scan(
+	h.S.DB.QueryRow("SELECT id, country, track, laps, track_id FROM race_info LIMIT 1").Scan(
 		&raceInfo.ID, &raceInfo.Country, &raceInfo.Track, &raceInfo.Laps, &raceInfo.TrackID)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -306,8 +304,8 @@ func PlayerGetStatus(c *gin.Context) {
 
 // Spectator endpoint - public race state
 
-func GetSpectatorState(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
+func (h *Handler) GetSpectatorState(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -322,11 +320,11 @@ func GetSpectatorState(c *gin.Context) {
 	}
 
 	var raceInfo models.RaceInfo
-	app.DB.QueryRow("SELECT id, country, track, laps, track_id FROM race_info LIMIT 1").Scan(
+	h.S.DB.QueryRow("SELECT id, country, track, laps, track_id FROM race_info LIMIT 1").Scan(
 		&raceInfo.ID, &raceInfo.Country, &raceInfo.Track, &raceInfo.Laps, &raceInfo.TrackID)
 
 	var weather models.WeatherCondition
-	app.DB.QueryRow("SELECT id, condition, lap_start, lap_end, grip_modifier FROM weather_conditions WHERE race_id = 0 ORDER BY id DESC LIMIT 1").Scan(
+	h.S.DB.QueryRow("SELECT id, condition, lap_start, lap_end, grip_modifier FROM weather_conditions WHERE race_id = 0 ORDER BY id DESC LIMIT 1").Scan(
 		&weather.ID, &weather.Condition, &weather.LapStart, &weather.LapEnd, &weather.GripModifier)
 
 	c.JSON(http.StatusOK, gin.H{

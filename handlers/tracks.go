@@ -13,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/app"
 	"heat/ent"
 	"heat/ent/aisetting"
 	"heat/ent/track"
@@ -27,8 +26,8 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-func GetTracks(c *gin.Context) {
-	tracks, err := app.Ent.Track.Query().Order(track.ByName()).All(c.Request.Context())
+func (h *Handler) GetTracks(c *gin.Context) {
+	tracks, err := h.S.Ent.Track.Query().Order(track.ByName()).All(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -51,7 +50,7 @@ func GetTracks(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-func SaveTrack(c *gin.Context) {
+func (h *Handler) SaveTrack(c *gin.Context) {
 	var t models.Track
 	if err := c.ShouldBindJSON(&t); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -59,9 +58,9 @@ func SaveTrack(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	_, err := app.Ent.Track.Get(ctx, t.ID)
+	_, err := h.S.Ent.Track.Get(ctx, t.ID)
 	if ent.IsNotFound(err) {
-		_, err = app.Ent.Track.Create().
+		_, err = h.S.Ent.Track.Create().
 			SetID(t.ID).
 			SetName(t.Name).
 			SetCountry(t.Country).
@@ -80,7 +79,7 @@ func SaveTrack(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	} else {
-		_, err = app.Ent.Track.UpdateOneID(t.ID).
+		_, err = h.S.Ent.Track.UpdateOneID(t.ID).
 			SetName(t.Name).
 			SetCountry(t.Country).
 			SetGeojson(t.GeoJSON).
@@ -99,14 +98,14 @@ func SaveTrack(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
-func DeleteTrack(c *gin.Context) {
+func (h *Handler) DeleteTrack(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID required"})
 		return
 	}
 
-	err := app.Ent.Track.DeleteOneID(id).Exec(c.Request.Context())
+	err := h.S.Ent.Track.DeleteOneID(id).Exec(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -115,10 +114,10 @@ func DeleteTrack(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func HandleAIExtract(c *gin.Context) {
+func (h *Handler) HandleAIExtract(c *gin.Context) {
 	aiURL := os.Getenv("AI_TRACK_EXTRACT_URL")
 	if aiURL == "" {
-		setting, err := app.Ent.AISetting.Query().Where(aisetting.ID(1)).First(c.Request.Context())
+		setting, err := h.S.Ent.AISetting.Query().Where(aisetting.ID(1)).First(c.Request.Context())
 		if err == nil && setting.Enabled == 1 && setting.TrackExtractURL != "" {
 			aiURL = setting.TrackExtractURL
 		}
@@ -156,8 +155,8 @@ func HandleAIExtract(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid image URL"})
 			return
 		}
-		localPath := filepath.Join(app.MediaPath, cleanPath)
-		if !strings.HasPrefix(localPath, filepath.Clean(app.MediaPath)+string(filepath.Separator)) && localPath != filepath.Clean(app.MediaPath) {
+		localPath := filepath.Join(h.S.MediaPath, cleanPath)
+		if !strings.HasPrefix(localPath, filepath.Clean(h.S.MediaPath)+string(filepath.Separator)) && localPath != filepath.Clean(h.S.MediaPath) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid image URL"})
 			return
 		}
@@ -183,7 +182,7 @@ func HandleAIExtract(c *gin.Context) {
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	setting, err := app.Ent.AISetting.Query().Where(aisetting.ID(1)).First(c.Request.Context())
+	setting, err := h.S.Ent.AISetting.Query().Where(aisetting.ID(1)).First(c.Request.Context())
 	if err == nil && setting.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+setting.APIKey)
 	}

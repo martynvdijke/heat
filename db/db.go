@@ -13,17 +13,24 @@ import (
 	"heat/models"
 )
 
-func Init() {
+var srv *app.Server
+
+func SetServer(s *app.Server) {
+	srv = s
+}
+
+func Init(s *app.Server) {
+	srv = s
 	ctx := context.Background()
 
-	if err := app.Ent.Schema.Create(ctx); err != nil {
+	if err := srv.Ent.Schema.Create(ctx); err != nil {
 		log.Fatalf("[DB] Failed to run Ent auto-migration: %v", err)
 	}
 
-	app.DB.Exec("PRAGMA foreign_keys=OFF")
+	srv.DB.Exec("PRAGMA foreign_keys=OFF")
 
 	var count int
-	app.DB.QueryRow("SELECT COUNT(*) FROM racers").Scan(&count)
+	srv.DB.QueryRow("SELECT COUNT(*) FROM racers").Scan(&count)
 	if count == 0 {
 		SeedData()
 	}
@@ -42,23 +49,23 @@ func Init() {
 }
 
 func CreateBackup() error {
-	backupDir := filepath.Join(filepath.Dir(app.DBPath), "backups")
+	backupDir := filepath.Join(filepath.Dir(srv.DBPath), "backups")
 	if err := os.MkdirAll(backupDir, 0755); err != nil {
 		return err
 	}
 	backupPath := filepath.Join(backupDir, "heat_backup_"+time.Now().Format("20060102_150405")+".db")
-	_, err := app.DB.Exec("VACUUM INTO ?", backupPath)
+	_, err := srv.DB.Exec("VACUUM INTO ?", backupPath)
 	return err
 }
 
 func PruneBackups() error {
 	var retentionCount int
-	err := app.DB.QueryRow("SELECT retention_count FROM backup_settings WHERE id = 1").Scan(&retentionCount)
+	err := srv.DB.QueryRow("SELECT retention_count FROM backup_settings WHERE id = 1").Scan(&retentionCount)
 	if err != nil || retentionCount <= 0 {
 		retentionCount = 7
 	}
 
-	backupDir := filepath.Join(filepath.Dir(app.DBPath), "backups")
+	backupDir := filepath.Join(filepath.Dir(srv.DBPath), "backups")
 	entries, err := os.ReadDir(backupDir)
 	if err != nil {
 		return nil
@@ -92,7 +99,7 @@ func SeedTracks() {
 		{ID: "interlagos", Name: "Interlagos", Country: "Brazil", GeoJSON: "interlagos", Length: 4, LapRecord: "1:07.369"},
 	}
 	for _, t := range tracks {
-		app.DB.Exec("INSERT OR IGNORE INTO tracks (id, name, country, geojson, length_km, lap_record) VALUES (?, ?, ?, ?, ?, ?)",
+		srv.DB.Exec("INSERT OR IGNORE INTO tracks (id, name, country, geojson, length_km, lap_record) VALUES (?, ?, ?, ?, ?, ?)",
 			t.ID, t.Name, t.Country, t.GeoJSON, t.Length, t.LapRecord)
 	}
 }
@@ -121,7 +128,7 @@ func SeedQuotes() {
 		{"And the fans... the fans have been absolutely MAGNIFICENT!", "Steve Rider"},
 	}
 	for _, q := range quotes {
-		app.DB.Exec("INSERT OR IGNORE INTO quotes (text, author) VALUES (?, ?)", q.Text, q.Author)
+		srv.DB.Exec("INSERT OR IGNORE INTO quotes (text, author) VALUES (?, ?)", q.Text, q.Author)
 	}
 }
 
@@ -135,17 +142,17 @@ func SeedData() {
 	}
 
 	for _, r := range racers {
-		app.DB.Exec("INSERT INTO racers (name, profile_picture, car_color, car_name, points, rank) VALUES (?, ?, ?, ?, ?, ?)",
+		srv.DB.Exec("INSERT INTO racers (name, profile_picture, car_color, car_name, points, rank) VALUES (?, ?, ?, ?, ?, ?)",
 			r.Name, r.ProfilePicture, r.CarColor, r.CarName, r.Points, r.Rank)
 	}
 
-	app.DB.Exec("INSERT INTO race_info (country, track, track_id, laps) VALUES (?, ?, ?, ?)",
+	srv.DB.Exec("INSERT INTO race_info (country, track, track_id, laps) VALUES (?, ?, ?, ?)",
 		"Italy", "Monza", "monza", 53)
 }
 
 func SeedUpgrades() {
 	var count int
-	app.DB.QueryRow("SELECT COUNT(*) FROM upgrade_cards").Scan(&count)
+	srv.DB.QueryRow("SELECT COUNT(*) FROM upgrade_cards").Scan(&count)
 	if count > 0 {
 		return
 	}
@@ -160,7 +167,7 @@ func SeedUpgrades() {
 		{Name: "Turbo Charger", Description: "Extra turbo boost per race", CardType: "upgrade", Cost: 5, Effects: "{\"extra_turbo\":1}"},
 	}
 	for _, u := range upgrades {
-		app.DB.Exec("INSERT INTO upgrade_cards (name, description, card_type, cost, effects) VALUES (?, ?, ?, ?, ?)",
+		srv.DB.Exec("INSERT INTO upgrade_cards (name, description, card_type, cost, effects) VALUES (?, ?, ?, ?, ?)",
 			u.Name, u.Description, u.CardType, u.Cost, u.Effects)
 	}
 	log.Printf("[DB] Seeded %d upgrade cards", len(upgrades))
@@ -168,7 +175,7 @@ func SeedUpgrades() {
 
 func SeedLegendAbilities() {
 	var count int
-	app.DB.QueryRow("SELECT COUNT(*) FROM legend_abilities").Scan(&count)
+	srv.DB.QueryRow("SELECT COUNT(*) FROM legend_abilities").Scan(&count)
 	if count > 0 {
 		return
 	}
@@ -180,7 +187,7 @@ func SeedLegendAbilities() {
 		{Name: "Smooth Operator", Description: "Generate 1 less heat per gear shift", AbilityType: "smoothness", RacerName: "J. STEWART"},
 	}
 	for _, a := range abilities {
-		app.DB.Exec("INSERT INTO legend_abilities (name, description, ability_type, racer_name) VALUES (?, ?, ?, ?)",
+		srv.DB.Exec("INSERT INTO legend_abilities (name, description, ability_type, racer_name) VALUES (?, ?, ?, ?)",
 			a.Name, a.Description, a.AbilityType, a.RacerName)
 	}
 	log.Printf("[DB] Seeded %d legend abilities", len(abilities))
@@ -188,7 +195,7 @@ func SeedLegendAbilities() {
 
 func SeedSectors() {
 	var count int
-	app.DB.QueryRow("SELECT COUNT(*) FROM sectors").Scan(&count)
+	srv.DB.QueryRow("SELECT COUNT(*) FROM sectors").Scan(&count)
 	if count > 0 {
 		return
 	}
@@ -201,7 +208,7 @@ func SeedSectors() {
 	}
 	for trackID, sectors := range trackSectors {
 		for i, name := range sectors {
-			app.DB.Exec("INSERT INTO sectors (name, track_id, \"order\") VALUES (?, ?, ?)",
+			srv.DB.Exec("INSERT INTO sectors (name, track_id, \"order\") VALUES (?, ?, ?)",
 				name, trackID, i+1)
 		}
 	}
@@ -210,7 +217,7 @@ func SeedSectors() {
 
 func SeedTeams() {
 	var count int
-	app.DB.QueryRow("SELECT COUNT(*) FROM teams").Scan(&count)
+	srv.DB.QueryRow("SELECT COUNT(*) FROM teams").Scan(&count)
 	if count > 0 {
 		return
 	}
@@ -222,37 +229,37 @@ func SeedTeams() {
 		{"Williams Racing", "#005aff"},
 	}
 	for _, t := range teams {
-		app.DB.Exec("INSERT INTO teams (name, color) VALUES (?, ?)", t.Name, t.Color)
+		srv.DB.Exec("INSERT INTO teams (name, color) VALUES (?, ?)", t.Name, t.Color)
 	}
 	log.Printf("[DB] Seeded %d teams", len(teams))
 }
 
 func SeedSeason() {
 	var count int
-	app.DB.QueryRow("SELECT COUNT(*) FROM seasons").Scan(&count)
+	srv.DB.QueryRow("SELECT COUNT(*) FROM seasons").Scan(&count)
 	if count == 0 {
-		app.DB.Exec("INSERT INTO seasons (id, name, start_date, status) VALUES (1, 'Season 1', date('now'), 'active')")
+		srv.DB.Exec("INSERT INTO seasons (id, name, start_date, status) VALUES (1, 'Season 1', date('now'), 'active')")
 	}
 }
 
 func SeedNotificationSettings() {
-	app.DB.Exec("INSERT OR IGNORE INTO notification_settings (id, notify_winner, notify_race_start, notify_podium) VALUES (1, 1, 0, 0)")
+	srv.DB.Exec("INSERT OR IGNORE INTO notification_settings (id, notify_winner, notify_race_start, notify_podium) VALUES (1, 1, 0, 0)")
 }
 
 func SeedAISettings() {
-	app.DB.Exec("INSERT OR IGNORE INTO ai_settings (id, enabled) VALUES (1, 0)")
+	srv.DB.Exec("INSERT OR IGNORE INTO ai_settings (id, enabled) VALUES (1, 0)")
 }
 
 func SeedEmailSettings() {
-	app.DB.Exec("INSERT OR IGNORE INTO email_settings (id, enabled) VALUES (1, 0)")
+	srv.DB.Exec("INSERT OR IGNORE INTO email_settings (id, enabled) VALUES (1, 0)")
 }
 
 func SeedUmamiSettings() {
-	app.DB.Exec("INSERT OR IGNORE INTO umami_settings (id, enabled) VALUES (1, 0)")
+	srv.DB.Exec("INSERT OR IGNORE INTO umami_settings (id, enabled) VALUES (1, 0)")
 }
 
 func SeedBackupSettings() {
-	app.DB.Exec("INSERT OR IGNORE INTO backup_settings (id, enabled, interval_hrs) VALUES (1, 1, 24)")
+	srv.DB.Exec("INSERT OR IGNORE INTO backup_settings (id, enabled, interval_hrs) VALUES (1, 1, 24)")
 }
 
 func BoolToInt(b bool) int {
