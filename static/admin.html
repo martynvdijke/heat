@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#d40000">
     <title>HEAT Admin - Race Control</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <style>
         :root {
@@ -156,11 +156,11 @@
 <body>
     <header class="admin-header mb-4">
         <div class="container d-flex justify-content-between align-items-center">
-            <h1 class="h4 mb-0"><i class="fa-solid fa-flag-checkered me-2"></i>HEAT RACE CONTROL <small class="ms-2 opacity-50 fw-normal">Board Game Companion</small></h1>
+            <h1 class="h4 mb-0"><i aria-hidden="true" class="fa-solid fa-flag-checkered me-2"></i>HEAT RACE CONTROL <small class="ms-2 opacity-50 fw-normal">Board Game Companion</small></h1>
             <div>
-                <a href="/controller.html" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-mobile-screen me-2"></i>Controller</a>
-                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-eye me-1"></i> Live Board</a>
-                <button class="btn btn-danger btn-sm" onclick="logout()"><i class="fa-solid fa-sign-out-alt me-1"></i> Logout</button>
+                <a href="/controller.html" class="btn btn-outline-light btn-sm me-2"><i aria-hidden="true" class="fa-solid fa-mobile-screen me-2"></i>Controller</a>
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i aria-hidden="true" class="fa-solid fa-eye me-1"></i> Live Board</a>
+                <button class="btn btn-danger btn-sm" onclick="logout()"><i aria-hidden="true" class="fa-solid fa-sign-out-alt me-1"></i> Logout</button>
             </div>
         </div>
     </header>
@@ -168,46 +168,46 @@
     <div class="container">
         <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
             <li class="nav-item">
-                <button class="nav-link active" id="race-tab" data-bs-toggle="tab" data-bs-target="#race-pane" type="button"><i class="fa-solid fa-gauge-high me-2"></i>Race Setup</button>
+                <button class="nav-link active" id="race-tab" data-bs-toggle="tab" data-bs-target="#race-pane" type="button"><i aria-hidden="true" class="fa-solid fa-gauge-high me-2"></i>Race Setup</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="qualification-tab" data-bs-toggle="tab" data-bs-target="#qualification-pane" type="button"><i class="fa-solid fa-random me-2"></i>Qualification</button>
+                <button class="nav-link" id="qualification-tab" data-bs-toggle="tab" data-bs-target="#qualification-pane" type="button"><i aria-hidden="true" class="fa-solid fa-random me-2"></i>Qualification</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="racers-tab" data-bs-toggle="tab" data-bs-target="#racers-pane" type="button"><i class="fa-solid fa-users me-2"></i>Racers</button>
+                <button class="nav-link" id="racers-tab" data-bs-toggle="tab" data-bs-target="#racers-pane" type="button"><i aria-hidden="true" class="fa-solid fa-users me-2"></i>Racers</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="tracks-tab" data-bs-toggle="tab" data-bs-target="#tracks-pane" type="button"><i class="fa-solid fa-road me-2"></i>Tracks</button>
+                <button class="nav-link" id="tracks-tab" data-bs-toggle="tab" data-bs-target="#tracks-pane" type="button"><i aria-hidden="true" class="fa-solid fa-road me-2"></i>Tracks</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button"><i class="fa-solid fa-chart-bar me-2"></i>Stats</button>
+                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button"><i aria-hidden="true" class="fa-solid fa-chart-bar me-2"></i>Stats</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="rounds-tab" data-bs-toggle="tab" data-bs-target="#rounds-pane" type="button"><i class="fa-solid fa-layer-group me-2"></i>Rounds</button>
+                <button class="nav-link" id="rounds-tab" data-bs-toggle="tab" data-bs-target="#rounds-pane" type="button"><i aria-hidden="true" class="fa-solid fa-layer-group me-2"></i>Rounds</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button"><i class="fa-solid fa-comment me-2"></i>Quotes</button>
+                <button class="nav-link" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button"><i aria-hidden="true" class="fa-solid fa-comment me-2"></i>Quotes</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams-pane" type="button"><i class="fa-solid fa-people-group me-2"></i>Teams</button>
+                <button class="nav-link" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams-pane" type="button"><i aria-hidden="true" class="fa-solid fa-people-group me-2"></i>Teams</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-pane" type="button"><i class="fa-solid fa-bell me-2"></i>Notifications</button>
+                <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-pane" type="button"><i aria-hidden="true" class="fa-solid fa-bell me-2"></i>Notifications</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button"><i class="fa-solid fa-envelope me-2"></i>Email</button>
+                <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button"><i aria-hidden="true" class="fa-solid fa-envelope me-2"></i>Email</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="seasons-tab" data-bs-toggle="tab" data-bs-target="#seasons-pane" type="button"><i class="fa-solid fa-calendar me-2"></i>Seasons</button>
+                <button class="nav-link" id="seasons-tab" data-bs-toggle="tab" data-bs-target="#seasons-pane" type="button"><i aria-hidden="true" class="fa-solid fa-calendar me-2"></i>Seasons</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>AI</button>
+                <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button"><i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-2"></i>AI</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="umami-tab" data-bs-toggle="tab" data-bs-target="#umami-pane" type="button"><i class="fa-solid fa-chart-simple me-2"></i>Analytics</button>
+                <button class="nav-link" id="umami-tab" data-bs-toggle="tab" data-bs-target="#umami-pane" type="button"><i aria-hidden="true" class="fa-solid fa-chart-simple me-2"></i>Analytics</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-pane" type="button"><i class="fa-solid fa-database me-2"></i>Backup</button>
+                <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-pane" type="button"><i aria-hidden="true" class="fa-solid fa-database me-2"></i>Backup</button>
             </li>
         </ul>
         <div class="tab-content">
@@ -216,7 +216,7 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card mb-4">
-                            <div class="card-header"><i class="fa-solid fa-gauge-high me-2 text-danger"></i>Race Information</div>
+                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-gauge-high me-2 text-danger"></i>Race Information</div>
                             <div class="card-body">
                                 <form id="race-form">
                                     <div class="mb-3">
@@ -260,24 +260,24 @@
                     <div class="col-12">
                         <div class="card mb-4">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i class="fa-solid fa-random me-2 text-warning"></i>Qualification Shuffle</span>
+                                <span><i aria-hidden="true" class="fa-solid fa-random me-2 text-warning"></i>Qualification Shuffle</span>
                                 <button class="btn btn-sm btn-warning" onclick="startQualification()">
-                                    <i class="fa-solid fa-play me-1"></i> Start Shuffle
+                                    <i aria-hidden="true" class="fa-solid fa-play me-1"></i> Start Shuffle
                                 </button>
                             </div>
                             <div class="card-body">
                                 <p class="small text-muted mb-3">Randomly shuffle grid positions with animation. Drivers will be shuffled one by one to determine the starting grid.</p>
                                 <div class="mb-3">
                                     <button class="btn btn-sm btn-outline-secondary me-2" onclick="resetQualification()">
-                                        <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                                        <i aria-hidden="true" class="fa-solid fa-rotate-left me-1"></i> Reset
                                     </button>
                                     <button class="btn btn-sm btn-outline-info" onclick="previewGrid()">
-                                        <i class="fa-solid fa-eye me-1"></i> Preview Grid
+                                        <i aria-hidden="true" class="fa-solid fa-eye me-1"></i> Preview Grid
                                     </button>
                                 </div>
                                 <div id="qualification-grid" class="row g-3">
                                     <div class="col-12 text-center text-muted py-5">
-                                        <i class="fa-solid fa-shuffle fa-3x mb-3"></i>
+                                        <i aria-hidden="true" class="fa-solid fa-shuffle fa-3x mb-3"></i>
                                         <p>Click "Start Shuffle" to begin qualification</p>
                                     </div>
                                 </div>
@@ -288,11 +288,11 @@
                 <div class="row">
                     <div class="col-md-8">
                         <div class="card">
-                            <div class="card-header"><i class="fa-solid fa-list-ol me-2 text-danger"></i>Final Grid</div>
+                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-list-ol me-2 text-danger"></i>Final Grid</div>
                             <div class="card-body p-0">
                                 <div id="final-grid" class="p-3">
                                     <div class="text-center text-muted py-4">
-                                        <i class="fa-solid fa-trophy fa-2x mb-2"></i>
+                                        <i aria-hidden="true" class="fa-solid fa-trophy fa-2x mb-2"></i>
                                         <p class="small mb-0">Final grid order will appear here</p>
                                     </div>
                                 </div>
@@ -301,7 +301,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="card">
-                            <div class="card-header"><i class="fa-solid fa-gear me-2 text-danger"></i>Settings</div>
+                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-gear me-2 text-danger"></i>Settings</div>
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold">Shuffle Speed (ms)</label>
@@ -317,7 +317,7 @@
                                     </select>
                                 </div>
                                 <button class="btn btn-outline-primary w-100" onclick="applyGridPositions()">
-                                    <i class="fa-solid fa-check me-1"></i> Apply to Race
+                                    <i aria-hidden="true" class="fa-solid fa-check me-1"></i> Apply to Race
                                 </button>
                             </div>
                         </div>
@@ -329,9 +329,9 @@
             <div class="tab-pane fade" id="stats-pane">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-chart-bar me-2 text-danger"></i>Driver Statistics</span>
+                        <span><i aria-hidden="true" class="fa-solid fa-chart-bar me-2 text-danger"></i>Driver Statistics</span>
                         <button class="btn btn-sm btn-success" onclick="openStatsModal()">
-                            <i class="fa-solid fa-plus me-1"></i> Add Stats
+                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Stats
                         </button>
                     </div>
                     <div class="card-body p-0">
@@ -361,9 +361,9 @@
             <div class="tab-pane fade" id="rounds-pane">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-layer-group me-2 text-danger"></i>Round Snapshots</span>
+                        <span><i aria-hidden="true" class="fa-solid fa-layer-group me-2 text-danger"></i>Round Snapshots</span>
                         <button class="btn btn-sm btn-success" onclick="takeAdminRoundSnapshot()">
-                            <i class="fa-solid fa-camera me-1"></i> Take Snapshot
+                            <i aria-hidden="true" class="fa-solid fa-camera me-1"></i> Take Snapshot
                         </button>
                     </div>
                     <div class="card-body p-0">
@@ -389,7 +389,7 @@
                 <div class="row">
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><i class="fa-solid fa-bell me-2 text-danger"></i>Gotify Notifications</div>
+                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-bell me-2 text-danger"></i>Gotify Notifications</div>
                             <div class="card-body">
                                 <form id="notify-form">
                                     <div class="mb-3">
@@ -405,37 +405,37 @@
                                     <button type="submit" class="btn btn-primary w-100">Save Settings</button>
                                 </form>
                                 <button class="btn btn-outline-secondary w-100 mt-2" onclick="testNotification()">
-                                    <i class="fa-solid fa-paper-plane me-1"></i> Send Test Notification
+                                    <i aria-hidden="true" class="fa-solid fa-paper-plane me-1"></i> Send Test Notification
                                 </button>
                             </div>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><i class="fa-solid fa-sliders me-2 text-danger"></i>Notification Triggers</div>
+                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-sliders me-2 text-danger"></i>Notification Triggers</div>
                             <div class="card-body">
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" id="notify-winner">
                                     <label class="form-check-label" for="notify-winner">
-                                        <i class="fa-solid fa-trophy me-1 text-warning"></i> Notify on Race Winner
+                                        <i aria-hidden="true" class="fa-solid fa-trophy me-1 text-warning"></i> Notify on Race Winner
                                     </label>
                                 </div>
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" id="notify-podium">
                                     <label class="form-check-label" for="notify-podium">
-                                        <i class="fa-solid fa-medal me-1 text-secondary"></i> Notify on Podium Results
+                                        <i aria-hidden="true" class="fa-solid fa-medal me-1 text-secondary"></i> Notify on Podium Results
                                     </label>
                                 </div>
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" id="notify-race-start">
                                     <label class="form-check-label" for="notify-race-start">
-                                        <i class="fa-solid fa-flag me-1 text-success"></i> Notify on Race Start
+                                        <i aria-hidden="true" class="fa-solid fa-flag me-1 text-success"></i> Notify on Race Start
                                     </label>
                                 </div>
                             </div>
                         </div>
                         <div class="card mt-3">
-                            <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About Notifications</div>
+                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>About Notifications</div>
                             <div class="card-body">
                                 <p class="small text-muted mb-2">Notifications are sent via Gotify when race events occur. Make sure your Gotify server is accessible and the application token has permission to post messages.</p>
                                 <p class="small text-muted mb-0">Notifications are sent asynchronously and won't delay race operations.</p>
@@ -449,9 +449,9 @@
             <div class="tab-pane fade" id="racers-pane">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-users me-2 text-danger"></i>Racer Standings</span>
+                        <span><i aria-hidden="true" class="fa-solid fa-users me-2 text-danger"></i>Racer Standings</span>
                         <button class="btn btn-sm btn-success" hx-get="/api/html/racers/0/edit" hx-target="#racerModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#racerModal">
-                            <i class="fa-solid fa-plus me-1"></i> Add Racer
+                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Racer
                         </button>
                     </div>
                     <div class="card-body p-0">
@@ -469,7 +469,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="racer-list" hx-get="/api/html/racers" hx-trigger="load" hx-swap="outerHTML">
-                                    <tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading racers...</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading racers...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -481,9 +481,9 @@
             <div class="tab-pane fade" id="tracks-pane">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-road me-2 text-danger"></i>Race Tracks</span>
+                        <span><i aria-hidden="true" class="fa-solid fa-road me-2 text-danger"></i>Race Tracks</span>
                         <button class="btn btn-sm btn-success" onclick="openTrackModal()">
-                            <i class="fa-solid fa-plus me-1"></i> Add Track
+                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Track
                         </button>
                     </div>
                     <div class="card-body p-0">
@@ -500,7 +500,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="track-list" hx-get="/api/html/tracks" hx-trigger="load" hx-swap="outerHTML">
-                                    <tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading tracks...</td></tr>
+                                    <tr><td colspan="6" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading tracks...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -512,9 +512,9 @@
             <div class="tab-pane fade" id="quotes-pane">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-microphone me-2 text-danger"></i>Commentator Quotes</span>
+                        <span><i aria-hidden="true" class="fa-solid fa-microphone me-2 text-danger"></i>Commentator Quotes</span>
                         <button class="btn btn-sm btn-success" hx-get="/api/html/quotes/0/edit" hx-target="#quoteModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#quoteModal">
-                            <i class="fa-solid fa-plus me-1"></i> Add Quote
+                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Quote
                         </button>
                     </div>
                     <div class="card-body p-0">
@@ -528,7 +528,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="quote-list" hx-get="/api/html/quotes" hx-trigger="load" hx-swap="outerHTML">
-                                    <tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading quotes...</td></tr>
+                                    <tr><td colspan="3" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading quotes...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -540,9 +540,9 @@
             <div class="tab-pane fade" id="teams-pane">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-people-group me-2 text-danger"></i>Constructor Teams</span>
+                        <span><i aria-hidden="true" class="fa-solid fa-people-group me-2 text-danger"></i>Constructor Teams</span>
                         <button class="btn btn-sm btn-success" hx-get="/api/html/teams/0/edit" hx-target="#teamModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#teamModal">
-                            <i class="fa-solid fa-plus me-1"></i> Add Team
+                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Team
                         </button>
                     </div>
                     <div class="card-body p-0">
@@ -556,7 +556,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="team-list" hx-get="/api/html/teams" hx-trigger="load" hx-swap="outerHTML">
-                                    <tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading teams...</td></tr>
+                                    <tr><td colspan="3" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading teams...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -570,9 +570,9 @@
                     <div class="col-lg-6">
                         <div class="card mb-4">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i class="fa-solid fa-calendar me-2 text-danger"></i>Seasons</span>
+                                <span><i aria-hidden="true" class="fa-solid fa-calendar me-2 text-danger"></i>Seasons</span>
                                 <button class="btn btn-sm btn-success" hx-get="/api/html/seasons/new" hx-target="#seasonsModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#seasonsModal">
-                                    <i class="fa-solid fa-plus me-1"></i> New Season
+                                    <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> New Season
                                 </button>
                             </div>
                             <div class="card-body p-0">
@@ -588,7 +588,7 @@
                                             </tr>
                                         </thead>
                                         <tbody id="seasons-list" hx-get="/api/html/seasons" hx-trigger="load" hx-swap="outerHTML">
-                                            <tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading seasons...</td></tr>
+                                            <tr><td colspan="5" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading seasons...</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -597,7 +597,7 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><i class="fa-solid fa-layer-group me-2 text-info"></i>Season Rounds</div>
+                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-layer-group me-2 text-info"></i>Season Rounds</div>
                             <div class="card-body">
                                 <select class="form-select mb-3" id="season-rounds-select" onchange="loadSeasonRounds(this.value)">
                                     <option value="">Select a season...</option>
@@ -625,7 +625,7 @@
                 <div class="row">
                     <div class="col-12">
                         <div class="card mb-4">
-                            <div class="card-header"><i class="fa-solid fa-wand-magic-sparkles me-2 text-danger"></i>AI Track Extraction Settings</div>
+                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-2 text-danger"></i>AI Track Extraction Settings</div>
                             <div class="card-body">
                                 <p class="small text-muted mb-3">Configure an AI endpoint to extract track layouts from board game map images. When enabled, the "Extract Track with AI" button in the track editor will send the uploaded map image to this endpoint and parse the returned GeoJSON for visualization.</p>
                                 <form id="ai-settings-form">
@@ -652,7 +652,7 @@
                             </div>
                         </div>
                         <div class="card">
-                            <div class="card-header"><i class="fa-solid fa-road me-2 text-info"></i>Track Extraction Tool</div>
+                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-road me-2 text-info"></i>Track Extraction Tool</div>
                             <div class="card-body">
                                 <p class="small text-muted mb-3">Upload a board game map image and extract the track layout using the configured AI endpoint. The extracted GeoJSON can then be saved to a track.</p>
                                 <div class="mb-3">
@@ -671,13 +671,13 @@
                                     <input type="text" class="form-control" id="ai-extract-track-id" placeholder="e.g. zandvoort">
                                 </div>
                                 <button class="btn btn-info w-100" onclick="extractTrackFromAIStandalone()">
-                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Extract Track Layout
+                                    <i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-1"></i> Extract Track Layout
                                 </button>
                                 <div id="ai-extract-result" class="mt-3" style="display:none">
                                     <label class="form-label small fw-bold">Extracted GeoJSON</label>
                                     <pre class="border rounded p-3 bg-dark text-light small" style="max-height:300px; overflow:auto" id="ai-extract-geojson"></pre>
                                     <button class="btn btn-sm btn-success w-100 mt-2" onclick="saveExtractedTrack()">
-                                        <i class="fa-solid fa-save me-1"></i> Save Extracted Track
+                                        <i aria-hidden="true" class="fa-solid fa-save me-1"></i> Save Extracted Track
                                     </button>
                                 </div>
                             </div>
@@ -691,7 +691,7 @@
                     <div class="row">
                         <div class="col-lg-6 mb-4">
                             <div class="card">
-                                <div class="card-header"><i class="fa-solid fa-envelope me-2 text-danger"></i>SMTP Settings</div>
+                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-envelope me-2 text-danger"></i>SMTP Settings</div>
                                 <div class="card-body">
                                     <form id="email-settings-form">
                                         <div class="row g-3 mb-3">
@@ -727,7 +727,7 @@
                                 </div>
                             </div>
                             <div class="card mt-4">
-                                <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>How It Works</div>
+                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>How It Works</div>
                                 <div class="card-body">
                                     <p class="small text-muted mb-2">After each race is saved to history, an email with the full results will be sent to all racers who have an email address configured.</p>
                                     <p class="small text-muted mb-0">The email includes each driver's position, points, and fastest lap status in an HTML table.</p>
@@ -736,7 +736,7 @@
                         </div>
                         <div class="col-lg-6 mb-4">
                             <div class="card">
-                                <div class="card-header"><i class="fa-solid fa-address-card me-2 text-danger"></i>Racer Email Addresses</div>
+                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-address-card me-2 text-danger"></i>Racer Email Addresses</div>
                                 <div class="card-body">
                                     <p class="small text-muted mb-3">Assign email addresses to racers so they receive race result emails.</p>
                                     <div id="racer-email-list"></div>
@@ -751,7 +751,7 @@
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="card">
-                                <div class="card-header"><i class="fa-solid fa-chart-simple me-2 text-danger"></i>Umami Analytics</div>
+                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-chart-simple me-2 text-danger"></i>Umami Analytics</div>
                                 <div class="card-body">
                                     <form id="umami-form">
                                         <div class="mb-3">
@@ -777,7 +777,7 @@
                         </div>
                         <div class="col-lg-6">
                             <div class="card">
-                                <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About Umami</div>
+                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>About Umami</div>
                                 <div class="card-body">
                                     <p class="small text-muted mb-2">Umami is a simple, fast, privacy-focused alternative to Google Analytics. It is self-hosted and does not track cookies or collect personal data.</p>
                                     <p class="small text-muted mb-0">The tracking script is automatically injected into all pages when enabled.</p>
@@ -792,7 +792,7 @@
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="card mb-4">
-                                <div class="card-header"><i class="fa-solid fa-gear me-2 text-danger"></i>Backup Settings</div>
+                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-gear me-2 text-danger"></i>Backup Settings</div>
                                 <div class="card-body">
                                     <form id="backup-form">
                                         <div class="mb-3">
@@ -827,9 +827,9 @@
                         <div class="col-lg-6">
                             <div class="card mb-4">
                                 <div class="card-header d-flex justify-content-between align-items-center">
-                                    <span><i class="fa-solid fa-clock-rotate-left me-2 text-danger"></i>Manual Backup</span>
+                                    <span><i aria-hidden="true" class="fa-solid fa-clock-rotate-left me-2 text-danger"></i>Manual Backup</span>
                                     <button class="btn btn-sm btn-success" id="backup-manual-btn" onclick="triggerManualBackup()">
-                                        <i class="fa-solid fa-play me-1"></i> Backup Now
+                                        <i aria-hidden="true" class="fa-solid fa-play me-1"></i> Backup Now
                                     </button>
                                 </div>
                                 <div class="card-body">
@@ -838,7 +838,7 @@
                                 </div>
                             </div>
                             <div class="card">
-                                <div class="card-header"><i class="fa-solid fa-list me-2 text-info"></i>Recent Backups</div>
+                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-list me-2 text-info"></i>Recent Backups</div>
                                 <div class="card-body p-0">
                                     <div class="table-responsive">
                                         <table class="table table-hover align-middle mb-0">
@@ -885,7 +885,7 @@
                             <div class="input-group">
                                 <input type="text" class="form-control" name="profile_picture" id="profile_picture" placeholder="Default avatar will be used if empty">
                                 <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('imageInput').click()">
-                                    <i class="fa-solid fa-upload"></i>
+                                    <i aria-hidden="true" class="fa-solid fa-upload"></i>
                                 </button>
                             </div>
                             <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="uploadImage(this)">
@@ -1008,7 +1008,7 @@
                                 </div>
                                 <input type="file" id="map-image-upload" style="display:none" accept="image/*" onchange="uploadMapImage(this)">
                                 <button type="button" class="btn btn-sm btn-outline-info w-100" onclick="extractTrackFromAI()">
-                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Extract Track with AI (Alpha)
+                                    <i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-1"></i> Extract Track with AI (Alpha)
                                 </button>
                             </div>
                         </div>
@@ -1028,7 +1028,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted text-center py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading...</p>
+                    <p class="text-muted text-center py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading...</p>
                 </div>
             </div>
         </div>
@@ -1043,7 +1043,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted text-center py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading...</p>
+                    <p class="text-muted text-center py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading...</p>
                 </div>
             </div>
         </div>

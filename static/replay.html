@@ -38,9 +38,9 @@
     <div class="replay-header">
         <div class="d-flex justify-content-between align-items-center">
             <h1 class="mb-0" style="font-family:'Bebas Neue',sans-serif;font-size:2rem;">
-                <i class="fa-solid fa-clock-rotate-left me-2"></i>Race Replay
+                <i aria-hidden="true" class="fa-solid fa-clock-rotate-left me-2"></i>Race Replay
             </h1>
-            <a href="/" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-house"></i></a>
+            <a href="/" class="btn btn-outline-light btn-sm"><i aria-hidden="true" class="fa-solid fa-house"></i></a>
         </div>
     </div>
 
@@ -53,10 +53,10 @@
                     </select>
                 </div>
                 <div class="col-md-8 d-flex gap-2">
-                    <button class="btn btn-outline-info" onclick="replayPrevLap()"><i class="fa-solid fa-backward-step"></i></button>
-                    <button class="btn btn-success" id="replay-play-btn" onclick="toggleReplayPlay()"><i class="fa-solid fa-play"></i></button>
-                    <button class="btn btn-outline-info" onclick="replayNextLap()"><i class="fa-solid fa-forward-step"></i></button>
-                    <button class="btn btn-outline-warning" onclick="replayReset()"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button class="btn btn-outline-info" onclick="replayPrevLap()"><i aria-hidden="true" class="fa-solid fa-backward-step"></i></button>
+                    <button class="btn btn-success" id="replay-play-btn" onclick="toggleReplayPlay()"><i aria-hidden="true" class="fa-solid fa-play"></i></button>
+                    <button class="btn btn-outline-info" onclick="replayNextLap()"><i aria-hidden="true" class="fa-solid fa-forward-step"></i></button>
+                    <button class="btn btn-outline-warning" onclick="replayReset()"><i aria-hidden="true" class="fa-solid fa-rotate-left"></i></button>
                     <span class="ms-auto align-self-center fw-bold" id="replay-lap-display">Lap 0 / 0</span>
                 </div>
             </div>
@@ -66,7 +66,7 @@
         <div class="row g-3">
             <div class="col-md-8">
                 <div class="replay-table">
-                    <h5 class="mb-3"><i class="fa-solid fa-ranking-star me-2"></i>Positions</h5>
+                    <h5 class="mb-3"><i aria-hidden="true" class="fa-solid fa-ranking-star me-2"></i>Positions</h5>
                     <div id="replay-positions">
                         <p class="text-center opacity-50">Select a race to begin</p>
                     </div>
@@ -92,7 +92,7 @@
                     </div>
                 </div>
                 <div class="replay-table mt-3">
-                    <h5 class="mb-3"><i class="fa-solid fa-list me-2"></i>Events</h5>
+                    <h5 class="mb-3"><i aria-hidden="true" class="fa-solid fa-list me-2"></i>Events</h5>
                     <div id="replay-events" style="max-height:200px;overflow-y:auto;">
                         <p class="text-center opacity-50">No events</p>
                     </div>
