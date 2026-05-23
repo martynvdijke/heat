@@ -141,8 +141,8 @@ func HtmxRacersEditForm(c *gin.Context) {
 	}
 
 	var r models.Racer
-	err = app.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points, rank, position FROM racers WHERE id=?", id).
-		Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position)
+	err = app.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers WHERE id=?", id).
+		Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID)
 	if err != nil {
 		racerEditFormTmpl.Execute(c.Writer, nil)
 		return

@@ -1,51 +1,46 @@
-var i18n = (function() {
-    var translations = {};
-    var currentLang = 'en';
-
+"use strict";
+const i18nModule = (() => {
+    let translations = {};
+    let currentLang = 'en';
     function load(lang) {
-        var url = '/api/translations';
-        if (lang) url += '?lang=' + lang;
+        let url = '/api/translations';
+        if (lang)
+            url += '?lang=' + lang;
         return fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(t) {
-                translations = t;
-                currentLang = t._lang || 'en';
-                apply();
-            })
-            .catch(function() {});
+            .then(r => r.json())
+            .then((t) => {
+            translations = t;
+            currentLang = t._lang || 'en';
+            apply();
+        })
+            .catch(() => { });
     }
-
     function t(key) {
         return translations[key] || key;
     }
-
     function apply() {
-        document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
             el.textContent = t(el.getAttribute('data-i18n'));
         });
-        document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
         });
-        document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
-            el.title = t(el.getAttribute('data-i18n-title'));
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
         });
     }
-
     function switchLang(lang) {
         return fetch('/api/language', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({lang: lang})
-        }).then(function() {
-            return load(lang);
-        });
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lang: lang }),
+        }).then(() => load(lang));
     }
-
     function getCurrentLang() {
         return currentLang;
     }
-
     load();
-
-    return { t: t, load: load, apply: apply, switchLang: switchLang, getCurrentLang: getCurrentLang };
+    return { t, load, apply, switchLang, getCurrentLang };
 })();
+var i18n = i18nModule;
+//# sourceMappingURL=i18n.js.map

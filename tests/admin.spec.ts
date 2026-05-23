@@ -39,13 +39,14 @@ test.describe.serial('Admin Panel', () => {
 
   test('should add a new racer', async ({ page }) => {
     await page.click('#racers-tab');
-    await page.click('[onclick="openRacerModal()"]');
+    await page.click('button[hx-get="/api/html/racers/0/edit"]');
     await page.waitForSelector('#racerModal.show');
+    await page.waitForSelector('#racerModal form#racer-form');
 
     await page.fill('form#racer-form input[name="name"]', 'Test Racer');
     await page.fill('form#racer-form input[name="profile_picture"]', '/static/images/helmet.svg');
     await page.fill('form#racer-form input[name="car_name"]', 'Test Car');
-    await page.fill('form#racer-form input[name="car_color_text"]', '#800080');
+    await page.fill('form#racer-form input[name="car_color"]', '#800080');
     await page.fill('form#racer-form input[name="points"]', '42');
     await page.fill('form#racer-form input[name="rank"]', '10');
     await page.fill('form#racer-form input[name="position"]', '0');
@@ -85,13 +86,14 @@ test.describe.serial('Admin Panel', () => {
 
   test('should add a racer without profile picture', async ({ page }) => {
     await page.click('#racers-tab');
-    await page.click('[onclick="openRacerModal()"]');
+    await page.click('button[hx-get="/api/html/racers/0/edit"]');
     await page.waitForSelector('#racerModal.show');
+    await page.waitForSelector('#racerModal form#racer-form');
 
     await page.fill('form#racer-form input[name="name"]', 'No Pic Racer');
     await page.fill('form#racer-form input[name="profile_picture"]', '');
     await page.fill('form#racer-form input[name="car_name"]', 'Shadow');
-    await page.fill('form#racer-form input[name="car_color_text"]', '#000000');
+    await page.fill('form#racer-form input[name="car_color"]', '#000000');
     await page.fill('form#racer-form input[name="points"]', '10');
     await page.fill('form#racer-form input[name="rank"]', '20');
     await page.fill('form#racer-form input[name="position"]', '0');
@@ -104,13 +106,14 @@ test.describe.serial('Admin Panel', () => {
 
   test('should validate racer form with only name and car', async ({ page }) => {
     await page.click('#racers-tab');
-    await page.click('[onclick="openRacerModal()"]');
+    await page.click('button[hx-get="/api/html/racers/0/edit"]');
     await page.waitForSelector('#racerModal.show');
+    await page.waitForSelector('#racerModal form#racer-form');
 
     await page.fill('form#racer-form input[name="name"]', 'Min Racer');
     await page.fill('form#racer-form input[name="profile_picture"]', '');
     await page.fill('form#racer-form input[name="car_name"]', 'Basic');
-    await page.fill('form#racer-form input[name="car_color_text"]', '#ff0000');
+    await page.fill('form#racer-form input[name="car_color"]', '#ff0000');
     await page.fill('form#racer-form input[name="points"]', '0');
     await page.fill('form#racer-form input[name="rank"]', '99');
     await page.fill('form#racer-form input[name="position"]', '0');

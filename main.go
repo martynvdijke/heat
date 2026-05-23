@@ -38,6 +38,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/net/webdav"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	swaggerFiles "github.com/swaggo/files/v2"
@@ -46,6 +48,7 @@ import (
 
 	"heat/app"
 	"heat/db"
+	"heat/ent"
 	"heat/handlers"
 	"heat/middleware"
 	"heat/ws"
@@ -105,13 +108,16 @@ func main() {
 	}
 
 	var err error
-	app.DB, err = sql.Open("sqlite3", app.DBPath)
+	app.DB, err = sql.Open("sqlite3", app.DBPath+"?_fk=1")
 	if err != nil {
 		log.Fatal(err)
 	}
 	app.DB.SetMaxOpenConns(1)
 	app.DB.Exec("PRAGMA journal_mode=WAL")
-	defer app.DB.Close()
+
+	drv := entsql.OpenDB(dialect.SQLite, app.DB)
+	app.Ent = ent.NewClient(ent.Driver(drv))
+	defer app.Ent.Close()
 
 	db.Init()
 	go ws.BroadcastManager()
@@ -524,11 +530,4 @@ func main() {
 
 	log.Printf("Server starting on port %s...", port)
 	r.Run(":" + port)
-}
-
-func init() {
-	if os.Getenv("DOCKER") != "true" {
-		app.BasePath = "."
-		app.DBPath = "./heat.db"
-	}
 }

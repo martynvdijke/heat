@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -546,13 +547,9 @@ func GetELORatings(c *gin.Context) {
 		})
 	}
 
-	for i := 0; i < len(result); i++ {
-		for j := i + 1; j < len(result); j++ {
-			if result[j].Rating > result[i].Rating {
-				result[i], result[j] = result[j], result[i]
-			}
-		}
-	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Rating > result[j].Rating
+	})
 
 	c.JSON(http.StatusOK, result)
 }
@@ -768,14 +765,9 @@ func GetQualifyingRaceDelta(c *gin.Context) {
 		})
 	}
 
-	// Sort by total points desc
-	for i := 0; i < len(out); i++ {
-		for j := i + 1; j < len(out); j++ {
-			if out[j].TotalPoints > out[i].TotalPoints {
-				out[i], out[j] = out[j], out[i]
-			}
-		}
-	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].TotalPoints > out[j].TotalPoints
+	})
 
 	c.JSON(http.StatusOK, out)
 }
@@ -873,14 +865,9 @@ func GetConsistencyRatings(c *gin.Context) {
 		})
 	}
 
-	// Sort by consistency desc
-	for i := 0; i < len(out); i++ {
-		for j := i + 1; j < len(out); j++ {
-			if out[j].Consistency > out[i].Consistency {
-				out[i], out[j] = out[j], out[i]
-			}
-		}
-	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Consistency > out[j].Consistency
+	})
 
 	c.JSON(http.StatusOK, out)
 }

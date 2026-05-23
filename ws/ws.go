@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 
 	"heat/app"
 	"heat/models"
@@ -66,19 +67,23 @@ func HandleWebSocket(c *gin.Context) {
 }
 
 func broadcastToClients(msg interface{}) {
+	var failed []*websocket.Conn
 	app.ClientsMu.RLock()
-	defer app.ClientsMu.RUnlock()
 	for client := range app.Clients {
 		err := client.WriteJSON(msg)
 		if err != nil {
 			log.Printf("[WS] error broadcasting to client: %v", err)
 			client.Close()
-			app.ClientsMu.RUnlock()
-			app.ClientsMu.Lock()
-			delete(app.Clients, client)
-			app.ClientsMu.Unlock()
-			app.ClientsMu.RLock()
+			failed = append(failed, client)
 		}
+	}
+	app.ClientsMu.RUnlock()
+	if len(failed) > 0 {
+		app.ClientsMu.Lock()
+		for _, client := range failed {
+			delete(app.Clients, client)
+		}
+		app.ClientsMu.Unlock()
 	}
 }
 

@@ -1,11 +1,15 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
 	"heat/app"
+	"heat/ent"
+	"heat/ent/quote"
 	"heat/models"
 )
 
@@ -16,20 +20,15 @@ import (
 // @Success 200 {array} models.Quote
 // @Router /api/quotes [get]
 func GetQuotes(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, text, author, created_at FROM quotes ORDER BY id")
+	entQuotes, err := app.Ent.Quote.Query().Order(ent.Asc(quote.FieldID)).All(context.Background())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer rows.Close()
 
-	quotes := make([]models.Quote, 0)
-	for rows.Next() {
-		var q models.Quote
-		if err := rows.Scan(&q.ID, &q.Text, &q.Author, &q.CreatedAt); err != nil {
-			continue
-		}
-		quotes = append(quotes, q)
+	quotes := make([]models.Quote, len(entQuotes))
+	for i, q := range entQuotes {
+		quotes[i] = models.Quote{ID: q.ID, Text: q.Text, Author: q.Author, CreatedAt: q.CreatedAt}
 	}
 	c.JSON(http.StatusOK, quotes)
 }
@@ -41,12 +40,11 @@ func GetQuotes(c *gin.Context) {
 // @Success 200 {object} models.Quote
 // @Router /api/quote/random [get]
 func GetRandomQuote(c *gin.Context) {
-	var q models.Quote
-	err := app.DB.QueryRow("SELECT id, text, author, created_at FROM quotes ORDER BY RANDOM() LIMIT 1").Scan(&q.ID, &q.Text, &q.Author, &q.CreatedAt)
+	q, err := app.Ent.Quote.Query().Order(ent.Asc(quote.FieldID)).First(context.Background())
 	if err != nil {
-		q = models.Quote{Text: "The engines roar as these legends battle for glory!", Author: "Commentator"}
+		q = &ent.Quote{Text: "The engines roar as these legends battle for glory!", Author: "Commentator"}
 	}
-	c.JSON(http.StatusOK, q)
+	c.JSON(http.StatusOK, models.Quote{ID: q.ID, Text: q.Text, Author: q.Author, CreatedAt: q.CreatedAt})
 }
 
 // @Summary Create a quote
@@ -76,13 +74,12 @@ func HandleQuotes(c *gin.Context) {
 		if q.Author == "" {
 			q.Author = "Commentator"
 		}
-		result, err := app.DB.Exec("INSERT INTO quotes (text, author) VALUES (?, ?)", q.Text, q.Author)
+		created, err := app.Ent.Quote.Create().SetText(q.Text).SetAuthor(q.Author).Save(context.Background())
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		id, _ := result.LastInsertId()
-		q.ID = int(id)
+		q.ID = created.ID
 		c.JSON(http.StatusCreated, q)
 	case "PUT":
 		var q models.Quote
@@ -94,19 +91,24 @@ func HandleQuotes(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Quote ID is required"})
 			return
 		}
-		_, err := app.DB.Exec("UPDATE quotes SET text = ?, author = ? WHERE id = ?", q.Text, q.Author, q.ID)
+		_, err := app.Ent.Quote.UpdateOneID(q.ID).SetText(q.Text).SetAuthor(q.Author).Save(context.Background())
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, q)
 	case "DELETE":
-		id := c.Query("id")
-		if id == "" {
+		idStr := c.Query("id")
+		if idStr == "" {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Quote ID is required"})
 			return
 		}
-		_, err := app.DB.Exec("DELETE FROM quotes WHERE id = ?", id)
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid quote ID"})
+			return
+		}
+		_, err = app.Ent.Quote.Delete().Where(quote.ID(id)).Exec(context.Background())
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

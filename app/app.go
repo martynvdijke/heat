@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/time/rate"
 
+	"heat/ent"
 	"heat/models"
 )
 
@@ -27,16 +28,16 @@ type SessionInfo struct {
 
 var (
 	DB             *sql.DB
+	Ent            *ent.Client
 	SessionStore   = make(map[string]SessionInfo)
 	SessionStoreMu sync.RWMutex
-	StaticCache    = make(map[string][]byte)
 	Clients        = make(map[*websocket.Conn]bool)
 	ClientsMu      sync.RWMutex
 	Broadcast      = make(chan []models.Racer)
 	BasePath       = "/app"
 	DBPath         = "/db/heat.db"
 	MediaPath      = "/app/media"
-	CurrentVersion = "1.27.0"
+	CurrentVersion = "1.29.1"
 	LoginLimiter   = rate.NewLimiter(rate.Limit(5), 10)
 	SecureCookies  = os.Getenv("DOCKER") == "true"
 

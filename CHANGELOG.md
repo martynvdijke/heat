@@ -1,3 +1,37 @@
+## [1.29.1](https://github.com/martynvdijke/heat/compare/v1.29.0...v1.29.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([#29](https://github.com/martynvdijke/heat/issues/29)) ([f7e9140](https://github.com/martynvdijke/heat/commit/f7e9140fa004ea383a2edc87da19f6f3f8b0229c))
+
+# [1.29.0](https://github.com/martynvdijke/heat/compare/v1.28.1...v1.29.0) (2026-05-21)
+
+
+### Features
+
+* add new entity schemas and Dutch locale support ([8cc62d6](https://github.com/martynvdijke/heat/commit/8cc62d64321306111dcb5052f694274ae1a9a2db))
+
+## [1.28.1](https://github.com/martynvdijke/heat/compare/v1.28.0...v1.28.1) (2026-05-20)
+
+
+### Bug Fixes
+
+* ensure Gotify notification always fires on release workflow ([dd0f084](https://github.com/martynvdijke/heat/commit/dd0f0848933862f77ebf0339084794c2f4560ab0))
+
+# [1.28.0](https://github.com/martynvdijke/heat/compare/v1.27.0...v1.28.0) (2026-05-19)
+
+
+### Bug Fixes
+
+* update admin e2e tests to use htmx button and car_color field ([5e8df5a](https://github.com/martynvdijke/heat/commit/5e8df5a25ba237ee848f29d802182935bc1c906e))
+
+
+### Features
+
+* integrate Ent ORM for schema management and core entities ([238a863](https://github.com/martynvdijke/heat/commit/238a8635877c38d5fd2a2d815ef806da13c57753))
+* migrate CRUD admin panels to htmx ([6244799](https://github.com/martynvdijke/heat/commit/6244799429d4b9d3636977667fd2e4d881af48fd))
+
 # [1.27.0](https://github.com/martynvdijke/heat/compare/v1.26.0...v1.27.0) (2026-05-18)
 
 

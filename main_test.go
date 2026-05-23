@@ -21,8 +21,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
+
 	"heat/app"
 	"heat/db"
+	"heat/ent"
 	"heat/handlers"
 	"heat/middleware"
 	"heat/models"
@@ -38,11 +42,14 @@ func TestMain(m *testing.M) {
 	app.MediaPath = filepath.Join(app.BasePath, "media")
 
 	var err error
-	app.DB, err = sql.Open("sqlite3", app.DBPath)
+	app.DB, err = sql.Open("sqlite3", app.DBPath+"?_fk=1")
 	if err != nil {
 		log.Fatalf("failed to open in-memory db: %v", err)
 	}
 	app.DB.SetMaxOpenConns(1)
+
+	drv := entsql.OpenDB(dialect.SQLite, app.DB)
+	app.Ent = ent.NewClient(ent.Driver(drv))
 
 	db.Init()
 	go ws.BroadcastManager()
@@ -2410,8 +2417,8 @@ func TestI18nAPI(t *testing.T) {
 		}
 	})
 
-	t.Run("get german translations", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/api/translations?lang=de", nil)
+	t.Run("get dutch translations", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/translations?lang=nl", nil)
 		rr := httptest.NewRecorder()
 		r.ServeHTTP(rr, req)
 		if rr.Code != http.StatusOK {
@@ -2420,15 +2427,15 @@ func TestI18nAPI(t *testing.T) {
 		var tmap map[string]string
 		json.Unmarshal(rr.Body.Bytes(), &tmap)
 		if tmap["nav.admin"] != "Admin" {
-			t.Errorf("expected de nav.admin to be 'Admin', got %s", tmap["nav.admin"])
+			t.Errorf("expected nl nav.admin to be 'Admin', got %s", tmap["nav.admin"])
 		}
-		if tmap["_lang"] != "de" {
-			t.Errorf("expected _lang=de, got %s", tmap["_lang"])
+		if tmap["_lang"] != "nl" {
+			t.Errorf("expected _lang=nl, got %s", tmap["_lang"])
 		}
 	})
 
 	t.Run("set language", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{"lang": "de"})
+		body, _ := json.Marshal(map[string]string{"lang": "nl"})
 		req, _ := http.NewRequest("POST", "/api/language", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 		rr := httptest.NewRecorder()
@@ -2460,9 +2467,9 @@ func TestI18nAPI(t *testing.T) {
 		}
 	})
 
-	t.Run("get translations detects german accept-language", func(t *testing.T) {
+	t.Run("get translations detects dutch accept-language", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/translations", nil)
-		req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en;q=0.8")
+		req.Header.Set("Accept-Language", "nl-NL,nl;q=0.9,en;q=0.8")
 		rr := httptest.NewRecorder()
 		r.ServeHTTP(rr, req)
 		if rr.Code != http.StatusOK {
@@ -2474,7 +2481,7 @@ func TestI18nAPI(t *testing.T) {
 	})
 
 	t.Run("translation files exist", func(t *testing.T) {
-		for _, lang := range []string{"en", "de"} {
+		for _, lang := range []string{"en", "nl"} {
 			data, err := os.ReadFile("static/locales/" + lang + ".json")
 			if err != nil {
 				t.Errorf("missing locale file: %s", lang)
@@ -2492,17 +2499,17 @@ func TestI18nAPI(t *testing.T) {
 
 	t.Run("translations keys match between locales", func(t *testing.T) {
 		enData, _ := os.ReadFile("static/locales/en.json")
-		deData, _ := os.ReadFile("static/locales/de.json")
-		var en, de map[string]string
+		nlData, _ := os.ReadFile("static/locales/nl.json")
+		var en, nl map[string]string
 		json.Unmarshal(enData, &en)
-		json.Unmarshal(deData, &de)
+		json.Unmarshal(nlData, &nl)
 
 		for k := range en {
-			if de[k] == "" {
-				t.Errorf("key %q missing from de.json", k)
+			if nl[k] == "" {
+				t.Errorf("key %q missing from nl.json", k)
 			}
 		}
-		for k := range de {
+		for k := range nl {
 			if en[k] == "" {
 				t.Errorf("key %q missing from en.json", k)
 			}

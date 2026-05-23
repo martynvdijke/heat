@@ -14,48 +14,43 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"heat/app"
-	"heat/db"
+	"heat/ent"
+	"heat/ent/aisetting"
+	"heat/ent/track"
 	"heat/models"
 )
 
-// @Summary Get all tracks
-// @Description Get the list of all race tracks
-// @Tags Tracks
-// @Produce json
-// @Success 200 {array} models.Track
-// @Router /api/tracks [get]
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 func GetTracks(c *gin.Context) {
-	rows, err := app.DB.Query("SELECT id, name, country, geojson, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks ORDER BY name")
+	tracks, err := app.Ent.Track.Query().Order(track.ByName()).All(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer rows.Close()
 
-	var tracks []models.Track
-	for rows.Next() {
-		var t models.Track
-		var useMapImage, refreshGeoJSON int
-		if err := rows.Scan(&t.ID, &t.Name, &t.Country, &t.GeoJSON, &t.Length, &t.LapRecord, &useMapImage, &t.MapImageURL, &refreshGeoJSON); err != nil {
-			continue
+	result := make([]models.Track, len(tracks))
+	for i, t := range tracks {
+		result[i] = models.Track{
+			ID:             t.ID,
+			Name:           t.Name,
+			Country:        t.Country,
+			GeoJSON:        t.Geojson,
+			Length:         t.LengthKm,
+			LapRecord:      t.LapRecord,
+			UseMapImage:    t.UseMapImage == 1,
+			MapImageURL:    t.MapImageURL,
+			RefreshGeoJSON: t.RefreshGeojson == 1,
 		}
-		t.UseMapImage = useMapImage == 1
-		t.RefreshGeoJSON = refreshGeoJSON == 1
-		tracks = append(tracks, t)
 	}
-	c.JSON(http.StatusOK, tracks)
+	c.JSON(http.StatusOK, result)
 }
 
-// @Summary Create or update a track
-// @Description Creates a new track or updates an existing one
-// @Tags Tracks
-// @Accept json
-// @Produce json
-// @Param track body models.Track true "Track data"
-// @Success 200 {object} models.Track
-// @Failure 400 {object} map[string]string
-// @Security cookieAuth
-// @Router /api/tracks [post]
 func SaveTrack(c *gin.Context) {
 	var t models.Track
 	if err := c.ShouldBindJSON(&t); err != nil {
@@ -63,25 +58,47 @@ func SaveTrack(c *gin.Context) {
 		return
 	}
 
-	_, err := app.DB.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.ID, t.Name, t.Country, t.ID, t.Length, t.LapRecord, db.BoolToInt(t.UseMapImage), t.MapImageURL, db.BoolToInt(t.RefreshGeoJSON))
-	if err != nil {
+	ctx := c.Request.Context()
+	_, err := app.Ent.Track.Get(ctx, t.ID)
+	if ent.IsNotFound(err) {
+		_, err = app.Ent.Track.Create().
+			SetID(t.ID).
+			SetName(t.Name).
+			SetCountry(t.Country).
+			SetGeojson(t.GeoJSON).
+			SetLengthKm(t.Length).
+			SetLapRecord(t.LapRecord).
+			SetUseMapImage(boolToInt(t.UseMapImage)).
+			SetMapImageURL(t.MapImageURL).
+			SetRefreshGeojson(boolToInt(t.RefreshGeoJSON)).
+			Save(ctx)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	} else if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	} else {
+		_, err = app.Ent.Track.UpdateOneID(t.ID).
+			SetName(t.Name).
+			SetCountry(t.Country).
+			SetGeojson(t.GeoJSON).
+			SetLengthKm(t.Length).
+			SetLapRecord(t.LapRecord).
+			SetUseMapImage(boolToInt(t.UseMapImage)).
+			SetMapImageURL(t.MapImageURL).
+			SetRefreshGeojson(boolToInt(t.RefreshGeoJSON)).
+			Save(ctx)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, t)
 }
 
-// @Summary Delete a track
-// @Description Delete a track by ID
-// @Tags Tracks
-// @Produce json
-// @Param id query string true "Track ID"
-// @Success 200
-// @Failure 400 {object} map[string]string
-// @Security cookieAuth
-// @Router /api/tracks [delete]
 func DeleteTrack(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
@@ -89,7 +106,7 @@ func DeleteTrack(c *gin.Context) {
 		return
 	}
 
-	_, err := app.DB.Exec("DELETE FROM tracks WHERE id = ?", id)
+	err := app.Ent.Track.DeleteOneID(id).Exec(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -98,25 +115,12 @@ func DeleteTrack(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// @Summary AI Track Extraction
-// @Description Analyzes a track image using AI to extract GeoJSON data
-// @Tags Tracks
-// @Accept json
-// @Accept mpfd
-// @Produce json
-// @Param image_url body object false "JSON with image_url field"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]string
-// @Security cookieAuth
-// @Router /api/tracks/ai-extract [post]
 func HandleAIExtract(c *gin.Context) {
 	aiURL := os.Getenv("AI_TRACK_EXTRACT_URL")
 	if aiURL == "" {
-		var dbURL string
-		var enabled bool
-		err := app.DB.QueryRow("SELECT track_extract_url, enabled FROM ai_settings WHERE id = 1").Scan(&dbURL, &enabled)
-		if err == nil && enabled && dbURL != "" {
-			aiURL = dbURL
+		setting, err := app.Ent.AISetting.Query().Where(aisetting.ID(1)).First(c.Request.Context())
+		if err == nil && setting.Enabled == 1 && setting.TrackExtractURL != "" {
+			aiURL = setting.TrackExtractURL
 		}
 	}
 	if aiURL == "" {
@@ -179,10 +183,9 @@ func HandleAIExtract(c *gin.Context) {
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	var apiKey string
-	app.DB.QueryRow("SELECT COALESCE(api_key, '') FROM ai_settings WHERE id = 1").Scan(&apiKey)
-	if apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+apiKey)
+	setting, err := app.Ent.AISetting.Query().Where(aisetting.ID(1)).First(c.Request.Context())
+	if err == nil && setting.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+setting.APIKey)
 	}
 
 	resp, err := client.Do(req)
