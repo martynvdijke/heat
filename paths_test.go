@@ -55,6 +55,11 @@ func TestPathsConfiguration(t *testing.T) {
 		if testServer.MediaPath != "/app/media" {
 			t.Errorf("expected Docker mediaPath '/app/media', got %s", testServer.MediaPath)
 		}
+
+		// Restore for subsequent tests
+		testServer.BasePath = "."
+		testServer.DBPath = ":memory:"
+		testServer.MediaPath = filepath.Join(".", "media")
 	})
 }
 
