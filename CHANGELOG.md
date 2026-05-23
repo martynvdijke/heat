@@ -1,3 +1,10 @@
+## [1.29.3](https://github.com/martynvdijke/heat/compare/v1.29.2...v1.29.3) (2026-05-23)
+
+
+### Bug Fixes
+
+* **ui:** add aria-hidden to icons, fix FA version, add autocomplete, replace alerts ([4625785](https://github.com/martynvdijke/heat/commit/462578589f4b088edce4d40a895a6aab8aa42162))
+
 ## [1.29.2](https://github.com/martynvdijke/heat/compare/v1.29.1...v1.29.2) (2026-05-23)
 
 ## [1.29.1](https://github.com/martynvdijke/heat/compare/v1.29.0...v1.29.1) (2026-05-22)
