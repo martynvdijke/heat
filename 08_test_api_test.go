@@ -283,6 +283,39 @@ func TestFlagEndpoint(t *testing.T) {
 			t.Errorf("expected 400 for invalid type, got %d", rr.Code)
 		}
 	})
+
+	t.Run("start lights sequence", func(t *testing.T) {
+		body, _ := json.Marshal(models.FlagCommand{Type: "flag", Flag: "startlights", State: "sequence"})
+		req, _ := http.NewRequest("POST", "/api/flags", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200 for start lights sequence, got %d", rr.Code)
+		}
+	})
+
+	t.Run("start lights abort", func(t *testing.T) {
+		body, _ := json.Marshal(models.FlagCommand{Type: "flag", Flag: "startlights", State: "abort"})
+		req, _ := http.NewRequest("POST", "/api/flags", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200 for start lights abort, got %d", rr.Code)
+		}
+	})
+
+	t.Run("start lights reset", func(t *testing.T) {
+		body, _ := json.Marshal(models.FlagCommand{Type: "flag", Flag: "startlights", State: "reset"})
+		req, _ := http.NewRequest("POST", "/api/flags", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200 for start lights reset, got %d", rr.Code)
+		}
+	})
 }
 
 func TestI18nAPI(t *testing.T) {

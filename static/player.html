@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#d40000">
     <title>HEAT: Player Dashboard</title>
@@ -48,9 +48,11 @@
             <h1 class="mt-3" style="font-family:'Bebas Neue',sans-serif;">Player Login</h1>
         </div>
         <div class="card">
+            <label for="player-select" class="visually-hidden">Select your driver</label>
             <select id="player-select" class="form-select mb-3">
                 <option value="">Select your driver...</option>
             </select>
+            <label for="device-name" class="visually-hidden">Device Name</label>
             <input type="text" id="device-name" class="form-control mb-3" placeholder="Device Name (e.g. iPhone)" value="Phone">
             <button class="btn btn-primary w-100 action-btn" onclick="playerLogin()">
                 <i aria-hidden="true" class="fa-solid fa-right-to-bracket me-2"></i>Connect
@@ -71,7 +73,7 @@
                 </div>
                 <small class="opacity-50">Lap <span id="my-lap">0</span> &middot; Pos <span id="my-pos">0</span></small>
             </div>
-            <button class="btn btn-outline-danger btn-sm" onclick="playerLogout()">
+            <button class="btn btn-outline-danger btn-sm" onclick="playerLogout()" aria-label="Logout">
                 <i aria-hidden="true" class="fa-solid fa-right-from-bracket"></i>
             </button>
         </div>
@@ -140,7 +142,7 @@
                     <span id="turbo-count" class="badge bg-success">Available</span>
                 </div>
                 <div class="text-center mt-3">
-                    <button class="btn btn-success turbo-btn" id="turbo-btn" onclick="useTurbo()">
+                    <button class="btn btn-success turbo-btn" id="turbo-btn" onclick="useTurbo()" aria-label="Use turbo">
                         <i aria-hidden="true" class="fa-solid fa-bolt"></i>
                     </button>
                     <p class="mt-2 small opacity-50">Tap to use turbo this lap</p>
