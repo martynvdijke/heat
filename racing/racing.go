@@ -163,7 +163,7 @@ func TrackStats(db *sql.DB) ([]TrackStatsResult, error) {
 	}
 	defer rows.Close()
 
-	var stats []TrackStatsResult
+	stats := make([]TrackStatsResult, 0)
 	for rows.Next() {
 		var s TrackStatsResult
 		if err := rows.Scan(&s.TrackID, &s.TrackName, &s.Country, &s.RacesCount, &s.Winner, &s.FastestLap); err != nil {
@@ -261,7 +261,7 @@ func PointsProgression(db *sql.DB, racerID int) ([]PointsProgressionData, error)
 	}
 	defer rows.Close()
 
-	var progression []PointsProgressionData
+	progression := make([]PointsProgressionData, 0)
 	var cumulative float64
 	for rows.Next() {
 		var p PointsProgressionData
@@ -408,7 +408,7 @@ func AllStreaks(db *sql.DB) []StreakData {
 	}
 	rows.Close()
 
-	var allStreaks []StreakData
+	allStreaks := make([]StreakData, 0)
 	for _, racer := range racers {
 		raceRows, err := db.Query(`
 			SELECT rh.id, rr.position
@@ -529,7 +529,7 @@ func ELORatings(db *sql.DB) ([]ELORatingData, error) {
 		}
 	}
 
-	var results []ELORatingData
+	results := make([]ELORatingData, 0)
 	for id, rating := range ratings {
 		var name string
 		db.QueryRow("SELECT name FROM racers WHERE id = ?", id).Scan(&name)
@@ -582,7 +582,7 @@ func TrackPerformance(db *sql.DB, racerID int) ([]TrackPerformanceData, error) {
 	}
 	defer rows.Close()
 
-	var results []TrackPerformanceData
+	results := make([]TrackPerformanceData, 0)
 	for rows.Next() {
 		var t TrackPerformanceData
 		if err := rows.Scan(&t.TrackID, &t.TrackName, &t.Country, &t.Races, &t.Wins, &t.Podiums, &t.AvgPosition, &t.BestPosition, &t.TotalPoints, &t.DNFRate); err != nil {
@@ -620,7 +620,7 @@ func QualifyingRaceDelta(db *sql.DB, racerID int) ([]QualifyingRaceDeltaData, er
 	}
 	defer rows.Close()
 
-	var results []QualifyingRaceDeltaData
+	results := make([]QualifyingRaceDeltaData, 0)
 	for rows.Next() {
 		var q QualifyingRaceDeltaData
 		if err := rows.Scan(&q.RaceID, &q.RaceDate, &q.TrackName, &q.RacePosition, &q.QualifyingPos); err != nil {
@@ -657,7 +657,7 @@ func ConsistencyRatings(db *sql.DB) ([]ConsistencyRatingData, error) {
 	}
 	defer rows.Close()
 
-	var results []ConsistencyRatingData
+	results := make([]ConsistencyRatingData, 0)
 	for rows.Next() {
 		var c ConsistencyRatingData
 		if err := rows.Scan(&c.RacerID, &c.Races, &c.AvgPosition); err != nil {
@@ -787,7 +787,7 @@ func ExportStatsCSV(db *sql.DB) ([]ExportStatsCSVData, error) {
 	}
 	defer rows.Close()
 
-	var data []ExportStatsCSVData
+	data := make([]ExportStatsCSVData, 0)
 	for rows.Next() {
 		var d ExportStatsCSVData
 		var racerName string
