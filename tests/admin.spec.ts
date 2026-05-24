@@ -195,6 +195,75 @@ test.describe.serial('Admin Panel', () => {
     await expect(page.locator('#backup-manual-btn')).toBeVisible();
     await expect(page.locator('#backup-list')).toBeVisible();
   });
+
+  test('should load controller page after admin login', async ({ page }) => {
+    await page.goto('/controller.html');
+    await expect(page).toHaveTitle(/HEAT: Race Controller/);
+    await expect(page.locator('#race-status')).toContainText('STOPPED');
+  });
+
+  test('should have start lights button with aria-label', async ({ page }) => {
+    await page.goto('/controller.html');
+    const btn = page.locator('button[aria-label="Start lights countdown"]');
+    await expect(btn).toBeAttached();
+    await expect(btn).toContainText('Start Lights');
+  });
+
+  test('should have open start lights display link with aria-label', async ({ page }) => {
+    await page.goto('/controller.html');
+    const link = page.locator('a[aria-label="Open start lights display"]');
+    await expect(link).toBeAttached();
+    await expect(link).toContainText('Open Lights Display');
+  });
+
+  test('should have Sound FX buttons with aria-labels', async ({ page }) => {
+    await page.goto('/controller.html');
+    const soundButtons = [
+      page.locator('button[aria-label="Play engine sound"]'),
+      page.locator('button[aria-label="Play horn sound"]'),
+      page.locator('button[aria-label="Play finish sound"]'),
+      page.locator('button[aria-label="Play crash sound"]'),
+    ];
+    for (const btn of soundButtons) {
+      await expect(btn).toBeAttached();
+    }
+  });
+
+  test('should have skip-to-content link with aria-label', async ({ page }) => {
+    await page.goto('/controller.html');
+    const skip = page.locator('a.skip-to-content');
+    await expect(skip).toBeAttached();
+    await expect(skip).toHaveAttribute('aria-label', 'Skip to main content');
+    await expect(skip).toHaveAttribute('href', '#main-content');
+  });
+
+  test('should have visually-hidden label for race-type select', async ({ page }) => {
+    await page.goto('/controller.html');
+    const label = page.locator('label[for="race-type"].visually-hidden');
+    await expect(label).toBeAttached();
+    await expect(label).toContainText('Race Type');
+  });
+
+  test('should not have user-scalable=no in viewport meta', async ({ page }) => {
+    await page.goto('/controller.html');
+    const viewport = await page.evaluate(() => {
+      const meta = document.querySelector('meta[name="viewport"]');
+      return meta ? meta.getAttribute('content') : null;
+    });
+    expect(viewport).not.toBeNull();
+    expect(viewport).not.toContain('user-scalable=no');
+    expect(viewport).toContain('initial-scale=1.0');
+  });
+
+  test('should have aria-live on dynamic sections', async ({ page }) => {
+    await page.goto('/controller.html');
+    await expect(page.locator('#standings-list')).toHaveAttribute('aria-live', 'polite');
+    await expect(page.locator('#turbo-list')).toHaveAttribute('aria-live', 'polite');
+    await expect(page.locator('#gear-log')).toHaveAttribute('aria-live', 'polite');
+    await expect(page.locator('#race-event-log')).toHaveAttribute('aria-live', 'polite');
+    await expect(page.locator('#connected-players')).toHaveAttribute('aria-live', 'polite');
+    await expect(page.locator('#current-weather')).toHaveAttribute('aria-live', 'polite');
+  });
 });
 
 async function loginAsAdmin(page: Page) {
