@@ -1,3 +1,10 @@
+## [1.29.6](https://github.com/martynvdijke/heat/compare/v1.29.5...v1.29.6) (2026-05-24)
+
+
+### Bug Fixes
+
+* **racing:** initialize result slices as empty to avoid null JSON response ([a6006b6](https://github.com/martynvdijke/heat/commit/a6006b6b7a2a7a12044ccc96d0b5dfb5c04c2ede))
+
 ## [1.29.5](https://github.com/martynvdijke/heat/compare/v1.29.4...v1.29.5) (2026-05-23)
 
 ## [1.29.4](https://github.com/martynvdijke/heat/compare/v1.29.3...v1.29.4) (2026-05-23)
