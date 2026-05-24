@@ -1,3 +1,10 @@
+# [1.30.0](https://github.com/martynvdijke/heat/compare/v1.29.6...v1.30.0) (2026-05-24)
+
+
+### Features
+
+* add F1-style race start light system + fix web design issues ([0ebdfc0](https://github.com/martynvdijke/heat/commit/0ebdfc088e17731a41da6b6af7d6213ea03c563e))
+
 ## [1.29.6](https://github.com/martynvdijke/heat/compare/v1.29.5...v1.29.6) (2026-05-24)
 
 
