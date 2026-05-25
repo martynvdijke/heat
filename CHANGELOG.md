@@ -1,3 +1,10 @@
+## [1.30.1](https://github.com/martynvdijke/heat/compare/v1.30.0...v1.30.1) (2026-05-25)
+
+
+### Bug Fixes
+
+* remove stalePrAge from renovate.json (removed in Renovate v37) ([79c3b35](https://github.com/martynvdijke/heat/commit/79c3b35e79b77a1ab8ac3eaaf4afbfb9b6c789b5))
+
 # [1.30.0](https://github.com/martynvdijke/heat/compare/v1.29.6...v1.30.0) (2026-05-24)
 
 
