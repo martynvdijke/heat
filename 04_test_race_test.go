@@ -417,16 +417,70 @@ func TestRaceReportPage(t *testing.T) {
 		if !strings.Contains(string(data), "Final Classification") {
 			t.Error("expected race report content")
 		}
+		if strings.Contains(string(data), "<script>window.print()") || strings.Contains(string(data), "onload=\"window.print()") {
+			t.Error("race-report.html should not auto-trigger print")
+		}
 	})
 
-	t.Run("race report API returns data", func(t *testing.T) {
+	t.Run("race report API returns data with correct fields", func(t *testing.T) {
 		r := gin.New()
 		r.GET("/api/race-report", testHandler.GetRaceReport)
 		req, _ := http.NewRequest("GET", "/api/race-report", nil)
 		rr := httptest.NewRecorder()
 		r.ServeHTTP(rr, req)
-		if rr.Code != http.StatusOK && rr.Code != http.StatusNotFound {
-			t.Errorf("expected 200 or 404, got %d", rr.Code)
+
+		if rr.Code == http.StatusNotFound {
+			t.Skip("no race data in database")
+		}
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rr.Code)
+		}
+
+		var report map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &report); err != nil {
+			t.Fatalf("failed to parse response: %v", err)
+		}
+
+		// Verify expected fields exist
+		if _, ok := report["name"]; !ok {
+			t.Error("response missing 'name' field")
+		}
+		if _, ok := report["country"]; !ok {
+			t.Error("response missing 'country' field")
+		}
+		if _, ok := report["total_laps"]; !ok {
+			t.Error("response missing 'total_laps' field")
+		}
+		if _, ok := report["race_date"]; !ok {
+			t.Error("response missing 'race_date' field")
+		}
+		if _, ok := report["track"]; !ok {
+			t.Error("response missing 'track' field")
+		}
+		// Verify old field name is not present
+		if _, ok := report["race_name"]; ok {
+			t.Error("response should not contain old 'race_name' field")
+		}
+		if _, ok := report["lap_records"]; ok {
+			t.Error("response should not contain 'lap_records'")
+		}
+		if _, ok := report["race_radio"]; ok {
+			t.Error("response should not contain 'race_radio'")
+		}
+
+		// Validate results contain correct fields
+		results, ok := report["results"].([]interface{})
+		if ok && len(results) > 0 {
+			result := results[0].(map[string]interface{})
+			if _, ok := result["dns"]; !ok {
+				t.Error("result missing 'dns' field")
+			}
+			if _, ok := result["dnf"]; !ok {
+				t.Error("result missing 'dnf' field")
+			}
+			if _, ok := result["racer_name"]; !ok {
+				t.Error("result missing 'racer_name' field")
+			}
 		}
 	})
 }

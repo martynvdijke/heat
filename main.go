@@ -176,17 +176,7 @@ func main() {
 	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.SecurityHeaders())
 
-	tp, err := initTelemetry()
-	if err != nil {
-		log.Printf("Failed to initialize telemetry: %v", err)
-	} else {
-		r.Use(metricsMiddleware())
-		defer func() {
-			if err := tp.Shutdown(context.Background()); err != nil {
-				log.Printf("Error shutting down tracer provider: %v", err)
-			}
-		}()
-	}
+	r.Use(metricsMiddleware())
 
 	r.GET("/ws", wsManager.HandleWebSocket)
 

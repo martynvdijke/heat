@@ -160,13 +160,12 @@
                             '<td>' + r.racer_name + '</td>' +
                             '<td>' + r.points + ' pts</td>' +
                             '<td class="' + (r.fastest_lap ? 'fastest-lap' : '') + '">' + (r.fastest_lap ? 'Yes' : '-') + '</td>' +
-                            '<td>' + (r.finished !== false ? 'Finished' : (r.did_not_start ? 'DNS' : 'DNF')) + '</td>';
+                            '<td>' + (r.finished !== false ? 'Finished' : (r.dns ? 'DNS' : 'DNF')) + '</td>';
                         tbody.appendChild(tr);
                     });
                 } else {
                     tbody.innerHTML = '<tr><td colspan="5" class="no-data">No results available</td></tr>';
                 }
-                window.onload = function() { setTimeout(function() { window.print(); }, 500); };
             })
             .catch(function(err) {
                 loading.style.display = 'none';

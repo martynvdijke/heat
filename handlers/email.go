@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"net/smtp"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/db"
 	"heat/models"
 )
 
@@ -131,8 +131,8 @@ func buildRaceEmailContent(raceName, country, track string, totalLaps int, resul
 	b.WriteString("tr:nth-child(even){background:#1a1a1a}")
 	b.WriteString(".gold{color:#ffd700}.silver{color:#c0c0c0}.bronze{color:#cd7f32}")
 	b.WriteString("</style></head><body>")
-	b.WriteString(fmt.Sprintf("<h1>Race %s</h1>", db.EscapeHTML(raceName)))
-	b.WriteString(fmt.Sprintf("<p><strong>Location:</strong> %s - %s</p>", db.EscapeHTML(country), db.EscapeHTML(track)))
+	b.WriteString(fmt.Sprintf("<h1>Race %s</h1>", html.EscapeString(raceName)))
+	b.WriteString(fmt.Sprintf("<p><strong>Location:</strong> %s - %s</p>", html.EscapeString(country), html.EscapeString(track)))
 	b.WriteString(fmt.Sprintf("<p><strong>Laps:</strong> %d</p>", totalLaps))
 	b.WriteString("<h2>Final Standings</h2><table><thead><tr><th>Pos</th><th>Driver</th><th>Points</th><th>Fastest Lap</th></tr></thead><tbody>")
 	for _, r := range results {
@@ -149,7 +149,7 @@ func buildRaceEmailContent(raceName, country, track string, totalLaps int, resul
 			fl = "Yes"
 		}
 		b.WriteString(fmt.Sprintf("<tr><td class=\"%s\">#%d</td><td class=\"%s\">%s</td><td>%d pts</td><td>%s</td></tr>",
-			cls, r.Position, cls, db.EscapeHTML(r.RacerName), r.Points, fl))
+			cls, r.Position, cls, html.EscapeString(r.RacerName), r.Points, fl))
 	}
 	b.WriteString("</tbody></table>")
 	b.WriteString("<p style=\"color:#666;font-size:12px;margin-top:30px\">HEAT: Pedal to the Metal Board Game Companion</p>")
