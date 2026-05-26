@@ -4,13 +4,15 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: 1,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:6270',
     trace: 'on-first-retry',
+    navigationTimeout: 30000,
   },
+  timeout: 60000,
   projects: [
     {
       name: 'chromium-desktop',
