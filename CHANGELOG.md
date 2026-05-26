@@ -1,3 +1,10 @@
+## [1.30.3](https://github.com/martynvdijke/heat/compare/v1.30.2...v1.30.3) (2026-05-26)
+
+
+### Bug Fixes
+
+* invalid timezone UTC+1, use Europe/Amsterdam instead ([0424230](https://github.com/martynvdijke/heat/commit/04242304c113071ff2a64c24defdcad779c67d0b))
+
 ## [1.30.2](https://github.com/martynvdijke/heat/compare/v1.30.1...v1.30.2) (2026-05-25)
 
 
