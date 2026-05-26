@@ -1,3 +1,10 @@
+## [1.30.4](https://github.com/martynvdijke/heat/compare/v1.30.3...v1.30.4) (2026-05-26)
+
+
+### Bug Fixes
+
+* playwright e2e test flakiness - add retries and timeouts for SQLite contention ([902a564](https://github.com/martynvdijke/heat/commit/902a564b56509026b1c860d27e20c9fc7f6ec4dd))
+
 ## [1.30.3](https://github.com/martynvdijke/heat/compare/v1.30.2...v1.30.3) (2026-05-26)
 
 
