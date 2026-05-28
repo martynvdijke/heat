@@ -1,3 +1,10 @@
+## [1.30.5](https://github.com/martynvdijke/heat/compare/v1.30.4...v1.30.5) (2026-05-28)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies to v1.44.0 ([#34](https://github.com/martynvdijke/heat/issues/34)) ([96a45a2](https://github.com/martynvdijke/heat/commit/96a45a23d311179f1640dd45581250a2ede815b8))
+
 ## [1.30.4](https://github.com/martynvdijke/heat/compare/v1.30.3...v1.30.4) (2026-05-26)
 
 
