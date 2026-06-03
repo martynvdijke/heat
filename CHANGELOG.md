@@ -1,3 +1,5 @@
+## [1.30.6](https://github.com/martynvdijke/heat/compare/v1.30.5...v1.30.6) (2026-06-03)
+
 ## [1.30.5](https://github.com/martynvdijke/heat/compare/v1.30.4...v1.30.5) (2026-05-28)
 
 
