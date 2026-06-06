@@ -51,6 +51,7 @@ import (
 	"heat/ent"
 	"heat/handlers"
 	"heat/middleware"
+	"heat/pkg/logger"
 	"heat/ws"
 )
 
@@ -121,6 +122,14 @@ func main() {
 	server.Ent = ent.NewClient(ent.Driver(drv))
 	defer server.Ent.Close()
 
+	// Initialize OpenTelemetry (non-fatal on failure)
+	otelShutdown := initOTel()
+	defer otelShutdown()
+
+	// Initialize structured logger
+	server.Log = logger.New(server.DB)
+	defer server.Log.Stop()
+
 	h := handlers.New(server)
 	wsManager := ws.NewManager(server)
 	server.BroadcastRacers = wsManager.BroadcastRacers
@@ -154,12 +163,12 @@ func main() {
 			server.DB.QueryRow("SELECT enabled, interval_hrs FROM backup_settings WHERE id = 1").Scan(&enabled, &intervalHrs)
 			if enabled == 1 && intervalHrs > 0 {
 				if err := db.CreateBackup(); err != nil {
-					log.Printf("[BACKUP] Periodic backup failed: %v", err)
+					server.Log.Errorf("backup", "Periodic backup failed: %v", err)
 				} else {
-					log.Printf("[BACKUP] Periodic backup completed (interval: %dh)", intervalHrs)
+					server.Log.Infof("backup", "Periodic backup completed (interval: %dh)", intervalHrs)
 				}
 				if err := db.PruneBackups(); err != nil {
-					log.Printf("[BACKUP] Prune failed: %v", err)
+					server.Log.Warnf("backup", "Prune failed: %v", err)
 				}
 			}
 			interval := 24
@@ -288,6 +297,12 @@ func main() {
 		admin.POST("/html/seasons", h.HtmxSeasonsCreate)
 		admin.POST("/html/seasons/:id/archive", h.HtmxSeasonsArchive)
 		admin.DELETE("/html/seasons/:id", h.HtmxSeasonsDelete)
+
+		// Admin: Logs
+		admin.GET("/admin/logs", h.GetLogs)
+		admin.GET("/admin/logs/modules", h.GetLogModules)
+		admin.GET("/admin/log-settings", h.GetLogSettings)
+		admin.POST("/admin/log-settings", h.SaveLogSettings)
 	}
 
 	r.GET("/api/uploads", h.GetUploads)
@@ -526,6 +541,10 @@ func main() {
 		port = "6270"
 	}
 
-	log.Printf("Server starting on port %s...", port)
+	if server.Log != nil {
+		server.Log.Infof("server", "Starting on port %s...", port)
+	} else {
+		log.Printf("Server starting on port %s...", port)
+	}
 	r.Run(":" + port)
 }

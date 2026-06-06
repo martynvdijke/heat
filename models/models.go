@@ -408,3 +408,19 @@ type SoundCommand struct {
 	Sound string      `json:"sound"` // engine, horn, finish, flag, crash
 	Data  interface{} `json:"data,omitempty"`
 }
+
+type LogEntry struct {
+	ID        int64  `json:"id"`
+	Timestamp string `json:"timestamp"`
+	Level     string `json:"level"`
+	Module    string `json:"module"`
+	Message   string `json:"message"`
+	Data      string `json:"data,omitempty"`
+	TraceID   string `json:"trace_id,omitempty"`
+}
+
+type LogSetting struct {
+	ID     int    `json:"id"`
+	Module string `json:"module"`
+	Level  string `json:"level"`
+}

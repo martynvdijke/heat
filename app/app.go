@@ -12,6 +12,7 @@ import (
 
 	"heat/ent"
 	"heat/models"
+	"heat/pkg/logger"
 )
 
 type SessionInfo struct {
@@ -47,6 +48,8 @@ type Server struct {
 	LoginLimitersMu      sync.Mutex
 	BroadcastRacers      func()
 	BroadcastSelfService func(action models.SelfServiceAction)
+
+	Log *logger.Logger
 }
 
 func NewServer() *Server {

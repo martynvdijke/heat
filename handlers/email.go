@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
-	"log"
 	"net/http"
 	"net/smtp"
 	"strconv"
@@ -181,7 +180,7 @@ func (h *Handler) SendRaceEmail(raceName, country, track string, totalLaps int, 
 		}
 		go func(to, racerName, content string) {
 			if err := sendSMTP(s, to, content); err != nil {
-				log.Printf("[EMAIL] Failed to send to %s: %v", to, err)
+				h.S.Log.Errorf("email", "Failed to send to %s: %v", to, err)
 			}
 		}(email, name, content)
 	}

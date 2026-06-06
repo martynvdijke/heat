@@ -19,3 +19,7 @@ func SeedUmamiSettings() {
 func SeedBackupSettings() {
 	srv.DB.Exec("INSERT OR IGNORE INTO backup_settings (id, enabled, interval_hrs) VALUES (1, 1, 24)")
 }
+
+func SeedLogSettings() {
+	srv.DB.Exec("INSERT OR IGNORE INTO log_settings (id, module, level) VALUES (1, 'default', 'WARN')")
+}

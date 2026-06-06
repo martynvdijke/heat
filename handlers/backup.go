@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -77,7 +76,7 @@ func (h *Handler) TriggerManualBackup(c *gin.Context) {
 		return
 	}
 	if err := db.PruneBackups(); err != nil {
-		log.Printf("[BACKUP] Prune failed: %v", err)
+		h.S.Log.Warnf("backup", "Prune failed: %v", err)
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

@@ -2,7 +2,6 @@ package ws
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -22,7 +21,7 @@ func NewManager(s *app.Server) *Manager {
 func (m *Manager) HandleWebSocket(c *gin.Context) {
 	ws, err := m.S.Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf("error upgrading: %v", err)
+		m.S.Log.Errorf("ws", "Error upgrading WebSocket: %v", err)
 		return
 	}
 	defer ws.Close()
@@ -30,12 +29,12 @@ func (m *Manager) HandleWebSocket(c *gin.Context) {
 	m.S.ClientsMu.Lock()
 	m.S.Clients[ws] = true
 	m.S.ClientsMu.Unlock()
-	log.Printf("[WS] New client connected. Total clients: %d", len(m.S.Clients))
+	m.S.Log.Infof("ws", "New client connected. Total clients: %d", len(m.S.Clients))
 
 	for {
 		_, msgBytes, err := ws.ReadMessage()
 		if err != nil {
-			log.Printf("[WS] Client disconnected: %v", err)
+			m.S.Log.Infof("ws", "Client disconnected: %v", err)
 			m.S.ClientsMu.Lock()
 			delete(m.S.Clients, ws)
 			m.S.ClientsMu.Unlock()
@@ -80,7 +79,7 @@ func (m *Manager) broadcastToClients(msg interface{}) {
 	for client := range m.S.Clients {
 		err := client.WriteJSON(msg)
 		if err != nil {
-			log.Printf("[WS] error broadcasting to client: %v", err)
+			m.S.Log.Warnf("ws", "Error broadcasting to client: %v", err)
 			client.Close()
 			failed = append(failed, client)
 		}
@@ -167,7 +166,7 @@ func (m *Manager) BroadcastSelfService(action models.SelfServiceAction) {
 func (m *Manager) BroadcastRacers() {
 	rows, err := m.S.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
 	if err != nil {
-		log.Printf("error fetching racers for broadcast: %v", err)
+		m.S.Log.Errorf("ws", "Error fetching racers for broadcast: %v", err)
 		return
 	}
 	defer rows.Close()
@@ -177,7 +176,7 @@ func (m *Manager) BroadcastRacers() {
 		var r models.Racer
 		err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID)
 		if err != nil {
-			log.Printf("error scanning racer for broadcast: %v", err)
+			m.S.Log.Errorf("ws", "Error scanning racer for broadcast: %v", err)
 			return
 		}
 		racers = append(racers, r)
