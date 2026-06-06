@@ -1,3 +1,10 @@
+# [1.33.0](https://github.com/martynvdijke/heat/compare/v1.32.0...v1.33.0) (2026-06-06)
+
+
+### Features
+
+* add OTel endpoint admin configuration with DB-backed settings ([8e8db8f](https://github.com/martynvdijke/heat/commit/8e8db8f5d266c5c1a9d52887803a3b508d4f20ec))
+
 # [1.32.0](https://github.com/martynvdijke/heat/compare/v1.31.0...v1.32.0) (2026-06-06)
 
 
