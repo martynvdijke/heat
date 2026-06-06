@@ -1,3 +1,10 @@
+# [1.34.0](https://github.com/martynvdijke/heat/compare/v1.33.0...v1.34.0) (2026-06-06)
+
+
+### Features
+
+* wire up OTel settings frontend in admin panel ([153e225](https://github.com/martynvdijke/heat/commit/153e225818caabfbe7611da965bf146821fa9ebf))
+
 # [1.33.0](https://github.com/martynvdijke/heat/compare/v1.32.0...v1.33.0) (2026-06-06)
 
 
