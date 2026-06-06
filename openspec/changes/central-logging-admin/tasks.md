@@ -35,17 +35,17 @@
 
 ## 6. Admin UI — "Logs" Tab
 
-- [ ] 6.1 Add "Logs" nav-tab button in `static/admin.html` with fa-list icon, after the Backup tab
-- [ ] 6.2 Add log viewer pane HTML (table, filter controls, pagination, refresh button)
-- [ ] 6.3 Add log settings sub-section within the Logs pane (verbosity per module table with dropdowns)
-- [ ] 6.4 Implement log viewer JS: fetch logs, auto-refresh polling (5s), filter by level/module, pagination
-- [ ] 6.5 Implement log settings JS: load current settings, change module level, save via POST
-- [ ] 6.6 Add `logs-tab` event listener in `admin.js` to trigger load on tab activation / stop polling on deactivation
+- [x] 6.1 Add "Logs" nav-tab button in `static/admin.html` with fa-list icon, after the Backup tab
+- [x] 6.2 Add log viewer pane HTML (table, filter controls, pagination, refresh button)
+- [x] 6.3 Add log settings sub-section within the Logs pane (verbosity per module table with dropdowns)
+- [x] 6.4 Implement log viewer JS: fetch logs, auto-refresh polling (5s), filter by level/module, pagination
+- [x] 6.5 Implement log settings JS: load current settings, change module level, save via POST
+- [x] 6.6 Add `logs-tab` event listener in `admin.js` to trigger load on tab activation / stop polling on deactivation
 
 ## 7. Onboard Settings Endpoints to Central Logging
 
-- [ ] 7.1 Add structured log calls to Email settings handlers (GetEmailSettings, SaveEmailSettings)
-- [ ] 7.2 Add structured log calls to AI settings handlers (GetAISettings, SaveAISettings)
-- [ ] 7.3 Add structured log calls to Notification settings handlers (GetNotificationSettings, SaveNotificationSettings, TestNotification)
-- [ ] 7.4 Add structured log calls to Backup settings handlers (GetBackupSettings, SaveBackupSettings, TriggerManualBackup)
-- [ ] 7.5 Add structured log calls to Umami analytics settings handlers (GetUmamiSettings, SaveUmamiSettings)
+- [x] 7.1 Add structured log calls to Email settings handlers (GetEmailSettings, SaveEmailSettings)
+- [x] 7.2 Add structured log calls to AI settings handlers (GetAISettings, SaveAISettings)
+- [x] 7.3 Add structured log calls to Notification settings handlers (GetNotificationSettings, SaveNotificationSettings, TestNotification)
+- [x] 7.4 Add structured log calls to Backup settings handlers (GetBackupSettings, SaveBackupSettings, TriggerManualBackup)
+- [x] 7.5 Add structured log calls to Umami analytics settings handlers (GetUmamiSettings, SaveUmamiSettings)

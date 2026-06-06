@@ -29,6 +29,7 @@ func (h *Handler) GetAISettings(c *gin.Context) {
 	s.Enabled = enabled == 1
 	hasKey := s.APIKey != ""
 	s.APIKey = ""
+	h.S.Log.Debugf("ai", "GetAISettings: enabled=%v has_key=%v", s.Enabled, hasKey)
 	c.JSON(http.StatusOK, gin.H{"id": s.ID, "track_extract_url": s.TrackExtractURL, "has_api_key": hasKey, "enabled": s.Enabled})
 }
 
@@ -44,6 +45,7 @@ func (h *Handler) GetAISettings(c *gin.Context) {
 func (h *Handler) SaveAISettings(c *gin.Context) {
 	var s models.AISettings
 	if err := c.ShouldBindJSON(&s); err != nil {
+		h.S.Log.Errorf("ai", "SaveAISettings: invalid JSON: %v", err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -57,9 +59,11 @@ func (h *Handler) SaveAISettings(c *gin.Context) {
 	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO ai_settings (id, track_extract_url, api_key, enabled) VALUES (1, ?, ?, ?)`,
 		s.TrackExtractURL, s.APIKey, db.BoolToInt(s.Enabled))
 	if err != nil {
+		h.S.Log.Errorf("ai", "SaveAISettings: DB error: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.S.Log.Infof("ai", "AI settings saved: track_extract_url=%q enabled=%v", s.TrackExtractURL, s.Enabled)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
@@ -79,6 +83,7 @@ func (h *Handler) GetNotificationSettings(c *gin.Context) {
 	}
 	hasToken := s.GotiFyToken != ""
 	s.GotiFyToken = ""
+	h.S.Log.Debugf("notification", "GetNotificationSettings: url=%q notify_winner=%v", s.GotiFyURL, s.NotifyWinner)
 	c.JSON(http.StatusOK, gin.H{"id": s.ID, "gotify_url": s.GotiFyURL, "has_gotify_token": hasToken, "notify_winner": s.NotifyWinner, "notify_race_start": s.NotifyRaceStart, "notify_podium": s.NotifyPodium})
 }
 
@@ -94,6 +99,7 @@ func (h *Handler) GetNotificationSettings(c *gin.Context) {
 func (h *Handler) SaveNotificationSettings(c *gin.Context) {
 	var s models.NotificationSettings
 	if err := c.ShouldBindJSON(&s); err != nil {
+		h.S.Log.Errorf("notification", "SaveNotificationSettings: invalid JSON: %v", err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -107,9 +113,11 @@ func (h *Handler) SaveNotificationSettings(c *gin.Context) {
 	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO notification_settings (id, gotify_url, gotify_token, notify_winner, notify_race_start, notify_podium) VALUES (1, ?, ?, ?, ?, ?)`,
 		s.GotiFyURL, s.GotiFyToken, db.BoolToInt(s.NotifyWinner), db.BoolToInt(s.NotifyRaceStart), db.BoolToInt(s.NotifyPodium))
 	if err != nil {
+		h.S.Log.Errorf("notification", "SaveNotificationSettings: DB error: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.S.Log.Infof("notification", "Notification settings saved: url=%q winner=%v podium=%v race_start=%v", s.GotiFyURL, s.NotifyWinner, s.NotifyPodium, s.NotifyRaceStart)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
@@ -132,6 +140,7 @@ func (h *Handler) GetEmailSettings(c *gin.Context) {
 		return
 	}
 	s.Enabled = enabled == 1
+	h.S.Log.Debugf("email", "GetEmailSettings: host=%q from=%q enabled=%v", s.SMTPHost, s.FromAddr, s.Enabled)
 	c.JSON(http.StatusOK, gin.H{"id": s.ID, "smtp_host": s.SMTPHost, "smtp_port": s.SMTPPort, "username": s.Username, "has_password": password != "", "from_addr": s.FromAddr, "enabled": s.Enabled})
 }
 
@@ -147,6 +156,7 @@ func (h *Handler) GetEmailSettings(c *gin.Context) {
 func (h *Handler) SaveEmailSettings(c *gin.Context) {
 	var s models.EmailSettings
 	if err := c.ShouldBindJSON(&s); err != nil {
+		h.S.Log.Errorf("email", "SaveEmailSettings: invalid JSON: %v", err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -160,9 +170,11 @@ func (h *Handler) SaveEmailSettings(c *gin.Context) {
 	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO email_settings (id, smtp_host, smtp_port, username, password, from_addr, enabled) VALUES (1, ?, ?, ?, ?, ?, ?)`,
 		s.SMTPHost, s.SMTPPort, s.Username, s.Password, s.FromAddr, db.BoolToInt(s.Enabled))
 	if err != nil {
+		h.S.Log.Errorf("email", "SaveEmailSettings: DB error: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.S.Log.Infof("email", "Email settings saved: host=%q from=%q enabled=%v", s.SMTPHost, s.FromAddr, s.Enabled)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
@@ -180,6 +192,7 @@ func (h *Handler) GetUmamiSettings(c *gin.Context) {
 	if err != nil {
 		s = models.UmamiSettings{ID: 1, Enabled: false}
 	}
+	h.S.Log.Debugf("umami", "GetUmamiSettings: url=%q enabled=%v", s.URL, s.Enabled)
 	c.JSON(http.StatusOK, s)
 }
 
@@ -195,6 +208,7 @@ func (h *Handler) GetUmamiSettings(c *gin.Context) {
 func (h *Handler) SaveUmamiSettings(c *gin.Context) {
 	var s models.UmamiSettings
 	if err := c.ShouldBindJSON(&s); err != nil {
+		h.S.Log.Errorf("umami", "SaveUmamiSettings: invalid JSON: %v", err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -202,9 +216,11 @@ func (h *Handler) SaveUmamiSettings(c *gin.Context) {
 	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO umami_settings (id, url, website_id, enabled) VALUES (1, ?, ?, ?)`,
 		s.URL, s.WebsiteID, db.BoolToInt(s.Enabled))
 	if err != nil {
+		h.S.Log.Errorf("umami", "SaveUmamiSettings: DB error: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.S.Log.Infof("umami", "Umami settings saved: url=%q enabled=%v", s.URL, s.Enabled)
 	c.JSON(http.StatusOK, s)
 }
 

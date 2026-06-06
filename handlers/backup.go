@@ -21,12 +21,14 @@ func (h *Handler) GetBackupSettings(c *gin.Context) {
 	var s models.BackupSettings
 	err := h.S.DB.QueryRow("SELECT id, enabled, interval_hrs, retention_count FROM backup_settings WHERE id = 1").Scan(&s.ID, &s.Enabled, &s.IntervalHrs, &s.RetentionCount)
 	if err != nil {
+		h.S.Log.Errorf("backup", "GetBackupSettings: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	if s.RetentionCount <= 0 {
 		s.RetentionCount = 7
 	}
+	h.S.Log.Debugf("backup", "GetBackupSettings: enabled=%v interval=%dhrs retention=%d", s.Enabled, s.IntervalHrs, s.RetentionCount)
 	c.JSON(http.StatusOK, s)
 }
 
@@ -42,6 +44,7 @@ func (h *Handler) GetBackupSettings(c *gin.Context) {
 func (h *Handler) SaveBackupSettings(c *gin.Context) {
 	var s models.BackupSettings
 	if err := c.ShouldBindJSON(&s); err != nil {
+		h.S.Log.Errorf("backup", "SaveBackupSettings: invalid JSON: %v", err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -55,10 +58,12 @@ func (h *Handler) SaveBackupSettings(c *gin.Context) {
 	}
 	_, err := h.S.DB.Exec("UPDATE backup_settings SET enabled = ?, interval_hrs = ?, retention_count = ? WHERE id = 1", enabled, s.IntervalHrs, s.RetentionCount)
 	if err != nil {
+		h.S.Log.Errorf("backup", "SaveBackupSettings: DB error: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	h.S.Log.Infof("backup", "Backup settings saved: enabled=%v interval=%dhrs retention=%d", s.Enabled, s.IntervalHrs, s.RetentionCount)
 	c.Status(http.StatusOK)
 }
 
@@ -72,12 +77,14 @@ func (h *Handler) SaveBackupSettings(c *gin.Context) {
 // @Router /api/backup/manual [post]
 func (h *Handler) TriggerManualBackup(c *gin.Context) {
 	if err := db.CreateBackup(); err != nil {
+		h.S.Log.Errorf("backup", "Manual backup failed: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	if err := db.PruneBackups(); err != nil {
 		h.S.Log.Warnf("backup", "Prune failed: %v", err)
 	}
+	h.S.Log.Infof("backup", "Manual backup created successfully")
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 

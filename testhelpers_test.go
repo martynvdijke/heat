@@ -25,6 +25,7 @@ import (
 	"heat/ent"
 	"heat/handlers"
 	"heat/middleware"
+	"heat/pkg/logger"
 	"heat/ws"
 )
 
@@ -53,6 +54,9 @@ func TestMain(m *testing.M) {
 	testServer.BroadcastRacers = func() {}
 
 	db.Init(testServer)
+
+	testServer.Log = logger.New(testServer.DB)
+	testServer.Log.Infof("system", "Logger initialized in test mode")
 
 	wsManager = ws.NewManager(testServer)
 	testServer.BroadcastSelfService = wsManager.BroadcastSelfService

@@ -207,10 +207,12 @@ func (h *Handler) TestNotification(c *gin.Context) {
 		Scan(&s.GotiFyURL, &s.GotiFyToken)
 
 	if s.GotiFyURL == "" {
+		h.S.Log.Errorf("notification", "TestNotification: Gotify URL not configured")
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Gotify URL not configured"})
 		return
 	}
 
+	h.S.Log.Infof("notification", "Test notification sent to %s", s.GotiFyURL)
 	h.NotifyRaceWinner("Test Driver", "Test Track")
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
