@@ -210,6 +210,9 @@
                 <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button"><i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-2"></i>AI</button>
             </li>
             <li class="nav-item">
+                <button class="nav-link" id="otel-tab" data-bs-toggle="tab" data-bs-target="#otel-pane" type="button"><i aria-hidden="true" class="fa-solid fa-wifi me-2"></i>Telemetry</button>
+            </li>
+            <li class="nav-item">
                 <button class="nav-link" id="umami-tab" data-bs-toggle="tab" data-bs-target="#umami-pane" type="button"><i aria-hidden="true" class="fa-solid fa-chart-simple me-2"></i>Analytics</button>
             </li>
             <li class="nav-item">
@@ -749,6 +752,50 @@
                                 <div class="card-body">
                                     <p class="small text-muted mb-3">Assign email addresses to racers so they receive race result emails.</p>
                                     <div id="racer-email-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+
+            <!-- Telemetry Pane -->
+            <div class="tab-pane fade" id="otel-pane">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-wifi me-2 text-danger"></i>OpenTelemetry</div>
+                                <div class="card-body">
+                                    <form id="otel-form">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">OTLP Endpoint URL</label>
+                                            <input type="text" class="form-control" id="otel-endpoint" placeholder="http://otel-collector:4318">
+                                            <div class="form-text">Your OpenTelemetry collector endpoint (e.g. http://otel-collector:4318 for HTTP). Leave empty to disable.</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="otel-traces-enabled">
+                                                <label class="form-check-label small fw-bold" for="otel-traces-enabled">Enable Traces</label>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="otel-metrics-enabled">
+                                                <label class="form-check-label small fw-bold" for="otel-metrics-enabled">Enable Metrics</label>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="otel-logs-enabled">
+                                                <label class="form-check-label small fw-bold" for="otel-logs-enabled">Enable Logs</label>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100">Save Telemetry Settings</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>About OTel</div>
+                                <div class="card-body">
+                                    <p class="small text-muted mb-2">OpenTelemetry provides observability for your application. Configure an OTLP endpoint to send traces, metrics, and logs to a compatible collector.</p>
+                                    <p class="small text-muted mb-0">Changes take effect on the next application restart. The OTLP HTTP protocol is used for exporting.</p>
                                 </div>
                             </div>
                         </div>

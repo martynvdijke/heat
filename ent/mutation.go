@@ -16,6 +16,7 @@ import (
 	"heat/ent/laprecord"
 	"heat/ent/legendability"
 	"heat/ent/notificationsetting"
+	"heat/ent/otelsetting"
 	"heat/ent/playersession"
 	"heat/ent/playerupgrade"
 	"heat/ent/predicate"
@@ -66,6 +67,7 @@ const (
 	TypeLapRecord           = "LapRecord"
 	TypeLegendAbility       = "LegendAbility"
 	TypeNotificationSetting = "NotificationSetting"
+	TypeOTelSetting         = "OTelSetting"
 	TypePlayerSession       = "PlayerSession"
 	TypePlayerUpgrade       = "PlayerUpgrade"
 	TypeQuote               = "Quote"
@@ -6507,6 +6509,624 @@ func (m *NotificationSettingMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *NotificationSettingMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown NotificationSetting edge %s", name)
+}
+
+// OTelSettingMutation represents an operation that mutates the OTelSetting nodes in the graph.
+type OTelSettingMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *int
+	endpoint           *string
+	traces_enabled     *int
+	addtraces_enabled  *int
+	metrics_enabled    *int
+	addmetrics_enabled *int
+	logs_enabled       *int
+	addlogs_enabled    *int
+	clearedFields      map[string]struct{}
+	done               bool
+	oldValue           func(context.Context) (*OTelSetting, error)
+	predicates         []predicate.OTelSetting
+}
+
+var _ ent.Mutation = (*OTelSettingMutation)(nil)
+
+// otelsettingOption allows management of the mutation configuration using functional options.
+type otelsettingOption func(*OTelSettingMutation)
+
+// newOTelSettingMutation creates new mutation for the OTelSetting entity.
+func newOTelSettingMutation(c config, op Op, opts ...otelsettingOption) *OTelSettingMutation {
+	m := &OTelSettingMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeOTelSetting,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withOTelSettingID sets the ID field of the mutation.
+func withOTelSettingID(id int) otelsettingOption {
+	return func(m *OTelSettingMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *OTelSetting
+		)
+		m.oldValue = func(ctx context.Context) (*OTelSetting, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().OTelSetting.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withOTelSetting sets the old OTelSetting of the mutation.
+func withOTelSetting(node *OTelSetting) otelsettingOption {
+	return func(m *OTelSettingMutation) {
+		m.oldValue = func(context.Context) (*OTelSetting, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m OTelSettingMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m OTelSettingMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of OTelSetting entities.
+func (m *OTelSettingMutation) SetID(id int) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *OTelSettingMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *OTelSettingMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().OTelSetting.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetEndpoint sets the "endpoint" field.
+func (m *OTelSettingMutation) SetEndpoint(s string) {
+	m.endpoint = &s
+}
+
+// Endpoint returns the value of the "endpoint" field in the mutation.
+func (m *OTelSettingMutation) Endpoint() (r string, exists bool) {
+	v := m.endpoint
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndpoint returns the old "endpoint" field's value of the OTelSetting entity.
+// If the OTelSetting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OTelSettingMutation) OldEndpoint(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndpoint is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndpoint requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndpoint: %w", err)
+	}
+	return oldValue.Endpoint, nil
+}
+
+// ClearEndpoint clears the value of the "endpoint" field.
+func (m *OTelSettingMutation) ClearEndpoint() {
+	m.endpoint = nil
+	m.clearedFields[otelsetting.FieldEndpoint] = struct{}{}
+}
+
+// EndpointCleared returns if the "endpoint" field was cleared in this mutation.
+func (m *OTelSettingMutation) EndpointCleared() bool {
+	_, ok := m.clearedFields[otelsetting.FieldEndpoint]
+	return ok
+}
+
+// ResetEndpoint resets all changes to the "endpoint" field.
+func (m *OTelSettingMutation) ResetEndpoint() {
+	m.endpoint = nil
+	delete(m.clearedFields, otelsetting.FieldEndpoint)
+}
+
+// SetTracesEnabled sets the "traces_enabled" field.
+func (m *OTelSettingMutation) SetTracesEnabled(i int) {
+	m.traces_enabled = &i
+	m.addtraces_enabled = nil
+}
+
+// TracesEnabled returns the value of the "traces_enabled" field in the mutation.
+func (m *OTelSettingMutation) TracesEnabled() (r int, exists bool) {
+	v := m.traces_enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTracesEnabled returns the old "traces_enabled" field's value of the OTelSetting entity.
+// If the OTelSetting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OTelSettingMutation) OldTracesEnabled(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTracesEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTracesEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTracesEnabled: %w", err)
+	}
+	return oldValue.TracesEnabled, nil
+}
+
+// AddTracesEnabled adds i to the "traces_enabled" field.
+func (m *OTelSettingMutation) AddTracesEnabled(i int) {
+	if m.addtraces_enabled != nil {
+		*m.addtraces_enabled += i
+	} else {
+		m.addtraces_enabled = &i
+	}
+}
+
+// AddedTracesEnabled returns the value that was added to the "traces_enabled" field in this mutation.
+func (m *OTelSettingMutation) AddedTracesEnabled() (r int, exists bool) {
+	v := m.addtraces_enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTracesEnabled resets all changes to the "traces_enabled" field.
+func (m *OTelSettingMutation) ResetTracesEnabled() {
+	m.traces_enabled = nil
+	m.addtraces_enabled = nil
+}
+
+// SetMetricsEnabled sets the "metrics_enabled" field.
+func (m *OTelSettingMutation) SetMetricsEnabled(i int) {
+	m.metrics_enabled = &i
+	m.addmetrics_enabled = nil
+}
+
+// MetricsEnabled returns the value of the "metrics_enabled" field in the mutation.
+func (m *OTelSettingMutation) MetricsEnabled() (r int, exists bool) {
+	v := m.metrics_enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetricsEnabled returns the old "metrics_enabled" field's value of the OTelSetting entity.
+// If the OTelSetting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OTelSettingMutation) OldMetricsEnabled(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetricsEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetricsEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetricsEnabled: %w", err)
+	}
+	return oldValue.MetricsEnabled, nil
+}
+
+// AddMetricsEnabled adds i to the "metrics_enabled" field.
+func (m *OTelSettingMutation) AddMetricsEnabled(i int) {
+	if m.addmetrics_enabled != nil {
+		*m.addmetrics_enabled += i
+	} else {
+		m.addmetrics_enabled = &i
+	}
+}
+
+// AddedMetricsEnabled returns the value that was added to the "metrics_enabled" field in this mutation.
+func (m *OTelSettingMutation) AddedMetricsEnabled() (r int, exists bool) {
+	v := m.addmetrics_enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMetricsEnabled resets all changes to the "metrics_enabled" field.
+func (m *OTelSettingMutation) ResetMetricsEnabled() {
+	m.metrics_enabled = nil
+	m.addmetrics_enabled = nil
+}
+
+// SetLogsEnabled sets the "logs_enabled" field.
+func (m *OTelSettingMutation) SetLogsEnabled(i int) {
+	m.logs_enabled = &i
+	m.addlogs_enabled = nil
+}
+
+// LogsEnabled returns the value of the "logs_enabled" field in the mutation.
+func (m *OTelSettingMutation) LogsEnabled() (r int, exists bool) {
+	v := m.logs_enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLogsEnabled returns the old "logs_enabled" field's value of the OTelSetting entity.
+// If the OTelSetting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OTelSettingMutation) OldLogsEnabled(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLogsEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLogsEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLogsEnabled: %w", err)
+	}
+	return oldValue.LogsEnabled, nil
+}
+
+// AddLogsEnabled adds i to the "logs_enabled" field.
+func (m *OTelSettingMutation) AddLogsEnabled(i int) {
+	if m.addlogs_enabled != nil {
+		*m.addlogs_enabled += i
+	} else {
+		m.addlogs_enabled = &i
+	}
+}
+
+// AddedLogsEnabled returns the value that was added to the "logs_enabled" field in this mutation.
+func (m *OTelSettingMutation) AddedLogsEnabled() (r int, exists bool) {
+	v := m.addlogs_enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLogsEnabled resets all changes to the "logs_enabled" field.
+func (m *OTelSettingMutation) ResetLogsEnabled() {
+	m.logs_enabled = nil
+	m.addlogs_enabled = nil
+}
+
+// Where appends a list predicates to the OTelSettingMutation builder.
+func (m *OTelSettingMutation) Where(ps ...predicate.OTelSetting) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the OTelSettingMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *OTelSettingMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.OTelSetting, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *OTelSettingMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *OTelSettingMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (OTelSetting).
+func (m *OTelSettingMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *OTelSettingMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.endpoint != nil {
+		fields = append(fields, otelsetting.FieldEndpoint)
+	}
+	if m.traces_enabled != nil {
+		fields = append(fields, otelsetting.FieldTracesEnabled)
+	}
+	if m.metrics_enabled != nil {
+		fields = append(fields, otelsetting.FieldMetricsEnabled)
+	}
+	if m.logs_enabled != nil {
+		fields = append(fields, otelsetting.FieldLogsEnabled)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *OTelSettingMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case otelsetting.FieldEndpoint:
+		return m.Endpoint()
+	case otelsetting.FieldTracesEnabled:
+		return m.TracesEnabled()
+	case otelsetting.FieldMetricsEnabled:
+		return m.MetricsEnabled()
+	case otelsetting.FieldLogsEnabled:
+		return m.LogsEnabled()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *OTelSettingMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case otelsetting.FieldEndpoint:
+		return m.OldEndpoint(ctx)
+	case otelsetting.FieldTracesEnabled:
+		return m.OldTracesEnabled(ctx)
+	case otelsetting.FieldMetricsEnabled:
+		return m.OldMetricsEnabled(ctx)
+	case otelsetting.FieldLogsEnabled:
+		return m.OldLogsEnabled(ctx)
+	}
+	return nil, fmt.Errorf("unknown OTelSetting field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *OTelSettingMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case otelsetting.FieldEndpoint:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndpoint(v)
+		return nil
+	case otelsetting.FieldTracesEnabled:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTracesEnabled(v)
+		return nil
+	case otelsetting.FieldMetricsEnabled:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetricsEnabled(v)
+		return nil
+	case otelsetting.FieldLogsEnabled:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLogsEnabled(v)
+		return nil
+	}
+	return fmt.Errorf("unknown OTelSetting field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *OTelSettingMutation) AddedFields() []string {
+	var fields []string
+	if m.addtraces_enabled != nil {
+		fields = append(fields, otelsetting.FieldTracesEnabled)
+	}
+	if m.addmetrics_enabled != nil {
+		fields = append(fields, otelsetting.FieldMetricsEnabled)
+	}
+	if m.addlogs_enabled != nil {
+		fields = append(fields, otelsetting.FieldLogsEnabled)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *OTelSettingMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case otelsetting.FieldTracesEnabled:
+		return m.AddedTracesEnabled()
+	case otelsetting.FieldMetricsEnabled:
+		return m.AddedMetricsEnabled()
+	case otelsetting.FieldLogsEnabled:
+		return m.AddedLogsEnabled()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *OTelSettingMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case otelsetting.FieldTracesEnabled:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTracesEnabled(v)
+		return nil
+	case otelsetting.FieldMetricsEnabled:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMetricsEnabled(v)
+		return nil
+	case otelsetting.FieldLogsEnabled:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLogsEnabled(v)
+		return nil
+	}
+	return fmt.Errorf("unknown OTelSetting numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *OTelSettingMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(otelsetting.FieldEndpoint) {
+		fields = append(fields, otelsetting.FieldEndpoint)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *OTelSettingMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *OTelSettingMutation) ClearField(name string) error {
+	switch name {
+	case otelsetting.FieldEndpoint:
+		m.ClearEndpoint()
+		return nil
+	}
+	return fmt.Errorf("unknown OTelSetting nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *OTelSettingMutation) ResetField(name string) error {
+	switch name {
+	case otelsetting.FieldEndpoint:
+		m.ResetEndpoint()
+		return nil
+	case otelsetting.FieldTracesEnabled:
+		m.ResetTracesEnabled()
+		return nil
+	case otelsetting.FieldMetricsEnabled:
+		m.ResetMetricsEnabled()
+		return nil
+	case otelsetting.FieldLogsEnabled:
+		m.ResetLogsEnabled()
+		return nil
+	}
+	return fmt.Errorf("unknown OTelSetting field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *OTelSettingMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *OTelSettingMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *OTelSettingMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *OTelSettingMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *OTelSettingMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *OTelSettingMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *OTelSettingMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown OTelSetting unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *OTelSettingMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown OTelSetting edge %s", name)
 }
 
 // PlayerSessionMutation represents an operation that mutates the PlayerSession nodes in the graph.

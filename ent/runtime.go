@@ -11,6 +11,7 @@ import (
 	"heat/ent/heatcard"
 	"heat/ent/laprecord"
 	"heat/ent/notificationsetting"
+	"heat/ent/otelsetting"
 	"heat/ent/playersession"
 	"heat/ent/playerupgrade"
 	"heat/ent/quote"
@@ -157,6 +158,20 @@ func init() {
 	notificationsettingDescNotifyPodium := notificationsettingFields[5].Descriptor()
 	// notificationsetting.DefaultNotifyPodium holds the default value on creation for the notify_podium field.
 	notificationsetting.DefaultNotifyPodium = notificationsettingDescNotifyPodium.Default.(int)
+	otelsettingFields := schema.OTelSetting{}.Fields()
+	_ = otelsettingFields
+	// otelsettingDescTracesEnabled is the schema descriptor for traces_enabled field.
+	otelsettingDescTracesEnabled := otelsettingFields[2].Descriptor()
+	// otelsetting.DefaultTracesEnabled holds the default value on creation for the traces_enabled field.
+	otelsetting.DefaultTracesEnabled = otelsettingDescTracesEnabled.Default.(int)
+	// otelsettingDescMetricsEnabled is the schema descriptor for metrics_enabled field.
+	otelsettingDescMetricsEnabled := otelsettingFields[3].Descriptor()
+	// otelsetting.DefaultMetricsEnabled holds the default value on creation for the metrics_enabled field.
+	otelsetting.DefaultMetricsEnabled = otelsettingDescMetricsEnabled.Default.(int)
+	// otelsettingDescLogsEnabled is the schema descriptor for logs_enabled field.
+	otelsettingDescLogsEnabled := otelsettingFields[4].Descriptor()
+	// otelsetting.DefaultLogsEnabled holds the default value on creation for the logs_enabled field.
+	otelsetting.DefaultLogsEnabled = otelsettingDescLogsEnabled.Default.(int)
 	playersessionFields := schema.PlayerSession{}.Fields()
 	_ = playersessionFields
 	// playersessionDescDeviceName is the schema descriptor for device_name field.

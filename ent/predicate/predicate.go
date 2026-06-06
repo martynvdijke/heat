@@ -36,6 +36,9 @@ type LegendAbility func(*sql.Selector)
 // NotificationSetting is the predicate function for notificationsetting builders.
 type NotificationSetting func(*sql.Selector)
 
+// OTelSetting is the predicate function for otelsetting builders.
+type OTelSetting func(*sql.Selector)
+
 // PlayerSession is the predicate function for playersession builders.
 type PlayerSession func(*sql.Selector)
 

@@ -122,10 +122,6 @@ func main() {
 	server.Ent = ent.NewClient(ent.Driver(drv))
 	defer server.Ent.Close()
 
-	// Initialize OpenTelemetry (non-fatal on failure)
-	otelShutdown := initOTel()
-	defer otelShutdown()
-
 	// Initialize structured logger
 	server.Log = logger.New(server.DB)
 	defer server.Log.Stop()
@@ -136,6 +132,10 @@ func main() {
 	server.BroadcastSelfService = wsManager.BroadcastSelfService
 
 	db.Init(server)
+
+	// Initialize OpenTelemetry after DB is ready (reads OTel settings from database)
+	otelShutdown := initOTel(server)
+	defer otelShutdown()
 	go wsManager.BroadcastManager()
 	go wsManager.BroadcastFlags()
 	go wsManager.BroadcastGameMechanics()
@@ -220,6 +220,8 @@ func main() {
 		admin.DELETE("/oneoff-races", h.DeleteOneOffRace)
 		admin.GET("/umami-settings", h.GetUmamiSettings)
 		admin.POST("/umami-settings", h.SaveUmamiSettings)
+		admin.GET("/otel-settings", h.GetOTelSettings)
+		admin.POST("/otel-settings", h.SaveOTelSettings)
 		admin.POST("/quotes", h.HandleQuotes)
 		admin.PUT("/quotes", h.HandleQuotes)
 		admin.DELETE("/quotes", h.HandleQuotes)

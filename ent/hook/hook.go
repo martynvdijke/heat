@@ -128,6 +128,18 @@ func (f NotificationSettingFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NotificationSettingMutation", m)
 }
 
+// The OTelSettingFunc type is an adapter to allow the use of ordinary
+// function as OTelSetting mutator.
+type OTelSettingFunc func(context.Context, *ent.OTelSettingMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f OTelSettingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.OTelSettingMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OTelSettingMutation", m)
+}
+
 // The PlayerSessionFunc type is an adapter to allow the use of ordinary
 // function as PlayerSession mutator.
 type PlayerSessionFunc func(context.Context, *ent.PlayerSessionMutation) (ent.Value, error)

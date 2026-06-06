@@ -105,6 +105,14 @@ type AdminUser struct {
 	Password string `json:"-"`
 }
 
+type OTelSettings struct {
+	ID             int    `json:"id"`
+	Endpoint       string `json:"endpoint"`
+	TracesEnabled  bool   `json:"traces_enabled"`
+	MetricsEnabled bool   `json:"metrics_enabled"`
+	LogsEnabled    bool   `json:"logs_enabled"`
+}
+
 type AISettings struct {
 	ID              int    `json:"id"`
 	TrackExtractURL string `json:"track_extract_url"`

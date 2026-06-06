@@ -32,6 +32,8 @@ type Tx struct {
 	LegendAbility *LegendAbilityClient
 	// NotificationSetting is the client for interacting with the NotificationSetting builders.
 	NotificationSetting *NotificationSettingClient
+	// OTelSetting is the client for interacting with the OTelSetting builders.
+	OTelSetting *OTelSettingClient
 	// PlayerSession is the client for interacting with the PlayerSession builders.
 	PlayerSession *PlayerSessionClient
 	// PlayerUpgrade is the client for interacting with the PlayerUpgrade builders.
@@ -221,6 +223,7 @@ func (tx *Tx) init() {
 	tx.LapRecord = NewLapRecordClient(tx.config)
 	tx.LegendAbility = NewLegendAbilityClient(tx.config)
 	tx.NotificationSetting = NewNotificationSettingClient(tx.config)
+	tx.OTelSetting = NewOTelSettingClient(tx.config)
 	tx.PlayerSession = NewPlayerSessionClient(tx.config)
 	tx.PlayerUpgrade = NewPlayerUpgradeClient(tx.config)
 	tx.Quote = NewQuoteClient(tx.config)

@@ -156,6 +156,20 @@ var (
 		Columns:    NotificationSettingsColumns,
 		PrimaryKey: []*schema.Column{NotificationSettingsColumns[0]},
 	}
+	// OtelSettingsColumns holds the columns for the "otel_settings" table.
+	OtelSettingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "endpoint", Type: field.TypeString, Nullable: true},
+		{Name: "traces_enabled", Type: field.TypeInt, Default: 0},
+		{Name: "metrics_enabled", Type: field.TypeInt, Default: 0},
+		{Name: "logs_enabled", Type: field.TypeInt, Default: 0},
+	}
+	// OtelSettingsTable holds the schema information for the "otel_settings" table.
+	OtelSettingsTable = &schema.Table{
+		Name:       "otel_settings",
+		Columns:    OtelSettingsColumns,
+		PrimaryKey: []*schema.Column{OtelSettingsColumns[0]},
+	}
 	// PlayerSessionsColumns holds the columns for the "player_sessions" table.
 	PlayerSessionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -531,6 +545,7 @@ var (
 		LapRecordsTable,
 		LegendAbilitiesTable,
 		NotificationSettingsTable,
+		OtelSettingsTable,
 		PlayerSessionsTable,
 		PlayerUpgradesTable,
 		QuotesTable,

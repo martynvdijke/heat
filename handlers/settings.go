@@ -224,6 +224,58 @@ func (h *Handler) SaveUmamiSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, s)
 }
 
+// @Summary Get OTel settings
+// @Description Get the OpenTelemetry endpoint settings
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} models.OTelSettings
+// @Security cookieAuth
+// @Router /api/otel-settings [get]
+func (h *Handler) GetOTelSettings(c *gin.Context) {
+	var s models.OTelSettings
+	var tracesEnabled, metricsEnabled, logsEnabled int
+	err := h.S.DB.QueryRow("SELECT id, COALESCE(endpoint, ''), COALESCE(traces_enabled, 0), COALESCE(metrics_enabled, 0), COALESCE(logs_enabled, 0) FROM otel_settings WHERE id = 1").
+		Scan(&s.ID, &s.Endpoint, &tracesEnabled, &metricsEnabled, &logsEnabled)
+	if err != nil {
+		s = models.OTelSettings{ID: 1}
+		c.JSON(http.StatusOK, s)
+		return
+	}
+	s.TracesEnabled = tracesEnabled == 1
+	s.MetricsEnabled = metricsEnabled == 1
+	s.LogsEnabled = logsEnabled == 1
+	h.S.Log.Debugf("otel", "GetOTelSettings: endpoint=%q", s.Endpoint)
+	c.JSON(http.StatusOK, s)
+}
+
+// @Summary Save OTel settings
+// @Description Save the OpenTelemetry endpoint settings
+// @Tags Settings
+// @Accept json
+// @Produce json
+// @Param settings body models.OTelSettings true "OTel settings"
+// @Success 200 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/otel-settings [post]
+func (h *Handler) SaveOTelSettings(c *gin.Context) {
+	var s models.OTelSettings
+	if err := c.ShouldBindJSON(&s); err != nil {
+		h.S.Log.Errorf("otel", "SaveOTelSettings: invalid JSON: %v", err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO otel_settings (id, endpoint, traces_enabled, metrics_enabled, logs_enabled) VALUES (1, ?, ?, ?, ?)`,
+		s.Endpoint, db.BoolToInt(s.TracesEnabled), db.BoolToInt(s.MetricsEnabled), db.BoolToInt(s.LogsEnabled))
+	if err != nil {
+		h.S.Log.Errorf("otel", "SaveOTelSettings: DB error: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	h.S.Log.Infof("otel", "OTel settings saved: endpoint=%q traces=%v metrics=%v logs=%v", s.Endpoint, s.TracesEnabled, s.MetricsEnabled, s.LogsEnabled)
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
 // @Summary Get one-off races
 // @Description Get the list of one-off race history entries
 // @Tags Race

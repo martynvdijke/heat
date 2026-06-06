@@ -16,6 +16,7 @@ import (
 	"heat/ent/laprecord"
 	"heat/ent/legendability"
 	"heat/ent/notificationsetting"
+	"heat/ent/otelsetting"
 	"heat/ent/playersession"
 	"heat/ent/playerupgrade"
 	"heat/ent/quote"
@@ -116,6 +117,7 @@ func checkColumn(t, c string) error {
 			laprecord.Table:           laprecord.ValidColumn,
 			legendability.Table:       legendability.ValidColumn,
 			notificationsetting.Table: notificationsetting.ValidColumn,
+			otelsetting.Table:         otelsetting.ValidColumn,
 			playersession.Table:       playersession.ValidColumn,
 			playerupgrade.Table:       playerupgrade.ValidColumn,
 			quote.Table:               quote.ValidColumn,

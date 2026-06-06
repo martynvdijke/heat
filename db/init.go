@@ -56,4 +56,5 @@ func Init(s *app.Server) {
 	SeedLegendAbilities()
 	SeedSectors()
 	SeedLogSettings()
+	SeedOTelSettings()
 }
