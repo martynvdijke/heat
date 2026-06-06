@@ -1,3 +1,10 @@
+# [1.32.0](https://github.com/martynvdijke/heat/compare/v1.31.0...v1.32.0) (2026-06-06)
+
+
+### Features
+
+* add admin Logs UI and onboard settings handlers to structured logging ([d2aa288](https://github.com/martynvdijke/heat/commit/d2aa288206c306fe3df8b4b92a5b276768ea3208))
+
 # [1.31.0](https://github.com/martynvdijke/heat/compare/v1.30.7...v1.31.0) (2026-06-06)
 
 
