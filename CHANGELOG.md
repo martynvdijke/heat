@@ -1,3 +1,10 @@
+# [1.31.0](https://github.com/martynvdijke/heat/compare/v1.30.7...v1.31.0) (2026-06-06)
+
+
+### Features
+
+* add central logging admin tab with OTel integration ([506e00f](https://github.com/martynvdijke/heat/commit/506e00fd3b52dee9f9fa9b8547133c75ec569883))
+
 ## [1.30.7](https://github.com/martynvdijke/heat/compare/v1.30.6...v1.30.7) (2026-06-05)
 
 
