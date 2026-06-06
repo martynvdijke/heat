@@ -57,6 +57,7 @@ async function init(): Promise<void> {
     await loadNotificationSettings();
     await loadUmamiSettings();
     await loadAISettings();
+    await loadOTelSettings();
 }
 
 async function loadAdminTracks(): Promise<void> {
@@ -855,6 +856,37 @@ async function loadAISettings(): Promise<void> {
         (document.getElementById('ai-enabled') as HTMLInputElement).checked = data.enabled;
     } catch (e) { console.error('Failed to load AI settings', e); }
 }
+
+async function loadOTelSettings(): Promise<void> {
+    try {
+        const res = await fetch('/api/otel-settings');
+        const data = await res.json();
+        (document.getElementById('otel-endpoint') as HTMLInputElement).value = data.endpoint || '';
+        (document.getElementById('otel-traces-enabled') as HTMLInputElement).checked = data.traces_enabled;
+        (document.getElementById('otel-metrics-enabled') as HTMLInputElement).checked = data.metrics_enabled;
+        (document.getElementById('otel-logs-enabled') as HTMLInputElement).checked = data.logs_enabled;
+    } catch (e) { console.error('Failed to load OTel settings', e); }
+}
+
+document.getElementById('otel-form')!.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    const data = {
+        endpoint: (document.getElementById('otel-endpoint') as HTMLInputElement).value,
+        traces_enabled: (document.getElementById('otel-traces-enabled') as HTMLInputElement).checked,
+        metrics_enabled: (document.getElementById('otel-metrics-enabled') as HTMLInputElement).checked,
+        logs_enabled: (document.getElementById('otel-logs-enabled') as HTMLInputElement).checked
+    };
+    const res = await fetch('/api/otel-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (res.ok) alert('Telemetry settings saved!');
+    else {
+        const err = await res.json();
+        alert('Failed to save telemetry settings: ' + (err.error || 'Unknown error'));
+    }
+});
 
 document.getElementById('ai-settings-form')!.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
