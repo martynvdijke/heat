@@ -172,858 +172,882 @@
     </header>
 
     <div class="container">
-        <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link active" id="race-tab" data-bs-toggle="tab" data-bs-target="#race-pane" type="button"><i aria-hidden="true" class="fa-solid fa-gauge-high me-2"></i>Race Setup</button>
+        <!-- Primary category tabs -->
+        <ul class="nav nav-tabs mb-4" id="adminCategories" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="cat-race-tab" data-bs-toggle="tab" data-bs-target="#cat-race" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-flag-checkered me-2"></i>Race</button>
             </li>
-            <li class="nav-item">
-                <button class="nav-link" id="qualification-tab" data-bs-toggle="tab" data-bs-target="#qualification-pane" type="button"><i aria-hidden="true" class="fa-solid fa-random me-2"></i>Qualification</button>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cat-results-tab" data-bs-toggle="tab" data-bs-target="#cat-results" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-trophy me-2"></i>Results</button>
             </li>
-            <li class="nav-item">
-                <button class="nav-link" id="racers-tab" data-bs-toggle="tab" data-bs-target="#racers-pane" type="button"><i aria-hidden="true" class="fa-solid fa-users me-2"></i>Racers</button>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cat-content-tab" data-bs-toggle="tab" data-bs-target="#cat-content" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-comment me-2"></i>Content</button>
             </li>
-            <li class="nav-item">
-                <button class="nav-link" id="tracks-tab" data-bs-toggle="tab" data-bs-target="#tracks-pane" type="button"><i aria-hidden="true" class="fa-solid fa-road me-2"></i>Tracks</button>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cat-settings-tab" data-bs-toggle="tab" data-bs-target="#cat-settings" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-gear me-2"></i>Settings</button>
             </li>
-            <li class="nav-item">
-                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button"><i aria-hidden="true" class="fa-solid fa-chart-bar me-2"></i>Stats</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="rounds-tab" data-bs-toggle="tab" data-bs-target="#rounds-pane" type="button"><i aria-hidden="true" class="fa-solid fa-layer-group me-2"></i>Rounds</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button"><i aria-hidden="true" class="fa-solid fa-comment me-2"></i>Quotes</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams-pane" type="button"><i aria-hidden="true" class="fa-solid fa-people-group me-2"></i>Teams</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-pane" type="button"><i aria-hidden="true" class="fa-solid fa-bell me-2"></i>Notifications</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button"><i aria-hidden="true" class="fa-solid fa-envelope me-2"></i>Email</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="seasons-tab" data-bs-toggle="tab" data-bs-target="#seasons-pane" type="button"><i aria-hidden="true" class="fa-solid fa-calendar me-2"></i>Seasons</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button"><i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-2"></i>AI</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="otel-tab" data-bs-toggle="tab" data-bs-target="#otel-pane" type="button"><i aria-hidden="true" class="fa-solid fa-wifi me-2"></i>Telemetry</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="umami-tab" data-bs-toggle="tab" data-bs-target="#umami-pane" type="button"><i aria-hidden="true" class="fa-solid fa-chart-simple me-2"></i>Analytics</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-pane" type="button"><i aria-hidden="true" class="fa-solid fa-database me-2"></i>Backup</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs-pane" type="button"><i aria-hidden="true" class="fa-solid fa-list me-2"></i>Logs</button>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cat-system-tab" data-bs-toggle="tab" data-bs-target="#cat-system" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-terminal me-2"></i>System</button>
             </li>
         </ul>
-        <div class="tab-content">
-            <!-- Race Setup Pane -->
-            <div class="tab-pane fade show active" id="race-pane">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card mb-4">
-                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-gauge-high me-2 text-danger"></i>Race Information</div>
-                            <div class="card-body">
-                                <form id="race-form">
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Track Selection</label>
-                                        <select class="form-select" id="track-select" onchange="applyTrackPreset(this.value)">
-                                            <option value="">Choose a circuit...</option>
-                                        </select>
-                                    </div>
-                                    <hr>
+                <div class="tab-content" id="adminTabContent">
+            <!-- === RACE CATEGORY === -->
+            <div class="tab-pane fade show active" id="cat-race" role="tabpanel">
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="race-subtab" data-bs-toggle="tab" data-bs-target="#race-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-gauge-high me-1"></i>Race Setup</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="qualification-subtab" data-bs-toggle="tab" data-bs-target="#qualification-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-random me-1"></i>Qualification</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="racers-subtab" data-bs-toggle="tab" data-bs-target="#racers-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-users me-1"></i>Racers</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tracks-subtab" data-bs-toggle="tab" data-bs-target="#tracks-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-road me-1"></i>Tracks</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="race-pane">
                                     <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small fw-bold">Country</label>
-                                            <input type="text" class="form-control" name="country" required>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small fw-bold">Track Name</label>
-                                            <input type="text" class="form-control" name="track" required>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small fw-bold">Laps</label>
-                                            <input type="number" class="form-control" name="laps" required>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small fw-bold">Internal ID</label>
-                                            <input type="text" class="form-control" name="track_id" required>
-                                        </div>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100 mt-2">Update Race Data</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Qualification Pane -->
-            <div class="tab-pane fade" id="qualification-pane">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card mb-4">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i aria-hidden="true" class="fa-solid fa-random me-2 text-warning"></i>Qualification Shuffle</span>
-                                <button class="btn btn-sm btn-warning" onclick="startQualification()">
-                                    <i aria-hidden="true" class="fa-solid fa-play me-1"></i> Start Shuffle
-                                </button>
-                            </div>
-                            <div class="card-body">
-                                <p class="small text-muted mb-3">Randomly shuffle grid positions with animation. Drivers will be shuffled one by one to determine the starting grid.</p>
-                                <div class="mb-3">
-                                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="resetQualification()">
-                                        <i aria-hidden="true" class="fa-solid fa-rotate-left me-1"></i> Reset
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-info" onclick="previewGrid()">
-                                        <i aria-hidden="true" class="fa-solid fa-eye me-1"></i> Preview Grid
-                                    </button>
-                                </div>
-                                <div id="qualification-grid" class="row g-3">
-                                    <div class="col-12 text-center text-muted py-5">
-                                        <i aria-hidden="true" class="fa-solid fa-shuffle fa-3x mb-3"></i>
-                                        <p>Click "Start Shuffle" to begin qualification</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="card">
-                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-list-ol me-2 text-danger"></i>Final Grid</div>
-                            <div class="card-body p-0">
-                                <div id="final-grid" class="p-3">
-                                    <div class="text-center text-muted py-4">
-                                        <i aria-hidden="true" class="fa-solid fa-trophy fa-2x mb-2"></i>
-                                        <p class="small mb-0">Final grid order will appear here</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-gear me-2 text-danger"></i>Settings</div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <label class="form-label small fw-bold">Shuffle Speed (ms)</label>
-                                    <input type="range" class="form-range" id="shuffle-speed" min="100" max="1000" step="100" value="300" oninput="document.getElementById('speed-value').textContent = this.value + 'ms'">
-                                    <div class="text-center small text-muted">Current: <span id="speed-value">300ms</span></div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label small fw-bold">Grid Layout</label>
-                                    <select class="form-select" id="grid-layout">
-                                        <option value="2">2 Columns (Standard)</option>
-                                        <option value="3">3 Columns</option>
-                                        <option value="4">4 Columns</option>
-                                    </select>
-                                </div>
-                                <button class="btn btn-outline-primary w-100" onclick="applyGridPositions()">
-                                    <i aria-hidden="true" class="fa-solid fa-check me-1"></i> Apply to Race
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stats Pane -->
-            <div class="tab-pane fade" id="stats-pane">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i aria-hidden="true" class="fa-solid fa-chart-bar me-2 text-danger"></i>Driver Statistics</span>
-                        <button class="btn btn-sm btn-success" onclick="openStatsModal()">
-                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Stats
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-4">Driver</th>
-                                        <th>Races</th>
-                                        <th>Gold</th>
-                                        <th>Silver</th>
-                                        <th>Bronze</th>
-                                        <th>Fastest Laps</th>
-                                        <th>DNF</th>
-                                        <th>DNS</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="stats-list"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rounds Pane -->
-            <div class="tab-pane fade" id="rounds-pane">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i aria-hidden="true" class="fa-solid fa-layer-group me-2 text-danger"></i>Round Snapshots</span>
-                        <button class="btn btn-sm btn-success" onclick="takeAdminRoundSnapshot()">
-                            <i aria-hidden="true" class="fa-solid fa-camera me-1"></i> Take Snapshot
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-4">Round</th>
-                                        <th>Race Name</th>
-                                        <th>Date</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="rounds-list"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notifications Pane -->
-            <div class="tab-pane fade" id="notify-pane">
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-bell me-2 text-danger"></i>Gotify Notifications</div>
-                            <div class="card-body">
-                                <form id="notify-form">
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Gotify URL</label>
-                                        <input type="text" class="form-control" id="gotify-url" placeholder="https://your-gotify-instance.com">
-                                        <div class="form-text">Enter your Gotify server URL</div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Gotify Token</label>
-                                        <input type="password" class="form-control" id="gotify-token" placeholder="Application token">
-                                        <div class="form-text">Your Gotify application token</div>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100">Save Settings</button>
-                                </form>
-                                <button class="btn btn-outline-secondary w-100 mt-2" onclick="testNotification()">
-                                    <i aria-hidden="true" class="fa-solid fa-paper-plane me-1"></i> Send Test Notification
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-sliders me-2 text-danger"></i>Notification Triggers</div>
-                            <div class="card-body">
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="notify-winner">
-                                    <label class="form-check-label" for="notify-winner">
-                                        <i aria-hidden="true" class="fa-solid fa-trophy me-1 text-warning"></i> Notify on Race Winner
-                                    </label>
-                                </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="notify-podium">
-                                    <label class="form-check-label" for="notify-podium">
-                                        <i aria-hidden="true" class="fa-solid fa-medal me-1 text-secondary"></i> Notify on Podium Results
-                                    </label>
-                                </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="notify-race-start">
-                                    <label class="form-check-label" for="notify-race-start">
-                                        <i aria-hidden="true" class="fa-solid fa-flag me-1 text-success"></i> Notify on Race Start
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card mt-3">
-                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>About Notifications</div>
-                            <div class="card-body">
-                                <p class="small text-muted mb-2">Notifications are sent via Gotify when race events occur. Make sure your Gotify server is accessible and the application token has permission to post messages.</p>
-                                <p class="small text-muted mb-0">Notifications are sent asynchronously and won't delay race operations.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Racers Pane -->
-            <div class="tab-pane fade" id="racers-pane">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i aria-hidden="true" class="fa-solid fa-users me-2 text-danger"></i>Racer Standings</span>
-                        <button class="btn btn-sm btn-success" hx-get="/api/html/racers/0/edit" hx-target="#racerModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#racerModal">
-                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Racer
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-4">Rank</th>
-                                        <th>Driver</th>
-                                        <th>Car</th>
-                                        <th>Points</th>
-                                        <th>Pos</th>
-                                        <th>Share</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="racer-list" hx-get="/api/html/racers" hx-trigger="load" hx-swap="outerHTML">
-                                    <tr><td colspan="7" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading racers...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tracks Pane -->
-            <div class="tab-pane fade" id="tracks-pane">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i aria-hidden="true" class="fa-solid fa-road me-2 text-danger"></i>Race Tracks</span>
-                        <button class="btn btn-sm btn-success" onclick="openTrackModal()">
-                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Track
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-4">ID</th>
-                                        <th>Name</th>
-                                        <th>Country</th>
-                                        <th>Length (km)</th>
-                                        <th>Lap Record</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="track-list" hx-get="/api/html/tracks" hx-trigger="load" hx-swap="outerHTML">
-                                    <tr><td colspan="6" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading tracks...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quotes Pane -->
-            <div class="tab-pane fade" id="quotes-pane">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i aria-hidden="true" class="fa-solid fa-microphone me-2 text-danger"></i>Commentator Quotes</span>
-                        <button class="btn btn-sm btn-success" hx-get="/api/html/quotes/0/edit" hx-target="#quoteModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#quoteModal">
-                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Quote
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-4" style="width: 70%">Quote</th>
-                                        <th>Author</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="quote-list" hx-get="/api/html/quotes" hx-trigger="load" hx-swap="outerHTML">
-                                    <tr><td colspan="3" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading quotes...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Teams Pane -->
-            <div class="tab-pane fade" id="teams-pane">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i aria-hidden="true" class="fa-solid fa-people-group me-2 text-danger"></i>Constructor Teams</span>
-                        <button class="btn btn-sm btn-success" hx-get="/api/html/teams/0/edit" hx-target="#teamModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#teamModal">
-                            <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Team
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-4" style="width:40px">Color</th>
-                                        <th>Name</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="team-list" hx-get="/api/html/teams" hx-trigger="load" hx-swap="outerHTML">
-                                    <tr><td colspan="3" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading teams...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Seasons Pane -->
-            <div class="tab-pane fade" id="seasons-pane">
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="card mb-4">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i aria-hidden="true" class="fa-solid fa-calendar me-2 text-danger"></i>Seasons</span>
-                                <button class="btn btn-sm btn-success" hx-get="/api/html/seasons/new" hx-target="#seasonsModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#seasonsModal">
-                                    <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> New Season
-                                </button>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th class="ps-4">Name</th>
-                                                <th>Start</th>
-                                                <th>End</th>
-                                                <th>Status</th>
-                                                <th class="text-end pe-4">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="seasons-list" hx-get="/api/html/seasons" hx-trigger="load" hx-swap="outerHTML">
-                                            <tr><td colspan="5" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading seasons...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-layer-group me-2 text-info"></i>Season Rounds</div>
-                            <div class="card-body">
-                                <select class="form-select mb-3" id="season-rounds-select" onchange="loadSeasonRounds(this.value)">
-                                    <option value="">Select a season...</option>
-                                </select>
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th class="ps-4">Round</th>
-                                                <th>Name</th>
-                                                <th>Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="season-rounds-list"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- AI Pane -->
-            <div class="tab-pane fade" id="ai-pane">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card mb-4">
-                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-2 text-danger"></i>AI Track Extraction Settings</div>
-                            <div class="card-body">
-                                <p class="small text-muted mb-3">Configure an AI endpoint to extract track layouts from board game map images. When enabled, the "Extract Track with AI" button in the track editor will send the uploaded map image to this endpoint and parse the returned GeoJSON for visualization.</p>
-                                <form id="ai-settings-form">
-                                    <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-bold">AI Endpoint URL</label>
-                                            <input type="text" class="form-control" id="ai-track-extract-url" placeholder="https://your-ai-service.com/extract-track">
-                                            <div class="form-text">Set <code>AI_TRACK_EXTRACT_URL</code> env var to override.</div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label small fw-bold">API Key (optional)</label>
-                                            <input type="password" class="form-control" id="ai-api-key" placeholder="Bearer token">
-                                            <div class="form-text">Sent as <code>Authorization: Bearer &lt;key&gt;</code></div>
-                                        </div>
-                                        <div class="col-md-2 d-flex align-items-end">
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="ai-enabled">
-                                                <label class="form-check-label small fw-bold" for="ai-enabled">Enabled</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100 mt-2">Save AI Settings</button>
-                                </form>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="card-header"><i aria-hidden="true" class="fa-solid fa-road me-2 text-info"></i>Track Extraction Tool</div>
-                            <div class="card-body">
-                                <p class="small text-muted mb-3">Upload a board game map image and extract the track layout using the configured AI endpoint. The extracted GeoJSON can then be saved to a track.</p>
-                                <div class="mb-3">
-                                    <label class="form-label small fw-bold">Map Image</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="ai-extract-map-url" placeholder="Upload or paste image URL...">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('ai-extract-image-upload').click()">Upload</button>
-                                    </div>
-                                    <input type="file" id="ai-extract-image-upload" style="display:none" accept="image/*" onchange="uploadAIImage(this)">
-                                    <div id="ai-extract-preview" class="mt-2" style="display:none">
-                                        <img src="" id="ai-extract-preview-img" class="img-fluid rounded border" style="max-height:200px">
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label small fw-bold">Enter Track ID to save to:</label>
-                                    <input type="text" class="form-control" id="ai-extract-track-id" placeholder="e.g. zandvoort">
-                                </div>
-                                <button class="btn btn-info w-100" onclick="extractTrackFromAIStandalone()">
-                                    <i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-1"></i> Extract Track Layout
-                                </button>
-                                <div id="ai-extract-result" class="mt-3" style="display:none">
-                                    <label class="form-label small fw-bold">Extracted GeoJSON</label>
-                                    <pre class="border rounded p-3 bg-dark text-light small" style="max-height:300px; overflow:auto" id="ai-extract-geojson"></pre>
-                                    <button class="btn btn-sm btn-success w-100 mt-2" onclick="saveExtractedTrack()">
-                                        <i aria-hidden="true" class="fa-solid fa-save me-1"></i> Save Extracted Track
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Email Pane -->
-            <div class="tab-pane fade" id="email-pane">
-                    <div class="row">
-                        <div class="col-lg-6 mb-4">
-                            <div class="card">
-                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-envelope me-2 text-danger"></i>SMTP Settings</div>
-                                <div class="card-body">
-                                    <form id="email-settings-form">
-                                        <div class="row g-3 mb-3">
-                                            <div class="col-7">
-                                                <label class="form-label small fw-bold">SMTP Host</label>
-                                                <input type="text" class="form-control" id="smtp-host" placeholder="smtp.gmail.com">
-                                            </div>
-                                            <div class="col-3">
-                                                <label class="form-label small fw-bold">Port</label>
-                                                <input type="number" class="form-control" id="smtp-port" value="587">
-                                            </div>
-                                            <div class="col-2 d-flex align-items-end">
-                                                <div class="form-check form-switch mb-3">
-                                                    <input class="form-check-input" type="checkbox" id="email-enabled">
-                                                    <label class="form-check-label small fw-bold" for="email-enabled">Enabled</label>
+                                            <div class="card mb-4">
+                                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-gauge-high me-2 text-danger"></i>Race Information</div>
+                                                <div class="card-body">
+                                                    <form id="race-form">
+                                                        <div class="mb-3">
+                                                            <label class="form-label small fw-bold">Track Selection</label>
+                                                            <select class="form-select" id="track-select" onchange="applyTrackPreset(this.value)">
+                                                                <option value="">Choose a circuit...</option>
+                                                            </select>
+                                                        </div>
+                                                        <hr>
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label small fw-bold">Country</label>
+                                                                <input type="text" class="form-control" name="country" required>
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label small fw-bold">Track Name</label>
+                                                                <input type="text" class="form-control" name="track" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label small fw-bold">Laps</label>
+                                                                <input type="number" class="form-control" name="laps" required>
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label small fw-bold">Internal ID</label>
+                                                                <input type="text" class="form-control" name="track_id" required>
+                                                            </div>
+                                                        </div>
+                                                        <button type="submit" class="btn btn-primary w-100 mt-2">Update Race Data</button>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Username</label>
-                                            <input type="text" class="form-control" id="smtp-username" placeholder="user@gmail.com">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Password / App Password</label>
-                                            <input type="password" class="form-control" id="smtp-password" placeholder="App password">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">From Address</label>
-                                            <input type="email" class="form-control" id="smtp-from" placeholder="heat@example.com">
-                                        </div>
-                                        <button type="submit" class="btn btn-primary w-100">Save Email Settings</button>
-                                    </form>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="card mt-4">
-                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>How It Works</div>
-                                <div class="card-body">
-                                    <p class="small text-muted mb-2">After each race is saved to history, an email with the full results will be sent to all racers who have an email address configured.</p>
-                                    <p class="small text-muted mb-0">The email includes each driver's position, points, and fastest lap status in an HTML table.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6 mb-4">
-                            <div class="card">
-                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-address-card me-2 text-danger"></i>Racer Email Addresses</div>
-                                <div class="card-body">
-                                    <p class="small text-muted mb-3">Assign email addresses to racers so they receive race result emails.</p>
-                                    <div id="racer-email-list"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-
-            <!-- Telemetry Pane -->
-            <div class="tab-pane fade" id="otel-pane">
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-wifi me-2 text-danger"></i>OpenTelemetry</div>
-                                <div class="card-body">
-                                    <form id="otel-form">
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">OTLP Endpoint URL</label>
-                                            <input type="text" class="form-control" id="otel-endpoint" placeholder="http://otel-collector:4318">
-                                            <div class="form-text">Your OpenTelemetry collector endpoint (e.g. http://otel-collector:4318 for HTTP). Leave empty to disable.</div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="otel-traces-enabled">
-                                                <label class="form-check-label small fw-bold" for="otel-traces-enabled">Enable Traces</label>
-                                            </div>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="otel-metrics-enabled">
-                                                <label class="form-check-label small fw-bold" for="otel-metrics-enabled">Enable Metrics</label>
-                                            </div>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="otel-logs-enabled">
-                                                <label class="form-check-label small fw-bold" for="otel-logs-enabled">Enable Logs</label>
+                    <div class="tab-pane fade" id="qualification-pane">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="card mb-4">
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <span><i aria-hidden="true" class="fa-solid fa-random me-2 text-warning"></i>Qualification Shuffle</span>
+                                                    <button class="btn btn-sm btn-warning" onclick="startQualification()">
+                                                        <i aria-hidden="true" class="fa-solid fa-play me-1"></i> Start Shuffle
+                                                    </button>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="small text-muted mb-3">Randomly shuffle grid positions with animation. Drivers will be shuffled one by one to determine the starting grid.</p>
+                                                    <div class="mb-3">
+                                                        <button class="btn btn-sm btn-outline-secondary me-2" onclick="resetQualification()">
+                                                            <i aria-hidden="true" class="fa-solid fa-rotate-left me-1"></i> Reset
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-info" onclick="previewGrid()">
+                                                            <i aria-hidden="true" class="fa-solid fa-eye me-1"></i> Preview Grid
+                                                        </button>
+                                                    </div>
+                                                    <div id="qualification-grid" class="row g-3">
+                                                        <div class="col-12 text-center text-muted py-5">
+                                                            <i aria-hidden="true" class="fa-solid fa-shuffle fa-3x mb-3"></i>
+                                                            <p>Click "Start Shuffle" to begin qualification</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <button type="submit" class="btn btn-primary w-100">Save Telemetry Settings</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>About OTel</div>
-                                <div class="card-body">
-                                    <p class="small text-muted mb-2">OpenTelemetry provides observability for your application. Configure an OTLP endpoint to send traces, metrics, and logs to a compatible collector.</p>
-                                    <p class="small text-muted mb-0">Changes take effect on the next application restart. The OTLP HTTP protocol is used for exporting.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-
-            <!-- Analytics Pane -->
-            <div class="tab-pane fade" id="umami-pane">
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-chart-simple me-2 text-danger"></i>Umami Analytics</div>
-                                <div class="card-body">
-                                    <form id="umami-form">
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Umami URL</label>
-                                            <input type="text" class="form-control" id="umami-url" placeholder="https://your-umami-instance.com">
-                                            <div class="form-text">Your self-hosted Umami server URL</div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Website ID</label>
-                                            <input type="text" class="form-control" id="umami-website-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-                                            <div class="form-text">The tracking website ID from Umami</div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="umami-enabled">
-                                                <label class="form-check-label small fw-bold" for="umami-enabled">Enable Tracking</label>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="card">
+                                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-list-ol me-2 text-danger"></i>Final Grid</div>
+                                                <div class="card-body p-0">
+                                                    <div id="final-grid" class="p-3">
+                                                        <div class="text-center text-muted py-4">
+                                                            <i aria-hidden="true" class="fa-solid fa-trophy fa-2x mb-2"></i>
+                                                            <p class="small mb-0">Final grid order will appear here</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <button type="submit" class="btn btn-primary w-100">Save Analytics Settings</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>About Umami</div>
-                                <div class="card-body">
-                                    <p class="small text-muted mb-2">Umami is a simple, fast, privacy-focused alternative to Google Analytics. It is self-hosted and does not track cookies or collect personal data.</p>
-                                    <p class="small text-muted mb-0">The tracking script is automatically injected into all pages when enabled.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-
-            <!-- Backup Pane -->
-            <div class="tab-pane fade" id="backup-pane">
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="card mb-4">
-                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-gear me-2 text-danger"></i>Backup Settings</div>
-                                <div class="card-body">
-                                    <form id="backup-form">
-                                        <div class="mb-3">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="backup-enabled">
-                                                <label class="form-check-label small fw-bold" for="backup-enabled">Enable Periodic Backups</label>
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-gear me-2 text-danger"></i>Settings</div>
+                                                <div class="card-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Shuffle Speed (ms)</label>
+                                                        <input type="range" class="form-range" id="shuffle-speed" min="100" max="1000" step="100" value="300" oninput="document.getElementById('speed-value').textContent = this.value + 'ms'">
+                                                        <div class="text-center small text-muted">Current: <span id="speed-value">300ms</span></div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Grid Layout</label>
+                                                        <select class="form-select" id="grid-layout">
+                                                            <option value="2">2 Columns (Standard)</option>
+                                                            <option value="3">3 Columns</option>
+                                                            <option value="4">4 Columns</option>
+                                                        </select>
+                                                    </div>
+                                                    <button class="btn btn-outline-primary w-100" onclick="applyGridPositions()">
+                                                        <i aria-hidden="true" class="fa-solid fa-check me-1"></i> Apply to Race
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div class="form-text mt-1">Automatically create database backups on a schedule.</div>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Backup Interval (hours)</label>
-                                            <select class="form-select" id="backup-interval">
-                                                <option value="1">Every 1 hour</option>
-                                                <option value="6">Every 6 hours</option>
-                                                <option value="12">Every 12 hours</option>
-                                                <option value="24" selected>Every 24 hours</option>
-                                                <option value="48">Every 48 hours</option>
-                                                <option value="72">Every 72 hours</option>
-                                                <option value="168">Every 7 days</option>
-                                            </select>
+                                    </div>
+                                </div>
+                    <div class="tab-pane fade" id="racers-pane">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span><i aria-hidden="true" class="fa-solid fa-users me-2 text-danger"></i>Racer Standings</span>
+                                            <button class="btn btn-sm btn-success" hx-get="/api/html/racers/0/edit" hx-target="#racerModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#racerModal">
+                                                <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Racer
+                                            </button>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Keep Last (backups)</label>
-                                            <input type="number" class="form-control" id="backup-retention" value="7" min="1" max="999">
-                                            <div class="form-text mt-1">Oldest backups beyond this count are automatically pruned.</div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="ps-4">Rank</th>
+                                                            <th>Driver</th>
+                                                            <th>Car</th>
+                                                            <th>Points</th>
+                                                            <th>Pos</th>
+                                                            <th>Share</th>
+                                                            <th class="text-end pe-4">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="racer-list" hx-get="/api/html/racers" hx-trigger="load" hx-swap="outerHTML">
+                                                        <tr><td colspan="7" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading racers...</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
-                                        <button type="submit" class="btn btn-primary w-100">Save Backup Settings</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card mb-4">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <span><i aria-hidden="true" class="fa-solid fa-clock-rotate-left me-2 text-danger"></i>Manual Backup</span>
-                                    <button class="btn btn-sm btn-success" id="backup-manual-btn" onclick="triggerManualBackup()">
-                                        <i aria-hidden="true" class="fa-solid fa-play me-1"></i> Backup Now
-                                    </button>
-                                </div>
-                                <div class="card-body">
-                                    <p class="small text-muted mb-3">Create an immediate backup of the database. Backups are stored in the <code>backups/</code> directory.</p>
-                                    <div id="backup-result" class="alert d-none mb-0"></div>
-                                </div>
-                            </div>
-                            <div class="card">
-                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-list me-2 text-info"></i>Recent Backups</div>
-                                <div class="card-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th class="ps-4">File</th>
-                                                    <th>Size</th>
-                                                    <th class="text-end pe-4">Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="backup-list">
-                                                <tr><td colspan="3" class="text-center text-muted py-4">No backups found.</td></tr>
-                                            </tbody>
-                                        </table>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-
-            <!-- Logs Pane -->
-            <div class="tab-pane fade" id="logs-pane">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card mb-4">
-                            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <span><i aria-hidden="true" class="fa-solid fa-list me-2 text-danger"></i>Application Logs</span>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
-                                        <i aria-hidden="true" class="fa-solid fa-rotate me-1"></i> Refresh
-                                    </button>
-                                    <small class="text-muted" id="logs-poll-status">Live</small>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-2 mb-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label small fw-bold">Level</label>
-                                        <select class="form-select form-select-sm" id="log-filter-level">
-                                            <option value="">All</option>
-                                            <option value="DEBUG">DEBUG</option>
-                                            <option value="INFO">INFO</option>
-                                            <option value="WARN">WARN</option>
-                                            <option value="ERROR">ERROR</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small fw-bold">Module</label>
-                                        <select class="form-select form-select-sm" id="log-filter-module">
-                                            <option value="">All</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2 d-flex align-items-end">
-                                        <button class="btn btn-sm btn-primary w-100" onclick="applyLogFilters()">
-                                            <i aria-hidden="true" class="fa-solid fa-filter me-1"></i> Apply
-                                        </button>
-                                    </div>
-                                    <div class="col-md-2 d-flex align-items-end">
-                                        <button class="btn btn-sm btn-outline-warning w-100" onclick="clearLogFilters()">
-                                            <i aria-hidden="true" class="fa-solid fa-eraser me-1"></i> Clear
-                                        </button>
+                    <div class="tab-pane fade" id="tracks-pane">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span><i aria-hidden="true" class="fa-solid fa-road me-2 text-danger"></i>Race Tracks</span>
+                                            <button class="btn btn-sm btn-success" onclick="openTrackModal()">
+                                                <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Track
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="ps-4">ID</th>
+                                                            <th>Name</th>
+                                                            <th>Country</th>
+                                                            <th>Length (km)</th>
+                                                            <th>Lap Record</th>
+                                                            <th class="text-end pe-4">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="track-list" hx-get="/api/html/tracks" hx-trigger="load" hx-swap="outerHTML">
+                                                        <tr><td colspan="6" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading tracks...</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="table-responsive">
-                                    <table class="table table-hover table-sm align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th style="width:160px">Timestamp</th>
-                                                <th style="width:80px">Level</th>
-                                                <th style="width:100px">Module</th>
-                                                <th>Message</th>
-                                                <th style="width:60px">Trace</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="logs-list">
-                                            <tr><td colspan="5" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading logs...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <small class="text-muted" id="logs-total">0 entries</small>
-                                    <div>
-                                        <button class="btn btn-sm btn-outline-secondary me-1" id="logs-prev-btn" onclick="changeLogPage(-1)" disabled>
-                                            <i aria-hidden="true" class="fa-solid fa-chevron-left"></i> Previous
-                                        </button>
-                                        <span class="small text-muted mx-2" id="logs-page-info">Page 1</span>
-                                        <button class="btn btn-sm btn-outline-secondary" id="logs-next-btn" onclick="changeLogPage(1)" disabled>
-                                            Next <i aria-hidden="true" class="fa-solid fa-chevron-right"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-header">
-                                <span><i aria-hidden="true" class="fa-solid fa-sliders me-2 text-danger"></i>Log Settings</span>
-                            </div>
-                            <div class="card-body">
-                                <p class="small text-muted mb-3">Configure log verbosity per module. Unconfigured modules default to <strong>WARN</strong>.</p>
-                                <div class="table-responsive">
-                                    <table class="table table-hover table-sm align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Module</th>
-                                                <th style="width:150px">Verbosity Level</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="log-settings-list">
-                                            <tr><td colspan="2" class="text-center text-muted py-3"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading settings...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="mt-3">
-                                    <button class="btn btn-sm btn-primary" onclick="saveLogSettings()">
-                                        <i aria-hidden="true" class="fa-solid fa-save me-1"></i> Save Settings
-                                    </button>
-                                    <span id="log-settings-status" class="small ms-2"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
+
+            <!-- === RESULTS CATEGORY === -->
+            <div class="tab-pane fade" id="cat-results" role="tabpanel">
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-chart-bar me-1"></i>Stats</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#rounds-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-layer-group me-1"></i>Rounds</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#seasons-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-calendar me-1"></i>Seasons</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade" id="stats-pane">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span><i aria-hidden="true" class="fa-solid fa-chart-bar me-2 text-danger"></i>Driver Statistics</span>
+                                            <button class="btn btn-sm btn-success" onclick="openStatsModal()">
+                                                <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Stats
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="ps-4">Driver</th>
+                                                            <th>Races</th>
+                                                            <th>Gold</th>
+                                                            <th>Silver</th>
+                                                            <th>Bronze</th>
+                                                            <th>Fastest Laps</th>
+                                                            <th>DNF</th>
+                                                            <th>DNS</th>
+                                                            <th class="text-end pe-4">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="stats-list"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                    <div class="tab-pane fade" id="rounds-pane">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span><i aria-hidden="true" class="fa-solid fa-layer-group me-2 text-danger"></i>Round Snapshots</span>
+                                            <button class="btn btn-sm btn-success" onclick="takeAdminRoundSnapshot()">
+                                                <i aria-hidden="true" class="fa-solid fa-camera me-1"></i> Take Snapshot
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="ps-4">Round</th>
+                                                            <th>Race Name</th>
+                                                            <th>Date</th>
+                                                            <th class="text-end pe-4">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="rounds-list"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                    <div class="tab-pane fade" id="seasons-pane">
+                                    <div class="row">
+                                        <div class="col-lg-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <span><i aria-hidden="true" class="fa-solid fa-calendar me-2 text-danger"></i>Seasons</span>
+                                                    <button class="btn btn-sm btn-success" hx-get="/api/html/seasons/new" hx-target="#seasonsModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#seasonsModal">
+                                                        <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> New Season
+                                                    </button>
+                                                </div>
+                                                <div class="card-body p-0">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-hover align-middle mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th class="ps-4">Name</th>
+                                                                    <th>Start</th>
+                                                                    <th>End</th>
+                                                                    <th>Status</th>
+                                                                    <th class="text-end pe-4">Actions</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="seasons-list" hx-get="/api/html/seasons" hx-trigger="load" hx-swap="outerHTML">
+                                                                <tr><td colspan="5" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading seasons...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="card">
+                                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-layer-group me-2 text-info"></i>Season Rounds</div>
+                                                <div class="card-body">
+                                                    <select class="form-select mb-3" id="season-rounds-select" onchange="loadSeasonRounds(this.value)">
+                                                        <option value="">Select a season...</option>
+                                                    </select>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-hover align-middle mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th class="ps-4">Round</th>
+                                                                    <th>Name</th>
+                                                                    <th>Date</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="season-rounds-list"></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                </div>
+            </div>
+
+            <!-- === CONTENT CATEGORY === -->
+            <div class="tab-pane fade" id="cat-content" role="tabpanel">
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-microphone me-1"></i>Quotes</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#teams-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-people-group me-1"></i>Teams</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade" id="quotes-pane">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span><i aria-hidden="true" class="fa-solid fa-microphone me-2 text-danger"></i>Commentator Quotes</span>
+                                            <button class="btn btn-sm btn-success" hx-get="/api/html/quotes/0/edit" hx-target="#quoteModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#quoteModal">
+                                                <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Quote
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="ps-4" style="width: 70%">Quote</th>
+                                                            <th>Author</th>
+                                                            <th class="text-end pe-4">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="quote-list" hx-get="/api/html/quotes" hx-trigger="load" hx-swap="outerHTML">
+                                                        <tr><td colspan="3" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading quotes...</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                    <div class="tab-pane fade" id="teams-pane">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span><i aria-hidden="true" class="fa-solid fa-people-group me-2 text-danger"></i>Constructor Teams</span>
+                                            <button class="btn btn-sm btn-success" hx-get="/api/html/teams/0/edit" hx-target="#teamModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#teamModal">
+                                                <i aria-hidden="true" class="fa-solid fa-plus me-1"></i> Add Team
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="ps-4" style="width:40px">Color</th>
+                                                            <th>Name</th>
+                                                            <th class="text-end pe-4">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="team-list" hx-get="/api/html/teams" hx-trigger="load" hx-swap="outerHTML">
+                                                        <tr><td colspan="3" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading teams...</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                </div>
+            </div>
+
+            <!-- === SETTINGS CATEGORY === -->
+            <div class="tab-pane fade" id="cat-settings" role="tabpanel">
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#notify-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-bell me-1"></i>Notifications</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#email-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-envelope me-1"></i>Email</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#otel-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-wifi me-1"></i>Telemetry</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#umami-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-chart-simple me-1"></i>Analytics</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-1"></i>AI</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#backup-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-database me-1"></i>Backup</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade" id="notify-pane">
+                                    <div class="row">
+                                        <div class="col-lg-6">
+                                            <div class="card">
+                                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-bell me-2 text-danger"></i>Gotify Notifications</div>
+                                                <div class="card-body">
+                                                    <form id="notify-form">
+                                                        <div class="mb-3">
+                                                            <label class="form-label small fw-bold">Gotify URL</label>
+                                                            <input type="text" class="form-control" id="gotify-url" placeholder="https://your-gotify-instance.com">
+                                                            <div class="form-text">Enter your Gotify server URL</div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label small fw-bold">Gotify Token</label>
+                                                            <input type="password" class="form-control" id="gotify-token" placeholder="Application token">
+                                                            <div class="form-text">Your Gotify application token</div>
+                                                        </div>
+                                                        <button type="submit" class="btn btn-primary w-100">Save Settings</button>
+                                                    </form>
+                                                    <button class="btn btn-outline-secondary w-100 mt-2" onclick="testNotification()">
+                                                        <i aria-hidden="true" class="fa-solid fa-paper-plane me-1"></i> Send Test Notification
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="card">
+                                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-sliders me-2 text-danger"></i>Notification Triggers</div>
+                                                <div class="card-body">
+                                                    <div class="form-check form-switch mb-3">
+                                                        <input class="form-check-input" type="checkbox" id="notify-winner">
+                                                        <label class="form-check-label" for="notify-winner">
+                                                            <i aria-hidden="true" class="fa-solid fa-trophy me-1 text-warning"></i> Notify on Race Winner
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check form-switch mb-3">
+                                                        <input class="form-check-input" type="checkbox" id="notify-podium">
+                                                        <label class="form-check-label" for="notify-podium">
+                                                            <i aria-hidden="true" class="fa-solid fa-medal me-1 text-secondary"></i> Notify on Podium Results
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check form-switch mb-3">
+                                                        <input class="form-check-input" type="checkbox" id="notify-race-start">
+                                                        <label class="form-check-label" for="notify-race-start">
+                                                            <i aria-hidden="true" class="fa-solid fa-flag me-1 text-success"></i> Notify on Race Start
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="card mt-3">
+                                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>About Notifications</div>
+                                                <div class="card-body">
+                                                    <p class="small text-muted mb-2">Notifications are sent via Gotify when race events occur. Make sure your Gotify server is accessible and the application token has permission to post messages.</p>
+                                                    <p class="small text-muted mb-0">Notifications are sent asynchronously and won't delay race operations.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                    <div class="tab-pane fade" id="email-pane">
+                                        <div class="row">
+                                            <div class="col-lg-6 mb-4">
+                                                <div class="card">
+                                                    <div class="card-header"><i aria-hidden="true" class="fa-solid fa-envelope me-2 text-danger"></i>SMTP Settings</div>
+                                                    <div class="card-body">
+                                                        <form id="email-settings-form">
+                                                            <div class="row g-3 mb-3">
+                                                                <div class="col-7">
+                                                                    <label class="form-label small fw-bold">SMTP Host</label>
+                                                                    <input type="text" class="form-control" id="smtp-host" placeholder="smtp.gmail.com">
+                                                                </div>
+                                                                <div class="col-3">
+                                                                    <label class="form-label small fw-bold">Port</label>
+                                                                    <input type="number" class="form-control" id="smtp-port" value="587">
+                                                                </div>
+                                                                <div class="col-2 d-flex align-items-end">
+                                                                    <div class="form-check form-switch mb-3">
+                                                                        <input class="form-check-input" type="checkbox" id="email-enabled">
+                                                                        <label class="form-check-label small fw-bold" for="email-enabled">Enabled</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label small fw-bold">Username</label>
+                                                                <input type="text" class="form-control" id="smtp-username" placeholder="user@gmail.com">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label small fw-bold">Password / App Password</label>
+                                                                <input type="password" class="form-control" id="smtp-password" placeholder="App password">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label small fw-bold">From Address</label>
+                                                                <input type="email" class="form-control" id="smtp-from" placeholder="heat@example.com">
+                                                            </div>
+                                                            <button type="submit" class="btn btn-primary w-100">Save Email Settings</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                                <div class="card mt-4">
+                                                    <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>How It Works</div>
+                                                    <div class="card-body">
+                                                        <p class="small text-muted mb-2">After each race is saved to history, an email with the full results will be sent to all racers who have an email address configured.</p>
+                                                        <p class="small text-muted mb-0">The email includes each driver's position, points, and fastest lap status in an HTML table.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6 mb-4">
+                                                <div class="card">
+                                                    <div class="card-header"><i aria-hidden="true" class="fa-solid fa-address-card me-2 text-danger"></i>Racer Email Addresses</div>
+                                                    <div class="card-body">
+                                                        <p class="small text-muted mb-3">Assign email addresses to racers so they receive race result emails.</p>
+                                                        <div id="racer-email-list"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                </div>
+                    <div class="tab-pane fade" id="otel-pane">
+                                        <div class="row">
+                                            <div class="col-lg-6">
+                                                <div class="card">
+                                                    <div class="card-header"><i aria-hidden="true" class="fa-solid fa-wifi me-2 text-danger"></i>OpenTelemetry</div>
+                                                    <div class="card-body">
+                                                        <form id="otel-form">
+                                                            <div class="mb-3">
+                                                                <label class="form-label small fw-bold">OTLP Endpoint URL</label>
+                                                                <input type="text" class="form-control" id="otel-endpoint" placeholder="http://otel-collector:4318">
+                                                                <div class="form-text">Your OpenTelemetry collector endpoint (e.g. http://otel-collector:4318 for HTTP). Leave empty to disable.</div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="otel-traces-enabled">
+                                                                    <label class="form-check-label small fw-bold" for="otel-traces-enabled">Enable Traces</label>
+                                                                </div>
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="otel-metrics-enabled">
+                                                                    <label class="form-check-label small fw-bold" for="otel-metrics-enabled">Enable Metrics</label>
+                                                                </div>
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="otel-logs-enabled">
+                                                                    <label class="form-check-label small fw-bold" for="otel-logs-enabled">Enable Logs</label>
+                                                                </div>
+                                                            </div>
+                                                            <button type="submit" class="btn btn-primary w-100">Save Telemetry Settings</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6">
+                                                <div class="card">
+                                                    <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>About OTel</div>
+                                                    <div class="card-body">
+                                                        <p class="small text-muted mb-2">OpenTelemetry provides observability for your application. Configure an OTLP endpoint to send traces, metrics, and logs to a compatible collector.</p>
+                                                        <p class="small text-muted mb-0">Changes take effect on the next application restart. The OTLP HTTP protocol is used for exporting.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                </div>
+                    <div class="tab-pane fade" id="umami-pane">
+                                        <div class="row">
+                                            <div class="col-lg-6">
+                                                <div class="card">
+                                                    <div class="card-header"><i aria-hidden="true" class="fa-solid fa-chart-simple me-2 text-danger"></i>Umami Analytics</div>
+                                                    <div class="card-body">
+                                                        <form id="umami-form">
+                                                            <div class="mb-3">
+                                                                <label class="form-label small fw-bold">Umami URL</label>
+                                                                <input type="text" class="form-control" id="umami-url" placeholder="https://your-umami-instance.com">
+                                                                <div class="form-text">Your self-hosted Umami server URL</div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label small fw-bold">Website ID</label>
+                                                                <input type="text" class="form-control" id="umami-website-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                                                                <div class="form-text">The tracking website ID from Umami</div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="umami-enabled">
+                                                                    <label class="form-check-label small fw-bold" for="umami-enabled">Enable Tracking</label>
+                                                                </div>
+                                                            </div>
+                                                            <button type="submit" class="btn btn-primary w-100">Save Analytics Settings</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6">
+                                                <div class="card">
+                                                    <div class="card-header"><i aria-hidden="true" class="fa-solid fa-info-circle me-2 text-info"></i>About Umami</div>
+                                                    <div class="card-body">
+                                                        <p class="small text-muted mb-2">Umami is a simple, fast, privacy-focused alternative to Google Analytics. It is self-hosted and does not track cookies or collect personal data.</p>
+                                                        <p class="small text-muted mb-0">The tracking script is automatically injected into all pages when enabled.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                </div>
+                    <div class="tab-pane fade" id="ai-pane">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="card mb-4">
+                                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-2 text-danger"></i>AI Track Extraction Settings</div>
+                                                <div class="card-body">
+                                                    <p class="small text-muted mb-3">Configure an AI endpoint to extract track layouts from board game map images. When enabled, the "Extract Track with AI" button in the track editor will send the uploaded map image to this endpoint and parse the returned GeoJSON for visualization.</p>
+                                                    <form id="ai-settings-form">
+                                                        <div class="row g-3">
+                                                            <div class="col-md-6">
+                                                                <label class="form-label small fw-bold">AI Endpoint URL</label>
+                                                                <input type="text" class="form-control" id="ai-track-extract-url" placeholder="https://your-ai-service.com/extract-track">
+                                                                <div class="form-text">Set <code>AI_TRACK_EXTRACT_URL</code> env var to override.</div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-bold">API Key (optional)</label>
+                                                                <input type="password" class="form-control" id="ai-api-key" placeholder="Bearer token">
+                                                                <div class="form-text">Sent as <code>Authorization: Bearer &lt;key&gt;</code></div>
+                                                            </div>
+                                                            <div class="col-md-2 d-flex align-items-end">
+                                                                <div class="form-check form-switch mb-3">
+                                                                    <input class="form-check-input" type="checkbox" id="ai-enabled">
+                                                                    <label class="form-check-label small fw-bold" for="ai-enabled">Enabled</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <button type="submit" class="btn btn-primary w-100 mt-2">Save AI Settings</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            <div class="card">
+                                                <div class="card-header"><i aria-hidden="true" class="fa-solid fa-road me-2 text-info"></i>Track Extraction Tool</div>
+                                                <div class="card-body">
+                                                    <p class="small text-muted mb-3">Upload a board game map image and extract the track layout using the configured AI endpoint. The extracted GeoJSON can then be saved to a track.</p>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Map Image</label>
+                                                        <div class="input-group">
+                                                            <input type="text" class="form-control" id="ai-extract-map-url" placeholder="Upload or paste image URL...">
+                                                            <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('ai-extract-image-upload').click()">Upload</button>
+                                                        </div>
+                                                        <input type="file" id="ai-extract-image-upload" style="display:none" accept="image/*" onchange="uploadAIImage(this)">
+                                                        <div id="ai-extract-preview" class="mt-2" style="display:none">
+                                                            <img src="" id="ai-extract-preview-img" class="img-fluid rounded border" style="max-height:200px">
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Enter Track ID to save to:</label>
+                                                        <input type="text" class="form-control" id="ai-extract-track-id" placeholder="e.g. zandvoort">
+                                                    </div>
+                                                    <button class="btn btn-info w-100" onclick="extractTrackFromAIStandalone()">
+                                                        <i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-1"></i> Extract Track Layout
+                                                    </button>
+                                                    <div id="ai-extract-result" class="mt-3" style="display:none">
+                                                        <label class="form-label small fw-bold">Extracted GeoJSON</label>
+                                                        <pre class="border rounded p-3 bg-dark text-light small" style="max-height:300px; overflow:auto" id="ai-extract-geojson"></pre>
+                                                        <button class="btn btn-sm btn-success w-100 mt-2" onclick="saveExtractedTrack()">
+                                                            <i aria-hidden="true" class="fa-solid fa-save me-1"></i> Save Extracted Track
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                    <div class="tab-pane fade" id="backup-pane">
+                                        <div class="row">
+                                            <div class="col-lg-6">
+                                                <div class="card mb-4">
+                                                    <div class="card-header"><i aria-hidden="true" class="fa-solid fa-gear me-2 text-danger"></i>Backup Settings</div>
+                                                    <div class="card-body">
+                                                        <form id="backup-form">
+                                                            <div class="mb-3">
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="backup-enabled">
+                                                                    <label class="form-check-label small fw-bold" for="backup-enabled">Enable Periodic Backups</label>
+                                                                </div>
+                                                                <div class="form-text mt-1">Automatically create database backups on a schedule.</div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label small fw-bold">Backup Interval (hours)</label>
+                                                                <select class="form-select" id="backup-interval">
+                                                                    <option value="1">Every 1 hour</option>
+                                                                    <option value="6">Every 6 hours</option>
+                                                                    <option value="12">Every 12 hours</option>
+                                                                    <option value="24" selected>Every 24 hours</option>
+                                                                    <option value="48">Every 48 hours</option>
+                                                                    <option value="72">Every 72 hours</option>
+                                                                    <option value="168">Every 7 days</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label small fw-bold">Keep Last (backups)</label>
+                                                                <input type="number" class="form-control" id="backup-retention" value="7" min="1" max="999">
+                                                                <div class="form-text mt-1">Oldest backups beyond this count are automatically pruned.</div>
+                                                            </div>
+                                                            <button type="submit" class="btn btn-primary w-100">Save Backup Settings</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6">
+                                                <div class="card mb-4">
+                                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                                        <span><i aria-hidden="true" class="fa-solid fa-clock-rotate-left me-2 text-danger"></i>Manual Backup</span>
+                                                        <button class="btn btn-sm btn-success" id="backup-manual-btn" onclick="triggerManualBackup()">
+                                                            <i aria-hidden="true" class="fa-solid fa-play me-1"></i> Backup Now
+                                                        </button>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <p class="small text-muted mb-3">Create an immediate backup of the database. Backups are stored in the <code>backups/</code> directory.</p>
+                                                        <div id="backup-result" class="alert d-none mb-0"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="card">
+                                                    <div class="card-header"><i aria-hidden="true" class="fa-solid fa-list me-2 text-info"></i>Recent Backups</div>
+                                                    <div class="card-body p-0">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-hover align-middle mb-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th class="ps-4">File</th>
+                                                                        <th>Size</th>
+                                                                        <th class="text-end pe-4">Date</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody id="backup-list">
+                                                                    <tr><td colspan="3" class="text-center text-muted py-4">No backups found.</td></tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                </div>
+                </div>
+            </div>
+
+            <!-- === SYSTEM CATEGORY === -->
+            <div class="tab-pane fade" id="cat-system" role="tabpanel">
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#logs-pane" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-list me-1"></i>Logs</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade" id="logs-pane">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="card mb-4">
+                                                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                    <span><i aria-hidden="true" class="fa-solid fa-list me-2 text-danger"></i>Application Logs</span>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
+                                                            <i aria-hidden="true" class="fa-solid fa-rotate me-1"></i> Refresh
+                                                        </button>
+                                                        <small class="text-muted" id="logs-poll-status">Live</small>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row g-2 mb-3">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small fw-bold">Level</label>
+                                                            <select class="form-select form-select-sm" id="log-filter-level">
+                                                                <option value="">All</option>
+                                                                <option value="DEBUG">DEBUG</option>
+                                                                <option value="INFO">INFO</option>
+                                                                <option value="WARN">WARN</option>
+                                                                <option value="ERROR">ERROR</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small fw-bold">Module</label>
+                                                            <select class="form-select form-select-sm" id="log-filter-module">
+                                                                <option value="">All</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-2 d-flex align-items-end">
+                                                            <button class="btn btn-sm btn-primary w-100" onclick="applyLogFilters()">
+                                                                <i aria-hidden="true" class="fa-solid fa-filter me-1"></i> Apply
+                                                            </button>
+                                                        </div>
+                                                        <div class="col-md-2 d-flex align-items-end">
+                                                            <button class="btn btn-sm btn-outline-warning w-100" onclick="clearLogFilters()">
+                                                                <i aria-hidden="true" class="fa-solid fa-eraser me-1"></i> Clear
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-hover table-sm align-middle mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style="width:160px">Timestamp</th>
+                                                                    <th style="width:80px">Level</th>
+                                                                    <th style="width:100px">Module</th>
+                                                                    <th>Message</th>
+                                                                    <th style="width:60px">Trace</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="logs-list">
+                                                                <tr><td colspan="5" class="text-center text-muted py-4"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading logs...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                                        <small class="text-muted" id="logs-total">0 entries</small>
+                                                        <div>
+                                                            <button class="btn btn-sm btn-outline-secondary me-1" id="logs-prev-btn" onclick="changeLogPage(-1)" disabled>
+                                                                <i aria-hidden="true" class="fa-solid fa-chevron-left"></i> Previous
+                                                            </button>
+                                                            <span class="small text-muted mx-2" id="logs-page-info">Page 1</span>
+                                                            <button class="btn btn-sm btn-outline-secondary" id="logs-next-btn" onclick="changeLogPage(1)" disabled>
+                                                                Next <i aria-hidden="true" class="fa-solid fa-chevron-right"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <span><i aria-hidden="true" class="fa-solid fa-sliders me-2 text-danger"></i>Log Settings</span>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="small text-muted mb-3">Configure log verbosity per module. Unconfigured modules default to <strong>WARN</strong>.</p>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-hover table-sm align-middle mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Module</th>
+                                                                    <th style="width:150px">Verbosity Level</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="log-settings-list">
+                                                                <tr><td colspan="2" class="text-center text-muted py-3"><i aria-hidden="true" class="fa-solid fa-spinner fa-spin me-2"></i>Loading settings...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="mt-3">
+                                                        <button class="btn btn-sm btn-primary" onclick="saveLogSettings()">
+                                                            <i aria-hidden="true" class="fa-solid fa-save me-1"></i> Save Settings
+                                                        </button>
+                                                        <span id="log-settings-status" class="small ms-2"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                </div>
+            </div>
+
         </div>
     </div>
-
-    <!-- Racer Modal -->
+<!-- Racer Modal -->
     <div class="modal fade" id="racerModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -1269,6 +1293,7 @@
 
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/toast.js"></script>
     <script>
         document.body.addEventListener('closeRacerModal', function() {
             bootstrap.Modal.getInstance(document.getElementById('racerModal')).hide();

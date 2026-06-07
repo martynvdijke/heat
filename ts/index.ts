@@ -505,13 +505,13 @@ function handleFlagCommand(cmd: any): void {
     }
 
     if (cmd.flag === 'blue') {
-        showToast('primary', 'BLUE FLAG', `${cmd.racer_name} — let faster car through!`);
+        showBootstrapToast('primary', 'BLUE FLAG', `${cmd.racer_name} — let faster car through!`);
     } else if (cmd.flag === 'blackwhite') {
-        showToast('secondary', 'BLACK & WHITE FLAG', `${cmd.racer_name} — unsportsmanlike conduct warning!`);
+        showBootstrapToast('secondary', 'BLACK & WHITE FLAG', `${cmd.racer_name} — unsportsmanlike conduct warning!`);
     }
 }
 
-function showToast(color: string, title: string, message: string): void {
+function showBootstrapToast(color: string, title: string, message: string): void {
     const container = document.getElementById('toast-container')!;
     const id = 'toast-' + Date.now();
     const html = `

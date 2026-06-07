@@ -141,21 +141,27 @@ function shuffleGrid(): void {
 }
 
 function moveUp(id: number): void {
-    const r = controllerRacers.find(r => r.id === id);
-    if (r && r.position > 1) {
-        r.position--;
-        const other = controllerRacers.find(r => r.position === r.position);
-        if (other) other.position++;
+    const racer = controllerRacers.find(r => r.id === id);
+    if (racer && racer.position > 1) {
+        const targetPos = racer.position - 1;
+        const other = controllerRacers.find(o => o.id !== id && o.position === targetPos);
+        if (other) {
+            other.position = racer.position;
+            racer.position = targetPos;
+        }
         savePositions();
     }
 }
 
 function moveDown(id: number): void {
-    const r = controllerRacers.find(r => r.id === id);
-    if (r) {
-        r.position++;
-        const other = controllerRacers.find(r => r.position === r.position);
-        if (other) other.position--;
+    const racer = controllerRacers.find(r => r.id === id);
+    if (racer) {
+        const targetPos = racer.position + 1;
+        const other = controllerRacers.find(o => o.id !== id && o.position === targetPos);
+        if (other) {
+            other.position = racer.position;
+            racer.position = targetPos;
+        }
         savePositions();
     }
 }
@@ -209,7 +215,7 @@ function populateDriverSelect(): void {
 function sendBlueFlag(): void {
     const select = document.getElementById('flag-driver-select') as HTMLSelectElement;
     const id = parseInt(select.value);
-    if (!id) { alert('Select a driver first'); return; }
+    if (!id) { showToast('Select a driver first', 'warning'); return; }
     const name = select.options[select.selectedIndex]?.text || '';
     broadcastMessage({ type: 'flag', flag: 'blue', racer_id: id, racer_name: name });
 }
@@ -217,7 +223,7 @@ function sendBlueFlag(): void {
 function sendBlackWhiteFlag(): void {
     const select = document.getElementById('flag-driver-select') as HTMLSelectElement;
     const id = parseInt(select.value);
-    if (!id) { alert('Select a driver first'); return; }
+    if (!id) { showToast('Select a driver first', 'warning'); return; }
     const name = select.options[select.selectedIndex]?.text || '';
     broadcastMessage({ type: 'flag', flag: 'blackwhite', racer_id: id, racer_name: name });
 }
@@ -270,7 +276,7 @@ function saveRaceResult(): void {
             results: results
         })
     }).then(() => {
-        alert('Race saved to history!');
+        showToast('Race saved to history!', 'success');
         stopRace();
     });
 }
@@ -294,16 +300,16 @@ async function archiveCurrentSeason(): Promise<void> {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name })
         });
-        if (!createRes.ok) { alert('Failed to create season'); return; }
-        alert('Season created! You can now archive it when ready.');
+        if (!createRes.ok) { showToast('Failed to create season', 'error'); return; }
+        showToast('Season created! You can now archive it when ready.', 'success');
         return;
     }
     if (!confirm(`Archive "${active.name}"? This will end the season.`)) return;
     const archiveRes = await fetch(`/api/seasons/archive?id=${active.id}`, { method: 'POST' });
     if (archiveRes.ok) {
-        alert(`Season "${active.name}" archived!`);
+        showToast(`Season "${active.name}" archived!`, 'success');
     } else {
-        alert('Failed to archive season');
+        showToast('Failed to archive season', 'error');
     }
 }
 
@@ -315,10 +321,10 @@ async function takeRoundSnapshot(): Promise<void> {
         body: JSON.stringify({ race_name: name, round: 0 })
     });
     if (res.ok) {
-        alert('Round snapshot saved!');
+        showToast('Round snapshot saved!', 'success');
     } else {
         const err = await res.json();
-        alert('Failed: ' + (err.error || 'Unknown error'));
+        showToast('Failed: ' + (err.error || 'Unknown error'), 'error');
     }
 }
 
@@ -413,7 +419,7 @@ async function addRaceEvent(): Promise<void> {
     const eventType = (document.getElementById('event-type-select') as HTMLSelectElement).value;
     const racerSelect = document.getElementById('event-racer-select') as HTMLSelectElement;
     const racerId = parseInt(racerSelect.value);
-    if (!racerId) { alert('Select a driver'); return; }
+    if (!racerId) { showToast('Select a driver', 'warning'); return; }
     const lap = parseInt((document.getElementById('record-lap-number') as HTMLInputElement).value) || 1;
 
     await fetch('/api/race-events', {

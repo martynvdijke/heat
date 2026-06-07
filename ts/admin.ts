@@ -172,10 +172,10 @@ async function generateShareLink(racerId: number): Promise<void> {
             loadRacers();
         } else {
             const err = await res.json();
-            alert('Failed to generate link: ' + (err.error || 'Unknown error'));
+            showToast('Failed to generate link: ' + (err.error || 'Unknown error'), 'error');
         }
     } catch (e: any) {
-        alert('Error: ' + e.message);
+        showToast('Error: ' + e.message, 'error');
     }
 }
 
@@ -185,7 +185,7 @@ async function copyShareLink(racerId: number): Promise<void> {
     const link = `${window.location.origin}/driver.html?token=${token}`;
     try {
         await navigator.clipboard.writeText(link);
-        alert('Share link copied to clipboard!');
+        showToast('Share link copied to clipboard!', 'success');
     } catch {
         const input = document.createElement('input');
         input.value = link;
@@ -193,7 +193,7 @@ async function copyShareLink(racerId: number): Promise<void> {
         input.select();
         document.execCommand('copy');
         document.body.removeChild(input);
-        alert('Share link copied!');
+        showToast('Share link copied!', 'success');
     }
 }
 
@@ -252,7 +252,7 @@ document.getElementById('umami-form')!.addEventListener('submit', async (e: Even
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (res.ok) alert('Analytics settings saved!');
+    if (res.ok) showToast('Analytics settings saved!', 'success');
 });
 
 async function loadNotificationSettings(): Promise<void> {
@@ -281,7 +281,7 @@ document.getElementById('notify-form')!.addEventListener('submit', async (e: Eve
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (res.ok) alert('Notification settings saved!');
+    if (res.ok) showToast('Notification settings saved!', 'success');
 });
 
 document.getElementById('notify-winner')!.addEventListener('change', saveNotifyToggle);
@@ -310,13 +310,13 @@ async function testNotification(this: HTMLButtonElement, event: MouseEvent): Pro
     try {
         const res = await fetch('/api/test-notification', { method: 'POST' });
         if (res.ok) {
-            alert('Test notification sent successfully!');
+            showToast('Test notification sent successfully!', 'success');
         } else {
             const err = await res.text();
-            alert('Failed to send: ' + err);
+            showToast('Failed to send: ' + err, 'error');
         }
     } catch (e: any) {
-        alert('Error: ' + e.message);
+        showToast('Error: ' + e.message, 'error');
     }
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Send Test Notification';
@@ -389,7 +389,7 @@ document.getElementById('stats-form')!.addEventListener('submit', async (e: Even
     const select = document.getElementById('stats-racer-select') as HTMLSelectElement;
     const racerId = parseInt(select.value);
     if (!racerId) {
-        alert('Please select a driver');
+        showToast('Please select a driver', 'error');
         return;
     }
 
@@ -418,7 +418,7 @@ document.getElementById('stats-form')!.addEventListener('submit', async (e: Even
         loadRacerStats();
     } else {
         const err = await res.json();
-        alert('Failed to save stats: ' + (err.error || 'Unknown error'));
+        showToast('Failed to save stats: ' + (err.error || 'Unknown error'), 'error');
     }
 });
 
@@ -435,7 +435,7 @@ document.getElementById('race-form')!.addEventListener('submit', async (e: Event
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (res.ok) alert('Race data updated!');
+    if (res.ok) showToast('Race data updated!', 'success');
 });
 
 document.getElementById('racer-form')!.addEventListener('submit', async (e: Event) => {
@@ -463,7 +463,7 @@ document.getElementById('racer-form')!.addEventListener('submit', async (e: Even
         loadRacers();
     } else {
         const err = await res.json();
-        alert('Failed to save racer: ' + (err.error || 'Unknown error'));
+        showToast('Failed to save racer: ' + (err.error || 'Unknown error'), 'error');
     }
 });
 
@@ -532,7 +532,7 @@ async function startQualification(): Promise<void> {
     const currentRacers: AdminRacer[] = await res.json();
 
     if (currentRacers.length === 0) {
-        alert('No racers available for qualification!');
+        showToast('No racers available for qualification!', 'info');
         return;
     }
 
@@ -627,7 +627,7 @@ function renderFinalGrid(order: AdminRacer[]): void {
 
 async function applyGridPositions(): Promise<void> {
     if (qualificationOrder.length === 0) {
-        alert('Please run qualification first!');
+        showToast('Please run qualification first!', 'error');
         return;
     }
 
@@ -653,7 +653,7 @@ async function applyGridPositions(): Promise<void> {
         });
     }
 
-    alert('Grid positions applied!');
+    showToast('Grid positions applied!', 'success');
     loadRacers();
 }
 
@@ -685,7 +685,7 @@ function previewGrid(): void {
     const gridDiv = document.getElementById('qualification-grid')!;
 
     if (qualificationOrder.length === 0) {
-        alert('Please run qualification first!');
+        showToast('Please run qualification first!', 'error');
         return;
     }
 
@@ -793,7 +793,7 @@ async function uploadImage(input: HTMLInputElement): Promise<void> {
         const res = await fetch('/api/upload', { method: 'POST', body: fd });
         const data = await res.json();
         if (!res.ok) {
-            alert('Upload failed: ' + (data.error || 'Unknown error'));
+            showToast('Upload failed: ' + (data.error || 'Unknown error'), 'error');
             return;
         }
         (document.getElementById('profile_picture') as HTMLInputElement).value = data.url;
@@ -801,7 +801,7 @@ async function uploadImage(input: HTMLInputElement): Promise<void> {
         preview.src = data.url;
         preview.style.display = 'inline-block';
     } catch (e: any) {
-        alert('Upload failed: ' + (e.message || 'Unknown error'));
+        showToast('Upload failed: ' + (e.message || 'Unknown error'), 'error');
     }
 }
 
@@ -838,12 +838,12 @@ async function uploadMapImage(input: HTMLInputElement): Promise<void> {
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         const data = await res.json();
         if (!res.ok) {
-            alert('Upload failed: ' + (data.error || 'Unknown error'));
+            showToast('Upload failed: ' + (data.error || 'Unknown error'), 'error');
             return;
         }
         (document.getElementById('map-image-url') as HTMLInputElement).value = data.url;
     } catch (e: any) {
-        alert('Upload failed: ' + (e.message || 'Unknown error'));
+        showToast('Upload failed: ' + (e.message || 'Unknown error'), 'error');
     }
 }
 
@@ -881,10 +881,10 @@ document.getElementById('otel-form')!.addEventListener('submit', async (e: Event
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (res.ok) alert('Telemetry settings saved!');
+    if (res.ok) showToast('Telemetry settings saved!', 'success');
     else {
         const err = await res.json();
-        alert('Failed to save telemetry settings: ' + (err.error || 'Unknown error'));
+        showToast('Failed to save telemetry settings: ' + (err.error || 'Unknown error'), 'error');
     }
 });
 
@@ -900,7 +900,7 @@ document.getElementById('ai-settings-form')!.addEventListener('submit', async (e
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (res.ok) alert('AI settings saved!');
+    if (res.ok) showToast('AI settings saved!', 'success');
 });
 
 async function extractTrackFromAI(): Promise<void> {
@@ -913,7 +913,7 @@ async function extractTrackFromAI(): Promise<void> {
     try {
         const mapUrl = (document.getElementById('map-image-url') as HTMLInputElement).value;
         if (!mapUrl) {
-            alert('Please upload a map image first!');
+            showToast('Please upload a map image first!', 'error');
             btn.innerHTML = originalText;
             btn.disabled = false;
             return;
@@ -929,10 +929,10 @@ async function extractTrackFromAI(): Promise<void> {
             throw new Error(err.error || 'AI extraction failed');
         }
         const data = await res.json();
-        alert('AI successfully analyzed the track! GeoJSON has been generated. Save the track to apply it.');
+        showToast('AI successfully analyzed the track! GeoJSON has been generated. Save the track to apply it.', 'success');
         console.log('AI Extracted GeoJSON:', data);
     } catch (e: any) {
-        alert('AI extraction failed: ' + e.message);
+        showToast('AI extraction failed: ' + e.message, 'error');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -947,7 +947,7 @@ async function uploadAIImage(input: HTMLInputElement): Promise<void> {
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         const data = await res.json();
         if (!res.ok) {
-            alert('Upload failed: ' + (data.error || 'Unknown error'));
+            showToast('Upload failed: ' + (data.error || 'Unknown error'), 'error');
             return;
         }
         (document.getElementById('ai-extract-map-url') as HTMLInputElement).value = data.url;
@@ -956,7 +956,7 @@ async function uploadAIImage(input: HTMLInputElement): Promise<void> {
         img.src = data.url;
         preview.style.display = 'block';
     } catch (e: any) {
-        alert('Upload failed: ' + (e.message || 'Unknown error'));
+        showToast('Upload failed: ' + (e.message || 'Unknown error'), 'error');
     }
 }
 
@@ -972,7 +972,7 @@ async function extractTrackFromAIStandalone(): Promise<void> {
     try {
         const mapUrl = (document.getElementById('ai-extract-map-url') as HTMLInputElement).value;
         if (!mapUrl) {
-            alert('Please upload a map image first!');
+            showToast('Please upload a map image first!', 'error');
             btn.innerHTML = originalText;
             btn.disabled = false;
             return;
@@ -994,7 +994,7 @@ async function extractTrackFromAIStandalone(): Promise<void> {
         pre.textContent = JSON.stringify(data, null, 2);
         result.style.display = 'block';
     } catch (e: any) {
-        alert('AI extraction failed: ' + e.message);
+        showToast('AI extraction failed: ' + e.message, 'error');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -1003,12 +1003,12 @@ async function extractTrackFromAIStandalone(): Promise<void> {
 
 async function saveExtractedTrack(): Promise<void> {
     if (!extractedGeoJSON) {
-        alert('Please extract a track first!');
+        showToast('Please extract a track first!', 'error');
         return;
     }
     const trackId = (document.getElementById('ai-extract-track-id') as HTMLInputElement).value;
     if (!trackId) {
-        alert('Please enter a track ID!');
+        showToast('Please enter a track ID!', 'error');
         return;
     }
     const res = await fetch('/api/tracks', {
@@ -1026,12 +1026,12 @@ async function saveExtractedTrack(): Promise<void> {
         })
     });
     if (res.ok) {
-        alert('Track saved!');
+        showToast('Track saved!', 'success');
         loadAdminTracks();
         loadAllTracks();
     } else {
         const err = await res.json();
-        alert('Failed to save track: ' + (err.error || 'Unknown error'));
+        showToast('Failed to save track: ' + (err.error || 'Unknown error'), 'error');
     }
 }
 
@@ -1046,12 +1046,6 @@ async function deleteTrack(id: string): Promise<void> {
 async function logout(): Promise<void> {
     await fetch('/api/logout', { method: 'POST' });
     window.location.href = '/login.html';
-}
-
-function escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text || '';
-    return div.innerHTML;
 }
 
 // Email settings
@@ -1089,8 +1083,8 @@ document.getElementById('email-settings-form')!.addEventListener('submit', async
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (res.ok) alert('Email settings saved!');
-    else alert('Failed to save email settings');
+    if (res.ok) showToast('Email settings saved!', 'success');
+    else showToast('Failed to save email settings', 'error');
 });
 
 async function loadRacerEmails(): Promise<void> {
@@ -1207,8 +1201,8 @@ document.getElementById('backup-form')!.addEventListener('submit', async (e: Eve
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (res.ok) alert('Backup settings saved!');
-    else alert('Failed to save backup settings');
+    if (res.ok) showToast('Backup settings saved!', 'success');
+    else showToast('Failed to save backup settings', 'error');
 });
 
 document.getElementById('backup-tab')?.addEventListener('shown.bs.tab', () => {
@@ -1264,11 +1258,11 @@ async function takeAdminRoundSnapshot(): Promise<void> {
         body: JSON.stringify({ race_name: name, round: 0, season_id: active ? active.id : 1 })
     });
     if (res.ok) {
-        alert('Round snapshot saved!');
+        showToast('Round snapshot saved!', 'success');
         loadRoundsList();
     } else {
         const err = await res.json();
-        alert('Failed: ' + (err.error || 'Unknown error'));
+        showToast('Failed: ' + (err.error || 'Unknown error'), 'error');
     }
 }
 
@@ -1319,10 +1313,10 @@ async function createSeason(): Promise<void> {
         body: JSON.stringify({ name })
     });
     if (res.ok) {
-        alert('Season created!');
+        showToast('Season created!', 'info');
         loadSeasons();
     } else {
-        alert('Failed to create season');
+        showToast('Failed to create season', 'error');
     }
 }
 
@@ -1330,10 +1324,10 @@ async function archiveSeason(id: number): Promise<void> {
     if (!confirm('Archive this season? This will end it.')) return;
     const res = await fetch(`/api/seasons/archive?id=${id}`, { method: 'POST' });
     if (res.ok) {
-        alert('Season archived!');
+        showToast('Season archived!', 'info');
         loadSeasons();
     } else {
-        alert('Failed to archive season');
+        showToast('Failed to archive season', 'error');
     }
 }
 
