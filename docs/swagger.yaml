@@ -1,4 +1,14 @@
 definitions:
+  handlers.logSettingInput:
+    properties:
+      level:
+        type: string
+      module:
+        type: string
+    required:
+    - level
+    - module
+    type: object
   models.AISettings:
     properties:
       api_key:
@@ -18,17 +28,8 @@ definitions:
         type: integer
       interval_hrs:
         type: integer
-    type: object
-  models.ELORating:
-    properties:
-      racer_id:
+      retention_count:
         type: integer
-      racer_name:
-        type: string
-      races:
-        type: integer
-      rating:
-        type: number
     type: object
   models.EmailSettings:
     properties:
@@ -92,16 +93,18 @@ definitions:
       notify_winner:
         type: boolean
     type: object
-  models.PointsProgression:
+  models.OTelSettings:
     properties:
-      points:
-        type: integer
-      race_date:
+      endpoint:
         type: string
-      race_id:
+      id:
         type: integer
-      race_name:
-        type: string
+      logs_enabled:
+        type: boolean
+      metrics_enabled:
+        type: boolean
+      traces_enabled:
+        type: boolean
     type: object
   models.Quote:
     properties:
@@ -187,6 +190,8 @@ definitions:
         type: string
       rank:
         type: integer
+      team_id:
+        type: integer
     type: object
   models.RacerEmail:
     properties:
@@ -271,42 +276,6 @@ definitions:
       status:
         type: string
     type: object
-  models.StreakInfo:
-    properties:
-      best_end:
-        type: string
-      best_start:
-        type: string
-      best_value:
-        type: integer
-      current_value:
-        type: integer
-      racer_name:
-        type: string
-      streak_type:
-        type: string
-    type: object
-  models.Track:
-    properties:
-      country:
-        type: string
-      geojson:
-        type: string
-      id:
-        type: string
-      lap_record:
-        type: string
-      length_km:
-        type: integer
-      map_image_url:
-        type: string
-      name:
-        type: string
-      refresh_geojson:
-        type: boolean
-      use_map_image:
-        type: boolean
-    type: object
   models.TrackStats:
     properties:
       country:
@@ -353,6 +322,99 @@ definitions:
 info:
   contact: {}
 paths:
+  /api/admin/log-settings:
+    get:
+      description: Get the current log verbosity settings per module
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Get log settings
+      tags:
+      - Logs
+    post:
+      consumes:
+      - application/json
+      description: Update log verbosity settings for one or more modules
+      parameters:
+      - description: Log settings array
+        in: body
+        name: settings
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/handlers.logSettingInput'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Save log settings
+      tags:
+      - Logs
+  /api/admin/logs:
+    get:
+      description: Get paginated application logs with optional level/module filtering
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Entries per page (default 50)
+        in: query
+        name: pageSize
+        type: integer
+      - description: Filter by level (DEBUG, INFO, WARN, ERROR)
+        in: query
+        name: level
+        type: string
+      - description: Filter by module name
+        in: query
+        name: module
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Get application logs
+      tags:
+      - Logs
+  /api/admin/logs/modules:
+    get:
+      description: Get distinct module names from the logs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - cookieAuth: []
+      summary: Get log modules
+      tags:
+      - Logs
   /api/ai-settings:
     get:
       description: Get the AI track extraction settings
@@ -680,6 +742,46 @@ paths:
       summary: Get one-off races
       tags:
       - Race
+  /api/otel-settings:
+    get:
+      description: Get the OpenTelemetry endpoint settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.OTelSettings'
+      security:
+      - cookieAuth: []
+      summary: Get OTel settings
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: Save the OpenTelemetry endpoint settings
+      parameters:
+      - description: OTel settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/models.OTelSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Save OTel settings
+      tags:
+      - Settings
   /api/quote/random:
     get:
       description: Get a random racing quote
@@ -855,6 +957,26 @@ paths:
       summary: Update race info
       tags:
       - Race
+  /api/race-report:
+    get:
+      description: Get a comprehensive race report
+      parameters:
+      - description: Race ID
+        in: query
+        name: race_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get race report
+      tags:
+      - Stats
   /api/racer-emails:
     get:
       description: Get the list of racer email addresses
@@ -1205,9 +1327,9 @@ paths:
       summary: Send race email
       tags:
       - Email
-  /api/stats/elo:
+  /api/stats/consistency:
     get:
-      description: Get ELO ratings for all racers
+      description: Get consistency ratings for all racers
       produces:
       - application/json
       responses:
@@ -1215,9 +1337,26 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.ELORating'
+              additionalProperties: true
+              type: object
             type: array
-      summary: ELO ratings
+      summary: Get consistency ratings
+      tags:
+      - Stats
+  /api/stats/elo:
+    get:
+      description: Get ELO-style ratings for all racers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get ELO ratings
       tags:
       - Stats
   /api/stats/export:
@@ -1228,9 +1367,7 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            type: file
-      summary: Export stats as CSV
+      summary: Export stats CSV
       tags:
       - Stats
   /api/stats/head-to-head:
@@ -1263,6 +1400,28 @@ paths:
       summary: Head to head comparison
       tags:
       - Stats
+  /api/stats/pace-heatmap:
+    get:
+      description: Get lap-by-lap pace data for a racer
+      parameters:
+      - description: Racer ID
+        in: query
+        name: racer_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get pace heatmap
+      tags:
+      - Stats
   /api/stats/points-progression:
     get:
       description: Get cumulative points progression for a racer
@@ -1279,39 +1438,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.PointsProgression'
+              additionalProperties: true
+              type: object
             type: array
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
       summary: Points progression
       tags:
       - Stats
-  /api/stats/streaks:
+  /api/stats/qualifying-delta:
     get:
-      description: Get win and podium streak information for all racers
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.StreakInfo'
-            type: array
-      summary: Win/podium streaks
-      tags:
-      - Stats
-  /api/stats/track-performance:
-    get:
-      description: Get racer performance by track, optionally filtered by racer_id
+      description: Get qualifying position vs race position delta for a racer
       parameters:
       - description: Racer ID
         in: query
         name: racer_id
+        required: true
         type: integer
       produces:
       - application/json
@@ -1320,9 +1460,50 @@ paths:
           description: OK
           schema:
             items:
+              additionalProperties: true
               type: object
             type: array
-      summary: Track performance
+      summary: Qualifying vs race delta
+      tags:
+      - Stats
+  /api/stats/race-incidents:
+    get:
+      description: Get incidents report for a specific race
+      parameters:
+      - description: Race ID
+        in: query
+        name: race_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get race incidents report
+      tags:
+      - Stats
+  /api/stats/streaks:
+    get:
+      description: Get current streak information for a racer
+      parameters:
+      - description: Racer ID
+        in: query
+        name: racer_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get racer streaks
       tags:
       - Stats
   /api/test-notification:
@@ -1348,6 +1529,28 @@ paths:
       summary: Test notification
       tags:
       - Settings
+  /api/track-performance:
+    get:
+      description: Get per-track statistics for a racer
+      parameters:
+      - description: Racer ID
+        in: query
+        name: racer_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get track performance
+      tags:
+      - Stats
   /api/track-stats:
     get:
       description: Get performance statistics grouped by track
@@ -1363,105 +1566,6 @@ paths:
       summary: Get track stats
       tags:
       - Stats
-  /api/tracks:
-    delete:
-      description: Delete a track by ID
-      parameters:
-      - description: Track ID
-        in: query
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - cookieAuth: []
-      summary: Delete a track
-      tags:
-      - Tracks
-    get:
-      description: Get the list of all race tracks
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.Track'
-            type: array
-      summary: Get all tracks
-      tags:
-      - Tracks
-    post:
-      consumes:
-      - application/json
-      description: Creates a new track or updates an existing one
-      parameters:
-      - description: Track data
-        in: body
-        name: track
-        required: true
-        schema:
-          $ref: '#/definitions/models.Track'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Track'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - cookieAuth: []
-      summary: Create or update a track
-      tags:
-      - Tracks
-  /api/tracks/ai-extract:
-    post:
-      consumes:
-      - application/json
-      - multipart/form-data
-      description: Analyzes a track image using AI to extract GeoJSON data
-      parameters:
-      - description: JSON with image_url field
-        in: body
-        name: image_url
-        schema:
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - cookieAuth: []
-      summary: AI Track Extraction
-      tags:
-      - Tracks
   /api/umami-settings:
     get:
       description: Get Umami analytics settings

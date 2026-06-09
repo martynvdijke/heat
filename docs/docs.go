@@ -15,6 +15,155 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/admin/log-settings": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get the current log verbosity settings per module",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Logs"
+                ],
+                "summary": "Get log settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Update log verbosity settings for one or more modules",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Logs"
+                ],
+                "summary": "Save log settings",
+                "parameters": [
+                    {
+                        "description": "Log settings array",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.logSettingInput"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/logs": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get paginated application logs with optional level/module filtering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Logs"
+                ],
+                "summary": "Get application logs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Entries per page (default 50)",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by level (DEBUG, INFO, WARN, ERROR)",
+                        "name": "level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by module name",
+                        "name": "module",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/logs/modules": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get distinct module names from the logs",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Logs"
+                ],
+                "summary": "Get log modules",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/ai-settings": {
             "get": {
                 "security": [
@@ -529,6 +678,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/otel-settings": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get the OpenTelemetry endpoint settings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Get OTel settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.OTelSettings"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Save the OpenTelemetry endpoint settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Save OTel settings",
+                "parameters": [
+                    {
+                        "description": "OTel settings",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.OTelSettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/quote/random": {
             "get": {
                 "description": "Get a random racing quote",
@@ -798,6 +1012,36 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/race-report": {
+            "get": {
+                "description": "Get a comprehensive race report",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Get race report",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Race ID",
+                        "name": "race_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -1350,23 +1594,48 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/stats/elo": {
+        "/api/stats/consistency": {
             "get": {
-                "description": "Get ELO ratings for all racers",
+                "description": "Get consistency ratings for all racers",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Stats"
                 ],
-                "summary": "ELO ratings",
+                "summary": "Get consistency ratings",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.ELORating"
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats/elo": {
+            "get": {
+                "description": "Get ELO-style ratings for all racers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Get ELO ratings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
                             }
                         }
                     }
@@ -1382,13 +1651,10 @@ const docTemplate = `{
                 "tags": [
                     "Stats"
                 ],
-                "summary": "Export stats as CSV",
+                "summary": "Export stats CSV",
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "file"
-                        }
+                        "description": "OK"
                     }
                 }
             }
@@ -1438,6 +1704,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/stats/pace-heatmap": {
+            "get": {
+                "description": "Get lap-by-lap pace data for a racer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Get pace heatmap",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Racer ID",
+                        "name": "racer_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/stats/points-progression": {
             "get": {
                 "description": "Get cumulative points progression for a racer",
@@ -1463,17 +1762,72 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.PointsProgression"
+                                "type": "object",
+                                "additionalProperties": true
                             }
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    }
+                }
+            }
+        },
+        "/api/stats/qualifying-delta": {
+            "get": {
+                "description": "Get qualifying position vs race position delta for a racer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Qualifying vs race delta",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Racer ID",
+                        "name": "racer_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats/race-incidents": {
+            "get": {
+                "description": "Get incidents report for a specific race",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Get race incidents report",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Race ID",
+                        "name": "race_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -1481,53 +1835,29 @@ const docTemplate = `{
         },
         "/api/stats/streaks": {
             "get": {
-                "description": "Get win and podium streak information for all racers",
+                "description": "Get current streak information for a racer",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Stats"
                 ],
-                "summary": "Win/podium streaks",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.StreakInfo"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/stats/track-performance": {
-            "get": {
-                "description": "Get racer performance by track, optionally filtered by racer_id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Stats"
-                ],
-                "summary": "Track performance",
+                "summary": "Get racer streaks",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "Racer ID",
                         "name": "racer_id",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "object"
-                            }
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -1570,6 +1900,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/track-performance": {
+            "get": {
+                "description": "Get per-track statistics for a racer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Get track performance",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Racer ID",
+                        "name": "racer_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/track-stats": {
             "get": {
                 "description": "Get performance statistics grouped by track",
@@ -1587,162 +1950,6 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/models.TrackStats"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/tracks": {
-            "get": {
-                "description": "Get the list of all race tracks",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Tracks"
-                ],
-                "summary": "Get all tracks",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Track"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "cookieAuth": []
-                    }
-                ],
-                "description": "Creates a new track or updates an existing one",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Tracks"
-                ],
-                "summary": "Create or update a track",
-                "parameters": [
-                    {
-                        "description": "Track data",
-                        "name": "track",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Track"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Track"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "cookieAuth": []
-                    }
-                ],
-                "description": "Delete a track by ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Tracks"
-                ],
-                "summary": "Delete a track",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Track ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/tracks/ai-extract": {
-            "post": {
-                "security": [
-                    {
-                        "cookieAuth": []
-                    }
-                ],
-                "description": "Analyzes a track image using AI to extract GeoJSON data",
-                "consumes": [
-                    "application/json",
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Tracks"
-                ],
-                "summary": "AI Track Extraction",
-                "parameters": [
-                    {
-                        "description": "JSON with image_url field",
-                        "name": "image_url",
-                        "in": "body",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
                             }
                         }
                     }
@@ -1883,6 +2090,21 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handlers.logSettingInput": {
+            "type": "object",
+            "required": [
+                "level",
+                "module"
+            ],
+            "properties": {
+                "level": {
+                    "type": "string"
+                },
+                "module": {
+                    "type": "string"
+                }
+            }
+        },
         "models.AISettings": {
             "type": "object",
             "properties": {
@@ -1911,23 +2133,9 @@ const docTemplate = `{
                 },
                 "interval_hrs": {
                     "type": "integer"
-                }
-            }
-        },
-        "models.ELORating": {
-            "type": "object",
-            "properties": {
-                "racer_id": {
+                },
+                "retention_count": {
                     "type": "integer"
-                },
-                "racer_name": {
-                    "type": "string"
-                },
-                "races": {
-                    "type": "integer"
-                },
-                "rating": {
-                    "type": "number"
                 }
             }
         },
@@ -2026,20 +2234,23 @@ const docTemplate = `{
                 }
             }
         },
-        "models.PointsProgression": {
+        "models.OTelSettings": {
             "type": "object",
             "properties": {
-                "points": {
-                    "type": "integer"
-                },
-                "race_date": {
+                "endpoint": {
                     "type": "string"
                 },
-                "race_id": {
+                "id": {
                     "type": "integer"
                 },
-                "race_name": {
-                    "type": "string"
+                "logs_enabled": {
+                    "type": "boolean"
+                },
+                "metrics_enabled": {
+                    "type": "boolean"
+                },
+                "traces_enabled": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2170,6 +2381,9 @@ const docTemplate = `{
                 },
                 "rank": {
                     "type": "integer"
+                },
+                "team_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -2297,61 +2511,6 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
-                }
-            }
-        },
-        "models.StreakInfo": {
-            "type": "object",
-            "properties": {
-                "best_end": {
-                    "type": "string"
-                },
-                "best_start": {
-                    "type": "string"
-                },
-                "best_value": {
-                    "type": "integer"
-                },
-                "current_value": {
-                    "type": "integer"
-                },
-                "racer_name": {
-                    "type": "string"
-                },
-                "streak_type": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Track": {
-            "type": "object",
-            "properties": {
-                "country": {
-                    "type": "string"
-                },
-                "geojson": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "lap_record": {
-                    "type": "string"
-                },
-                "length_km": {
-                    "type": "integer"
-                },
-                "map_image_url": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "refresh_geojson": {
-                    "type": "boolean"
-                },
-                "use_map_image": {
-                    "type": "boolean"
                 }
             }
         },
