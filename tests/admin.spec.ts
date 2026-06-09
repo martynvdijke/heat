@@ -27,18 +27,18 @@ test.describe.serial('Admin Panel', () => {
 
   test('should load admin page after login', async ({ page }) => {
     await expect(page).toHaveTitle(/HEAT Admin/);
-    await expect(page.locator('#adminTabs')).toBeVisible();
+    await expect(page.locator('#adminCategories')).toBeVisible();
   });
 
   test('should list racers in table', async ({ page }) => {
-    await page.click('#racers-tab');
+    await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
     await expect(page.locator('#racer-list')).toBeVisible();
     const rows = page.locator('#racer-list tr');
     await expect(rows.first()).toBeVisible();
   });
 
   test('should add a new racer', async ({ page }) => {
-    await page.click('#racers-tab');
+    await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
     await page.click('button[hx-get="/api/html/racers/0/edit"]');
     await page.waitForSelector('#racerModal.show');
     await page.waitForSelector('#racerModal form#racer-form');
@@ -58,7 +58,7 @@ test.describe.serial('Admin Panel', () => {
   });
 
   test('should edit an existing racer', async ({ page }) => {
-    await page.click('#racers-tab');
+    await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
     await page.waitForTimeout(500);
 
     const editBtn = page.locator('#racer-list tr .btn-outline-primary').first();
@@ -75,7 +75,7 @@ test.describe.serial('Admin Panel', () => {
   });
 
   test('should delete a racer', async ({ page }) => {
-    await page.click('#racers-tab');
+    await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
     await page.waitForTimeout(500);
 
     page.once('dialog', dialog => dialog.accept());
@@ -85,7 +85,7 @@ test.describe.serial('Admin Panel', () => {
   });
 
   test('should add a racer without profile picture', async ({ page }) => {
-    await page.click('#racers-tab');
+    await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
     await page.click('button[hx-get="/api/html/racers/0/edit"]');
     await page.waitForSelector('#racerModal.show');
     await page.waitForSelector('#racerModal form#racer-form');
@@ -105,7 +105,7 @@ test.describe.serial('Admin Panel', () => {
   });
 
   test('should validate racer form with only name and car', async ({ page }) => {
-    await page.click('#racers-tab');
+    await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
     await page.click('button[hx-get="/api/html/racers/0/edit"]');
     await page.waitForSelector('#racerModal.show');
     await page.waitForSelector('#racerModal form#racer-form');
@@ -125,8 +125,7 @@ test.describe.serial('Admin Panel', () => {
   });
 
   test('should show racer stats tab', async ({ page }) => {
-    await page.click('#stats-tab');
-    await expect(page.locator('#stats-tab')).toHaveAttribute('aria-selected', 'true');
+    await showAdminPane(page, '#cat-results-tab', '#stats-pane');
     const statsList = page.locator('#stats-list');
     await expect(statsList).toBeAttached();
     const hasStats = await statsList.locator('tr').count() > 0;
@@ -136,44 +135,44 @@ test.describe.serial('Admin Panel', () => {
   });
 
   test('should show tracks tab and list', async ({ page }) => {
-    await page.click('#tracks-tab');
+    await clickAdminSubTab(page, '#cat-race-tab', '#tracks-subtab');
     await expect(page.locator('#track-list')).toBeVisible();
     const rows = page.locator('#track-list tr');
     await expect(rows.first()).toBeVisible();
   });
 
   test('should show quotes tab and list', async ({ page }) => {
-    await page.click('#quotes-tab');
+    await showAdminPane(page, '#cat-content-tab', '#quotes-pane');
     await expect(page.locator('#quote-list')).toBeVisible();
     const rows = page.locator('#quote-list tr');
     await expect(rows.first()).toBeVisible();
   });
 
   test('should show seasons tab', async ({ page }) => {
-    await page.click('#seasons-tab');
+    await showAdminPane(page, '#cat-results-tab', '#seasons-pane');
     await expect(page.locator('#seasons-list')).toBeVisible();
   });
 
   test('should show qualification tab', async ({ page }) => {
-    await page.click('#qualification-tab');
+    await clickAdminSubTab(page, '#cat-race-tab', '#qualification-subtab');
     await expect(page.locator('#qualification-grid')).toBeVisible();
   });
 
   test('should show notifications tab', async ({ page }) => {
-    await page.click('#notify-tab');
+    await showAdminPane(page, '#cat-settings-tab', '#notify-pane');
     await expect(page.locator('#notify-form')).toBeVisible();
     await expect(page.locator('#gotify-url')).toBeVisible();
   });
 
   test('should show AI tab', async ({ page }) => {
-    await page.click('#ai-tab');
+    await showAdminPane(page, '#cat-settings-tab', '#ai-pane');
     await expect(page.locator('#ai-pane')).toBeVisible();
     await expect(page.locator('#ai-settings-form')).toBeVisible();
     await expect(page.locator('#ai-track-extract-url')).toBeVisible();
   });
 
   test('should show Email tab with settings form', async ({ page }) => {
-    await page.click('#email-tab');
+    await showAdminPane(page, '#cat-settings-tab', '#email-pane');
     await expect(page.locator('#email-pane')).toBeVisible();
     await expect(page.locator('#email-settings-form')).toBeVisible();
     await expect(page.locator('#smtp-host')).toBeVisible();
@@ -182,14 +181,14 @@ test.describe.serial('Admin Panel', () => {
   });
 
   test('should show Analytics tab with umami settings', async ({ page }) => {
-    await page.click('#umami-tab');
+    await showAdminPane(page, '#cat-settings-tab', '#umami-pane');
     await expect(page.locator('#umami-pane')).toBeVisible();
     await expect(page.locator('#umami-form')).toBeVisible();
     await expect(page.locator('#umami-url')).toBeVisible();
   });
 
   test('should show Backup tab with settings and manual backup', async ({ page }) => {
-    await page.click('#backup-tab');
+    await showAdminPane(page, '#cat-settings-tab', '#backup-pane');
     await expect(page.locator('#backup-pane')).toBeVisible();
     await expect(page.locator('#backup-form')).toBeVisible();
     await expect(page.locator('#backup-manual-btn')).toBeVisible();
@@ -266,9 +265,25 @@ test.describe.serial('Admin Panel', () => {
   });
 });
 
+async function clickAdminSubTab(page: Page, categoryTabId: string, subTabSelector: string) {
+  await page.click(categoryTabId);
+  await page.locator(subTabSelector).waitFor({ state: 'visible', timeout: 5000 });
+  await page.click(subTabSelector);
+}
+
+async function showAdminPane(page: Page, categoryTabId: string, paneId: string) {
+  await page.click(categoryTabId);
+  await expect(page.locator(categoryTabId.replace('-tab', ''))).toHaveClass(/active/, { timeout: 5000 });
+  await page.evaluate((id) => {
+    const pane = document.getElementById(id.replace('#', ''));
+    if (pane) pane.classList.add('show', 'active');
+  }, paneId);
+  await expect(page.locator(paneId)).toHaveClass(/show/, { timeout: 5000 });
+}
+
 async function loginAsAdmin(page: Page) {
   await page.goto('/admin.html');
-  if (await page.locator('#adminTabs').count() > 0) return;
+  if (await page.locator('#adminCategories').count() > 0) return;
 
   await page.waitForSelector('#setup-form, #login-form', { timeout: 10000 });
 
@@ -293,5 +308,5 @@ async function loginAsAdmin(page: Page) {
   }
 
   await page.waitForURL(/admin/, { timeout: 20000 });
-  await expect(page.locator('#adminTabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('#adminCategories')).toBeVisible({ timeout: 10000 });
 }
