@@ -1,3 +1,21 @@
+# [1.35.0](https://github.com/martynvdijke/heat/compare/v1.34.0...v1.35.0) (2026-06-09)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([1c91698](https://github.com/martynvdijke/heat/commit/1c916986d2723a5f4d31a952eb7fcbad26e2b9dc))
+* guard Docker login/push on PRs to prevent failures on fork PRs ([c02fe20](https://github.com/martynvdijke/heat/commit/c02fe209b888b528b45342f66f28904a2266ba52))
+* resolve release workflow startup_failure by adding missing actions:read and checks:read permissions to caller job ([0bb0599](https://github.com/martynvdijke/heat/commit/0bb05995b24027282a6c2af9f189a22c2146601f))
+* update Playwright tests to match restructured admin UI tabs ([e01be27](https://github.com/martynvdijke/heat/commit/e01be27121252fc33edb7fafb8694df7c4540bbb)), closes [#adminTabs](https://github.com/martynvdijke/heat/issues/adminTabs) [#adminCategories](https://github.com/martynvdijke/heat/issues/adminCategories)
+* use githubToken instead of otelToken for otel-cicd-action@v4 ([3034850](https://github.com/martynvdijke/heat/commit/3034850dd9e77d5d1820fe5b8014a5e3f73353c8))
+
+
+### Features
+
+* add otlpAuthorization input for Bearer auth ([16cb09b](https://github.com/martynvdijke/heat/commit/16cb09b24138e1c18f153af6d4fbd7a417a369ba))
+* add umami analytics proposal (openspec) ([1ee59c5](https://github.com/martynvdijke/heat/commit/1ee59c5e55892ba27c8128eb9a515bbc4ff551c8))
+* admin/controller UI cleanup - toast system, tab reorg, bug fixes ([8129851](https://github.com/martynvdijke/heat/commit/8129851ce301687989616714ac84ea4ca8837615))
+
 # [1.34.0](https://github.com/martynvdijke/heat/compare/v1.33.0...v1.34.0) (2026-06-06)
 
 
