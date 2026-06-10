@@ -214,7 +214,6 @@ func TestDeeperStats(t *testing.T) {
 	r.GET("/api/stats/consistency", testHandler.GetConsistencyRatings)
 	r.GET("/api/stats/incidents", testHandler.GetRaceIncidentsReport)
 	r.GET("/api/stats/pace-heatmap", testHandler.GetPaceHeatmap)
-	r.GET("/api/race-report", testHandler.GetRaceReport)
 
 	t.Run("qualifying delta", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/api/stats/qualifying-delta", nil)
@@ -258,13 +257,4 @@ func TestDeeperStats(t *testing.T) {
 		}
 	})
 
-	t.Run("race report", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/api/race-report", nil)
-		rr := httptest.NewRecorder()
-		r.ServeHTTP(rr, req)
-		// Can be 200 (race exists) or 404 (no race yet)
-		if rr.Code != http.StatusOK && rr.Code != http.StatusNotFound {
-			t.Errorf("expected 200 or 404, got %d", rr.Code)
-		}
-	})
 }

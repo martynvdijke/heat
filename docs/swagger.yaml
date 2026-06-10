@@ -957,26 +957,6 @@ paths:
       summary: Update race info
       tags:
       - Race
-  /api/race-report:
-    get:
-      description: Get a comprehensive race report
-      parameters:
-      - description: Race ID
-        in: query
-        name: race_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Get race report
-      tags:
-      - Stats
   /api/racer-emails:
     get:
       description: Get the list of racer email addresses

@@ -433,11 +433,6 @@ test.describe('Deeper Stats', () => {
     expect(Array.isArray(data)).toBeTruthy();
   });
 
-  test('should return race report', async ({ page }) => {
-    const res = await page.request.get('/api/race-report');
-    const status = res.status();
-    expect([200, 404]).toContain(status);
-  });
 });
 
 test.describe('UI Presentation Pages', () => {

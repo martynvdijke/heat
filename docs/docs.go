@@ -1017,36 +1017,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/race-report": {
-            "get": {
-                "description": "Get a comprehensive race report",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Stats"
-                ],
-                "summary": "Get race report",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Race ID",
-                        "name": "race_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/api/racer-emails": {
             "get": {
                 "security": [

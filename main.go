@@ -326,7 +326,6 @@ func main() {
 	r.GET("/api/stats/consistency", h.GetConsistencyRatings)
 	r.GET("/api/stats/incidents", h.GetRaceIncidentsReport)
 	r.GET("/api/stats/pace-heatmap", h.GetPaceHeatmap)
-	r.GET("/api/race-report", h.GetRaceReport)
 	r.POST("/api/flags", h.HandleFlag)
 	r.POST("/api/rounds", h.TakeRoundSnapshot)
 	r.GET("/api/rounds", h.GetRoundSnapshots)
@@ -527,10 +526,6 @@ func main() {
 
 		pages.GET("/driver.html", func(c *gin.Context) {
 			c.File(filepath.Join(server.BasePath, "static/driver.html"))
-		})
-
-		pages.GET("/race-report.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(server.BasePath, "static/race-report.html"), server)
 		})
 
 		pages.GET("/", func(c *gin.Context) {
