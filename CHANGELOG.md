@@ -1,3 +1,10 @@
+## [1.35.3](https://github.com/martynvdijke/heat/compare/v1.35.2...v1.35.3) (2026-06-11)
+
+
+### Bug Fixes
+
+* prevent nil context panic in OTel shutdown and add container restart policy ([6049b6f](https://github.com/martynvdijke/heat/commit/6049b6ff66aec5e93a3e95c79602a86612ba1b07))
+
 ## [1.35.2](https://github.com/martynvdijke/heat/compare/v1.35.1...v1.35.2) (2026-06-11)
 
 
