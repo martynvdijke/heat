@@ -7,6 +7,7 @@ services:
       - heat-data:/app
       - heat-db:/db
     container_name: heat
+    restart: unless-stopped
 
 volumes:
   heat-data:

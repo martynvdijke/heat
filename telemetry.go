@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"context"
 	"log"
 	"time"
 
@@ -76,7 +77,7 @@ func initOTel(server *app.Server) func() {
 
 	if tracesEnabled == 1 {
 		traceExporter, err := otlptracehttp.New(
-			nil,
+			context.Background(),
 			otlptracehttp.WithEndpointURL(endpoint),
 			otlptracehttp.WithTimeout(10*time.Second),
 		)
@@ -102,7 +103,7 @@ func initOTel(server *app.Server) func() {
 
 	return func() {
 		if tp != nil {
-			if err := tp.Shutdown(nil); err != nil {
+			if err := tp.Shutdown(context.Background()); err != nil {
 				log.Printf("[OTEL] Error shutting down tracer provider: %v", err)
 			}
 		}
@@ -134,7 +135,7 @@ func initStdoutOTel() func() {
 
 	log.Printf("[OTEL] OpenTelemetry initialized with stdout exporter")
 	return func() {
-		if err := tp.Shutdown(nil); err != nil {
+		if err := tp.Shutdown(context.Background()); err != nil {
 			log.Printf("[OTEL] Error shutting down tracer provider: %v", err)
 		}
 	}
