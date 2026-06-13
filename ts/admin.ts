@@ -1,3 +1,5 @@
+import { showToast, escapeHtml } from './toast';
+
 interface AdminRacer {
     id: number;
     name: string;

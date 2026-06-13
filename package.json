@@ -6,6 +6,9 @@
   "scripts": {
     "test": "go test ./...",
     "test:e2e": "npx playwright test",
+    "build:frontend": "node build.mjs",
+    "build:frontend:dev": "node build.mjs --dev",
+    "typecheck": "tsc --noEmit",
     "build:ts": "tsc"
   },
   "repository": {
@@ -23,6 +26,7 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.0",
+    "esbuild": "^0.28.1",
     "typescript": "^6.0.3"
   }
 }

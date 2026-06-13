@@ -12,7 +12,7 @@ tasks:
       - go mod download
       - npm install
       - npx playwright install --with-deps chromium
-      - task: build:ts
+      - task: build:frontend
 
   fmt:
     desc: Format code (Go)
@@ -30,6 +30,21 @@ tasks:
       - rm -f heat.db heat.db-wal heat.db-shm
       - npx playwright test
 
+  build:frontend:
+    desc: Build frontend (esbuild production)
+    cmds:
+      - npm run build:frontend
+
+  build:frontend:dev:
+    desc: Build frontend with sourcemaps (dev)
+    cmds:
+      - npm run build:frontend:dev
+
+  typecheck:
+    desc: TypeScript type-checking (no emit)
+    cmds:
+      - npm run typecheck
+
   build:ts:
     desc: Compile TypeScript to JavaScript
     cmds:
@@ -44,7 +59,7 @@ tasks:
   build:
     desc: Build the Go binary
     cmds:
-      - task: build:ts
+      - task: build:frontend
       - go build -o heat-server .
 
   pre-push:
@@ -53,7 +68,8 @@ tasks:
       - task: fmt
       - task: generate-swagger
       - task: test
-      - task: build:ts
+      - task: typecheck
+      - task: build:frontend
       - task: build
 
   run:

@@ -1,3 +1,5 @@
+import { showToast } from './toast';
+
 interface ControllerRacer {
     id: number;
     name: string;
@@ -479,6 +481,49 @@ async function playSound(sound: string): Promise<void> {
         body: JSON.stringify({ sound })
     });
 }
+
+// Onclick delegation: map data-action attributes to module-scoped function calls
+// Replaces previously inline onclick attributes in controller.html
+const actionHandlers: Record<string, () => void> = {
+    startRace, pauseRace, stopRace,
+    shuffleGrid, triggerYellowFlag, triggerChequeredFlag,
+    takeRoundSnapshot, sendBlueFlag, sendBlackWhiteFlag,
+    addRaceEvent, recordCurrentLap, setWeather,
+    saveRaceSettings, saveRaceResult, archiveCurrentSeason, discardRace,
+    triggerStartLights: () => {
+        const fn = (window as any).triggerStartLights;
+        if (fn) fn();
+    },
+    toggleSafetyCar: () => { /* keep old onclick-based behavior for flag toggles */ },
+    toggleRedFlag: () => {},
+    playSound: () => {},
+};
+
+document.addEventListener('click', (e: Event) => {
+    const target = (e.target as HTMLElement).closest('[data-action]') as HTMLElement;
+    if (!target) return;
+    const action = target.getAttribute('data-action');
+    if (!action) return;
+
+    if (action === 'toggleSafetyCar') {
+        toggleSafetyCar(target as HTMLButtonElement);
+        return;
+    }
+    if (action === 'toggleRedFlag') {
+        toggleRedFlag(target as HTMLButtonElement);
+        return;
+    }
+    if (action === 'playSound') {
+        playSound(target.getAttribute('data-value') || 'engine');
+        return;
+    }
+
+    const handler = actionHandlers[action];
+    if (handler) {
+        e.preventDefault();
+        handler();
+    }
+});
 
 loadControllerData();
 

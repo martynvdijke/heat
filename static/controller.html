@@ -18,54 +18,7 @@
     </script>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="manifest" href="/static/manifest.json">
-    <style>
-        body { 
-            touch-action: manipulation; 
-            padding-bottom: 80px;
-            font-size: 18px;
-            background-color: var(--background);
-            color: var(--text-main);
-        }
-        .header {
-            background: var(--surface);
-            border-bottom: var(--border-width) solid var(--border-color);
-        }
-        .header-title {
-            font-size: 1.5rem;
-        }
-        select.form-select, input.form-control {
-            padding: 0.75rem;
-            font-size: 1.1rem;
-            background: var(--surface);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-        }
-        .navbar {
-            background: var(--surface) !important;
-            border-top: var(--border-width) solid var(--border-color);
-        }
-        .navbar a {
-            color: var(--text-main) !important;
-        }
-        .form-select:focus, .form-control:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(212, 0, 0, 0.2);
-        }
-        .controller-card h5[role="button"] {
-            cursor: pointer;
-            user-select: none;
-        }
-        .controller-card h5[role="button"]:hover {
-            opacity: 0.8;
-        }
-        .collapse-icon {
-            transition: transform 0.3s ease;
-            font-size: 1rem;
-        }
-        [aria-expanded="true"] .collapse-icon {
-            transform: rotate(180deg);
-        }
-    </style>
+
 </head>
 <body>
     <a href="#main-content" class="skip-to-content" aria-label="Skip to main content">Skip to content</a>
@@ -101,13 +54,13 @@
                         </select>
                     </div>
                     <div class="d-flex justify-content-center gap-3 mb-3">
-                        <button class="btn btn-success race-control-btn" onclick="startRace()">
+                        <button class="btn btn-success race-control-btn" data-action="startRace">
                             <i aria-hidden="true" class="fa-solid fa-play"></i>
                         </button>
-                        <button class="btn btn-warning race-control-btn" onclick="pauseRace()">
+                        <button class="btn btn-warning race-control-btn" data-action="pauseRace">
                             <i aria-hidden="true" class="fa-solid fa-pause"></i>
                         </button>
-                        <button class="btn btn-danger race-control-btn" onclick="stopRace()">
+                        <button class="btn btn-danger race-control-btn" data-action="stopRace">
                             <i aria-hidden="true" class="fa-solid fa-stop"></i>
                         </button>
                     </div>
@@ -140,37 +93,37 @@
                     <h5 class="mb-3"><i aria-hidden="true" class="fa-solid fa-bolt me-2"></i>Quick Actions</h5>
                     <div class="row g-3">
                         <div class="col-6">
-                            <button class="btn btn-primary w-100 quick-action-btn" onclick="shuffleGrid()">
+                            <button class="btn btn-primary w-100 quick-action-btn" data-action="shuffleGrid">
                                 <i aria-hidden="true" class="fa-solid fa-shuffle me-2"></i>Shuffle
                             </button>
                         </div>
                         <div class="col-6">
-                            <button class="btn btn-dark-blue w-100 quick-action-btn" onclick="triggerYellowFlag()">
+                            <button class="btn btn-dark-blue w-100 quick-action-btn" data-action="triggerYellowFlag">
                                 <i aria-hidden="true" class="fa-solid fa-flag me-2"></i>Yellow
                             </button>
                         </div>
                         <div class="col-4">
-                            <button class="btn btn-warning w-100 quick-action-btn" id="safety-btn" onclick="toggleSafetyCar(this)">
+                            <button class="btn btn-warning w-100 quick-action-btn" id="safety-btn" data-action="toggleSafetyCar">
                                 <i aria-hidden="true" class="fa-solid fa-car-side me-2"></i>Safety
                             </button>
                         </div>
                         <div class="col-4">
-                            <button class="btn btn-danger w-100 quick-action-btn" id="redflag-btn" onclick="toggleRedFlag(this)">
+                            <button class="btn btn-danger w-100 quick-action-btn" id="redflag-btn" data-action="toggleRedFlag">
                                 <i aria-hidden="true" class="fa-solid fa-circle-exclamation me-2"></i>Red Flag
                             </button>
                         </div>
                         <div class="col-4">
-                            <button class="btn btn-outline-light w-100 quick-action-btn" onclick="triggerChequeredFlag()">
+                            <button class="btn btn-outline-light w-100 quick-action-btn" data-action="triggerChequeredFlag">
                                 <i aria-hidden="true" class="fa-solid fa-flag-checkered me-2"></i>Chequered
                             </button>
                         </div>
                         <div class="col-6">
-                            <button class="btn btn-success w-100 quick-action-btn" onclick="takeRoundSnapshot()">
+                            <button class="btn btn-success w-100 quick-action-btn" data-action="takeRoundSnapshot">
                                 <i aria-hidden="true" class="fa-solid fa-camera me-2"></i>Snapshot
                             </button>
                         </div>
                         <div class="col-6">
-                            <button class="btn btn-start-lights w-100 quick-action-btn" onclick="triggerStartLights()" aria-label="Start lights countdown">
+                            <button class="btn btn-start-lights w-100 quick-action-btn" data-action="triggerStartLights" aria-label="Start lights countdown">
                                 <i aria-hidden="true" class="fa-solid fa-traffic-light me-2"></i>Start Lights
                             </button>
                         </div>
@@ -190,10 +143,10 @@
                             </select>
                         </div>
                         <div class="col-5 d-flex gap-2">
-                            <button class="btn btn-dark-blue flex-fill quick-action-btn py-2" onclick="sendBlueFlag()" title="Blue Flag - let faster car through">
+                            <button class="btn btn-dark-blue flex-fill quick-action-btn py-2" data-action="sendBlueFlag" title="Blue Flag - let faster car through">
                                 <i aria-hidden="true" class="fa-solid fa-flag"></i>
                             </button>
-                            <button class="btn btn-secondary flex-fill quick-action-btn py-2" onclick="sendBlackWhiteFlag()" title="Black & White Flag - unsportsmanlike conduct">
+                            <button class="btn btn-secondary flex-fill quick-action-btn py-2" data-action="sendBlackWhiteFlag" title="Black & White Flag - unsportsmanlike conduct">
                                 <i aria-hidden="true" class="fa-solid fa-flag-checkered"></i>
                             </button>
                         </div>
@@ -238,7 +191,7 @@
                                 </select>
                             </div>
                             <div class="col-4">
-                                <button class="btn btn-outline-light w-100 quick-action-btn py-2" onclick="addRaceEvent()">
+                                <button class="btn btn-outline-light w-100 quick-action-btn py-2" data-action="addRaceEvent">
                                     <i aria-hidden="true" class="fa-solid fa-plus"></i>
                                 </button>
                             </div>
@@ -254,7 +207,7 @@
                                 <input type="number" class="form-control" id="record-lap-number" placeholder="Lap #" min="1" value="1">
                             </div>
                             <div class="col-8">
-                                <button class="btn btn-success w-100 quick-action-btn" onclick="recordCurrentLap()">
+                                <button class="btn btn-success w-100 quick-action-btn" data-action="recordCurrentLap">
                                     <i aria-hidden="true" class="fa-solid fa-check me-2"></i>Record Lap Positions
                                 </button>
                             </div>
@@ -286,7 +239,7 @@
                                 <input type="number" class="form-control" id="weather-lap-start" placeholder="From Lap" value="1" min="1">
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-outline-info w-100 quick-action-btn py-2" onclick="setWeather()">
+                                <button class="btn btn-outline-info w-100 quick-action-btn py-2" data-action="setWeather">
                                     <i aria-hidden="true" class="fa-solid fa-check"></i>
                                 </button>
                             </div>
@@ -312,10 +265,10 @@
                         <hr class="my-3">
                         <h6 class="mb-2"><i aria-hidden="true" class="fa-solid fa-volume-high me-2"></i>Sound FX</h6>
                         <div class="row g-2">
-                            <div class="col-3"><button class="btn btn-outline-light w-100 quick-action-btn py-2" onclick="playSound('engine')" aria-label="Play engine sound"><i aria-hidden="true" class="fa-solid fa-car"></i></button></div>
-                            <div class="col-3"><button class="btn btn-outline-light w-100 quick-action-btn py-2" onclick="playSound('horn')" aria-label="Play horn sound"><i aria-hidden="true" class="fa-solid fa-bullhorn"></i></button></div>
-                            <div class="col-3"><button class="btn btn-outline-light w-100 quick-action-btn py-2" onclick="playSound('finish')" aria-label="Play finish sound"><i aria-hidden="true" class="fa-solid fa-trophy"></i></button></div>
-                            <div class="col-3"><button class="btn btn-outline-light w-100 quick-action-btn py-2" onclick="playSound('crash')" aria-label="Play crash sound"><i aria-hidden="true" class="fa-solid fa-bomb"></i></button></div>
+                            <div class="col-3"><button class="btn btn-outline-light w-100 quick-action-btn py-2" data-action="playSound" data-value="engine" aria-label="Play engine sound"><i aria-hidden="true" class="fa-solid fa-car"></i></button></div>
+                            <div class="col-3"><button class="btn btn-outline-light w-100 quick-action-btn py-2" data-action="playSound" data-value="horn" aria-label="Play horn sound"><i aria-hidden="true" class="fa-solid fa-bullhorn"></i></button></div>
+                            <div class="col-3"><button class="btn btn-outline-light w-100 quick-action-btn py-2" data-action="playSound" data-value="finish" aria-label="Play finish sound"><i aria-hidden="true" class="fa-solid fa-trophy"></i></button></div>
+                            <div class="col-3"><button class="btn btn-outline-light w-100 quick-action-btn py-2" data-action="playSound" data-value="crash" aria-label="Play crash sound"><i aria-hidden="true" class="fa-solid fa-bomb"></i></button></div>
                         </div>
                     </div>
                 </div>
@@ -335,20 +288,20 @@
                         </select>
                         <input type="text" id="race-name" class="form-control mb-3" placeholder="Race Name (optional)">
                         <input type="number" id="race-laps" class="form-control mb-3" placeholder="Number of Laps" value="53">
-                        <button class="btn btn-outline-light action-btn mb-3" onclick="saveRaceSettings()">
+                        <button class="btn btn-outline-light action-btn mb-3" data-action="saveRaceSettings">
                             <i aria-hidden="true" class="fa-solid fa-save me-2"></i>Save Race Settings
                         </button>
 
                         <hr class="my-3">
                         <h6 class="mb-2"><i aria-hidden="true" class="fa-solid fa-bookmark me-2"></i>Season</h6>
                         <div class="d-grid gap-2">
-                            <button class="btn btn-success action-btn" onclick="saveRaceResult()">
+                            <button class="btn btn-success action-btn" data-action="saveRaceResult">
                                 <i aria-hidden="true" class="fa-solid fa-trophy me-2"></i>Save to History
                             </button>
-                            <button class="btn btn-warning action-btn" onclick="archiveCurrentSeason()">
+                            <button class="btn btn-warning action-btn" data-action="archiveCurrentSeason">
                                 <i aria-hidden="true" class="fa-solid fa-box-archive me-2"></i>Archive Season
                             </button>
-                            <button class="btn btn-outline-danger action-btn" onclick="discardRace()">
+                            <button class="btn btn-outline-danger action-btn" data-action="discardRace">
                                 <i aria-hidden="true" class="fa-solid fa-trash me-2"></i>Discard Race
                             </button>
                         </div>
@@ -377,7 +330,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/startlights.js"></script>
-    <script src="/static/js/toast.js"></script>
     <script src="/static/js/controller.js"></script>
 </body>
 </html>

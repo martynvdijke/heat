@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -158,7 +159,10 @@ func (h *Handler) AddGearShift(c *gin.Context) {
 	select {
 	case h.S.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{
 		Type: "gear_shifts", RacerID: gs.RacerID, Action: "shifted",
-		Data: map[string]int{"lap": gs.Lap, "gear": gs.Gear, "stress": gs.Stress},
+		Data: func() json.RawMessage {
+			d, _ := json.Marshal(map[string]int{"lap": gs.Lap, "gear": gs.Gear, "stress": gs.Stress})
+			return d
+		}(),
 	}):
 	default:
 	}
@@ -297,7 +301,10 @@ func (h *Handler) BuyUpgrade(c *gin.Context) {
 	select {
 	case h.S.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{
 		Type: "upgrades", RacerID: req.RacerID, Action: "bought",
-		Data: map[string]int{"upgrade_id": req.UpgradeID, "round": req.Round},
+		Data: func() json.RawMessage {
+			d, _ := json.Marshal(map[string]int{"upgrade_id": req.UpgradeID, "round": req.Round})
+			return d
+		}(),
 	}):
 	default:
 	}

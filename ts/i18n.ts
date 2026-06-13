@@ -1,8 +1,4 @@
-interface Translations {
-  [key: string]: string;
-}
-
-interface I18nModule {
+export interface I18nModule {
   t(key: string): string;
   load(lang?: string): Promise<void>;
   apply(): void;
@@ -10,7 +6,9 @@ interface I18nModule {
   getCurrentLang(): string;
 }
 
-declare var i18n: I18nModule;
+interface Translations {
+  [key: string]: string;
+}
 
 const i18nModule = ((): I18nModule => {
   let translations: Translations = {};
@@ -62,4 +60,9 @@ const i18nModule = ((): I18nModule => {
   return { t, load, apply, switchLang, getCurrentLang };
 })();
 
-var i18n: I18nModule = i18nModule;
+const i18n: I18nModule = i18nModule;
+
+// Expose globally for HTML event handlers (onclick etc.)
+(window as any).i18n = i18n;
+
+export default i18n;

@@ -16,27 +16,7 @@
         }
     </script>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <style>
-        body { font-size: 16px; background: var(--background); color: var(--text-main); padding-bottom: 100px; }
-        .card { background: var(--surface); border: var(--border-width) solid var(--border-color); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; }
-        .heat-card { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 56px; background: #e74c3c; color: white; border-radius: 6px; font-weight: bold; font-size: 0.8rem; margin: 2px; }
-        .heat-card.stress { background: #8e44ad; }
-        .heat-card.boost { background: #2ecc71; }
-        .heat-card.deck { background: #555; opacity: 0.7; }
-        .heat-card.discard { background: #666; }
-        .heat-card.engine { background: #c0392b; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .action-btn { padding: 1rem; border-radius: 12px; font-weight: bold; font-size: 1.1rem; }
-        .gear-btn { width: 56px; height: 56px; border-radius: 50%; font-size: 1.5rem; font-weight: bold; margin: 4px; }
-        .gear-btn.active { transform: scale(1.2); box-shadow: 0 0 16px var(--primary); }
-        .turbo-btn { width: 80px; height: 80px; border-radius: 50%; font-size: 2rem; }
-        .turbo-btn.used { opacity: 0.4; }
-        .car-badge { width: 16px; height: 16px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .header-bar { background: var(--surface); border-bottom: var(--border-width) solid var(--border-color); padding: 1rem; }
-        .login-pin { font-size: 2rem; letter-spacing: 8px; text-align: center; }
-        .position-badge { font-size: 2rem; font-weight: bold; font-family: 'Bebas Neue', sans-serif; }
-        .driver-color-dot { width: 24px; height: 24px; border-radius: 50%; display: inline-block; border: 2px solid #fff; }
-    </style>
+
 </head>
 <body>
     <div class="vintage-overlay"></div>

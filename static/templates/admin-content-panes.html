@@ -1,0 +1,67 @@
+{{define "contentPanes"}}
+            <!-- === CONTENT CATEGORY === -->
+            <div class="tab-pane fade" id="cat-content" role="tabpanel">
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button" role="tab"><i class="fa-solid fa-microphone me-1"></i>Quotes</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#teams-pane" type="button" role="tab"><i class="fa-solid fa-people-group me-1"></i>Teams</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade" id="quotes-pane">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-microphone me-2 text-danger"></i>Commentator Quotes</span>
+                                <button class="btn btn-sm btn-success" hx-get="/api/html/quotes/0/edit" hx-target="#quoteModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#quoteModal">
+                                    <i class="fa-solid fa-plus me-1"></i> Add Quote
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4" style="width: 70%">Quote</th>
+                                                <th>Author</th>
+                                                <th class="text-end pe-4">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="quote-list" hx-get="/api/html/quotes" hx-trigger="load" hx-swap="outerHTML">
+                                            <tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading quotes...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="teams-pane">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-people-group me-2 text-danger"></i>Constructor Teams</span>
+                                <button class="btn btn-sm btn-success" hx-get="/api/html/teams/0/edit" hx-target="#teamModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#teamModal">
+                                    <i class="fa-solid fa-plus me-1"></i> Add Team
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4" style="width:40px">Color</th>
+                                                <th>Name</th>
+                                                <th class="text-end pe-4">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="team-list" hx-get="/api/html/teams" hx-trigger="load" hx-swap="outerHTML">
+                                            <tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading teams...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+{{end}}

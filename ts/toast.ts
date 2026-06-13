@@ -97,3 +97,6 @@ function escapeHtml(text: string): string {
 // Expose globally for inline onclick handlers
 (window as any).showToast = showToast;
 (window as any).dismissToast = dismissToast;
+
+export { showToast, dismissToast, escapeHtml };
+export type { ToastType };

@@ -65,7 +65,7 @@ function connectTVWebSocket(): void {
         } else if (data.type === 'self_service') {
             updateEvent(`⚡ ${data.racer_name || `Racer #${data.racer_id}`} used turbo`);
         } else if (data.type === 'sound') {
-            playSound(data.sound || 'flag');
+            tvPlaySound(data.sound || 'flag');
         }
     };
 }

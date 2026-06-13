@@ -1,0 +1,42 @@
+{{define "adminHeader"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#d40000">
+    <title>HEAT Admin - Race Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+</head>
+<body>
+    <header class="admin-header mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h1 class="h4 mb-0"><i aria-hidden="true" class="fa-solid fa-flag-checkered me-2"></i>HEAT RACE CONTROL <small class="ms-2 opacity-50 fw-normal">Board Game Companion</small></h1>
+            <div>
+                <a href="/controller.html" class="btn btn-outline-light btn-sm me-2"><i aria-hidden="true" class="fa-solid fa-mobile-screen me-2"></i>Controller</a>
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i aria-hidden="true" class="fa-solid fa-eye me-1"></i> Live Board</a>
+                <button class="btn btn-danger btn-sm" onclick="logout()"><i aria-hidden="true" class="fa-solid fa-sign-out-alt me-1"></i> Logout</button>
+            </div>
+        </div>
+    </header>
+    <div class="container">
+        <ul class="nav nav-tabs mb-4" id="adminCategories" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="cat-race-tab" data-bs-toggle="tab" data-bs-target="#cat-race" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-flag-checkered me-2"></i>Race</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cat-results-tab" data-bs-toggle="tab" data-bs-target="#cat-results" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-trophy me-2"></i>Results</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cat-content-tab" data-bs-toggle="tab" data-bs-target="#cat-content" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-comment me-2"></i>Content</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cat-settings-tab" data-bs-toggle="tab" data-bs-target="#cat-settings" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-gear me-2"></i>Settings</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cat-system-tab" data-bs-toggle="tab" data-bs-target="#cat-system" type="button" role="tab"><i aria-hidden="true" class="fa-solid fa-terminal me-2"></i>System</button>
+            </li>
+        </ul>
+{{end}}

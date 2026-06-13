@@ -8,25 +8,7 @@
     <title>My Stats - HEAT Racing</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <style>
-        :root { --heat-red: #d40000; --heat-dark: #111; }
-        body { background: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .stats-card { background: white; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); max-width: 500px; width: 100%; overflow: hidden; }
-        .driver-header { background: linear-gradient(135deg, var(--heat-dark), #333); color: white; padding: 2rem; text-align: center; }
-        .driver-header img { width: 96px; height: 96px; border-radius: 50%; border: 4px solid var(--heat-red); object-fit: cover; }
-        .driver-header h2 { margin-top: 1rem; font-weight: 700; }
-        .stat-item { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .stat-item:last-child { border-bottom: none; }
-        .stat-label { color: #666; font-weight: 600; font-size: 0.9rem; }
-        .stat-value { font-weight: 700; font-size: 1.1rem; color: var(--heat-dark); }
-        .stat-value.gold { color: #d4a017; }
-        .stat-value.silver { color: #8a8a8a; }
-        .stat-value.bronze { color: #cd7f32; }
-        .error-card { text-align: center; padding: 3rem; }
-        .loading { text-align: center; padding: 3rem; }
-        .badge-stat { display: inline-block; padding: 0.35em 0.65em; border-radius: 50px; font-weight: 700; font-size: 0.85rem; }
-        .version-footer { text-align: center; padding: 1rem; color: #999; font-size: 0.75rem; }
-    </style>
+
 </head>
 <body>
     <div class="container py-4">
@@ -42,103 +24,7 @@
         </div>
     </div>
 
-    <script>
-    async function init() {
-        const params = new URLSearchParams(window.location.search);
-        const token = params.get('token');
-
-        if (!token) {
-            document.getElementById('driver-content').innerHTML = `
-                <div class="stats-card mx-auto error-card">
-                    <div class="p-5">
-                        <i aria-hidden="true" class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
-                        <h5>Invalid Link</h5>
-                        <p class="text-muted mb-0">No access token provided. Please use the link from your email.</p>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        try {
-            const res = await fetch('/api/shared/driver-stats?token=' + encodeURIComponent(token));
-            if (!res.ok) {
-                throw new Error('Invalid or expired link');
-            }
-            const data = await res.json();
-            const r = data.racer;
-            const s = data.stats;
-
-            document.getElementById('driver-content').innerHTML = `
-                <div class="stats-card mx-auto">
-                    <div class="driver-header">
-                        <img src="${escapeHtml(r.profile_picture || '/static/images/helmet.svg')}" alt="${escapeHtml(r.name)}" onerror="this.src='/static/images/helmet.svg'">
-                        <h2>${escapeHtml(r.name)}</h2>
-                        <p class="mb-0 opacity-75"><span class="badge-stat bg-danger me-1">${escapeHtml(r.car_name || 'No Car')}</span></p>
-                    </div>
-                    <div class="p-3">
-                        <h6 class="text-muted fw-bold px-3 pt-2 mb-0"><i aria-hidden="true" class="fa-solid fa-trophy me-1 text-danger"></i>Career Stats</h6>
-                        <div class="stat-item">
-                            <span class="stat-label"><i aria-hidden="true" class="fa-solid fa-flag-checkered me-1 text-muted"></i>Races</span>
-                            <span class="stat-value">${s.races || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label"><i aria-hidden="true" class="fa-solid fa-trophy me-1" style="color:#d4a017"></i>Wins</span>
-                            <span class="stat-value gold">${s.wins || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label"><i aria-hidden="true" class="fa-solid fa-medal me-1" style="color:#d4a017"></i>Gold</span>
-                            <span class="stat-value gold">${s.gold || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label"><i aria-hidden="true" class="fa-solid fa-medal me-1" style="color:#8a8a8a"></i>Silver</span>
-                            <span class="stat-value silver">${s.silver || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label"><i aria-hidden="true" class="fa-solid fa-medal me-1" style="color:#cd7f32"></i>Bronze</span>
-                            <span class="stat-value bronze">${s.bronze || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label"><i aria-hidden="true" class="fa-solid fa-bolt me-1 text-warning"></i>Fastest Laps</span>
-                            <span class="stat-value">${s.fastest_laps || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label"><i aria-hidden="true" class="fa-solid fa-star me-1" style="color:#d40000"></i>Total Points</span>
-                            <span class="stat-value">${s.points || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label"><i aria-hidden="true" class="fa-solid fa-circle-xmark me-1 text-danger"></i>DNF</span>
-                            <span class="stat-value">${s.dnf || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label"><i aria-hidden="true" class="fa-solid fa-circle-minus me-1 text-muted"></i>DNS</span>
-                            <span class="stat-value">${s.dns || 0}</span>
-                        </div>
-                    </div>
-                    <div class="version-footer">HEAT Racing Companion &mdash; {{VERSION}}</div>
-                </div>
-            `;
-        } catch (e) {
-            document.getElementById('driver-content').innerHTML = `
-                <div class="stats-card mx-auto error-card">
-                    <div class="p-5">
-                        <i aria-hidden="true" class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
-                        <h5>Link Not Found</h5>
-                        <p class="text-muted mb-0">This share link is invalid or has expired. Please contact your race administrator.</p>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text || '';
-        return div.innerHTML;
-    }
-
-    init();
-    </script>
+    <script src="/static/js/driver.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 </body>
 </html>

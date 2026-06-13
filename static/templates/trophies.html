@@ -1,0 +1,65 @@
+{{define "title"}}HEAT: Trophy Room{{end}}
+
+{{define "head"}}
+<style>
+.trophy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.5rem; }
+.trophy-card { background: var(--card-bg, #1a1a2e); border: 1px solid var(--border-color, #333); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease; }
+.trophy-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.trophy-card.locked { opacity: 0.4; filter: grayscale(1); }
+.achievement-badge { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.75rem; }
+.achievement-badge.gold { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #333; }
+.achievement-badge.silver { background: linear-gradient(135deg, #c0c0c0, #888); color: #333; }
+.achievement-badge.bronze { background: linear-gradient(135deg, #cd7f32, #8b4513); color: #333; }
+.achievement-badge.platinum { background: linear-gradient(135deg, #e5e4e2, #a0a0a0); color: #333; }
+.achievement-badge.special { background: linear-gradient(135deg, #ff6b6b, #ff0000); }
+.progress-bar-mini { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); margin-top: 0.5rem; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 3px; transition: width 0.5s ease; }
+</style>
+{{end}}
+
+{{define "nav"}}
+<ul class="mb-0 d-flex flex-wrap gap-3 list-unstyled justify-content-center">
+    <li><a href="/" class="text-uppercase"><i class="fa-solid fa-house me-2"></i>Home</a></li>
+    <li><a href="/stats.html" class="text-uppercase"><i class="fa-solid fa-chart-line me-2"></i>Statistics</a></li>
+    <li><a href="/trophies.html" class="active text-uppercase"><i class="fa-solid fa-trophy me-2"></i>Trophies</a></li>
+</ul>
+{{end}}
+
+{{define "content"}}
+<h1 class="mb-4"><i class="fa-solid fa-trophy me-2"></i>Trophy Room</h1>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <i class="fa-solid fa-medal"></i>
+            <span class="stat-value" id="total-earned">0</span>
+            <span class="stat-label">Trophies Earned</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <i class="fa-solid fa-lock"></i>
+            <span class="stat-value" id="total-locked">0</span>
+            <span class="stat-label">Locked</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <i class="fa-solid fa-percent"></i>
+            <span class="stat-value" id="completion-pct">0%</span>
+            <span class="stat-label">Completion</span>
+        </div>
+    </div>
+</div>
+
+<div id="trophy-grid" class="trophy-grid">
+    <div class="col-12 text-center text-muted py-5">
+        <i class="fa-solid fa-spinner fa-spin fa-2x mb-3"></i>
+        <p>Loading achievements...</p>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/js/trophies.js"></script>
+{{end}}

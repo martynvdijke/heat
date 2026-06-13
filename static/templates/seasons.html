@@ -1,0 +1,48 @@
+{{define "title"}}HEAT: Seasons &amp; Rounds{{end}}
+
+{{define "nav"}}
+<ul class="mb-0 d-flex flex-wrap gap-3 list-unstyled justify-content-center">
+    <li><a href="/" class="text-uppercase"><i class="fa-solid fa-house me-2"></i>Home</a></li>
+    <li><a href="/seasons.html" class="active text-uppercase"><i class="fa-solid fa-calendar-days me-2"></i>Seasons</a></li>
+    <li><a href="/stats.html" class="text-uppercase"><i class="fa-solid fa-chart-line me-2"></i>Stats</a></li>
+    <li><a href="/trophies.html" class="text-uppercase"><i class="fa-solid fa-trophy me-2"></i>Trophies</a></li>
+</ul>
+{{end}}
+
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="mb-0"><i class="fa-solid fa-calendar-days me-2"></i>Seasons &amp; Rounds</h1>
+</div>
+
+<div class="row g-4 mb-4" id="seasons-container">
+    <div class="col-12 text-center text-muted py-5">
+        <i class="fa-solid fa-calendar-days fa-3x mb-3"></i>
+        <p>Loading seasons...</p>
+    </div>
+</div>
+
+<div class="row g-4" id="rounds-container" style="display:none">
+    <div class="col-12">
+        <h2 class="mb-3"><i class="fa-solid fa-list-ol me-2"></i>Rounds</h2>
+        <div id="rounds-list"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="roundModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="roundModalTitle">Round Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="roundModalBody">
+                <div class="text-center py-4"><div class="spinner-border" role="status"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/js/seasons.js"></script>
+{{end}}

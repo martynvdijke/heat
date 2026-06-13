@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -125,7 +126,10 @@ func (h *Handler) AddTurboLog(c *gin.Context) {
 	select {
 	case h.S.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
 		Type: "turbo", RacerID: tl.RacerID, Action: "used",
-		Data: map[string]int{"lap": tl.Lap, "times": tl.TimesUsed},
+		Data: func() json.RawMessage {
+			d, _ := json.Marshal(map[string]int{"lap": tl.Lap, "times": tl.TimesUsed})
+			return d
+		}(),
 	}:
 	default:
 	}

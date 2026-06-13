@@ -1,0 +1,127 @@
+{{define "resultsPanes"}}
+            <!-- === RESULTS CATEGORY === -->
+            <div class="tab-pane fade" id="cat-results" role="tabpanel">
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button" role="tab"><i class="fa-solid fa-chart-bar me-1"></i>Stats</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#rounds-pane" type="button" role="tab"><i class="fa-solid fa-layer-group me-1"></i>Rounds</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#seasons-pane" type="button" role="tab"><i class="fa-solid fa-calendar me-1"></i>Seasons</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade" id="stats-pane">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-chart-bar me-2 text-danger"></i>Driver Statistics</span>
+                                <button class="btn btn-sm btn-success" onclick="openStatsModal()">
+                                    <i class="fa-solid fa-plus me-1"></i> Add Stats
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4">Driver</th>
+                                                <th>Races</th>
+                                                <th>Gold</th>
+                                                <th>Silver</th>
+                                                <th>Bronze</th>
+                                                <th>Fastest Laps</th>
+                                                <th>DNF</th>
+                                                <th>DNS</th>
+                                                <th class="text-end pe-4">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="stats-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="rounds-pane">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-layer-group me-2 text-danger"></i>Round Snapshots</span>
+                                <button class="btn btn-sm btn-success" onclick="takeAdminRoundSnapshot()">
+                                    <i class="fa-solid fa-camera me-1"></i> Take Snapshot
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4">Round</th>
+                                                <th>Race Name</th>
+                                                <th>Date</th>
+                                                <th class="text-end pe-4">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="rounds-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="seasons-pane">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span><i class="fa-solid fa-calendar me-2 text-danger"></i>Seasons</span>
+                                        <button class="btn btn-sm btn-success" hx-get="/api/html/seasons/new" hx-target="#seasonsModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#seasonsModal">
+                                            <i class="fa-solid fa-plus me-1"></i> New Season
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="ps-4">Name</th>
+                                                        <th>Start</th>
+                                                        <th>End</th>
+                                                        <th>Status</th>
+                                                        <th class="text-end pe-4">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="seasons-list" hx-get="/api/html/seasons" hx-trigger="load" hx-swap="outerHTML">
+                                                    <tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading seasons...</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-layer-group me-2 text-info"></i>Season Rounds</div>
+                                    <div class="card-body">
+                                        <select class="form-select mb-3" id="season-rounds-select" onchange="loadSeasonRounds(this.value)">
+                                            <option value="">Select a season...</option>
+                                        </select>
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="ps-4">Round</th>
+                                                        <th>Name</th>
+                                                        <th>Date</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="season-rounds-list"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+{{end}}

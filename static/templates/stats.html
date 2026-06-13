@@ -1,0 +1,197 @@
+{{define "title"}}HEAT: Season Statistics{{end}}
+
+{{define "head"}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{end}}
+
+{{define "nav"}}
+<ul class="mb-0 d-flex flex-wrap gap-3 list-unstyled justify-content-center">
+    <li><a href="/" class="text-uppercase"><i class="fa-solid fa-house me-2"></i>Home</a></li>
+    <li><a href="/stats.html" class="active text-uppercase"><i class="fa-solid fa-chart-line me-2"></i>Statistics</a></li>
+    <li><a href="/trophies.html" class="text-uppercase"><i class="fa-solid fa-trophy me-2"></i>Trophies</a></li>
+    <li><a href="/controller.html" class="text-uppercase"><i class="fa-solid fa-mobile-screen me-2"></i>Controller</a></li>
+</ul>
+{{end}}
+
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="mb-0"><i class="fa-solid fa-chart-line me-2"></i>Season Statistics</h1>
+    <select class="form-select w-auto" id="stats-season-select" onchange="switchSeason(this.value)" style="max-width:250px">
+        <option value="">Select season...</option>
+    </select>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span class="stat-value" id="total-races">0</span>
+            <span class="stat-label">Races</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <i class="fa-solid fa-trophy"></i>
+            <span class="stat-value" id="total-winners">0</span>
+            <span class="stat-label">Unique Winners</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <i class="fa-solid fa-road"></i>
+            <span class="stat-value" id="total-tracks">0</span>
+            <span class="stat-label">Tracks Used</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <i class="fa-solid fa-flag-checkered"></i>
+            <span class="stat-value" id="avg-race-length">0</span>
+            <span class="stat-label">Avg Laps</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-chart-bar me-2"></i>Points Leaderboard</h5></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0" id="points-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Driver</th>
+                                <th>Car</th>
+                                <th class="text-end">Points</th>
+                                <th class="text-end">Wins</th>
+                                <th class="text-end">Podiums</th>
+                                <th class="text-end">Avg Finish</th>
+                            </tr>
+                        </thead>
+                        <tbody id="points-body">
+                            <tr><td colspan="7" class="text-center text-muted py-4">Select a season to view statistics</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-chart-pie me-2"></i>ELO Ratings</h5></div>
+            <div class="card-body" style="max-height:400px;overflow-y:auto;" id="elo-body">
+                <p class="text-center text-muted py-3">Select a season to view ELO ratings</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-medal me-2"></i>Most Golds</h5></div>
+            <div class="card-body p-0" id="most-golds-body">
+                <p class="text-center text-muted py-3">No data yet</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-star me-2"></i>Most Silvers</h5></div>
+            <div class="card-body p-0" id="most-silvers-body">
+                <p class="text-center text-muted py-3">No data yet</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-stopwatch me-2"></i>Fastest Laps</h5></div>
+            <div class="card-body p-0" id="fastest-laps-body">
+                <p class="text-center text-muted py-3">No data yet</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-bolt me-2"></i>Most Poles</h5></div>
+            <div class="card-body p-0" id="most-poles-body">
+                <p class="text-center text-muted py-3">No data yet</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-road me-2"></i>Track Performance</h5></div>
+            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="track-performance-body">
+                <p class="text-center text-muted py-3">No data yet</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-arrow-trend-up me-2"></i>Points Progression</h5></div>
+            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="points-progression-body">
+                <p class="text-center text-muted py-3">No data yet</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-gauge-high me-2"></i>Qualifying vs Race</h5></div>
+            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="qualifying-delta-body">
+                <p class="text-center text-muted py-3">No data yet</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-chart-line me-2"></i>Consistency</h5></div>
+            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="consistency-body">
+                <p class="text-center text-muted py-3">No data yet</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-fire me-2"></i>Streaks</h5></div>
+            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="streaks-body">
+                <p class="text-center text-muted py-3">No data yet</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-flag me-2"></i>Race Incidents</h5></div>
+            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="incidents-body">
+                <p class="text-center text-muted py-3">No incidents recorded</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-fire me-2"></i>Pace Heatmap</h5></div>
+            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="pace-heatmap-body">
+                <p class="text-center text-muted py-3">No pace data yet</p>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/js/stats.js"></script>
+{{end}}

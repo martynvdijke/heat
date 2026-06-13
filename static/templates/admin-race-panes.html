@@ -1,0 +1,173 @@
+{{define "racePanes"}}
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="race-pane">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header"><i class="fa-solid fa-gauge-high me-2 text-danger"></i>Race Information</div>
+                                    <div class="card-body">
+                                        <form id="race-form">
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">Track Selection</label>
+                                                <select class="form-select" id="track-select" onchange="applyTrackPreset(this.value)">
+                                                    <option value="">Choose a circuit...</option>
+                                                </select>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label small fw-bold">Country</label>
+                                                    <input type="text" class="form-control" name="country" required>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label small fw-bold">Track Name</label>
+                                                    <input type="text" class="form-control" name="track" required>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label small fw-bold">Laps</label>
+                                                    <input type="number" class="form-control" name="laps" required>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label small fw-bold">Internal ID</label>
+                                                    <input type="text" class="form-control" name="track_id" required>
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100 mt-2">Update Race Data</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="qualification-pane">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span><i class="fa-solid fa-random me-2 text-warning"></i>Qualification Shuffle</span>
+                                        <button class="btn btn-sm btn-warning" onclick="startQualification()">
+                                            <i class="fa-solid fa-play me-1"></i> Start Shuffle
+                                        </button>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="small text-muted mb-3">Randomly shuffle grid positions with animation. Drivers will be shuffled one by one to determine the starting grid.</p>
+                                        <div class="mb-3">
+                                            <button class="btn btn-sm btn-outline-secondary me-2" onclick="resetQualification()">
+                                                <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info" onclick="previewGrid()">
+                                                <i class="fa-solid fa-eye me-1"></i> Preview Grid
+                                            </button>
+                                        </div>
+                                        <div id="qualification-grid" class="row g-3">
+                                            <div class="col-12 text-center text-muted py-5">
+                                                <i class="fa-solid fa-shuffle fa-3x mb-3"></i>
+                                                <p>Click "Start Shuffle" to begin qualification</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-list-ol me-2 text-danger"></i>Final Grid</div>
+                                    <div class="card-body p-0">
+                                        <div id="final-grid" class="p-3">
+                                            <div class="text-center text-muted py-4">
+                                                <i class="fa-solid fa-trophy fa-2x mb-2"></i>
+                                                <p class="small mb-0">Final grid order will appear here</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-gear me-2 text-danger"></i>Settings</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Shuffle Speed (ms)</label>
+                                            <input type="range" class="form-range" id="shuffle-speed" min="100" max="1000" step="100" value="300" oninput="document.getElementById('speed-value').textContent = this.value + 'ms'">
+                                            <div class="text-center small text-muted">Current: <span id="speed-value">300ms</span></div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Grid Layout</label>
+                                            <select class="form-select" id="grid-layout">
+                                                <option value="2">2 Columns (Standard)</option>
+                                                <option value="3">3 Columns</option>
+                                                <option value="4">4 Columns</option>
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-outline-primary w-100" onclick="applyGridPositions()">
+                                            <i class="fa-solid fa-check me-1"></i> Apply to Race
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="racers-pane">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-users me-2 text-danger"></i>Racer Standings</span>
+                                <button class="btn btn-sm btn-success" hx-get="/api/html/racers/0/edit" hx-target="#racerModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#racerModal">
+                                    <i class="fa-solid fa-plus me-1"></i> Add Racer
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4">Rank</th>
+                                                <th>Driver</th>
+                                                <th>Car</th>
+                                                <th>Points</th>
+                                                <th>Pos</th>
+                                                <th>Share</th>
+                                                <th class="text-end pe-4">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="racer-list" hx-get="/api/html/racers" hx-trigger="load" hx-swap="outerHTML">
+                                            <tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading racers...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tracks-pane">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-road me-2 text-danger"></i>Race Tracks</span>
+                                <button class="btn btn-sm btn-success" onclick="openTrackModal()">
+                                    <i class="fa-solid fa-plus me-1"></i> Add Track
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4">ID</th>
+                                                <th>Name</th>
+                                                <th>Country</th>
+                                                <th>Length (km)</th>
+                                                <th>Lap Record</th>
+                                                <th class="text-end pe-4">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="track-list" hx-get="/api/html/tracks" hx-trigger="load" hx-swap="outerHTML">
+                                            <tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading tracks...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+{{end}}

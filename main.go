@@ -24,8 +24,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
@@ -54,6 +56,10 @@ import (
 	"heat/pkg/logger"
 	"heat/ws"
 )
+
+type PageData struct {
+	Version string
+}
 
 var swaggerHandler = func() *webdav.Handler {
 	h := &webdav.Handler{
@@ -92,6 +98,24 @@ func servePage(c *gin.Context, path string, s *app.Server) {
 	}
 	html := strings.Replace(string(content), "{{VERSION}}", s.CurrentVersion, 1)
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func serveTemplate(c *gin.Context, name string, s *app.Server) {
+	tmpl, err := template.ParseFiles(
+		filepath.Join(s.BasePath, "static/templates/base.html"),
+		filepath.Join(s.BasePath, "static/templates", name),
+	)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	data := PageData{Version: s.CurrentVersion}
+	var buf bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&buf, "base", data); err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", buf.Bytes())
 }
 
 func main() {
@@ -310,6 +334,7 @@ func main() {
 	r.GET("/api/uploads", h.GetUploads)
 	r.GET("/api/race-info", h.GetRaceInfo)
 	r.GET("/api/tracks", h.GetTracks)
+	r.GET("/api/tracks/geojson", h.GetTrackGeoJSON)
 	r.GET("/api/race-history", h.GetRaceHistory)
 	r.GET("/api/racer-stats", h.GetRacerStats)
 	r.GET("/api/oneoff-races", h.GetOneOffRaces)
@@ -439,7 +464,22 @@ func main() {
 				c.Redirect(http.StatusFound, "/login.html")
 				return
 			}
-			c.File(filepath.Join(server.BasePath, "static/admin.html"))
+			tmpl, err := template.ParseFiles(
+				filepath.Join(server.BasePath, "static/templates/admin.html"),
+				filepath.Join(server.BasePath, "static/templates/admin-header.html"),
+				filepath.Join(server.BasePath, "static/templates/admin-footer.html"),
+				filepath.Join(server.BasePath, "static/templates/admin-modals.html"),
+				filepath.Join(server.BasePath, "static/templates/admin-race-panes.html"),
+				filepath.Join(server.BasePath, "static/templates/admin-results-panes.html"),
+				filepath.Join(server.BasePath, "static/templates/admin-content-panes.html"),
+				filepath.Join(server.BasePath, "static/templates/admin-settings-panes.html"),
+				filepath.Join(server.BasePath, "static/templates/admin-system-panes.html"),
+			)
+			if err != nil {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+			tmpl.ExecuteTemplate(c.Writer, "admin.html", nil)
 		})
 
 		r.GET("/login.html", func(c *gin.Context) {
@@ -493,15 +533,15 @@ func main() {
 		})
 
 		pages.GET("/stats.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(server.BasePath, "static/stats.html"), server)
+			serveTemplate(c, "stats.html", server)
 		})
 
 		pages.GET("/seasons.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(server.BasePath, "static/seasons.html"), server)
+			serveTemplate(c, "seasons.html", server)
 		})
 
 		pages.GET("/trophies.html", func(c *gin.Context) {
-			servePage(c, filepath.Join(server.BasePath, "static/trophies.html"), server)
+			serveTemplate(c, "trophies.html", server)
 		})
 
 		pages.GET("/tv.html", func(c *gin.Context) {
@@ -529,7 +569,7 @@ func main() {
 		})
 
 		pages.GET("/", func(c *gin.Context) {
-			servePage(c, filepath.Join(server.BasePath, "static/index.html"), server)
+			serveTemplate(c, "index.html", server)
 		})
 	}
 

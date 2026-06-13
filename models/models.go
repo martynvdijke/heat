@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type Racer struct {
 	ID             int    `json:"id"`
 	Name           string `json:"name"`
@@ -386,10 +388,10 @@ type RaceRadioMessage struct {
 // WebSocket message wrappers
 
 type GameMechanicsUpdate struct {
-	Type    string      `json:"type"` // heat_cards, gear_shifts, turbo, upgrades
-	RacerID int         `json:"racer_id"`
-	Action  string      `json:"action"` // added, removed, shifted, used
-	Data    interface{} `json:"data,omitempty"`
+	Type    string          `json:"type"` // heat_cards, gear_shifts, turbo, upgrades
+	RacerID int             `json:"racer_id"`
+	Action  string          `json:"action"` // added, removed, shifted, used
+	Data    json.RawMessage `json:"data,omitempty"`
 }
 
 type LapReplayFrame struct {
@@ -412,9 +414,9 @@ type RacerPosition struct {
 
 // Sound FX
 type SoundCommand struct {
-	Type  string      `json:"type"`  // sound
-	Sound string      `json:"sound"` // engine, horn, finish, flag, crash
-	Data  interface{} `json:"data,omitempty"`
+	Type  string          `json:"type"`  // sound
+	Sound string          `json:"sound"` // engine, horn, finish, flag, crash
+	Data  json.RawMessage `json:"data,omitempty"`
 }
 
 type LogEntry struct {

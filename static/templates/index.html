@@ -1,0 +1,155 @@
+{{define "title"}}HEAT: Pedal to the Metal - Championship{{end}}
+
+{{define "head"}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{{end}}
+
+{{define "inlineScript"}}
+if(localStorage.getItem('theme')==='dark'||(!localStorage.getItem('theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}
+{{end}}
+
+{{define "bodyStart"}}
+<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
+<div class="modal" id="flagModal" data-bs-backdrop="false" tabindex="-1" style="background:transparent">
+    <div class="modal-dialog modal-fullscreen m-0">
+        <div class="modal-content border-0 rounded-0" id="flagModalContent" style="min-height:100dvh">
+            <div class="modal-body d-flex flex-column align-items-center justify-content-center text-center" id="flagModalBody" style="padding:2rem"></div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "nav"}}
+<ul class="mb-0 d-flex flex-wrap gap-3 list-unstyled justify-content-center">
+    <li><a href="#standings" class="active text-uppercase"><i class="fa-solid fa-trophy me-2"></i>Standings</a></li>
+    <li><a href="/seasons.html" class="text-uppercase"><i class="fa-solid fa-calendar-days me-2"></i>Seasons</a></li>
+    <li><a href="/stats.html" class="text-uppercase"><i class="fa-solid fa-chart-line me-2"></i>Stats</a></li>
+    <li><a href="/trophies.html" class="text-uppercase"><i class="fa-solid fa-trophy me-2"></i>Trophies</a></li>
+    <li><a href="/login.html" class="text-uppercase"><i class="fa-solid fa-lock me-2"></i>Admin</a></li>
+    <li><a href="/docs" class="text-uppercase" target="_blank"><i class="fa-solid fa-book me-2"></i>API Docs</a></li>
+</ul>
+<button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
+    <i class="fa-solid fa-moon"></i>
+</button>
+<div class="dropdown d-inline-block">
+    <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:0.75rem;padding:0.2rem 0.5rem">
+        <i class="fa-solid fa-language"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end" style="min-width:auto;font-size:0.85rem">
+        <li><a class="dropdown-item" href="#" onclick="i18n.switchLang('en');return false">English</a></li>
+        <li><a class="dropdown-item" href="#" onclick="i18n.switchLang('nl');return false">Nederlands</a></li>
+    </ul>
+</div>
+{{end}}
+
+{{define "content"}}
+<section class="next-race mb-5">
+    <div class="row align-items-stretch g-4">
+        <div class="col-lg-8" id="race-info-container">
+            <h2 class="mb-4">Next HEAT Race</h2>
+            <div class="race-card d-flex flex-column flex-md-row justify-content-between align-items-center p-4">
+                <div class="race-info">
+                    <span class="country d-block mb-1" id="race-country">... <i class="fa-solid fa-location-dot ms-2 text-warning"></i></span>
+                    <span class="track d-block mb-2" id="race-track">...</span>
+                    <div class="race-stats mt-3 d-flex gap-4">
+                        <span class="badge bg-dark bg-opacity-25 p-2"><i class="fa-solid fa-flag-checkered me-1"></i> <span id="race-laps">0</span> LAPS</span>
+                        <span class="badge bg-dark bg-opacity-25 p-2"><i class="fa-solid fa-road me-1"></i> <span id="race-length">0</span> KM</span>
+                        <span class="badge bg-dark bg-opacity-25 p-2"><i class="fa-solid fa-stopwatch me-1"></i> <span id="race-record">--:--</span></span>
+                    </div>
+                </div>
+            </div>
+            <div id="circuit-map" class="mt-4 rounded shadow-sm" style="height: 300px; background: rgba(0,0,0,0.05); border: 2px solid var(--primary);"></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="stat-cards h-100">
+                <div class="stat-card">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span class="stat-value" id="total-seasons">1</span>
+                    <span class="stat-label">Seasons</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fa-solid fa-users"></i>
+                    <span class="stat-value" id="total-drivers">5</span>
+                    <span class="stat-label">Drivers</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span class="stat-value" id="total-tracks">0</span>
+                    <span class="stat-label">Circuits</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="quote-banner mb-5">
+    <div class="quote-card">
+        <i class="fa-solid fa-microphone quote-icon"></i>
+        <blockquote class="quote-text" id="random-quote">Loading commentary...</blockquote>
+        <cite class="quote-author" id="quote-author">— Commentator</cite>
+    </div>
+</section>
+
+<div class="row g-5">
+    <div class="col-xl-8">
+        <h2 class="mb-4">Live Leaderboard <i class="fa-solid fa-tower-broadcast ms-2 text-danger small"></i></h2>
+        <div class="table-responsive">
+            <table class="table custom-table" id="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th class="ps-4 sortable" data-sort="rank">POS <i class="fa-solid fa-sort small"></i></th>
+                        <th class="sortable" data-sort="name">DRIVER <i class="fa-solid fa-sort small"></i></th>
+                        <th class="sortable" data-sort="car_name">CAR <i class="fa-solid fa-sort small"></i></th>
+                        <th class="sortable" data-sort="gap">GAP <i class="fa-solid fa-sort small"></i></th>
+                        <th class="sortable pe-4 text-end" data-sort="points">PTS <i class="fa-solid fa-sort small"></i></th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <h2 class="mb-4">Championship <i class="fa-solid fa-list-ol ms-2 text-danger small"></i></h2>
+        <div class="standings-list p-0" id="standings-container"></div>
+    </div>
+</div>
+
+<section id="qualification" class="mt-5">
+    <h2 class="mb-4"><i class="fa-solid fa-random me-2"></i>Qualification Grid</h2>
+    <div class="card border-0 shadow-sm" id="qualification-section">
+        <div class="card-body">
+            <div id="qualification-grid-display" class="row g-3">
+                <div class="col-12 text-center text-muted py-4">
+                    <i class="fa-solid fa-shuffle fa-2x mb-2"></i>
+                    <p>Qualification grid will appear here after admin shuffle</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="statsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="statsModalTitle">Driver Stats</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="statsModalBody"></div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/js/index.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+        console.log('SW registration failed:', err);
+    });
+}
+</script>
+{{end}}

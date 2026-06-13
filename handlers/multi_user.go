@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -210,7 +211,10 @@ func (h *Handler) PlayerReportHeat(c *gin.Context) {
 	select {
 	case h.S.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
 		Type: "heat_cards", RacerID: racerID, Action: "added",
-		Data: map[string]interface{}{"count": req.Count, "location": req.Location},
+		Data: func() json.RawMessage {
+			d, _ := json.Marshal(map[string]interface{}{"count": req.Count, "location": req.Location})
+			return d
+		}(),
 	}:
 	default:
 	}

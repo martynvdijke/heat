@@ -11,27 +11,7 @@
     <link rel="stylesheet" href="/static/style.css">
     <script>if(localStorage.getItem('theme')==='dark'||(!localStorage.getItem('theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}</script>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <style>
-        body { background:var(--background); color:var(--text-main); font-family:'Montserrat',sans-serif; }
-        .replay-header { background:var(--surface); border-bottom:var(--border-width) solid var(--border-color); padding:16px 24px; }
-        .replay-controls { background:var(--surface); border-radius:16px; padding:16px; margin-bottom:16px; }
-        .replay-timeline { display:flex; gap:4px; overflow-x:auto; padding:12px 0; }
-        .replay-lap { width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.8rem; font-weight:700; flex-shrink:0; background:var(--border-color); }
-        .replay-lap.active { background:var(--primary); color:#fff; transform:scale(1.15); }
-        .replay-lap:hover { opacity:0.8; }
-        .replay-table { background:var(--surface); border-radius:16px; padding:16px; }
-        .replay-row { display:flex; align-items:center; padding:8px 12px; margin-bottom:4px; background:rgba(255,255,255,0.03); border-radius:8px; }
-        .replay-pos { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; width:40px; }
-        .replay-name { font-weight:700; flex-grow:1; margin-left:12px; }
-        .replay-gear { background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-size:0.8rem; }
-        .replay-heat { color:#e74c3c; font-size:0.9rem; }
-        .replay-turbo { color:#2ecc71; }
-        .replay-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
-        .replay-stat-card { background:var(--surface); border-radius:12px; padding:16px; text-align:center; }
-        .replay-stat-card .value { font-family:'Bebas Neue',sans-serif; font-size:2rem; }
-        .replay-stat-card .label { font-size:0.8rem; opacity:0.6; text-transform:uppercase; }
-        .race-selector { max-width:400px; margin:0 auto; }
-    </style>
+
 </head>
 <body>
     <div class="vintage-overlay"></div>

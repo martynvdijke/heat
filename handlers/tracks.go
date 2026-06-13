@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,56 @@ import (
 	"heat/ent/track"
 	"heat/models"
 )
+
+type geoJSONCacheEntry struct {
+	data   []byte
+	expiry int64
+}
+
+var (
+	geoJSONCache     map[string]*geoJSONCacheEntry
+	geoJSONCacheMu   sync.RWMutex
+	geoJSONCacheInit sync.Once
+)
+
+func (h *Handler) GetTrackGeoJSON(c *gin.Context) {
+	geoJSONCacheInit.Do(func() {
+		geoJSONCache = make(map[string]*geoJSONCacheEntry)
+	})
+
+	geoJSONCacheMu.RLock()
+	entry, ok := geoJSONCache["all"]
+	geoJSONCacheMu.RUnlock()
+	if ok && time.Now().Unix() < entry.expiry {
+		c.Data(http.StatusOK, "application/json", entry.data)
+		return
+	}
+
+	tracks, err := h.S.Ent.Track.Query().All(c.Request.Context())
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	result := make(map[string]json.RawMessage)
+	for _, t := range tracks {
+		if t.Geojson != "" {
+			result[t.ID] = json.RawMessage(t.Geojson)
+		}
+	}
+
+	data, err := json.Marshal(result)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to marshal GeoJSON"})
+		return
+	}
+
+	geoJSONCacheMu.Lock()
+	geoJSONCache["all"] = &geoJSONCacheEntry{data: data, expiry: time.Now().Unix() + 300}
+	geoJSONCacheMu.Unlock()
+
+	c.Data(http.StatusOK, "application/json", data)
+}
 
 func boolToInt(b bool) int {
 	if b {
@@ -205,7 +256,7 @@ func (h *Handler) HandleAIExtract(c *gin.Context) {
 		return
 	}
 
-	var parsedResponse interface{}
+	var parsedResponse json.RawMessage
 	if err := json.Unmarshal(bodyBytes, &parsedResponse); err != nil {
 		c.Data(http.StatusOK, "application/json", bodyBytes)
 		return
