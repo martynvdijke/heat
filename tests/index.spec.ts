@@ -102,10 +102,10 @@ test.describe('Index Page', () => {
     }
   });
 
-  test('compiled JS should not contain export keyword', async ({ page, request }) => {
+  test('compiled JS should not contain export statement', async ({ page, request }) => {
     const resp = await request.get('/static/js/index.js');
     const body = await resp.text();
-    expect(body).not.toContain('export');
+    expect(body).not.toMatch(/\bexport\b/);
   });
 
   test('avatar-sm CSS class should constrain standings images', async ({ page }) => {

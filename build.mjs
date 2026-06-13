@@ -15,7 +15,7 @@ const config = {
   entryPoints,
   outdir: 'static/js',
   bundle: true,
-  format: 'esm',
+  format: 'iife',
   target: 'es2020',
   sourcemap: isDev,
   minify: !isDev,
