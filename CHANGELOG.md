@@ -1,3 +1,20 @@
+# [1.36.0](https://github.com/martynvdijke/heat/compare/v1.35.3...v1.36.0) (2026-06-14)
+
+
+### Bug Fixes
+
+* align templates with JS expectations after frontend consolidation ([1be47f8](https://github.com/martynvdijke/heat/commit/1be47f8faf0c55b5425facbd11b413b5a18486ff))
+* **E2E:** skip Playwright actionability check on mobile emulation ([a50b993](https://github.com/martynvdijke/heat/commit/a50b99366d16817ab39fcabdc84d574e39b40f3e))
+* prevent concurrent WebSocket write panic in broadcast goroutines ([cdd7b24](https://github.com/martynvdijke/heat/commit/cdd7b24f488813695f1004df2a96b160328dce7e))
+* remove redundant ci.yml (replaced by ci.yaml + release.yaml) to fix CI failure on main push ([8afa47e](https://github.com/martynvdijke/heat/commit/8afa47e9189839fa7602cb718439db45e21efcb0))
+* resolve CI failures - malformed GeoJSON seed data and JS guard ([ff77ba8](https://github.com/martynvdijke/heat/commit/ff77ba8a9fcab6208cd1763a176b0c2a12beff55))
+* resolve CI failures after frontend consolidation ([72279d6](https://github.com/martynvdijke/heat/commit/72279d669e5c7e1345970b0ea1c8b66ef99d734e))
+
+
+### Features
+
+* consolidate frontend technical debt ([78af2e1](https://github.com/martynvdijke/heat/commit/78af2e1db960df56cd764c3a7899a878632f1f5a))
+
 ## [1.35.3](https://github.com/martynvdijke/heat/compare/v1.35.2...v1.35.3) (2026-06-11)
 
 
