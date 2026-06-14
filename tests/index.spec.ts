@@ -83,11 +83,13 @@ test.describe('Index Page', () => {
   test('should sort leaderboard by different columns', async ({ page }) => {
     await page.goto('/');
     
-    await page.click('th[data-sort="name"]');
+    // force: true needed for mobile-chrome where Playwright's actionability
+    // check fails on mobile emulation (isMobile: true) due to viewport mismatch
+    await page.click('th[data-sort="name"]', { force: true });
     let nameHeader = page.locator('th[data-sort="name"] i');
     await expect(nameHeader).toHaveClass(/fa-sort-up|fa-sort-down/);
 
-    await page.click('th[data-sort="points"]');
+    await page.click('th[data-sort="points"]', { force: true });
     let pointsHeader = page.locator('th[data-sort="points"] i');
     await expect(pointsHeader).toHaveClass(/fa-sort-up|fa-sort-down/);
   });
@@ -96,7 +98,8 @@ test.describe('Index Page', () => {
     await page.goto('/');
     
     if (await page.locator('#leaderboard-body tr').count() > 0) {
-      await page.locator('#leaderboard-body tr').first().click();
+      // force: true needed for mobile-chrome (same reason as sort test)
+      await page.locator('#leaderboard-body tr').first().click({ force: true });
       const modal = page.locator('#statsModal');
       await expect(modal).toHaveClass(/show/);
     }
