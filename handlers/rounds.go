@@ -137,7 +137,7 @@ func (h *Handler) GetRoundSnapshots(c *gin.Context) {
 	}
 
 	query := "SELECT id, season_id, race_name, race_date, round, created_at FROM round_snapshots ORDER BY round ASC"
-	args := []interface{}{}
+	args := []any{}
 	if seasonIDStr != "" {
 		query = "SELECT id, season_id, race_name, race_date, round, created_at FROM round_snapshots WHERE season_id = ? ORDER BY round ASC"
 		args = append(args, seasonIDStr)

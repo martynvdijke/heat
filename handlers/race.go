@@ -185,7 +185,7 @@ func (h *Handler) GetRaceHistory(c *gin.Context) {
 	raceType := c.Query("type")
 
 	var query string
-	var args []interface{}
+	var args []any
 
 	if raceID != "" {
 		query = `SELECT rh.id, COALESCE(rh.name, ''), rh.race_date, rh.country, rh.track, rh.track_id, rh.total_laps, COALESCE(rh.race_type, 'season'),
@@ -194,12 +194,12 @@ func (h *Handler) GetRaceHistory(c *gin.Context) {
 				 LEFT JOIN race_results rr ON rh.id = rr.race_id
 				 WHERE rh.id = ?
 				 GROUP BY rh.id`
-		args = []interface{}{raceID}
+		args = []any{raceID}
 	} else {
 		if raceType != "" {
 			query = `SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps, COALESCE(race_type, 'season')
 					 FROM race_history WHERE race_type = ? ORDER BY race_date DESC LIMIT 20`
-			args = []interface{}{raceType}
+			args = []any{raceType}
 		} else {
 			query = `SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps, COALESCE(race_type, 'season') FROM race_history ORDER BY race_date DESC LIMIT 20`
 		}
@@ -221,7 +221,7 @@ func (h *Handler) GetRaceHistory(c *gin.Context) {
 			rows.Scan(&h.ID, &h.Name, &h.Date, &h.Country, &h.Track, &h.TrackID, &h.TotalLaps, &raceType, &resultsStr)
 			h.RaceType = raceType
 			if resultsStr != "" {
-				for _, r := range strings.Split(resultsStr, "|") {
+				for r := range strings.SplitSeq(resultsStr, "|") {
 					parts := strings.Split(r, ":")
 					if len(parts) >= 5 {
 						rid, _ := strconv.Atoi(parts[0])

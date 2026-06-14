@@ -318,7 +318,7 @@ func TestTeamsAPI(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d", rr.Code)
 		}
-		var standings []map[string]interface{}
+		var standings []map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &standings)
 		if len(standings) < 1 {
 			t.Error("expected at least 1 team in standings")

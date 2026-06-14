@@ -134,22 +134,22 @@ func hashPassword(password string) string {
 }
 
 func escapeHTML(s string) string {
-	var result string
+	var result strings.Builder
 	for _, c := range s {
 		switch c {
 		case '&':
-			result += "&amp;"
+			result.WriteString("&amp;")
 		case '<':
-			result += "&lt;"
+			result.WriteString("&lt;")
 		case '>':
-			result += "&gt;"
+			result.WriteString("&gt;")
 		case '"':
-			result += "&quot;"
+			result.WriteString("&quot;")
 		default:
-			result += string(c)
+			result.WriteString(string(c))
 		}
 	}
-	return result
+	return result.String()
 }
 
 func shorten(s string) string {

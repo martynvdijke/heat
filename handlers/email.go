@@ -243,7 +243,7 @@ func sendGotifyNotification(title, message, gotifyURL, token string) error {
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
-	payload, _ := json.Marshal(map[string]interface{}{
+	payload, _ := json.Marshal(map[string]any{
 		"title":    title,
 		"message":  message,
 		"priority": 5,

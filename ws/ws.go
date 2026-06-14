@@ -41,7 +41,7 @@ func (m *Manager) HandleWebSocket(c *gin.Context) {
 			break
 		}
 
-		var msg map[string]interface{}
+		var msg map[string]any
 		if err := json.Unmarshal(msgBytes, &msg); err != nil {
 			continue
 		}
@@ -73,7 +73,7 @@ func (m *Manager) HandleWebSocket(c *gin.Context) {
 	}
 }
 
-func (m *Manager) broadcastToClients(msg interface{}) {
+func (m *Manager) broadcastToClients(msg any) {
 	var failed []*websocket.Conn
 	m.S.ClientsMu.RLock()
 	for client := range m.S.Clients {
@@ -139,7 +139,7 @@ func (m *Manager) BroadcastSound() {
 func (m *Manager) BroadcastRaceRadio() {
 	for {
 		msg := <-m.S.RaceRadioBroadcast
-		m.broadcastToClients(map[string]interface{}{
+		m.broadcastToClients(map[string]any{
 			"type":       "race_radio",
 			"id":         msg.ID,
 			"racer_id":   msg.RacerID,
@@ -151,7 +151,7 @@ func (m *Manager) BroadcastRaceRadio() {
 }
 
 func (m *Manager) BroadcastSelfService(action models.SelfServiceAction) {
-	msg := map[string]interface{}{
+	msg := map[string]any{
 		"type":     "self_service",
 		"action":   action.Type,
 		"racer_id": action.RacerID,

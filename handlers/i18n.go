@@ -59,8 +59,8 @@ func (h *Handler) detectLanguage(c *gin.Context) string {
 
 	accept := c.Request.Header.Get("Accept-Language")
 	if accept != "" {
-		langs := strings.Split(accept, ",")
-		for _, l := range langs {
+		langs := strings.SplitSeq(accept, ",")
+		for l := range langs {
 			code := strings.Split(strings.TrimSpace(l), ";")[0]
 			if strings.HasPrefix(code, "nl") {
 				return "nl"

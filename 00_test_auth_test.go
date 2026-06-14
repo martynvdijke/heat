@@ -133,7 +133,7 @@ func TestLoginLogout(t *testing.T) {
 	r.POST("/api/logout", testHandler.HandleLogout)
 
 	t.Run("SetupNewAdmin", func(t *testing.T) {
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"username": "admin",
 			"password": "admin123",
 			"setup":    true,
@@ -150,7 +150,7 @@ func TestLoginLogout(t *testing.T) {
 	})
 
 	t.Run("Login", func(t *testing.T) {
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"username": "admin",
 			"password": "admin123",
 		}
@@ -166,7 +166,7 @@ func TestLoginLogout(t *testing.T) {
 	})
 
 	t.Run("LoginInvalid", func(t *testing.T) {
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"username": "admin",
 			"password": "wrongpassword",
 		}
@@ -263,7 +263,7 @@ func TestRateLimit(t *testing.T) {
 	})
 
 	// Send multiple requests rapidly
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		req, _ := http.NewRequest("GET", "/test", nil)
 		rr := httptest.NewRecorder()
 		r.ServeHTTP(rr, req)

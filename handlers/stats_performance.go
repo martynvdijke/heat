@@ -132,7 +132,7 @@ func (h *Handler) GetPaceHeatmap(c *gin.Context) {
 		LEFT JOIN racers r ON r.id = lr.racer_id
 		WHERE 1=1`
 
-	var args []interface{}
+	var args []any
 	if racerIDStr != "" {
 		query += " AND lr.racer_id = ?"
 		args = append(args, racerIDStr)

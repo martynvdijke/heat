@@ -90,7 +90,7 @@ func TestProfilePictureUpload(t *testing.T) {
 			t.Fatalf("upload failed: %v: %s", status, rr.Body.String())
 		}
 
-		var uploadResp map[string]interface{}
+		var uploadResp map[string]any
 		if err := json.Unmarshal(rr.Body.Bytes(), &uploadResp); err != nil {
 			t.Fatalf("failed to parse upload response: %v", err)
 		}
@@ -141,7 +141,7 @@ func TestProfilePictureUpload(t *testing.T) {
 			t.Fatalf("upload failed: %v: %s", rr.Code, rr.Body.String())
 		}
 
-		var uploadResp map[string]interface{}
+		var uploadResp map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &uploadResp)
 		uploadURL := uploadResp["url"].(string)
 		defer func() {
@@ -152,7 +152,7 @@ func TestProfilePictureUpload(t *testing.T) {
 		}()
 
 		// Update racer with profile_picture
-		racerData := map[string]interface{}{
+		racerData := map[string]any{
 			"id":              1,
 			"name":            "Profile Pic Racer",
 			"profile_picture": uploadURL,
@@ -223,7 +223,7 @@ func TestProfilePictureUpload(t *testing.T) {
 			t.Fatalf("first upload failed: %v: %s", rr.Code, rr.Body.String())
 		}
 
-		var firstResp map[string]interface{}
+		var firstResp map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &firstResp)
 		firstURL := firstResp["url"].(string)
 		defer func() {
@@ -252,7 +252,7 @@ func TestProfilePictureUpload(t *testing.T) {
 			t.Fatalf("duplicate upload failed: %v: %s", rr2.Code, rr2.Body.String())
 		}
 
-		var secondResp map[string]interface{}
+		var secondResp map[string]any
 		json.Unmarshal(rr2.Body.Bytes(), &secondResp)
 
 		secondURL, ok := secondResp["url"].(string)

@@ -67,7 +67,7 @@ func TestPWAManifest(t *testing.T) {
 		if err != nil {
 			t.Fatal("manifest.json not found")
 		}
-		var m map[string]interface{}
+		var m map[string]any
 		json.Unmarshal(data, &m)
 		if m["name"] == nil || m["short_name"] == nil {
 			t.Error("manifest missing required fields")

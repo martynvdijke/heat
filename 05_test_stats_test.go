@@ -222,7 +222,7 @@ func TestDeeperStats(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Errorf("expected 200, got %d", rr.Code)
 		}
-		var data []interface{}
+		var data []any
 		json.Unmarshal(rr.Body.Bytes(), &data)
 		// Can be non-nil empty array or nil (no race data yet)
 		if rr.Code != http.StatusOK {

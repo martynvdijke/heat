@@ -26,7 +26,7 @@ func (h *Handler) GetRaceIncidentsReport(c *gin.Context) {
 		LEFT JOIN racers r2 ON r2.id = re.racer_id2
 		WHERE 1=1`
 
-	var args []interface{}
+	var args []any
 	if raceIDStr != "" {
 		query += " AND re.race_id = ?"
 		args = append(args, raceIDStr)

@@ -36,7 +36,7 @@ type LogEntry struct {
 	Level     string
 	Module    string
 	Message   string
-	Data      map[string]interface{}
+	Data      map[string]any
 	TraceID   string
 	SpanID    string
 }
@@ -114,7 +114,7 @@ func (l *Logger) shouldLog(module, level string) bool {
 }
 
 // log is the internal logging method
-func (l *Logger) log(level, module, msg string, data map[string]interface{}) {
+func (l *Logger) log(level, module, msg string, data map[string]any) {
 	if !l.shouldLog(module, level) {
 		return
 	}
@@ -231,42 +231,42 @@ func (l *Logger) writeOTel(entry LogEntry) {
 }
 
 // Debugf logs at DEBUG level
-func (l *Logger) Debugf(module, format string, args ...interface{}) {
+func (l *Logger) Debugf(module, format string, args ...any) {
 	l.log(LevelDebug, module, fmt.Sprintf(format, args...), nil)
 }
 
 // DebugfWithData logs at DEBUG level with structured data
-func (l *Logger) DebugfWithData(module, format string, data map[string]interface{}, args ...interface{}) {
+func (l *Logger) DebugfWithData(module, format string, data map[string]any, args ...any) {
 	l.log(LevelDebug, module, fmt.Sprintf(format, args...), data)
 }
 
 // Infof logs at INFO level
-func (l *Logger) Infof(module, format string, args ...interface{}) {
+func (l *Logger) Infof(module, format string, args ...any) {
 	l.log(LevelInfo, module, fmt.Sprintf(format, args...), nil)
 }
 
 // InfofWithData logs at INFO level with structured data
-func (l *Logger) InfofWithData(module, format string, data map[string]interface{}, args ...interface{}) {
+func (l *Logger) InfofWithData(module, format string, data map[string]any, args ...any) {
 	l.log(LevelInfo, module, fmt.Sprintf(format, args...), data)
 }
 
 // Warnf logs at WARN level
-func (l *Logger) Warnf(module, format string, args ...interface{}) {
+func (l *Logger) Warnf(module, format string, args ...any) {
 	l.log(LevelWarn, module, fmt.Sprintf(format, args...), nil)
 }
 
 // WarnfWithData logs at WARN level with structured data
-func (l *Logger) WarnfWithData(module, format string, data map[string]interface{}, args ...interface{}) {
+func (l *Logger) WarnfWithData(module, format string, data map[string]any, args ...any) {
 	l.log(LevelWarn, module, fmt.Sprintf(format, args...), data)
 }
 
 // Errorf logs at ERROR level
-func (l *Logger) Errorf(module, format string, args ...interface{}) {
+func (l *Logger) Errorf(module, format string, args ...any) {
 	l.log(LevelError, module, fmt.Sprintf(format, args...), nil)
 }
 
 // ErrorfWithData logs at ERROR level with structured data
-func (l *Logger) ErrorfWithData(module, format string, data map[string]interface{}, args ...interface{}) {
+func (l *Logger) ErrorfWithData(module, format string, data map[string]any, args ...any) {
 	l.log(LevelError, module, fmt.Sprintf(format, args...), data)
 }
 

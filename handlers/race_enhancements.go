@@ -82,7 +82,7 @@ func (h *Handler) GetTurboLogs(c *gin.Context) {
 	raceID, _ := strconv.Atoi(raceIDStr)
 
 	query := "SELECT id, racer_id, race_id, lap, times_used FROM turbo_logs WHERE 1=1"
-	var args []interface{}
+	var args []any
 	if racerID > 0 {
 		query += " AND racer_id = ?"
 		args = append(args, racerID)
@@ -156,7 +156,7 @@ func (h *Handler) GetLapRecords(c *gin.Context) {
 	racerID, _ := strconv.Atoi(racerIDStr)
 
 	query := "SELECT id, race_id, racer_id, lap_number, position, gear_used, heat_generated, turbo_used, timestamp FROM lap_records WHERE 1=1"
-	var args []interface{}
+	var args []any
 	if raceID > 0 {
 		query += " AND race_id = ?"
 		args = append(args, raceID)
@@ -287,7 +287,7 @@ func (h *Handler) GetRacerSectors(c *gin.Context) {
 		s.id, s.name, s.track_id, s."order"
 		FROM racer_sectors rs
 		JOIN sectors s ON rs.sector_id = s.id WHERE 1=1`
-	var args []interface{}
+	var args []any
 	if raceID > 0 {
 		query += " AND rs.race_id = ?"
 		args = append(args, raceID)

@@ -68,7 +68,7 @@ func TestRaceHistory(t *testing.T) {
 	r.DELETE("/api/race-history", testHandler.DeleteRaceHistory)
 
 	t.Run("SaveAndGet", func(t *testing.T) {
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"name":       "Test Race",
 			"race_date":  "2025-01-01",
 			"country":    "Italy",
@@ -76,7 +76,7 @@ func TestRaceHistory(t *testing.T) {
 			"track_id":   "monza",
 			"total_laps": 53,
 			"race_type":  "season",
-			"results": []map[string]interface{}{
+			"results": []map[string]any{
 				{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true, "finished": true},
 				{"racer_id": 2, "racer_name": "M. SCHUMACHER", "position": 2, "points": 18, "fastest_lap": false, "finished": true},
 			},
@@ -91,7 +91,7 @@ func TestRaceHistory(t *testing.T) {
 			t.Errorf("expected status 200, got %v: %s", status, rr.Body.String())
 		}
 
-		var result map[string]interface{}
+		var result map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &result)
 		if _, ok := result["id"]; !ok {
 			t.Errorf("expected id in response, got %v", result)
@@ -121,7 +121,7 @@ func TestRaceHistoryWithDNS(t *testing.T) {
 	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
 	// Save a race with one DNF and one DNS
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"name":       "DNS Test Race",
 		"race_date":  "2025-06-01",
 		"country":    "Italy",
@@ -129,7 +129,7 @@ func TestRaceHistoryWithDNS(t *testing.T) {
 		"track_id":   "monza",
 		"total_laps": 53,
 		"race_type":  "season",
-		"results": []map[string]interface{}{
+		"results": []map[string]any{
 			{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true, "finished": true},
 			{"racer_id": 2, "racer_name": "M. SCHUMACHER", "position": 2, "points": 18, "fastest_lap": false, "finished": true},
 			{"racer_id": 5, "racer_name": "J. STEWART", "position": 999, "points": 0, "fastest_lap": false, "finished": false, "did_not_start": false},
@@ -214,7 +214,7 @@ func TestDeleteRaceHistory(t *testing.T) {
 	})
 
 	t.Run("CreateAndDelete", func(t *testing.T) {
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"name":       "Race To Delete",
 			"race_date":  "2025-07-01",
 			"country":    "Belgium",
@@ -222,7 +222,7 @@ func TestDeleteRaceHistory(t *testing.T) {
 			"track_id":   "spa",
 			"total_laps": 44,
 			"race_type":  "season",
-			"results": []map[string]interface{}{
+			"results": []map[string]any{
 				{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true, "finished": true},
 			},
 		}
@@ -234,7 +234,7 @@ func TestDeleteRaceHistory(t *testing.T) {
 		if status := rr.Code; status != http.StatusOK {
 			t.Fatalf("save: expected status 200, got %v", status)
 		}
-		var result map[string]interface{}
+		var result map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &result)
 		raceID := int(result["id"].(float64))
 
@@ -475,7 +475,7 @@ func TestRaceHistoryWithGoldSilverBronze(t *testing.T) {
 	r.POST("/api/race-history", testHandler.SaveRaceToHistory)
 	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"name":       "Gold Silver Bronze Test",
 		"race_date":  "2025-07-01",
 		"country":    "Italy",
@@ -483,7 +483,7 @@ func TestRaceHistoryWithGoldSilverBronze(t *testing.T) {
 		"track_id":   "monza",
 		"total_laps": 53,
 		"race_type":  "season",
-		"results": []map[string]interface{}{
+		"results": []map[string]any{
 			{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true, "finished": true},
 			{"racer_id": 2, "racer_name": "M. SCHUMACHER", "position": 2, "points": 18, "fastest_lap": false, "finished": true},
 			{"racer_id": 3, "racer_name": "A. SENNA", "position": 3, "points": 15, "fastest_lap": false, "finished": true},
@@ -538,7 +538,7 @@ func TestOneOffRaceDoesNotUpdateStats(t *testing.T) {
 	r.POST("/api/race-history", testHandler.SaveRaceToHistory)
 	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"name":       "One-Off Test",
 		"race_date":  "2025-08-01",
 		"country":    "France",
@@ -546,7 +546,7 @@ func TestOneOffRaceDoesNotUpdateStats(t *testing.T) {
 		"track_id":   "spa",
 		"total_laps": 44,
 		"race_type":  "oneoff",
-		"results": []map[string]interface{}{
+		"results": []map[string]any{
 			{"racer_id": 1, "racer_name": "A. PROST", "position": 1, "points": 25, "fastest_lap": true, "finished": true},
 		},
 	}

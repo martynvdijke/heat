@@ -143,7 +143,7 @@ func TestBackupSettings(t *testing.T) {
 			t.Errorf("expected status 200, got %v", status)
 		}
 
-		var backups []map[string]interface{}
+		var backups []map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &backups)
 		if backups == nil {
 			t.Errorf("expected backups array, got nil")
@@ -215,7 +215,7 @@ func TestSettingsSave(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Fatalf("get: expected 200, got %d", rr.Code)
 		}
-		var resp map[string]interface{}
+		var resp map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &resp)
 		if resp["gotify_url"] != "https://gotify.example.com" {
 			t.Errorf("expected gotify_url saved, got %v", resp["gotify_url"])
@@ -245,7 +245,7 @@ func TestSettingsSave(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Fatalf("get: expected 200, got %d", rr.Code)
 		}
-		var resp map[string]interface{}
+		var resp map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &resp)
 		if resp["track_extract_url"] != "https://ai.example.com/extract" {
 			t.Errorf("expected track_extract_url saved, got %v", resp["track_extract_url"])
@@ -275,7 +275,7 @@ func TestSettingsSave(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Fatalf("get: expected 200, got %d", rr.Code)
 		}
-		var resp map[string]interface{}
+		var resp map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &resp)
 		if resp["smtp_host"] != "smtp.example.com" {
 			t.Errorf("expected smtp_host saved, got %v", resp["smtp_host"])
@@ -305,7 +305,7 @@ func TestSettingsSave(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Fatalf("get: expected 200, got %d", rr.Code)
 		}
-		var resp map[string]interface{}
+		var resp map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &resp)
 		if resp["url"] != "https://analytics.example.com" {
 			t.Errorf("expected url saved, got %v", resp["url"])
@@ -450,7 +450,7 @@ func TestCreateRoundSnapshot(t *testing.T) {
 	r.DELETE("/api/rounds", testHandler.DeleteRoundSnapshot)
 
 	t.Run("take round snapshot", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]interface{}{
+		body, _ := json.Marshal(map[string]any{
 			"race_name": "Round 1",
 			"season_id": 1,
 		})
@@ -461,7 +461,7 @@ func TestCreateRoundSnapshot(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Errorf("snapshot: expected 200, got %d: %s", rr.Code, rr.Body.String())
 		}
-		var result map[string]interface{}
+		var result map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &result)
 		if result["id"] == nil {
 			t.Error("expected snapshot id in response")

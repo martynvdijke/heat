@@ -97,7 +97,7 @@ func TestHandleUpload(t *testing.T) {
 			t.Fatalf("expected status 200, got %v: %s", status, rr.Body.String())
 		}
 
-		var resp map[string]interface{}
+		var resp map[string]any
 		if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
@@ -176,13 +176,13 @@ func TestHandleUpload(t *testing.T) {
 			t.Fatalf("upload failed: %v: %s", status, rr.Body.String())
 		}
 
-		var uploadResp map[string]interface{}
+		var uploadResp map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &uploadResp)
 		uploadURL := uploadResp["url"].(string)
 
 		// Update racer with uploaded image URL
 		racerURL := "/api/racers"
-		racerBody := map[string]interface{}{
+		racerBody := map[string]any{
 			"id":              1,
 			"name":            "Upload Test Racer",
 			"profile_picture": uploadURL,
@@ -885,7 +885,7 @@ func TestPlayerSelfServiceEndpoints(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Errorf("expected 200, got %d", rr.Code)
 		}
-		var data map[string]interface{}
+		var data map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &data)
 		if data["racer"] == nil {
 			t.Error("expected racer field")
@@ -1045,7 +1045,7 @@ func TestDriverShare(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Errorf("expected 200, got %d", rr.Code)
 		}
-		var shares []map[string]interface{}
+		var shares []map[string]any
 		json.Unmarshal(rr.Body.Bytes(), &shares)
 		if len(shares) == 0 {
 			t.Error("expected at least one share")
@@ -1076,7 +1076,7 @@ func TestDriverShare(t *testing.T) {
 		if rr2.Code != http.StatusOK {
 			t.Errorf("expected 200, got %d: %s", rr2.Code, rr2.Body.String())
 		}
-		var result map[string]interface{}
+		var result map[string]any
 		json.Unmarshal(rr2.Body.Bytes(), &result)
 		if result["racer"] == nil {
 			t.Error("expected racer data")

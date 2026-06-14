@@ -35,7 +35,7 @@ func (h *Handler) GetLogs(c *gin.Context) {
 
 	// Build query
 	where := ""
-	args := make([]interface{}, 0)
+	args := make([]any, 0)
 	argIdx := 0
 
 	if level != "" {

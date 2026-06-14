@@ -17,7 +17,7 @@ func (h *Handler) GetRaceRadio(c *gin.Context) {
 		FROM race_radio rr
 		LEFT JOIN racers r ON r.id = rr.racer_id
 		WHERE 1=1`
-	var args []interface{}
+	var args []any
 	if raceIDStr != "" {
 		query += " AND rr.race_id = ?"
 		args = append(args, raceIDStr)

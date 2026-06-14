@@ -17,7 +17,7 @@ func (h *Handler) GetHeatCards(c *gin.Context) {
 	racerID, _ := strconv.Atoi(racerIDStr)
 
 	query := "SELECT id, racer_id, location, card_type, lap_added FROM heat_cards"
-	var args []interface{}
+	var args []any
 	if racerID > 0 {
 		query += " WHERE racer_id = ?"
 		args = append(args, racerID)
@@ -115,7 +115,7 @@ func (h *Handler) GetGearShifts(c *gin.Context) {
 	raceID, _ := strconv.Atoi(raceIDStr)
 
 	query := "SELECT id, racer_id, race_id, lap, gear, stress FROM gear_shifts WHERE 1=1"
-	var args []interface{}
+	var args []any
 	if racerID > 0 {
 		query += " AND racer_id = ?"
 		args = append(args, racerID)
@@ -249,7 +249,7 @@ func (h *Handler) GetPlayerUpgrades(c *gin.Context) {
 		uc.id, uc.name, uc.description, uc.card_type, uc.cost, uc.effects
 		FROM player_upgrades pu
 		JOIN upgrade_cards uc ON pu.upgrade_id = uc.id WHERE 1=1`
-	var args []interface{}
+	var args []any
 	if racerID > 0 {
 		query += " AND pu.racer_id = ?"
 		args = append(args, racerID)
@@ -372,7 +372,7 @@ func (h *Handler) GetRacerLegendAbilities(c *gin.Context) {
 		la.id, la.name, la.description, la.ability_type, la.racer_name
 		FROM racer_legend_abilities rla
 		JOIN legend_abilities la ON rla.ability_id = la.id`
-	var args []interface{}
+	var args []any
 	if racerID > 0 {
 		query += " WHERE rla.racer_id = ?"
 		args = append(args, racerID)
@@ -478,7 +478,7 @@ func (h *Handler) InitializeHeatDecks(c *gin.Context) {
 	}
 	for _, racerID := range req.RacerIDs {
 		// Each racer starts with 7 heat cards in their deck
-		for i := 0; i < 7; i++ {
+		for range 7 {
 			h.S.DB.Exec("INSERT INTO heat_cards (racer_id, location, card_type, lap_added) VALUES (?, 'deck', 'heat', 0)",
 				racerID)
 		}
