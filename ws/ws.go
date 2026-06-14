@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -9,6 +10,13 @@ import (
 	"heat/app"
 	"heat/models"
 )
+
+// wsWriteMu serializes all WebSocket writes to prevent concurrent write panics.
+// gorilla/websocket connections do not support concurrent writes - only one
+// goroutine may write to a connection at a time. All broadcast goroutines and
+// HTTP handlers (via BroadcastSelfService / BroadcastRacers) share the same
+// clients map, so a single mutex ensures safety across all writers.
+var wsWriteMu sync.Mutex
 
 type Manager struct {
 	S *app.Server
@@ -74,6 +82,9 @@ func (m *Manager) HandleWebSocket(c *gin.Context) {
 }
 
 func (m *Manager) broadcastToClients(msg any) {
+	wsWriteMu.Lock()
+	defer wsWriteMu.Unlock()
+
 	var failed []*websocket.Conn
 	m.S.ClientsMu.RLock()
 	for client := range m.S.Clients {
