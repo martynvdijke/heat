@@ -53,7 +53,7 @@ func (h *Handler) GetTrackGeoJSON(c *gin.Context) {
 	result := make(map[string]json.RawMessage)
 	for _, t := range tracks {
 		if t.Geojson != "" {
-			result[t.ID] = json.RawMessage(t.Geojson)
+			result[t.ID] = json.RawMessage(strings.TrimSpace(t.Geojson))
 		}
 	}
 

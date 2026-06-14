@@ -171,6 +171,7 @@ function updateMapMarkers(racers: Racer[]): void {
     }
     const totalVakjes = 100;
     const geojson = trackGeoJSON[currentTrack];
+    if (!geojson) return;
     racers.forEach(r => {
         const percentage = r.position / totalVakjes;
         const pos = getPointAtDistance(geojson, percentage);
