@@ -18,7 +18,13 @@
             if (bootstrap.Modal.getInstance(document.getElementById('seasonsModal'))) bootstrap.Modal.getInstance(document.getElementById('seasonsModal')).hide();
         });
     </script>
-    <script src="/static/js/admin.js"></script>
+    <script>
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target && evt.detail.target.matches('#racerModal .modal-body')) {
+                new bootstrap.Modal(document.getElementById('racerModal')).show();
+            }
+        });
+    </script>
 </body>
 </html>
 {{end}}

@@ -26,38 +26,48 @@
 {{end}}
 
 {{define "content"}}
-<h1 class="mb-4"><i class="fa-solid fa-trophy me-2"></i>Trophy Room</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"><i class="fa-solid fa-trophy me-2"></i>Trophy Room</h1>
+    <select id="driver-select" class="form-select w-auto">
+        <option value="">Select Driver</option>
+    </select>
+</div>
 
 <div class="row g-4 mb-5">
     <div class="col-md-4">
         <div class="stat-card">
+            <i class="fa-solid fa-trophy"></i>
+            <span class="stat-value" id="total-trophies">0</span>
+            <span class="stat-label">Wins</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
             <i class="fa-solid fa-medal"></i>
-            <span class="stat-value" id="total-earned">0</span>
-            <span class="stat-label">Trophies Earned</span>
+            <span class="stat-value" id="total-badges">0</span>
+            <span class="stat-label">Badges</span>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card">
-            <i class="fa-solid fa-lock"></i>
-            <span class="stat-value" id="total-locked">0</span>
-            <span class="stat-label">Locked</span>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="stat-card">
-            <i class="fa-solid fa-percent"></i>
-            <span class="stat-value" id="completion-pct">0%</span>
-            <span class="stat-label">Completion</span>
+            <i class="fa-solid fa-fire"></i>
+            <span class="stat-value" id="completion-rate">0%</span>
+            <span class="stat-label">Complete</span>
         </div>
     </div>
 </div>
 
-<div id="trophy-grid" class="trophy-grid">
-    <div class="col-12 text-center text-muted py-5">
-        <i class="fa-solid fa-spinner fa-spin fa-2x mb-3"></i>
-        <p>Loading achievements...</p>
-    </div>
-</div>
+<h3 class="mb-3"><i class="fa-solid fa-crown me-2"></i>Race Wins</h3>
+<div class="trophy-grid mb-5" id="race-wins-grid"></div>
+
+<h3 class="mb-3"><i class="fa-solid fa-flag-checkered me-2"></i>Podium Finishes</h3>
+<div class="trophy-grid mb-5" id="podium-grid"></div>
+
+<h3 class="mb-3"><i class="fa-solid fa-stopwatch me-2"></i>Speed Records</h3>
+<div class="trophy-grid mb-5" id="speed-grid"></div>
+
+<h3 class="mb-3"><i class="fa-solid fa-star me-2"></i>Special Achievements</h3>
+<div class="trophy-grid" id="special-grid"></div>
 {{end}}
 
 {{define "scripts"}}

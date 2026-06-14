@@ -29,7 +29,7 @@ var racersTableTmpl = template.Must(template.New("racers_table").Parse(`<tbody i
         {{if not .ShareLink}}<button class="btn btn-sm btn-outline-secondary" hx-post="/api/html/racers/{{.ID}}/share" hx-target="#racer-list" hx-swap="outerHTML" title="Generate share link"><i class="fa-solid fa-share-nodes"></i></button>{{end}}
     </td>
     <td class="text-end pe-4">
-        <button class="btn btn-sm btn-outline-primary" hx-get="/api/html/racers/{{.ID}}/edit" hx-target="#racerModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#racerModal"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-sm btn-outline-primary" hx-get="/api/html/racers/{{.ID}}/edit" hx-target="#racerModal .modal-body" hx-swap="innerHTML"><i class="fa-solid fa-pen"></i></button>
         <button class="btn btn-sm btn-outline-danger" hx-delete="/api/html/racers/{{.ID}}" hx-target="#racer-list" hx-swap="outerHTML" hx-confirm="Delete this racer?"><i class="fa-solid fa-trash"></i></button>
     </td>
 </tr>
