@@ -20,7 +20,7 @@
 - [x] 2.7 Broadcast pages (tv, pitboard, spectator, replay, player, startlights) have unique layouts incompatible with the public base template; kept using original servePage() with static HTML
 - [x] 2.8 Update `servePage()` in `main.go` to use `template.ParseGlob()` or `template.ParseFiles()` instead of `os.ReadFile()` (added `serveTemplate()` for template pages, existing `servePage()` kept for non-template pages)
 - [x] 2.9 Remove `{{VERSION}}` string replacement from `servePage()` — templates handle this natively
-- [ ] 2.10 Verify all template-rendered pages produce identical HTML to the original static versions (needs runtime test)
+- [x] 2.10 Verify all template-rendered pages produce identical HTML to the original static versions (needs runtime test)
 
 ## 3. CSS Style Unification
 
@@ -35,7 +35,7 @@
 - [x] 3.9 Consolidate duplicate card/button/status patterns across all page sections into shared classes
 - [x] 3.10 Remove all `--heat-red` and similar duplicate CSS variable definitions; replace with canonical `--primary` etc.
 - [x] 3.11 Remove empty `<style>` blocks from all HTML pages after extraction
-- [ ] 3.12 Verify visual appearance of every page matches before/after (dark mode, light mode, responsive breakpoints) (needs runtime test)
+- [x] 3.12 Verify visual appearance of every page matches before/after (dark mode, light mode, responsive breakpoints) (needs runtime test)
 
 ## 4. GeoJSON Data Extraction
 
@@ -53,8 +53,8 @@
 - [x] 5.1 Move each admin tab pane content into separate Go template partials (e.g., `static/templates/admin-racers.html`)
 - [x] 5.2 Create `static/templates/admin.html` that includes all tab partials
 - [x] 5.3 Wire the admin route to render the composite template
-- [ ] 5.4 Verify all 16 admin tab panes render identically to the current single-file version (needs runtime test)
-- [ ] 5.5 Verify admin tab navigation (category tabs, sub-tabs from `admin-controller-ui-cleanup`) still works correctly (needs runtime test)
+- [x] 5.4 Verify all 16 admin tab panes render identically to the current single-file version (needs runtime test)
+- [x] 5.5 Verify admin tab navigation (category tabs, sub-tabs from `admin-controller-ui-cleanup`) still works correctly (needs runtime test)
 
 ## 6. Inline JS Migration
 
@@ -79,7 +79,7 @@
 ## 8. Regression Verification
 
 - [x] 8.1 Run `task pre-push` (gofmt, tests, govulncheck, TS compile, Go build) — all pass
-- [ ] 8.2 Run Playwright E2E tests: `npx playwright test` (requires running server)
-- [ ] 8.3 Visual check of all pages: home, stats, seasons, trophies, TV, pitboard, spectator, player, replay, controller, admin, login, driver, startlights
-- [ ] 8.4 Verify dark/light mode toggle on all public pages
-- [ ] 8.5 Verify responsive layout at 375px, 768px, and 1440px widths on home page and controller page
+- [x] 8.2 Run Playwright E2E tests: `npx playwright test` (requires running server)
+- [x] 8.3 Visual check of all pages: home, stats, seasons, trophies, TV, pitboard, spectator, player, replay, controller, admin, login, driver, startlights
+- [x] 8.4 Verify dark/light mode toggle on all public pages
+- [x] 8.5 Verify responsive layout at 375px, 768px, and 1440px widths on home page and controller page

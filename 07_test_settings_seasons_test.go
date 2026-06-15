@@ -152,6 +152,8 @@ func TestBackupSettings(t *testing.T) {
 
 	t.Run("PruneBackups", func(t *testing.T) {
 		backupDir := filepath.Join(filepath.Dir(testServer.DBPath), "backups")
+		// Clean up any leftover files from previous runs to avoid flaky failures
+		os.RemoveAll(backupDir)
 		os.MkdirAll(backupDir, 0755)
 
 		for i := 1; i <= 10; i++ {
