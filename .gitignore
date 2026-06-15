@@ -13,6 +13,7 @@ test-results/*
 playwright-report/*
 playwright-report.zip
 tmp/*
+tools/
 media/backups/
 backups/
 docs/*.md
