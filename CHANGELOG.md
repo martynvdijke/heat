@@ -1,3 +1,15 @@
+# [1.37.0](https://github.com/martynvdijke/heat/compare/v1.36.1...v1.37.0) (2026-06-15)
+
+
+### Bug Fixes
+
+* clean up backup dir before prune test to prevent flaky failures ([ff7b9ad](https://github.com/martynvdijke/heat/commit/ff7b9ad6ddee4512c6201f08f7e15e4bac2376a9))
+
+
+### Features
+
+* add e-ink mode with mobile visibility fix ([2868105](https://github.com/martynvdijke/heat/commit/2868105454395e35b30abae428fdd2809c2e7e25))
+
 ## [1.36.1](https://github.com/martynvdijke/heat/compare/v1.36.0...v1.36.1) (2026-06-15)
 
 # [1.36.0](https://github.com/martynvdijke/heat/compare/v1.35.3...v1.36.0) (2026-06-14)
