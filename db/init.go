@@ -32,6 +32,11 @@ func Init(s *app.Server) {
 		data TEXT,
 		trace_id TEXT
 	)`)
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS eink_settings (
+		id INTEGER PRIMARY KEY CHECK (id = 1),
+		enabled INTEGER NOT NULL DEFAULT 0
+	)`)
+
 	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS log_settings (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		module TEXT UNIQUE NOT NULL,
@@ -55,6 +60,7 @@ func Init(s *app.Server) {
 	SeedUpgrades()
 	SeedLegendAbilities()
 	SeedSectors()
+	SeedEInkSettings()
 	SeedLogSettings()
 	SeedOTelSettings()
 }

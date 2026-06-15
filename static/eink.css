@@ -1,0 +1,380 @@
+/* E-Ink Mode Stylesheet
+   Activated by adding .eink-mode class to <body>.
+   All rules are scoped to .eink-mode to avoid affecting normal mode. */
+
+/* === High Contrast Palette === */
+.eink-mode,
+.eink-mode body,
+.eink-mode .container,
+.eink-mode .container-fluid,
+.eink-mode main,
+.eink-mode header,
+.eink-mode footer,
+.eink-mode .card,
+.eink-mode .card-body,
+.eink-mode .card-header,
+.eink-mode .modal-content,
+.eink-mode .modal-header,
+.eink-mode .modal-body,
+.eink-mode .modal-footer,
+.eink-mode .list-group-item,
+.eink-mode .table,
+.eink-mode .table > :not(caption) > * > *,
+.eink-mode .dropdown-menu,
+.eink-mode .nav,
+.eink-mode .navbar,
+.eink-mode .bg-dark,
+.eink-mode .bg-light,
+.eink-mode .bg-black,
+.eink-mode [class*="bg-"],
+.eink-mode .vintage-overlay {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+.eink-mode .text-muted,
+.eink-mode .small,
+.eink-mode .opacity-50,
+.eink-mode .opacity-75,
+.eink-mode .form-text,
+.eink-mode .text-secondary {
+    color: #333333 !important;
+}
+
+.eink-mode .text-danger,
+.eink-mode .text-success,
+.eink-mode .text-warning,
+.eink-mode .text-info,
+.eink-mode .text-primary,
+.eink-mode .text-light,
+.eink-mode [class*="text-"] {
+    color: #000000 !important;
+}
+
+.eink-mode a,
+.eink-mode .btn-link {
+    color: #000000 !important;
+    text-decoration: underline !important;
+}
+
+.eink-mode .btn-primary,
+.eink-mode .btn-danger,
+.eink-mode .btn-success,
+.eink-mode .btn-warning,
+.eink-mode .btn-info,
+.eink-mode .btn-secondary,
+.eink-mode .btn-outline-primary,
+.eink-mode .btn-outline-danger,
+.eink-mode .btn-outline-success,
+.eink-mode .btn-outline-warning,
+.eink-mode .btn-outline-info,
+.eink-mode .btn-outline-secondary,
+.eink-mode [class*="btn-"] {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    text-decoration: none !important;
+}
+
+.eink-mode .btn-primary:hover,
+.eink-mode .btn-danger:hover,
+.eink-mode .btn-success:hover,
+.eink-mode .btn-warning:hover,
+.eink-mode .btn-info:hover,
+.eink-mode .btn-secondary:hover,
+.eink-mode [class*="btn-"]:hover {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+
+/* === Disable All Motion and Effects === */
+.eink-mode,
+.eink-mode *,
+.eink-mode *::before,
+.eink-mode *::after {
+    animation: none !important;
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition: none !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+}
+
+.eink-mode .vintage-overlay {
+    display: none !important;
+}
+
+.eink-mode .racing-stripes {
+    display: none !important;
+}
+
+/* === Large Touch Targets === */
+.eink-mode .btn,
+.eink-mode button:not(.navbar-toggler),
+.eink-mode a:not(.dropdown-item) {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 8px 16px !important;
+}
+
+.eink-mode .race-control-btn,
+.eink-mode [class*="control"] button,
+.eink-mode .flag-btn,
+.eink-mode .action-btn {
+    min-width: 56px !important;
+    min-height: 56px !important;
+    padding: 12px 20px !important;
+}
+
+.eink-mode .btn-group .btn,
+.eink-mode .btn-group-vertical .btn {
+    min-width: 48px !important;
+    min-height: 48px !important;
+}
+
+.eink-mode button,
+.eink-mode .btn,
+.eink-mode a {
+    margin: 4px !important;
+}
+
+/* === Simplified Tables === */
+.eink-mode .table {
+    border: 1px solid #000000 !important;
+}
+
+.eink-mode .table th,
+.eink-mode .table td {
+    border: 1px solid #cccccc !important;
+    padding: 8px 12px !important;
+}
+
+.eink-mode .table-striped > tbody > tr:nth-of-type(odd),
+.eink-mode .table-striped > tbody > tr:nth-of-type(even),
+.eink-mode .table > thead > tr,
+.eink-mode .table > tbody > tr,
+.eink-mode .table > tfoot > tr {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+.eink-mode .table-hover > tbody > tr:hover {
+    outline: 2px solid #000000 !important;
+    outline-offset: -2px !important;
+    background: #ffffff !important;
+}
+
+.eink-mode .table thead th {
+    border-bottom: 2px solid #000000 !important;
+}
+
+/* === Flags and Status Indicators === */
+.eink-mode .flag-indicator,
+.eink-mode [class*="flag"],
+.eink-mode .status-badge,
+.eink-mode .badge {
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-weight: bold !important;
+    padding: 4px 12px !important;
+}
+
+.eink-mode .flag-active,
+.eink-mode .badge.active,
+.eink-mode [class*="flag"].active {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+
+.eink-mode .badge.bg-success,
+.eink-mode .badge.bg-danger,
+.eink-mode .badge.bg-warning,
+.eink-mode .badge.bg-info,
+.eink-mode .badge.bg-primary {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+}
+
+/* === Position Change Indicators === */
+.eink-mode .position-up,
+.eink-mode .text-success.position-change {
+    color: #000000 !important;
+}
+
+.eink-mode .position-down,
+.eink-mode .text-danger.position-change {
+    color: #000000 !important;
+}
+
+.eink-mode .position-change::before {
+    content: attr(data-arrow) !important;
+}
+
+/* === Larger Font Sizes for Readability === */
+.eink-mode body,
+.eink-mode .container,
+.eink-mode p,
+.eink-mode td,
+.eink-mode li {
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+}
+
+.eink-mode h1 { font-size: 28px !important; }
+.eink-mode h2 { font-size: 24px !important; }
+.eink-mode h3 { font-size: 20px !important; }
+.eink-mode h4 { font-size: 18px !important; }
+.eink-mode h5 { font-size: 16px !important; }
+
+.eink-mode .table th,
+.eink-mode .table td {
+    font-size: 15px !important;
+}
+
+.eink-mode .card-header {
+    font-size: 16px !important;
+    font-weight: bold !important;
+    border-bottom: 2px solid #000000 !important;
+}
+
+.eink-mode .nav-link {
+    font-size: 15px !important;
+}
+
+/* === Driver View Simplification === */
+.eink-mode .stat-card,
+.eink-mode .driver-stat,
+.eink-mode [class*="stat"] {
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    padding: 12px !important;
+}
+
+.eink-mode .stat-value,
+.eink-mode .stat-label {
+    color: #000000 !important;
+}
+
+.eink-mode .stat-trend {
+    color: #000000 !important;
+}
+
+.eink-mode .stat-trend .trend-up::after {
+    content: " ↑" !important;
+}
+
+.eink-mode .stat-trend .trend-down::after {
+    content: " ↓" !important;
+}
+
+/* === Card Styles === */
+.eink-mode .card {
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+}
+
+.eink-mode .card-header {
+    background: #ffffff !important;
+    border-bottom: 2px solid #000000 !important;
+}
+
+/* === Form Elements === */
+.eink-mode input,
+.eink-mode select,
+.eink-mode textarea,
+.eink-mode .form-control,
+.eink-mode .form-select {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+}
+
+.eink-mode .form-check-input {
+    border: 2px solid #000000 !important;
+    background: #ffffff !important;
+}
+
+.eink-mode .form-check-input:checked {
+    background: #000000 !important;
+}
+
+/* === Modal and Dropdown === */
+.eink-mode .modal-header {
+    border-bottom: 2px solid #000000 !important;
+}
+
+.eink-mode .modal-footer {
+    border-top: 2px solid #000000 !important;
+}
+
+.eink-mode .dropdown-menu {
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+}
+
+.eink-mode .dropdown-item:hover,
+.eink-mode .dropdown-item:focus {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+
+/* === Navbar === */
+.eink-mode .navbar-toggler {
+    border: 2px solid #000000 !important;
+}
+
+.eink-mode .navbar-toggler-icon {
+    filter: none !important;
+}
+
+/* === Progress Bars === */
+.eink-mode .progress {
+    background: #ffffff !important;
+    border: 2px solid #000000 !important;
+    height: 24px !important;
+}
+
+.eink-mode .progress-bar {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+
+/* === Alert Boxes === */
+.eink-mode .alert {
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+/* === Pagination === */
+.eink-mode .page-link {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+}
+
+.eink-mode .page-item.active .page-link {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+
+/* === Theme Toggle Icon in E-Ink Mode === */
+.eink-mode .theme-toggle i {
+    color: #000000 !important;
+}
+
+.eink-mode .eink-toggle i {
+    color: #000000 !important;
+}

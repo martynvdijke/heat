@@ -190,6 +190,11 @@ type ELORating struct {
 	Races     int     `json:"races"`
 }
 
+type EInkSettings struct {
+	ID      int  `json:"id"`
+	Enabled bool `json:"enabled"`
+}
+
 type BackupSettings struct {
 	ID             int  `json:"id"`
 	Enabled        bool `json:"enabled"`

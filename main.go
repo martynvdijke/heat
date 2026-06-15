@@ -58,7 +58,8 @@ import (
 )
 
 type PageData struct {
-	Version string
+	Version     string
+	EInkEnabled bool
 }
 
 var swaggerHandler = func() *webdav.Handler {
@@ -109,7 +110,12 @@ func serveTemplate(c *gin.Context, name string, s *app.Server) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	data := PageData{Version: s.CurrentVersion}
+	einkEnabled := false
+	var einkVal int
+	if err := s.DB.QueryRow("SELECT COALESCE(enabled, 0) FROM eink_settings WHERE id = 1").Scan(&einkVal); err == nil {
+		einkEnabled = einkVal == 1
+	}
+	data := PageData{Version: s.CurrentVersion, EInkEnabled: einkEnabled}
 	var buf bytes.Buffer
 	if err := tmpl.ExecuteTemplate(&buf, "base", data); err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -251,6 +257,8 @@ func main() {
 		admin.DELETE("/quotes", h.HandleQuotes)
 		admin.GET("/backup-settings", h.GetBackupSettings)
 		admin.POST("/backup-settings", h.SaveBackupSettings)
+		admin.GET("/eink-settings", h.GetEInkSettings)
+		admin.POST("/eink-settings", h.SaveEInkSettings)
 		admin.POST("/backup/manual", h.TriggerManualBackup)
 		admin.GET("/backup/list", h.ListBackups)
 		admin.POST("/seasons", h.CreateSeason)

@@ -20,6 +20,9 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#backup-pane" type="button" role="tab"><i class="fa-solid fa-database me-1"></i>Backup</button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#eink-pane" type="button" role="tab"><i class="fa-solid fa-file-lines me-1"></i>E-Ink</button>
+                    </li>
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane fade" id="notify-pane">
@@ -279,6 +282,36 @@
                                                 <i class="fa-solid fa-save me-1"></i> Save Extracted Track
                                             </button>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="eink-pane">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-file-lines me-2 text-danger"></i>E-Ink Display Mode</div>
+                                    <div class="card-body">
+                                        <form id="eink-form">
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="eink-enabled">
+                                                    <label class="form-check-label small fw-bold" for="eink-enabled">Enable E-Ink Mode Site-Wide</label>
+                                                </div>
+                                                <div class="form-text mt-1">When enabled, all pages will render in high-contrast black-on-white e-ink mode by default.</div>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100">Save E-Ink Settings</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About E-Ink Mode</div>
+                                    <div class="card-body">
+                                        <p class="small text-muted mb-2">E-ink mode adapts HEAT's UI for low-power, high-contrast e-ink displays. It disables all animations, shadows, and color-dependent indicators.</p>
+                                        <p class="small text-muted mb-0">Users can also toggle e-ink mode individually via the <i class="fa-solid fa-file-pen"></i> button in the navigation bar, or by adding <code>?eink=1</code> to any page URL.</p>
                                     </div>
                                 </div>
                             </div>

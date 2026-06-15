@@ -1,7 +1,7 @@
 # internal-code-quality Specification
 
 ## Purpose
-TBD - created by archiving change fix-race-report-and-split-monoliths. Update Purpose after archive.
+Code quality standards covering both backend Go and frontend TypeScript/HTML/CSS code.
 ## Requirements
 ### Requirement: Race report frontend matches backend data contract
 
@@ -65,4 +65,26 @@ Duplicate or legacy functions SHALL be consolidated into single canonical implem
 
 - **WHEN** searching for SingleRacerStatsFallback in the codebase
 - **THEN** it SHALL NOT exist (replaced by SingleRacerStatsBySeason)
+
+## ADDED Requirements
+
+### Requirement: No loose Go types in function signatures
+
+Go functions in `handlers/`, `racing/`, and `models/` packages SHALL NOT use `interface{}` or `any` in exported function signatures where the actual type is known.
+
+#### Scenario: Handler returns typed struct
+
+- **WHEN** inspecting handler function signatures
+- **THEN** any function that returns a known data shape SHALL use a typed struct rather than `interface{}` or `any`
+- **THEN** the only exceptions SHALL be generic utility functions or JSON marshaling of heterogeneous collections
+
+### Requirement: Go API responses use concrete types
+
+Gin handler functions that return JSON SHALL marshal concrete Go types, not `interface{}` or `map[string]interface{}`.
+
+#### Scenario: API endpoint returns typed JSON
+
+- **WHEN** inspecting a handler's `c.JSON()` call
+- **THEN** the value passed to `c.JSON()` SHALL be a concrete struct type or slice thereof
+- **THEN** the value SHALL NOT be `interface{}`, `any`, or a bare `map[string]interface{}` unless the response shape is genuinely dynamic
 

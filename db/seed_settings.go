@@ -24,6 +24,10 @@ func SeedOTelSettings() {
 	srv.DB.Exec("INSERT OR IGNORE INTO otel_settings (id, endpoint, traces_enabled, metrics_enabled, logs_enabled) VALUES (1, '', 0, 0, 0)")
 }
 
+func SeedEInkSettings() {
+	srv.DB.Exec("INSERT OR IGNORE INTO eink_settings (id, enabled) VALUES (1, 0)")
+}
+
 func SeedLogSettings() {
 	srv.DB.Exec("INSERT OR IGNORE INTO log_settings (id, module, level) VALUES (1, 'default', 'WARN')")
 }
