@@ -3,8 +3,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY tsconfig.json ./
+COPY build.mjs ./
 COPY ts/ ts/
-RUN mkdir -p static/js && npx tsc
+RUN mkdir -p static/js && node build.mjs
 
 FROM golang:1.26.4-alpine AS builder
 
