@@ -8,6 +8,7 @@ test.describe('Page Layout Regression — CSS body cascade fix', () => {
 
   // Pages loading style.css — body should be default block, not flex-centered.
   // Login and driver pages have intentional inline flex (they don't load style.css).
+  // Controller page is excluded: it requires auth and redirects to login.html (flex body).
   const PAGES = [
     { path: '/',              desc: 'Index' },
     { path: '/tv.html',       desc: 'TV' },
@@ -15,7 +16,6 @@ test.describe('Page Layout Regression — CSS body cascade fix', () => {
     { path: '/spectator.html',desc: 'Spectator' },
     { path: '/player.html',   desc: 'Player' },
     { path: '/replay.html',   desc: 'Replay' },
-    { path: '/controller.html',desc: 'Controller' },
   ];
 
   for (const { path, desc } of PAGES) {
@@ -25,6 +25,12 @@ test.describe('Page Layout Regression — CSS body cascade fix', () => {
       expect(display).toBe('block');
     });
   }
+
+  test('Login page body should be flex-centered (intentional, no style.css)', async ({ page }) => {
+    await page.goto('/login.html');
+    const display = await page.evaluate(() => getComputedStyle(document.body).display);
+    expect(display).toBe('flex');
+  });
 
   test('TV page header should be at top of viewport', async ({ page }) => {
     await page.goto('/tv.html');
