@@ -1,3 +1,11 @@
+## [1.37.1](https://github.com/martynvdijke/heat/compare/v1.37.0...v1.37.1) (2026-06-17)
+
+
+### Bug Fixes
+
+* exclude controller page from body-layout test (requires auth, redirects to login with flex) ([9910eb3](https://github.com/martynvdijke/heat/commit/9910eb3fc484202111df0fd6efaa32f8cbfa98d9))
+* scope page-specific body CSS to prevent cascade conflict ([b914ff5](https://github.com/martynvdijke/heat/commit/b914ff5faca2bb955b697330695126b41daa1e00))
+
 # [1.37.0](https://github.com/martynvdijke/heat/compare/v1.36.1...v1.37.0) (2026-06-15)
 
 
