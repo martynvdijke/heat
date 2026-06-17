@@ -882,7 +882,7 @@ footer {
 }
 
 /* === TV Page === */
-body { margin:0; padding:0; background:#000; color:#fff; overflow:hidden; font-family:'Montserrat',sans-serif; }
+body[data-page="tv"] { margin:0; padding:0; background:#000; color:#fff; overflow:hidden; font-family:'Montserrat',sans-serif; }
 .tv-header { position:fixed; top:0; left:0; right:0; height:80px; background:linear-gradient(135deg,#1a1a2e,#16213e); border-bottom:3px solid var(--primary); display:flex; align-items:center; padding:0 30px; z-index:100; }
 .tv-header .logo { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; color:var(--primary); letter-spacing:4px; }
 .tv-header .race-info { margin-left:auto; text-align:right; }
@@ -922,7 +922,7 @@ body { margin:0; padding:0; background:#000; color:#fff; overflow:hidden; font-f
 .flag-active { animation:flash 0.5s infinite; }
 
 /* === Pitboard Page === */
-body { margin:0; padding:0; background:#000; color:#fff; font-family:'Montserrat',sans-serif; }
+body[data-page="pitboard"] { margin:0; padding:0; background:#000; color:#fff; font-family:'Montserrat',sans-serif; }
 .pit-header { background:linear-gradient(135deg,#1a1a2e,#16213e); border-bottom:3px solid var(--primary); padding:16px 30px; display:flex; align-items:center; }
 .pit-header h1 { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; margin:0; }
 .pit-header .race-meta { margin-left:auto; text-align:right; }
@@ -945,7 +945,7 @@ body { margin:0; padding:0; background:#000; color:#fff; font-family:'Montserrat
 .pit-turbo { color:var(--success); }
 
 /* === Spectator Page === */
-body { background:var(--background); color:var(--text-main); font-family:'Montserrat',sans-serif; }
+body[data-page="spectator"] { background:var(--background); color:var(--text-main); font-family:'Montserrat',sans-serif; }
 .spec-header { background:var(--surface); border-bottom:var(--border-width) solid var(--border-color); padding:16px 24px; }
 .spec-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; padding:16px; }
 .spec-card { background:var(--surface); border-radius:12px; padding:16px; border-left:4px solid var(--primary); }
@@ -960,7 +960,7 @@ body { background:var(--background); color:var(--text-main); font-family:'Montse
 .spec-status.paused { background:var(--warning); color:#fff; }
 
 /* === Player Page === */
-body { font-size: 16px; background: var(--background); color: var(--text-main); padding-bottom: 100px; }
+body[data-page="player"] { font-size: 16px; background: var(--background); color: var(--text-main); padding-bottom: 100px; }
 .card { background: var(--surface); border: var(--border-width) solid var(--border-color); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; }
 .heat-card { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 56px; background: var(--primary); color: white; border-radius: 6px; font-weight: bold; font-size: 0.8rem; margin: 2px; }
 .heat-card.stress { background: #8e44ad; }
@@ -981,7 +981,7 @@ body { font-size: 16px; background: var(--background); color: var(--text-main); 
 .driver-color-dot { width: 24px; height: 24px; border-radius: 50%; display: inline-block; border: 2px solid #fff; }
 
 /* === Replay Page === */
-body { background:var(--background); color:var(--text-main); font-family:'Montserrat',sans-serif; }
+body[data-page="replay"] { background:var(--background); color:var(--text-main); font-family:'Montserrat',sans-serif; }
 .replay-header { background:var(--surface); border-bottom:var(--border-width) solid var(--border-color); padding:16px 24px; }
 .replay-controls { background:var(--surface); border-radius:16px; padding:16px; margin-bottom:16px; }
 .replay-timeline { display:flex; gap:4px; overflow-x:auto; padding:12px 0; }
@@ -1002,7 +1002,7 @@ body { background:var(--background); color:var(--text-main); font-family:'Montse
 .race-selector { max-width:400px; margin:0 auto; }
 
 /* === Controller Page === */
-body { 
+body[data-page="controller"] { 
     touch-action: manipulation; 
     padding-bottom: 80px;
     font-size: 18px;
@@ -1053,11 +1053,6 @@ select.form-select, input.form-control {
 :root {
     --heat-red: #d40000;
     --heat-dark: #111;
-}
-body { 
-    background: #f4f7f6; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    min-height: 100vh;
 }
 .admin-header { 
     background: var(--heat-dark); 
@@ -1200,7 +1195,6 @@ body {
 
 /* === Driver Page === */
 :root { --heat-red: #d40000; --heat-dark: #111; }
-body { background: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 .stats-card { background: white; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); max-width: 500px; width: 100%; overflow: hidden; }
 .driver-header { background: linear-gradient(135deg, var(--heat-dark), #333); color: white; padding: 2rem; text-align: center; }
 .driver-header img { width: 96px; height: 96px; border-radius: 50%; border: 4px solid var(--heat-red); object-fit: cover; }
@@ -1218,7 +1212,6 @@ body { background: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sa
 .version-footer { text-align: center; padding: 1rem; color: #999; font-size: 0.75rem; }
 
 /* === Login Page === */
-body { background: #111; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 .login-card { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 40px; width: 100%; max-width: 400px; }
 .admin-header { background: var(--primary); color: white; padding: 10px 20px; border-radius: 5px; margin-bottom: 30px; text-align: center; }
 .form-control { background: #2a2a2a; border: 1px solid #444; color: white; }
