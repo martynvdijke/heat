@@ -1,4 +1,4 @@
-const CACHE = "heat-cache-v1";
+const CACHE = "heat-cache-v2";
 const PRECACHE_URLS = [
   "/",
   "/static/style.css",

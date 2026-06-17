@@ -320,10 +320,6 @@ footer {
         padding: 20px 24px;
     }
 
-    header .container {
-        flex-direction: column;
-    }
-
     nav {
         margin-top: 0.75rem;
     }
@@ -1023,11 +1019,11 @@ select.form-select, input.form-control {
     color: var(--text-main);
     border: 1px solid var(--border-color);
 }
-.navbar {
+body[data-page="controller"] .navbar {
     background: var(--surface) !important;
     border-top: var(--border-width) solid var(--border-color);
 }
-.navbar a {
+body[data-page="controller"] .navbar a {
     color: var(--text-main) !important;
 }
 .form-select:focus, .form-control:focus {

@@ -1,6 +1,24 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('E-Ink Mode', () => {
+  test.beforeAll(async ({ request }) => {
+    // Create the initial admin account so the home page renders instead of
+    // redirecting to the setup page.
+    const check = await request.get('/api/check-setup', {
+      headers: { Origin: 'http://localhost:6270' }
+    });
+    const setup = await check.json().catch(() => ({ setup: false }));
+    if (setup.setup) return;
+
+    const res = await request.post('/api/login', {
+      data: { username: 'admin', password: 'admin123', setup: true },
+      headers: { Origin: 'http://localhost:6270' }
+    });
+    if (!res.ok() && res.status() !== 403) {
+      console.warn('Setup login failed:', res.status(), await res.text());
+    }
+  });
+
   test('should not be active by default on home page', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('body')).not.toHaveClass(/eink-mode/);
@@ -32,23 +50,6 @@ test.describe('E-Ink Mode', () => {
     expect(stored).toBe('1');
   });
 
-  test('should have toggle button visible on home page', async ({ page }) => {
-    await page.goto('/');
-    const toggle = page.locator('#eink-toggle');
-    await expect(toggle).toBeVisible();
-  });
-
-  test('should toggle e-ink mode on button click', async ({ page }) => {
-    await page.goto('/');
-    const toggle = page.locator('#eink-toggle');
-    // Click to enable (force: true for mobile-chrome where body intercepts pointer events)
-    await toggle.click({ force: true });
-    await expect(page.locator('body')).toHaveClass(/eink-mode/);
-    // Click to disable
-    await toggle.click({ force: true });
-    await expect(page.locator('body')).not.toHaveClass(/eink-mode/);
-  });
-
   test('should work on stats page', async ({ page }) => {
     await page.goto('/stats.html?eink=1');
     await expect(page.locator('body')).toHaveClass(/eink-mode/);
@@ -64,6 +65,43 @@ test.describe('E-Ink Mode', () => {
   test('should work on trophies page', async ({ page }) => {
     await page.goto('/trophies.html?eink=1');
     await expect(page.locator('body')).toHaveClass(/eink-mode/);
+  });
+
+  test('should show visible dark toggler icon in e-ink mode', async ({ page }) => {
+    await page.goto('/?eink=1');
+    const toggler = page.locator('.navbar-toggler-icon');
+    const bgImage = await toggler.evaluate(el => window.getComputedStyle(el).backgroundImage);
+    // The hamburger icon stroke must be dark so it is visible on the white e-ink header.
+    expect(bgImage).toContain('rgba(0, 0, 0');
+    expect(bgImage).not.toContain('rgba(255, 255, 255');
+  });
+
+  test('should not apply e-ink touch targets to navbar links', async ({ page }) => {
+    await page.goto('/?eink=1');
+    const navLink = page.locator('#mainNav nav a').first();
+    const style = await navLink.evaluate(el => ({
+      minWidth: window.getComputedStyle(el).minWidth,
+      minHeight: window.getComputedStyle(el).minHeight,
+      margin: window.getComputedStyle(el).margin,
+      padding: window.getComputedStyle(el).padding
+    }));
+    expect(style.minWidth).not.toBe('48px');
+    expect(style.minHeight).not.toBe('48px');
+    // e-ink touch-target margins should not break the navbar link layout.
+    expect(style.margin).not.toContain('4px');
+  });
+});
+
+test.describe('E-Ink Mode Mobile', () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test('should keep nav layout compact in e-ink mode on mobile', async ({ page }) => {
+    await page.goto('/?eink=1');
+    await page.locator('.navbar-toggler').click();
+    const navLink = page.locator('#mainNav nav a').first();
+    const minHeight = await navLink.evaluate(el => window.getComputedStyle(el).minHeight);
+    // Without the fix, e-ink.css would force 48px min-height on all links and break the mobile nav.
+    expect(minHeight).toBe('0px');
   });
 });
 

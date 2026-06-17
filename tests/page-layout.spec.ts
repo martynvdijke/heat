@@ -40,4 +40,28 @@ test.describe('Page Layout Regression — CSS body cascade fix', () => {
     // .tv-header is position: fixed; top: 0;
     expect(box!.y).toBe(0);
   });
+
+  test('.navbar override should be scoped to controller page only', async ({ page }) => {
+    await page.goto('/');
+    const navbarRules = await page.evaluate(() => {
+      const rules: string[] = [];
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules || [])) {
+            const text = rule.cssText;
+            // Match .navbar { ... } and .navbar a { ... } only, not .navbar-toggler etc.
+            if (/\.navbar(?:\s+a)?\s*\{/.test(text) && (text.includes('background') || text.includes('color'))) {
+              rules.push(text);
+            }
+          }
+        } catch {
+          // Skip cross-origin stylesheets (e.g. Bootstrap CDN) that block cssRules access.
+        }
+      }
+      return rules;
+    });
+    // The controller page needs theme-adaptive navbar styles; they must not leak globally.
+    expect(navbarRules.length).toBeGreaterThan(0);
+    expect(navbarRules.every(r => r.includes('body[data-page="controller"]'))).toBe(true);
+  });
 });

@@ -86,16 +86,15 @@ function initEInkMode(): void {
     updateEInkToggleIcon(false);
 }
 
-// Auto-initialize on DOM content loaded
-document.addEventListener('DOMContentLoaded', () => {
-    initEInkMode();
+// Auto-initialize immediately. The script is loaded with `defer`, so the DOM
+// is already parsed and ready when this IIFE executes.
+initEInkMode();
 
-    // Wire up toggle button
-    const toggle = document.getElementById('eink-toggle');
-    if (toggle) {
-        toggle.addEventListener('click', handleToggleClick);
-    }
-});
+// Wire up toggle button
+const toggle = document.getElementById('eink-toggle');
+if (toggle) {
+    toggle.addEventListener('click', handleToggleClick);
+}
 
 // Export for manual initialization if needed
 export { initEInkMode, setEInk, isEInkFromUrl, isEInkAdminForced };
