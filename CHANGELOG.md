@@ -1,3 +1,10 @@
+## [1.37.2](https://github.com/martynvdijke/heat/compare/v1.37.1...v1.37.2) (2026-06-17)
+
+
+### Bug Fixes
+
+* navbar contrast, e-ink visibility and mobile layout ([521f9dc](https://github.com/martynvdijke/heat/commit/521f9dc94bb31ec468aede12421bc03b5422bae0))
+
 ## [1.37.1](https://github.com/martynvdijke/heat/compare/v1.37.0...v1.37.1) (2026-06-17)
 
 
