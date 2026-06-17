@@ -1,3 +1,10 @@
+## [1.37.3](https://github.com/martynvdijke/heat/compare/v1.37.2...v1.37.3) (2026-06-17)
+
+
+### Bug Fixes
+
+* use esbuild in Docker build and fix app/app.go version bump ([e458310](https://github.com/martynvdijke/heat/commit/e458310e3a3e1ed79f111dc9d194756081f34575))
+
 ## [1.37.2](https://github.com/martynvdijke/heat/compare/v1.37.1...v1.37.2) (2026-06-17)
 
 
