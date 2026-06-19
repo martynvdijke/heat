@@ -1,3 +1,4 @@
+import './theme';
 interface Achievement {
     id: string;
     name: string;

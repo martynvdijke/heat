@@ -1,3 +1,4 @@
+import './theme';
 interface Season {
     id: number;
     name: string;

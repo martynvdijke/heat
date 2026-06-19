@@ -1,3 +1,4 @@
+import './theme';
 import { showToast, escapeHtml } from './toast';
 
 interface AdminRacer {

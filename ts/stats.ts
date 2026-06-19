@@ -1,3 +1,4 @@
+import './theme';
 declare const Chart: any;
 let pointsChart: any, winsChart: any, lapTimeChart: any, battleChart: any;
 
