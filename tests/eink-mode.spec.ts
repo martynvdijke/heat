@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+function isEinkTheme(page: any): Promise<boolean> {
+  return page.evaluate(() => document.documentElement.getAttribute('data-theme') === 'eink');
+}
+
 test.describe('E-Ink Mode', () => {
   test.beforeAll(async ({ request }) => {
     // Create the initial admin account so the home page renders instead of
@@ -21,17 +25,17 @@ test.describe('E-Ink Mode', () => {
 
   test('should not be active by default on home page', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('body')).not.toHaveClass(/eink-mode/);
+    expect(await isEinkTheme(page)).toBe(false);
   });
 
   test('should activate via ?eink=1 URL parameter', async ({ page }) => {
     await page.goto('/?eink=1');
-    await expect(page.locator('body')).toHaveClass(/eink-mode/);
+    expect(await isEinkTheme(page)).toBe(true);
   });
 
   test('should deactivate via ?eink=0 URL parameter', async ({ page }) => {
     await page.goto('/?eink=0');
-    await expect(page.locator('body')).not.toHaveClass(/eink-mode/);
+    expect(await isEinkTheme(page)).toBe(false);
   });
 
   test('should apply high-contrast styles in e-ink mode', async ({ page }) => {
@@ -46,25 +50,25 @@ test.describe('E-Ink Mode', () => {
 
   test('should persist preference via localStorage', async ({ page }) => {
     await page.goto('/?eink=1');
-    const stored = await page.evaluate(() => localStorage.getItem('eink'));
-    expect(stored).toBe('1');
+    const stored = await page.evaluate(() => localStorage.getItem('theme'));
+    expect(stored).toBe('eink');
   });
 
   test('should work on stats page', async ({ page }) => {
     await page.goto('/stats.html?eink=1');
-    await expect(page.locator('body')).toHaveClass(/eink-mode/);
+    expect(await isEinkTheme(page)).toBe(true);
     const bgColor = await page.locator('body').evaluate(el => window.getComputedStyle(el).backgroundColor);
     expect(bgColor).toBe('rgb(255, 255, 255)');
   });
 
   test('should work on seasons page', async ({ page }) => {
     await page.goto('/seasons.html?eink=1');
-    await expect(page.locator('body')).toHaveClass(/eink-mode/);
+    expect(await isEinkTheme(page)).toBe(true);
   });
 
   test('should work on trophies page', async ({ page }) => {
     await page.goto('/trophies.html?eink=1');
-    await expect(page.locator('body')).toHaveClass(/eink-mode/);
+    expect(await isEinkTheme(page)).toBe(true);
   });
 
   test('should show visible dark toggler icon in e-ink mode', async ({ page }) => {
@@ -100,7 +104,7 @@ test.describe('E-Ink Mode Mobile', () => {
     await page.locator('.navbar-toggler').click();
     const navLink = page.locator('#mainNav nav a').first();
     const minHeight = await navLink.evaluate(el => window.getComputedStyle(el).minHeight);
-    // Without the fix, e-ink.css would force 48px min-height on all links and break the mobile nav.
+    // Without the fix, eink.css would force 48px min-height on all links and break the mobile nav.
     expect(minHeight).toBe('0px');
   });
 });
