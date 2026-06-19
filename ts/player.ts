@@ -1,3 +1,4 @@
+import './theme';
 interface PlayerRacer {
     id: number; name: string; profile_picture: string; car_color: string;
     car_name: string; points: number; rank: number; position: number;

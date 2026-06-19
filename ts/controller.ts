@@ -1,3 +1,4 @@
+import './theme';
 import { showToast } from './toast';
 
 interface ControllerRacer {

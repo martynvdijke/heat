@@ -1,3 +1,4 @@
+import './theme';
 interface PitRacer {
     id: number; name: string; car_color: string; car_name: string;
     position: number; points: number; rank: number;

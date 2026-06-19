@@ -1,3 +1,4 @@
+import './theme';
 export {}; // make this a module
 
 async function init(): Promise<void> {

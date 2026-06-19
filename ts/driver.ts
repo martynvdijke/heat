@@ -1,3 +1,4 @@
+import './theme';
 export {}; // make this a module
 
 function escapeHtml(text: string | null | undefined): string {

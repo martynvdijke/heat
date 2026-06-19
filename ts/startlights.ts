@@ -1,3 +1,4 @@
+import './theme';
 // Start Light System - F1-style 5-light countdown
 interface StartLightsState {
     phase: 'idle' | 'counting' | 'green' | 'done';

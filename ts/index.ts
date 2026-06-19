@@ -1,15 +1,5 @@
 import './i18n';
-
-const themeToggle = document.getElementById('theme-toggle')!;
-const themeIcon = themeToggle.querySelector('i')!;
-const setTheme = (theme: string): void => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-    themeIcon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-};
-const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-setTheme(savedTheme);
-themeToggle.addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+import './theme';
 
 interface Racer {
     id: number;

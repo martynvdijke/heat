@@ -21,6 +21,16 @@
     --vintage-opacity: 0.05;
 }
 
+[data-theme="eink"] {
+    --background: #ffffff;
+    --text-main: #000000;
+    --text-muted: #333333;
+    --surface: #ffffff;
+    --border-color: #000000;
+    --card-shadow: none;
+    --vintage-opacity: 0;
+}
+
 * {
     margin: 0;
     padding: 0;

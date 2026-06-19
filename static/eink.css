@@ -1,97 +1,97 @@
 /* E-Ink Mode Stylesheet
-   Activated by adding .eink-mode class to <body>.
-   All rules are scoped to .eink-mode to avoid affecting normal mode. */
+   Activated by [data-theme="eink"] attribute on <html>.
+   All rules are scoped to [data-theme="eink"] to avoid affecting other modes. */
 
 /* === High Contrast Palette === */
-.eink-mode,
-.eink-mode body,
-.eink-mode .container,
-.eink-mode .container-fluid,
-.eink-mode main,
-.eink-mode header,
-.eink-mode footer,
-.eink-mode .card,
-.eink-mode .card-body,
-.eink-mode .card-header,
-.eink-mode .modal-content,
-.eink-mode .modal-header,
-.eink-mode .modal-body,
-.eink-mode .modal-footer,
-.eink-mode .list-group-item,
-.eink-mode .table,
-.eink-mode .table > :not(caption) > * > *,
-.eink-mode .dropdown-menu,
-.eink-mode .nav,
-.eink-mode .navbar,
-.eink-mode .bg-dark,
-.eink-mode .bg-light,
-.eink-mode .bg-black,
-.eink-mode [class*="bg-"],
-.eink-mode .vintage-overlay {
+[data-theme="eink"],
+[data-theme="eink"] body,
+[data-theme="eink"] .container,
+[data-theme="eink"] .container-fluid,
+[data-theme="eink"] main,
+[data-theme="eink"] header,
+[data-theme="eink"] footer,
+[data-theme="eink"] .card,
+[data-theme="eink"] .card-body,
+[data-theme="eink"] .card-header,
+[data-theme="eink"] .modal-content,
+[data-theme="eink"] .modal-header,
+[data-theme="eink"] .modal-body,
+[data-theme="eink"] .modal-footer,
+[data-theme="eink"] .list-group-item,
+[data-theme="eink"] .table,
+[data-theme="eink"] .table > :not(caption) > * > *,
+[data-theme="eink"] .dropdown-menu,
+[data-theme="eink"] .nav,
+[data-theme="eink"] .navbar,
+[data-theme="eink"] .bg-dark,
+[data-theme="eink"] .bg-light,
+[data-theme="eink"] .bg-black,
+[data-theme="eink"] [class*="bg-"],
+[data-theme="eink"] .vintage-overlay {
     background: #ffffff !important;
     color: #000000 !important;
 }
 
-.eink-mode .text-muted,
-.eink-mode .small,
-.eink-mode .opacity-50,
-.eink-mode .opacity-75,
-.eink-mode .form-text,
-.eink-mode .text-secondary {
+[data-theme="eink"] .text-muted,
+[data-theme="eink"] .small,
+[data-theme="eink"] .opacity-50,
+[data-theme="eink"] .opacity-75,
+[data-theme="eink"] .form-text,
+[data-theme="eink"] .text-secondary {
     color: #333333 !important;
 }
 
-.eink-mode .text-danger,
-.eink-mode .text-success,
-.eink-mode .text-warning,
-.eink-mode .text-info,
-.eink-mode .text-primary,
-.eink-mode .text-light,
-.eink-mode [class*="text-"] {
+[data-theme="eink"] .text-danger,
+[data-theme="eink"] .text-success,
+[data-theme="eink"] .text-warning,
+[data-theme="eink"] .text-info,
+[data-theme="eink"] .text-primary,
+[data-theme="eink"] .text-light,
+[data-theme="eink"] [class*="text-"] {
     color: #000000 !important;
 }
 
-.eink-mode a,
-.eink-mode .btn-link {
+[data-theme="eink"] a,
+[data-theme="eink"] .btn-link {
     color: #000000 !important;
     text-decoration: underline !important;
 }
 
-.eink-mode .btn-primary,
-.eink-mode .btn-danger,
-.eink-mode .btn-success,
-.eink-mode .btn-warning,
-.eink-mode .btn-info,
-.eink-mode .btn-secondary,
-.eink-mode .btn-outline-primary,
-.eink-mode .btn-outline-danger,
-.eink-mode .btn-outline-success,
-.eink-mode .btn-outline-warning,
-.eink-mode .btn-outline-info,
-.eink-mode .btn-outline-secondary,
-.eink-mode [class*="btn-"] {
+[data-theme="eink"] .btn-primary,
+[data-theme="eink"] .btn-danger,
+[data-theme="eink"] .btn-success,
+[data-theme="eink"] .btn-warning,
+[data-theme="eink"] .btn-info,
+[data-theme="eink"] .btn-secondary,
+[data-theme="eink"] .btn-outline-primary,
+[data-theme="eink"] .btn-outline-danger,
+[data-theme="eink"] .btn-outline-success,
+[data-theme="eink"] .btn-outline-warning,
+[data-theme="eink"] .btn-outline-info,
+[data-theme="eink"] .btn-outline-secondary,
+[data-theme="eink"] [class*="btn-"] {
     background: #ffffff !important;
     color: #000000 !important;
     border: 2px solid #000000 !important;
     text-decoration: none !important;
 }
 
-.eink-mode .btn-primary:hover,
-.eink-mode .btn-danger:hover,
-.eink-mode .btn-success:hover,
-.eink-mode .btn-warning:hover,
-.eink-mode .btn-info:hover,
-.eink-mode .btn-secondary:hover,
-.eink-mode [class*="btn-"]:hover {
+[data-theme="eink"] .btn-primary:hover,
+[data-theme="eink"] .btn-danger:hover,
+[data-theme="eink"] .btn-success:hover,
+[data-theme="eink"] .btn-warning:hover,
+[data-theme="eink"] .btn-info:hover,
+[data-theme="eink"] .btn-secondary:hover,
+[data-theme="eink"] [class*="btn-"]:hover {
     background: #000000 !important;
     color: #ffffff !important;
 }
 
 /* === Disable All Motion and Effects === */
-.eink-mode,
-.eink-mode *,
-.eink-mode *::before,
-.eink-mode *::after {
+[data-theme="eink"],
+[data-theme="eink"] *,
+[data-theme="eink"] *::before,
+[data-theme="eink"] *::after {
     animation: none !important;
     animation-duration: 0s !important;
     animation-delay: 0s !important;
@@ -106,47 +106,47 @@
     -webkit-filter: none !important;
 }
 
-.eink-mode .vintage-overlay {
+[data-theme="eink"] .vintage-overlay {
     display: none !important;
 }
 
-.eink-mode .racing-stripes {
+[data-theme="eink"] .racing-stripes {
     display: none !important;
 }
 
 /* === Large Touch Targets === */
-.eink-mode .btn,
-.eink-mode button:not(.navbar-toggler),
-.eink-mode a:not(.dropdown-item) {
+[data-theme="eink"] .btn,
+[data-theme="eink"] button:not(.navbar-toggler),
+[data-theme="eink"] a:not(.dropdown-item) {
     min-width: 48px !important;
     min-height: 48px !important;
     padding: 8px 16px !important;
 }
 
-.eink-mode .race-control-btn,
-.eink-mode [class*="control"] button,
-.eink-mode .flag-btn,
-.eink-mode .action-btn {
+[data-theme="eink"] .race-control-btn,
+[data-theme="eink"] [class*="control"] button,
+[data-theme="eink"] .flag-btn,
+[data-theme="eink"] .action-btn {
     min-width: 56px !important;
     min-height: 56px !important;
     padding: 12px 20px !important;
 }
 
-.eink-mode .btn-group .btn,
-.eink-mode .btn-group-vertical .btn {
+[data-theme="eink"] .btn-group .btn,
+[data-theme="eink"] .btn-group-vertical .btn {
     min-width: 48px !important;
     min-height: 48px !important;
 }
 
-.eink-mode button,
-.eink-mode .btn,
-.eink-mode a {
+[data-theme="eink"] button,
+[data-theme="eink"] .btn,
+[data-theme="eink"] a {
     margin: 4px !important;
 }
 
 /* Exclude navbar links from touch target sizing to preserve nav layout */
-.eink-mode header nav a,
-.eink-mode #mainNav a {
+[data-theme="eink"] header nav a,
+[data-theme="eink"] #mainNav a {
     min-width: auto !important;
     min-height: auto !important;
     padding: 0 !important;
@@ -154,40 +154,40 @@
 }
 
 /* === Simplified Tables === */
-.eink-mode .table {
+[data-theme="eink"] .table {
     border: 1px solid #000000 !important;
 }
 
-.eink-mode .table th,
-.eink-mode .table td {
+[data-theme="eink"] .table th,
+[data-theme="eink"] .table td {
     border: 1px solid #cccccc !important;
     padding: 8px 12px !important;
 }
 
-.eink-mode .table-striped > tbody > tr:nth-of-type(odd),
-.eink-mode .table-striped > tbody > tr:nth-of-type(even),
-.eink-mode .table > thead > tr,
-.eink-mode .table > tbody > tr,
-.eink-mode .table > tfoot > tr {
+[data-theme="eink"] .table-striped > tbody > tr:nth-of-type(odd),
+[data-theme="eink"] .table-striped > tbody > tr:nth-of-type(even),
+[data-theme="eink"] .table > thead > tr,
+[data-theme="eink"] .table > tbody > tr,
+[data-theme="eink"] .table > tfoot > tr {
     background: #ffffff !important;
     color: #000000 !important;
 }
 
-.eink-mode .table-hover > tbody > tr:hover {
+[data-theme="eink"] .table-hover > tbody > tr:hover {
     outline: 2px solid #000000 !important;
     outline-offset: -2px !important;
     background: #ffffff !important;
 }
 
-.eink-mode .table thead th {
+[data-theme="eink"] .table thead th {
     border-bottom: 2px solid #000000 !important;
 }
 
 /* === Flags and Status Indicators === */
-.eink-mode .flag-indicator,
-.eink-mode [class*="flag"],
-.eink-mode .status-badge,
-.eink-mode .badge {
+[data-theme="eink"] .flag-indicator,
+[data-theme="eink"] [class*="flag"],
+[data-theme="eink"] .status-badge,
+[data-theme="eink"] .badge {
     border: 2px solid #000000 !important;
     border-radius: 0 !important;
     background: #ffffff !important;
@@ -196,171 +196,171 @@
     padding: 4px 12px !important;
 }
 
-.eink-mode .flag-active,
-.eink-mode .badge.active,
-.eink-mode [class*="flag"].active {
+[data-theme="eink"] .flag-active,
+[data-theme="eink"] .badge.active,
+[data-theme="eink"] [class*="flag"].active {
     background: #000000 !important;
     color: #ffffff !important;
 }
 
-.eink-mode .badge.bg-success,
-.eink-mode .badge.bg-danger,
-.eink-mode .badge.bg-warning,
-.eink-mode .badge.bg-info,
-.eink-mode .badge.bg-primary {
+[data-theme="eink"] .badge.bg-success,
+[data-theme="eink"] .badge.bg-danger,
+[data-theme="eink"] .badge.bg-warning,
+[data-theme="eink"] .badge.bg-info,
+[data-theme="eink"] .badge.bg-primary {
     background: #ffffff !important;
     color: #000000 !important;
     border: 2px solid #000000 !important;
 }
 
 /* === Position Change Indicators === */
-.eink-mode .position-up,
-.eink-mode .text-success.position-change {
+[data-theme="eink"] .position-up,
+[data-theme="eink"] .text-success.position-change {
     color: #000000 !important;
 }
 
-.eink-mode .position-down,
-.eink-mode .text-danger.position-change {
+[data-theme="eink"] .position-down,
+[data-theme="eink"] .text-danger.position-change {
     color: #000000 !important;
 }
 
-.eink-mode .position-change::before {
+[data-theme="eink"] .position-change::before {
     content: attr(data-arrow) !important;
 }
 
 /* === Larger Font Sizes for Readability === */
-.eink-mode body,
-.eink-mode .container,
-.eink-mode p,
-.eink-mode td,
-.eink-mode li {
+[data-theme="eink"] body,
+[data-theme="eink"] .container,
+[data-theme="eink"] p,
+[data-theme="eink"] td,
+[data-theme="eink"] li {
     font-size: 16px !important;
     line-height: 1.5 !important;
 }
 
-.eink-mode h1 { font-size: 28px !important; }
-.eink-mode h2 { font-size: 24px !important; }
-.eink-mode h3 { font-size: 20px !important; }
-.eink-mode h4 { font-size: 18px !important; }
-.eink-mode h5 { font-size: 16px !important; }
+[data-theme="eink"] h1 { font-size: 28px !important; }
+[data-theme="eink"] h2 { font-size: 24px !important; }
+[data-theme="eink"] h3 { font-size: 20px !important; }
+[data-theme="eink"] h4 { font-size: 18px !important; }
+[data-theme="eink"] h5 { font-size: 16px !important; }
 
-.eink-mode .table th,
-.eink-mode .table td {
+[data-theme="eink"] .table th,
+[data-theme="eink"] .table td {
     font-size: 15px !important;
 }
 
-.eink-mode .card-header {
+[data-theme="eink"] .card-header {
     font-size: 16px !important;
     font-weight: bold !important;
     border-bottom: 2px solid #000000 !important;
 }
 
-.eink-mode .nav-link {
+[data-theme="eink"] .nav-link {
     font-size: 15px !important;
 }
 
 /* === Driver View Simplification === */
-.eink-mode .stat-card,
-.eink-mode .driver-stat,
-.eink-mode [class*="stat"] {
+[data-theme="eink"] .stat-card,
+[data-theme="eink"] .driver-stat,
+[data-theme="eink"] [class*="stat"] {
     border: 2px solid #000000 !important;
     border-radius: 0 !important;
     background: #ffffff !important;
     padding: 12px !important;
 }
 
-.eink-mode .stat-value,
-.eink-mode .stat-label {
+[data-theme="eink"] .stat-value,
+[data-theme="eink"] .stat-label {
     color: #000000 !important;
 }
 
-.eink-mode .stat-trend {
+[data-theme="eink"] .stat-trend {
     color: #000000 !important;
 }
 
-.eink-mode .stat-trend .trend-up::after {
+[data-theme="eink"] .stat-trend .trend-up::after {
     content: " ↑" !important;
 }
 
-.eink-mode .stat-trend .trend-down::after {
+[data-theme="eink"] .stat-trend .trend-down::after {
     content: " ↓" !important;
 }
 
 /* === Card Styles === */
-.eink-mode .card {
+[data-theme="eink"] .card {
     border: 2px solid #000000 !important;
     border-radius: 0 !important;
 }
 
-.eink-mode .card-header {
+[data-theme="eink"] .card-header {
     background: #ffffff !important;
     border-bottom: 2px solid #000000 !important;
 }
 
 /* === Form Elements === */
-.eink-mode input,
-.eink-mode select,
-.eink-mode textarea,
-.eink-mode .form-control,
-.eink-mode .form-select {
+[data-theme="eink"] input,
+[data-theme="eink"] select,
+[data-theme="eink"] textarea,
+[data-theme="eink"] .form-control,
+[data-theme="eink"] .form-select {
     background: #ffffff !important;
     color: #000000 !important;
     border: 2px solid #000000 !important;
     border-radius: 0 !important;
 }
 
-.eink-mode .form-check-input {
+[data-theme="eink"] .form-check-input {
     border: 2px solid #000000 !important;
     background: #ffffff !important;
 }
 
-.eink-mode .form-check-input:checked {
+[data-theme="eink"] .form-check-input:checked {
     background: #000000 !important;
 }
 
 /* === Modal and Dropdown === */
-.eink-mode .modal-header {
+[data-theme="eink"] .modal-header {
     border-bottom: 2px solid #000000 !important;
 }
 
-.eink-mode .modal-footer {
+[data-theme="eink"] .modal-footer {
     border-top: 2px solid #000000 !important;
 }
 
-.eink-mode .dropdown-menu {
+[data-theme="eink"] .dropdown-menu {
     border: 2px solid #000000 !important;
     border-radius: 0 !important;
 }
 
-.eink-mode .dropdown-item:hover,
-.eink-mode .dropdown-item:focus {
+[data-theme="eink"] .dropdown-item:hover,
+[data-theme="eink"] .dropdown-item:focus {
     background: #000000 !important;
     color: #ffffff !important;
 }
 
 /* === Navbar === */
-.eink-mode .navbar-toggler {
+[data-theme="eink"] .navbar-toggler {
     border: 2px solid #000000 !important;
 }
 
-.eink-mode .navbar-toggler-icon {
+[data-theme="eink"] .navbar-toggler-icon {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(0, 0, 0, 0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
 }
 
 /* === Progress Bars === */
-.eink-mode .progress {
+[data-theme="eink"] .progress {
     background: #ffffff !important;
     border: 2px solid #000000 !important;
     height: 24px !important;
 }
 
-.eink-mode .progress-bar {
+[data-theme="eink"] .progress-bar {
     background: #000000 !important;
     color: #ffffff !important;
 }
 
 /* === Alert Boxes === */
-.eink-mode .alert {
+[data-theme="eink"] .alert {
     border: 2px solid #000000 !important;
     border-radius: 0 !important;
     background: #ffffff !important;
@@ -368,22 +368,22 @@
 }
 
 /* === Pagination === */
-.eink-mode .page-link {
+[data-theme="eink"] .page-link {
     background: #ffffff !important;
     color: #000000 !important;
     border: 2px solid #000000 !important;
 }
 
-.eink-mode .page-item.active .page-link {
+[data-theme="eink"] .page-item.active .page-link {
     background: #000000 !important;
     color: #ffffff !important;
 }
 
 /* === Theme Toggle Icon in E-Ink Mode === */
-.eink-mode .theme-toggle i {
+[data-theme="eink"] .theme-toggle i {
     color: #000000 !important;
 }
 
-.eink-mode .eink-toggle i {
+[data-theme="eink"] .eink-toggle i {
     color: #000000 !important;
 }

@@ -1,3 +1,4 @@
+import './theme';
 interface ReplayRace {
     id: number; name: string; race_date: string; track: string; country: string;
     total_laps: number; results: ReplayResult[];
