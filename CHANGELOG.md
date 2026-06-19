@@ -1,3 +1,16 @@
+# [1.38.0](https://github.com/martynvdijke/heat/compare/v1.37.4...v1.38.0) (2026-06-19)
+
+
+### Bug Fixes
+
+* add theme import to stats, seasons, trophies, admin pages ([fed601c](https://github.com/martynvdijke/heat/commit/fed601ccc31ddb8c981cd5924c96888a235911c1))
+* update eink e2e tests for data-theme attribute and new localStorage key ([e71027a](https://github.com/martynvdijke/heat/commit/e71027a888d465a614970212fe8830423344628e))
+
+
+### Features
+
+* make eink a proper third theme alongside light/dark, remove inline FOUC scripts ([cc66b43](https://github.com/martynvdijke/heat/commit/cc66b43c0cf74168ef3ad7d3e2024a09248959bc))
+
 ## [1.37.4](https://github.com/martynvdijke/heat/compare/v1.37.3...v1.37.4) (2026-06-18)
 
 
