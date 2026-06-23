@@ -107,6 +107,11 @@ func (h *Handler) GetStreaks(c *gin.Context) {
 	}
 
 	// All racers mode
+	cacheKey := "stats:streaks:all"
+	if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
+		c.JSON(http.StatusOK, cached)
+		return
+	}
 	allData := racing.AllStreaks(h.S.DB)
 	streaks := make([]models.StreakInfo, 0, len(allData))
 	for _, s := range allData {
@@ -117,6 +122,7 @@ func (h *Handler) GetStreaks(c *gin.Context) {
 			BestValue:    s.BestStreak,
 		})
 	}
+	h.S.StatsCache.Set(cacheKey, streaks)
 	c.JSON(http.StatusOK, streaks)
 }
 
@@ -127,11 +133,16 @@ func (h *Handler) GetStreaks(c *gin.Context) {
 // @Success 200 {array} map[string]interface{}
 // @Router /api/stats/elo [get]
 func (h *Handler) GetELORatings(c *gin.Context) {
+	if cached, ok := h.S.StatsCache.Get("stats:elo"); ok {
+		c.JSON(http.StatusOK, cached)
+		return
+	}
 	ratings, err := racing.ELORatings(h.S.DB)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.S.StatsCache.Set("stats:elo", ratings)
 	c.JSON(http.StatusOK, ratings)
 }
 

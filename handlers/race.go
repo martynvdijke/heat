@@ -157,6 +157,9 @@ func (h *Handler) SaveRaceToHistory(c *gin.Context) {
 		}
 	}
 
+	// Invalidate stats cache after race results change
+	h.S.StatsCache.InvalidatePrefix("stats:")
+
 	results := make([]models.RaceResult, len(input.Results))
 	for i, res := range input.Results {
 		results[i] = models.RaceResult{

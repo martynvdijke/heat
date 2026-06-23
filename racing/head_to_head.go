@@ -19,8 +19,7 @@ type HeadToHeadData struct {
 // HeadToHead compares two racers across all season races.
 func HeadToHead(db *sql.DB, racer1, racer2 int) (*HeadToHeadData, error) {
 	var name1, name2 string
-	db.QueryRow("SELECT name FROM racers WHERE id = ?", racer1).Scan(&name1)
-	db.QueryRow("SELECT name FROM racers WHERE id = ?", racer2).Scan(&name2)
+	db.QueryRow("SELECT (SELECT name FROM racers WHERE id = ?), (SELECT name FROM racers WHERE id = ?)", racer1, racer2).Scan(&name1, &name2)
 
 	rows, err := db.Query(`
 		SELECT rr1.race_id, rr1.position as pos1, rr2.position as pos2

@@ -43,6 +43,17 @@ func Init(s *app.Server) {
 		level TEXT NOT NULL DEFAULT 'WARN'
 	)`)
 
+	// Performance indexes for common query patterns
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_id ON race_results(racer_id)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_race_id ON race_results(race_id)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_history_race_type ON race_history(race_type)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_history_race_date ON race_history(race_date)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_history_type_date ON race_history(race_type, race_date)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_lap_records_racer_id ON lap_records(racer_id)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_lap_records_race_id ON lap_records(race_id)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_events_race_id ON race_events(race_id)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_racer_sectors_race_id ON racer_sectors(race_id)")
+
 	var count int
 	srv.DB.QueryRow("SELECT COUNT(*) FROM racers").Scan(&count)
 	if count == 0 {

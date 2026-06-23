@@ -36,6 +36,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/net/webdav"
@@ -54,6 +55,7 @@ import (
 	"heat/handlers"
 	"heat/middleware"
 	"heat/pkg/logger"
+	"heat/racing"
 	"heat/ws"
 )
 
@@ -110,11 +112,7 @@ func serveTemplate(c *gin.Context, name string, s *app.Server) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	einkEnabled := false
-	var einkVal int
-	if err := s.DB.QueryRow("SELECT COALESCE(enabled, 0) FROM eink_settings WHERE id = 1").Scan(&einkVal); err == nil {
-		einkEnabled = einkVal == 1
-	}
+	einkEnabled := s.EInkEnabled
 	data := PageData{Version: s.CurrentVersion, EInkEnabled: einkEnabled}
 	var buf bytes.Buffer
 	if err := tmpl.ExecuteTemplate(&buf, "base", data); err != nil {
@@ -145,8 +143,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	server.DB.SetMaxOpenConns(1)
+	server.DB.SetMaxOpenConns(8)
+	server.DB.SetMaxIdleConns(8)
+	server.DB.SetConnMaxLifetime(5 * time.Minute)
 	server.DB.Exec("PRAGMA journal_mode=WAL")
+	server.DB.Exec("PRAGMA busy_timeout=5000")
+	server.DB.Exec("PRAGMA synchronous=NORMAL")
+	server.DB.Exec("PRAGMA cache_size=-20000")
+	server.DB.Exec("PRAGMA temp_store=MEMORY")
 
 	drv := entsql.OpenDB(dialect.SQLite, server.DB)
 	server.Ent = ent.NewClient(ent.Driver(drv))
@@ -155,6 +159,9 @@ func main() {
 	// Initialize structured logger
 	server.Log = logger.New(server.DB)
 	defer server.Log.Stop()
+
+	// Initialize stats cache with 30 second TTL
+	server.StatsCache = racing.NewCache(30 * time.Second)
 
 	h := handlers.New(server)
 	wsManager := ws.NewManager(server)
@@ -189,6 +196,14 @@ func main() {
 	go func() {
 		for {
 			var enabled int
+			server.DB.QueryRow("SELECT COALESCE(enabled, 0) FROM eink_settings WHERE id = 1").Scan(&enabled)
+			server.EInkEnabled = enabled == 1
+			time.Sleep(30 * time.Second)
+		}
+	}()
+	go func() {
+		for {
+			var enabled int
 			var intervalHrs int
 			server.DB.QueryRow("SELECT enabled, interval_hrs FROM backup_settings WHERE id = 1").Scan(&enabled, &intervalHrs)
 			if enabled == 1 && intervalHrs > 0 {
@@ -212,6 +227,7 @@ func main() {
 	r := gin.New()
 	r.MaxMultipartMemory = 32 << 20
 	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(gzip.Gzip(gzip.DefaultCompression))
 	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.SecurityHeaders())
 

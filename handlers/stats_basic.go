@@ -35,10 +35,16 @@ func (h *Handler) GetRacerStats(c *gin.Context) {
 		}
 
 		if id == "" {
+			cacheKey := "stats:racer-stats:season:" + seasonID
+			if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
+				c.JSON(http.StatusOK, cached)
+				return
+			}
 			stats := racing.RacerStatsBySeason(h.S.DB, startDate, endDate)
 			if len(stats) == 0 {
 				stats = racing.AllRacerStats(h.S.DB)
 			}
+			h.S.StatsCache.Set(cacheKey, stats)
 			c.JSON(http.StatusOK, stats)
 			return
 		}
@@ -54,7 +60,13 @@ func (h *Handler) GetRacerStats(c *gin.Context) {
 	}
 
 	if id == "" {
-		c.JSON(http.StatusOK, racing.AllRacerStats(h.S.DB))
+		if cached, ok := h.S.StatsCache.Get("stats:racer-stats:all"); ok {
+			c.JSON(http.StatusOK, cached)
+			return
+		}
+		stats := racing.AllRacerStats(h.S.DB)
+		h.S.StatsCache.Set("stats:racer-stats:all", stats)
+		c.JSON(http.StatusOK, stats)
 		return
 	}
 
@@ -98,6 +110,10 @@ func (h *Handler) UpdateRacerStats(c *gin.Context) {
 // @Success 200 {array} models.TrackStats
 // @Router /api/track-stats [get]
 func (h *Handler) GetTrackStats(c *gin.Context) {
+	if cached, ok := h.S.StatsCache.Get("stats:track-stats"); ok {
+		c.JSON(http.StatusOK, cached)
+		return
+	}
 	stats, err := racing.TrackStats(h.S.DB)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -114,5 +130,6 @@ func (h *Handler) GetTrackStats(c *gin.Context) {
 			FastestLap: s.FastestLap,
 		}
 	}
+	h.S.StatsCache.Set("stats:track-stats", result)
 	c.JSON(http.StatusOK, result)
 }

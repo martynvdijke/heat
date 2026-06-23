@@ -109,11 +109,16 @@ func (h *Handler) GetQualifyingRaceDelta(c *gin.Context) {
 // @Success 200 {array} map[string]interface{}
 // @Router /api/stats/consistency [get]
 func (h *Handler) GetConsistencyRatings(c *gin.Context) {
+	if cached, ok := h.S.StatsCache.Get("stats:consistency"); ok {
+		c.JSON(http.StatusOK, cached)
+		return
+	}
 	ratings, err := racing.ConsistencyRatings(h.S.DB)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.S.StatsCache.Set("stats:consistency", ratings)
 	c.JSON(http.StatusOK, ratings)
 }
 

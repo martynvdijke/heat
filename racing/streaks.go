@@ -110,60 +110,60 @@ func Streaks(db *sql.DB, racerID int) (*StreakData, error) {
 
 // AllStreaks computes streak data for all racers.
 func AllStreaks(db *sql.DB) []StreakData {
-	rows, err := db.Query("SELECT id, name FROM racers ORDER BY rank")
+	// Single batched query: get all race results ordered by race_id
+	rows, err := db.Query(`
+		SELECT rr.racer_id, rh.id, rr.position
+		FROM race_results rr
+		JOIN race_history rh ON rh.id = rr.race_id
+		WHERE rh.race_type = 'season'
+		ORDER BY rr.racer_id, rh.id
+	`)
 	if err != nil {
 		return []StreakData{}
 	}
+	defer rows.Close()
 
-	// Collect all racers first, then close rows to free the connection
-	type racerInfo struct {
-		ID   int
-		Name string
-	}
-	var racers []racerInfo
+	racerPositions := make(map[int][]positionEntry)
+	racerOrder := make([]int, 0)
 	for rows.Next() {
-		var r racerInfo
-		if err := rows.Scan(&r.ID, &r.Name); err != nil {
+		var racerID, raceID, position int
+		if err := rows.Scan(&racerID, &raceID, &position); err != nil {
 			continue
 		}
-		racers = append(racers, r)
+		if _, ok := racerPositions[racerID]; !ok {
+			racerOrder = append(racerOrder, racerID)
+		}
+		racerPositions[racerID] = append(racerPositions[racerID], positionEntry{RaceID: raceID, Position: position})
 	}
 	rows.Close()
 
-	allStreaks := make([]StreakData, 0)
-	for _, racer := range racers {
-		raceRows, err := db.Query(`
-			SELECT rh.id, rr.position
-			FROM race_results rr
-			JOIN race_history rh ON rh.id = rr.race_id
-			WHERE rr.racer_id = ? AND rh.race_type = 'season'
-			ORDER BY rh.id
-		`, racer.ID)
-		if err != nil {
-			continue
-		}
-
-		var positions []positionEntry
-		for raceRows.Next() {
-			var p positionEntry
-			if err := raceRows.Scan(&p.RaceID, &p.Position); err != nil {
-				continue
+	// Fetch all racer names in one batch query
+	nameMap := make(map[int]string)
+	nameRows, err := db.Query("SELECT id, name FROM racers ORDER BY rank")
+	if err == nil {
+		for nameRows.Next() {
+			var id int
+			var name string
+			if nameRows.Scan(&id, &name) == nil {
+				nameMap[id] = name
 			}
-			positions = append(positions, p)
 		}
-		raceRows.Close()
+		nameRows.Close()
+	}
 
+	allStreaks := make([]StreakData, 0, len(racerOrder))
+	for _, racerID := range racerOrder {
+		positions := racerPositions[racerID]
 		if len(positions) == 0 {
 			continue
 		}
-
 		current, best := calcStreak(positions)
 		allStreaks = append(allStreaks, StreakData{
 			CurrentStreak: current,
 			BestStreak:    best,
 			StreakType:    "podium",
-			RacerID:       racer.ID,
-			RacerName:     racer.Name,
+			RacerID:       racerID,
+			RacerName:     nameMap[racerID],
 		})
 	}
 	return allStreaks

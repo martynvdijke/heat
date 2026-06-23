@@ -88,13 +88,25 @@ func ELORatings(db *sql.DB) ([]ELORatingData, error) {
 		}
 	}
 
-	results := make([]ELORatingData, 0)
+	// Fetch all racer names in one batch query
+	nameMap := make(map[int]string)
+	nameRows, err := db.Query("SELECT id, name FROM racers")
+	if err == nil {
+		for nameRows.Next() {
+			var id int
+			var name string
+			if nameRows.Scan(&id, &name) == nil {
+				nameMap[id] = name
+			}
+		}
+		nameRows.Close()
+	}
+
+	results := make([]ELORatingData, 0, len(ratings))
 	for id, rating := range ratings {
-		var name string
-		db.QueryRow("SELECT name FROM racers WHERE id = ?", id).Scan(&name)
 		results = append(results, ELORatingData{
 			RacerID:   id,
-			RacerName: name,
+			RacerName: nameMap[id],
 			Rating:    math.Round(rating*100) / 100,
 			Races:     raceCount[id],
 		})

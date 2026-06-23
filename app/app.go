@@ -13,6 +13,7 @@ import (
 	"heat/ent"
 	"heat/models"
 	"heat/pkg/logger"
+	"heat/racing"
 )
 
 type SessionInfo struct {
@@ -49,7 +50,9 @@ type Server struct {
 	BroadcastRacers      func()
 	BroadcastSelfService func(action models.SelfServiceAction)
 
-	Log *logger.Logger
+	Log         *logger.Logger
+	EInkEnabled bool
+	StatsCache  *racing.Cache
 }
 
 func NewServer() *Server {

@@ -18,10 +18,17 @@ type ConsistencyRatingData struct {
 
 // ConsistencyRatings computes consistency ratings for all racers.
 func ConsistencyRatings(db *sql.DB) ([]ConsistencyRatingData, error) {
+	// Single batched query: compute avg and variance per racer
 	rows, err := db.Query(`
-		SELECT rr.racer_id, COUNT(*) as races, AVG(CAST(rr.position AS REAL)) as avg_pos
+		SELECT 
+			rr.racer_id,
+			COALESCE(r.name, ''),
+			COUNT(*) as races,
+			AVG(CAST(rr.position AS REAL)) as avg_pos,
+			AVG(CAST(rr.position AS REAL) * CAST(rr.position AS REAL)) - AVG(CAST(rr.position AS REAL)) * AVG(CAST(rr.position AS REAL)) as variance
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
+		LEFT JOIN racers r ON r.id = rr.racer_id
 		WHERE rh.race_type = 'season'
 		GROUP BY rr.racer_id
 		HAVING COUNT(*) >= 3
@@ -34,23 +41,14 @@ func ConsistencyRatings(db *sql.DB) ([]ConsistencyRatingData, error) {
 	results := make([]ConsistencyRatingData, 0)
 	for rows.Next() {
 		var c ConsistencyRatingData
-		if err := rows.Scan(&c.RacerID, &c.Races, &c.AvgPosition); err != nil {
+		var variance float64
+		if err := rows.Scan(&c.RacerID, &c.RacerName, &c.Races, &c.AvgPosition, &variance); err != nil {
 			continue
 		}
-
-		var name string
-		db.QueryRow("SELECT name FROM racers WHERE id = ?", c.RacerID).Scan(&name)
-		c.RacerName = name
-
-		var stdDev float64
-		db.QueryRow(`
-			SELECT AVG(CAST((position - ?) * (position - ?) AS REAL))
-			FROM race_results rr
-			JOIN race_history rh ON rh.id = rr.race_id
-			WHERE rr.racer_id = ? AND rh.race_type = 'season'
-		`, c.AvgPosition, c.AvgPosition, c.RacerID).Scan(&stdDev)
-
-		c.StdDeviation = math.Sqrt(stdDev)
+		if variance < 0 {
+			variance = 0
+		}
+		c.StdDeviation = math.Sqrt(variance)
 		c.Consistency = math.Round((1.0/(1.0+c.StdDeviation))*100*100) / 100
 		c.AvgPosition = math.Round(c.AvgPosition*100) / 100
 		results = append(results, c)
