@@ -1,3 +1,20 @@
+# [1.39.0](https://github.com/martynvdijke/heat/compare/v1.38.3...v1.39.0) (2026-06-24)
+
+
+### Bug Fixes
+
+* set Content-Type header in admin handler for gzip compatibility ([85dbf54](https://github.com/martynvdijke/heat/commit/85dbf54e2720e683f0373245840fe0676df7e988)), closes [#adminCategories](https://github.com/martynvdijke/heat/issues/adminCategories)
+
+
+### Features
+
+* add e2e test coverage change proposal with specs and tasks ([e252443](https://github.com/martynvdijke/heat/commit/e252443cea247a309460297416f0ccf2b2ad70e7))
+
+
+### Performance Improvements
+
+* backend optimizations - multi-conn, indexes, N+1 fixes, caching, compression ([b83dceb](https://github.com/martynvdijke/heat/commit/b83dcebe21770f7fd3b682799daa3aaf0a082096))
+
 ## [1.38.3](https://github.com/martynvdijke/heat/compare/v1.38.2...v1.38.3) (2026-06-22)
 
 

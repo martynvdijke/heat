@@ -68,7 +68,7 @@ func NewServer() *Server {
 		RaceRadioBroadcast:     make(chan models.RaceRadioMessage),
 		LoginLimiter:           rate.NewLimiter(rate.Limit(5), 10),
 		LoginLimiters:          make(map[string]*rate.Limiter),
-		CurrentVersion:         "1.38.3",
+		CurrentVersion:         "1.39.0",
 		BasePath:               "/app",
 		DBPath:                 "/db/heat.db",
 		MediaPath:              "/app/media",
