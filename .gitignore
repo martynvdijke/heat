@@ -9,6 +9,7 @@ vendor/
 *.test
 *.out
 node_modules/*
+playwright.local.config.ts
 test-results/*
 playwright-report/*
 playwright-report.zip
