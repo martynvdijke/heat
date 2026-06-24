@@ -503,7 +503,11 @@ func main() {
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
 			}
-			tmpl.ExecuteTemplate(c.Writer, "admin.html", nil)
+			c.Header("Content-Type", "text/html; charset=utf-8")
+			if err := tmpl.ExecuteTemplate(c.Writer, "admin.html", nil); err != nil {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
 		})
 
 		r.GET("/login.html", func(c *gin.Context) {
