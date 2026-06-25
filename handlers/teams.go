@@ -178,5 +178,6 @@ func (h *Handler) AssignTeam(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.S.BroadcastRacers()
 	c.Status(http.StatusOK)
 }

@@ -175,7 +175,7 @@ func (m *Manager) BroadcastSelfService(action models.SelfServiceAction) {
 }
 
 func (m *Manager) BroadcastRacers() {
-	rows, err := m.S.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
+	rows, err := m.S.DB.Query("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id ORDER BY r.rank ASC")
 	if err != nil {
 		m.S.Log.Errorf("ws", "Error fetching racers for broadcast: %v", err)
 		return
@@ -185,7 +185,7 @@ func (m *Manager) BroadcastRacers() {
 	var racers []models.Racer
 	for rows.Next() {
 		var r models.Racer
-		err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID)
+		err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID, &r.TeamName)
 		if err != nil {
 			m.S.Log.Errorf("ws", "Error scanning racer for broadcast: %v", err)
 			return

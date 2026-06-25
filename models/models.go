@@ -12,6 +12,7 @@ type Racer struct {
 	Rank           int    `json:"rank"`
 	Position       int    `json:"position"`
 	TeamID         int    `json:"team_id,omitempty"`
+	TeamName       string `json:"team_name,omitempty"`
 }
 
 type Team struct {

@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"heat/ent/racer"
 	"heat/models"
 )
 
@@ -17,25 +16,20 @@ import (
 // @Success 200 {array} models.Racer
 // @Router /api/racers [get]
 func (h *Handler) GetRacers(c *gin.Context) {
-	entRacers, err := h.S.Ent.Racer.Query().Order(racer.ByRank()).All(c.Request.Context())
+	rows, err := h.S.DB.Query("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id ORDER BY r.rank ASC")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	defer rows.Close()
 
-	racers := make([]models.Racer, 0, len(entRacers))
-	for _, r := range entRacers {
-		racers = append(racers, models.Racer{
-			ID:             r.ID,
-			Name:           r.Name,
-			ProfilePicture: r.ProfilePicture,
-			CarColor:       r.CarColor,
-			CarName:        r.CarName,
-			Points:         r.Points,
-			Rank:           r.Rank,
-			Position:       r.Position,
-			TeamID:         r.TeamID,
-		})
+	racers := make([]models.Racer, 0)
+	for rows.Next() {
+		var r models.Racer
+		if err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID, &r.TeamName); err != nil {
+			continue
+		}
+		racers = append(racers, r)
 	}
 
 	c.JSON(http.StatusOK, racers)

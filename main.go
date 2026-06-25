@@ -34,6 +34,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/gzip"
@@ -63,6 +64,11 @@ type PageData struct {
 	Version     string
 	EInkEnabled bool
 }
+
+var (
+	templateCache sync.Map
+	adminTemplate *template.Template
+)
 
 var swaggerHandler = func() *webdav.Handler {
 	h := &webdav.Handler{
@@ -103,15 +109,22 @@ func servePage(c *gin.Context, path string, s *app.Server) {
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }
 
+// loadCachedTemplate parses a template the first time and caches it forever.
+func loadCachedTemplate(files ...string) *template.Template {
+	key := strings.Join(files, "\x00")
+	if cached, ok := templateCache.Load(key); ok {
+		return cached.(*template.Template)
+	}
+	tmpl := template.Must(template.ParseFiles(files...))
+	templateCache.Store(key, tmpl)
+	return tmpl
+}
+
 func serveTemplate(c *gin.Context, name string, s *app.Server) {
-	tmpl, err := template.ParseFiles(
+	tmpl := loadCachedTemplate(
 		filepath.Join(s.BasePath, "static/templates/base.html"),
 		filepath.Join(s.BasePath, "static/templates", name),
 	)
-	if err != nil {
-		c.AbortWithStatus(http.StatusNotFound)
-		return
-	}
 	einkEnabled := s.EInkEnabled
 	data := PageData{Version: s.CurrentVersion, EInkEnabled: einkEnabled}
 	var buf bytes.Buffer
@@ -120,6 +133,21 @@ func serveTemplate(c *gin.Context, name string, s *app.Server) {
 		return
 	}
 	c.Data(http.StatusOK, "text/html; charset=utf-8", buf.Bytes())
+}
+
+// initAdminTemplate parses the admin template at startup and caches it.
+func initAdminTemplate(basePath string) {
+	adminTemplate = template.Must(template.ParseFiles(
+		filepath.Join(basePath, "static/templates/admin.html"),
+		filepath.Join(basePath, "static/templates/admin-header.html"),
+		filepath.Join(basePath, "static/templates/admin-footer.html"),
+		filepath.Join(basePath, "static/templates/admin-modals.html"),
+		filepath.Join(basePath, "static/templates/admin-race-panes.html"),
+		filepath.Join(basePath, "static/templates/admin-results-panes.html"),
+		filepath.Join(basePath, "static/templates/admin-content-panes.html"),
+		filepath.Join(basePath, "static/templates/admin-settings-panes.html"),
+		filepath.Join(basePath, "static/templates/admin-system-panes.html"),
+	))
 }
 
 func main() {
@@ -139,17 +167,22 @@ func main() {
 	}
 
 	var err error
-	server.DB, err = sql.Open("sqlite3", server.DBPath+"?_fk=1")
+	// Most PRAGMAs are embedded in the DSN so they apply to EVERY connection
+	// in the pool. Setting them via DB.Exec only affects the single connection
+	// that runs the statement; with SetMaxOpenConns(8) new connections would
+	// inherit SQLite defaults (busy_timeout=5000 and synchronous=NORMAL are
+	// already the mattn/go-sqlite3 driver defaults, but cache_size defaults to
+	// -2000 (2MB) which causes more disk I/O).
+	//
+	// temp_store is a connection-level PRAGMA not supported as a DSN parameter
+	// in this driver version, so it's set via Exec as a best-effort measure.
+	server.DB, err = sql.Open("sqlite3", server.DBPath+"?_fk=1&_busy_timeout=5000&_journal_mode=WAL&_synchronous=NORMAL&_cache_size=-20000")
 	if err != nil {
 		log.Fatal(err)
 	}
 	server.DB.SetMaxOpenConns(8)
 	server.DB.SetMaxIdleConns(8)
 	server.DB.SetConnMaxLifetime(5 * time.Minute)
-	server.DB.Exec("PRAGMA journal_mode=WAL")
-	server.DB.Exec("PRAGMA busy_timeout=5000")
-	server.DB.Exec("PRAGMA synchronous=NORMAL")
-	server.DB.Exec("PRAGMA cache_size=-20000")
 	server.DB.Exec("PRAGMA temp_store=MEMORY")
 
 	drv := entsql.OpenDB(dialect.SQLite, server.DB)
@@ -165,6 +198,26 @@ func main() {
 
 	h := handlers.New(server)
 	wsManager := ws.NewManager(server)
+
+	// Pre-parse templates at startup
+	initAdminTemplate(server.BasePath)
+	// Warm up page templates in cache
+	loadCachedTemplate(
+		filepath.Join(server.BasePath, "static/templates/base.html"),
+		filepath.Join(server.BasePath, "static/templates/index.html"),
+	)
+	loadCachedTemplate(
+		filepath.Join(server.BasePath, "static/templates/base.html"),
+		filepath.Join(server.BasePath, "static/templates/stats.html"),
+	)
+	loadCachedTemplate(
+		filepath.Join(server.BasePath, "static/templates/base.html"),
+		filepath.Join(server.BasePath, "static/templates/seasons.html"),
+	)
+	loadCachedTemplate(
+		filepath.Join(server.BasePath, "static/templates/base.html"),
+		filepath.Join(server.BasePath, "static/templates/trophies.html"),
+	)
 	server.BroadcastRacers = wsManager.BroadcastRacers
 	server.BroadcastSelfService = wsManager.BroadcastSelfService
 
@@ -227,7 +280,10 @@ func main() {
 	r := gin.New()
 	r.MaxMultipartMemory = 32 << 20
 	r.Use(gin.Logger(), gin.Recovery())
-	r.Use(gzip.Gzip(gzip.DefaultCompression))
+	// Exclude /ws from gzip — the gzip middleware wraps c.Writer, which breaks
+	// gorilla/websocket's Upgrader.Upgrade() (it needs the raw ResponseWriter
+	// to hijack the connection for the WebSocket handshake).
+	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{"/ws"})))
 	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.SecurityHeaders())
 
@@ -488,23 +544,8 @@ func main() {
 				c.Redirect(http.StatusFound, "/login.html")
 				return
 			}
-			tmpl, err := template.ParseFiles(
-				filepath.Join(server.BasePath, "static/templates/admin.html"),
-				filepath.Join(server.BasePath, "static/templates/admin-header.html"),
-				filepath.Join(server.BasePath, "static/templates/admin-footer.html"),
-				filepath.Join(server.BasePath, "static/templates/admin-modals.html"),
-				filepath.Join(server.BasePath, "static/templates/admin-race-panes.html"),
-				filepath.Join(server.BasePath, "static/templates/admin-results-panes.html"),
-				filepath.Join(server.BasePath, "static/templates/admin-content-panes.html"),
-				filepath.Join(server.BasePath, "static/templates/admin-settings-panes.html"),
-				filepath.Join(server.BasePath, "static/templates/admin-system-panes.html"),
-			)
-			if err != nil {
-				c.AbortWithStatus(http.StatusInternalServerError)
-				return
-			}
 			c.Header("Content-Type", "text/html; charset=utf-8")
-			if err := tmpl.ExecuteTemplate(c.Writer, "admin.html", nil); err != nil {
+			if err := adminTemplate.ExecuteTemplate(c.Writer, "admin.html", nil); err != nil {
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
 			}

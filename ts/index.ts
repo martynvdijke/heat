@@ -10,6 +10,7 @@ interface Racer {
     points: number;
     rank: number;
     position: number;
+    team_name?: string;
 }
 
 interface TrackInfo {
@@ -192,6 +193,7 @@ function sortRacers(a: Racer, b: Racer): number {
     switch(sortColumn) {
         case 'rank': aVal = a.rank; bVal = b.rank; break;
         case 'name': aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase(); break;
+        case 'team': aVal = (a.team_name || '').toLowerCase(); bVal = (b.team_name || '').toLowerCase(); break;
         case 'car_name': aVal = a.car_name.toLowerCase(); bVal = b.car_name.toLowerCase(); break;
         case 'gap': aVal = a.position; bVal = b.position; break;
         case 'points': aVal = a.points; bVal = b.points; break;
@@ -238,6 +240,7 @@ function renderRacers(): void {
                         <span class="driver-name"><span class="color-indicator ${r.car_color} me-2"></span>${r.name}</span>
                     </div>
                 </td>
+                <td>${r.team_name || '-'}</td>
                 <td>${r.car_name}</td>
                 <td class="gap-cell">${gapText}</td>
                 <td class="pe-4 text-end ${i === 0 ? 'fw-bold' : ''}">${r.points}</td>

@@ -275,8 +275,8 @@ func (h *Handler) PlayerGetStatus(c *gin.Context) {
 
 	// Get racer info
 	var racer models.Racer
-	err = h.S.DB.QueryRow("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers WHERE id = ?",
-		racerID).Scan(&racer.ID, &racer.Name, &racer.ProfilePicture, &racer.CarColor, &racer.CarName, &racer.Points, &racer.Rank, &racer.Position, &racer.TeamID)
+	err = h.S.DB.QueryRow("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id WHERE r.id = ?",
+		racerID).Scan(&racer.ID, &racer.Name, &racer.ProfilePicture, &racer.CarColor, &racer.CarName, &racer.Points, &racer.Rank, &racer.Position, &racer.TeamID, &racer.TeamName)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -309,7 +309,7 @@ func (h *Handler) PlayerGetStatus(c *gin.Context) {
 // Spectator endpoint - public race state
 
 func (h *Handler) GetSpectatorState(c *gin.Context) {
-	rows, err := h.S.DB.Query("SELECT id, name, profile_picture, car_color, car_name, points, rank, position, COALESCE(team_id, 0) FROM racers ORDER BY rank ASC")
+	rows, err := h.S.DB.Query("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id ORDER BY r.rank ASC")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -319,7 +319,7 @@ func (h *Handler) GetSpectatorState(c *gin.Context) {
 	racers := make([]models.Racer, 0)
 	for rows.Next() {
 		var r models.Racer
-		rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID)
+		rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID, &r.TeamName)
 		racers = append(racers, r)
 	}
 
