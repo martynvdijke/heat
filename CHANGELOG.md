@@ -1,3 +1,15 @@
+# [1.40.0](https://github.com/martynvdijke/heat/compare/v1.39.1...v1.40.0) (2026-06-25)
+
+
+### Bug Fixes
+
+* add regression tests for gzip ws exclusion, SQLite PRAGMAs, and admin page timing ([ab6daaa](https://github.com/martynvdijke/heat/commit/ab6daaa716a6368b275bde2795360f1e67387237))
+
+
+### Features
+
+* add team name to home page, fix E2E tests, optimize backend ([c4e207f](https://github.com/martynvdijke/heat/commit/c4e207fd977a4d1155f4cadfcd38854986746589))
+
 ## [1.39.1](https://github.com/martynvdijke/heat/compare/v1.39.0...v1.39.1) (2026-06-25)
 
 # [1.39.0](https://github.com/martynvdijke/heat/compare/v1.38.3...v1.39.0) (2026-06-24)
