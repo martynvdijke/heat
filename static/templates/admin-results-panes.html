@@ -75,7 +75,7 @@
                                 <div class="card mb-4">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <span><i class="fa-solid fa-calendar me-2 text-danger"></i>Seasons</span>
-                                        <button class="btn btn-sm btn-success" hx-get="/api/html/seasons/new" hx-target="#seasonsModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#seasonsModal">
+                                        <button class="btn btn-sm btn-success" hx-get="/api/html/seasons/new" hx-target="#seasonsModal .modal-body" hx-swap="innerHTML" hx-indicator=".htmx-indicator" data-bs-toggle="modal" data-bs-target="#seasonsModal">
                                             <i class="fa-solid fa-plus me-1"></i> New Season
                                         </button>
                                     </div>
@@ -91,8 +91,8 @@
                                                         <th class="text-end pe-4">Actions</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody id="seasons-list" hx-get="/api/html/seasons" hx-trigger="load" hx-swap="outerHTML">
-                                                    <tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading seasons...</td></tr>
+                                                <tbody id="seasons-list" hx-get="/api/html/seasons" hx-trigger="load" hx-swap="outerHTML" hx-indicator=".htmx-indicator">
+                                                    <tr><td colspan="5" class="text-center text-muted py-4"><span class="htmx-indicator"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading seasons...</span></td></tr>
                                                 </tbody>
                                             </table>
                                         </div>

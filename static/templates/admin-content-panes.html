@@ -14,7 +14,7 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <span><i class="fa-solid fa-microphone me-2 text-danger"></i>Commentator Quotes</span>
-                                <button class="btn btn-sm btn-success" hx-get="/api/html/quotes/0/edit" hx-target="#quoteModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#quoteModal">
+                                <button class="btn btn-sm btn-success" hx-get="/api/html/quotes/0/edit" hx-target="#quoteModal .modal-body" hx-swap="innerHTML" hx-indicator=".htmx-indicator" data-bs-toggle="modal" data-bs-target="#quoteModal">
                                     <i class="fa-solid fa-plus me-1"></i> Add Quote
                                 </button>
                             </div>
@@ -28,8 +28,8 @@
                                                 <th class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="quote-list" hx-get="/api/html/quotes" hx-trigger="load" hx-swap="outerHTML">
-                                            <tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading quotes...</td></tr>
+                                        <tbody id="quote-list" hx-get="/api/html/quotes" hx-trigger="load" hx-swap="outerHTML" hx-indicator=".htmx-indicator">
+                                            <tr><td colspan="3" class="text-center text-muted py-4"><span class="htmx-indicator"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading quotes...</span></td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -40,7 +40,7 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <span><i class="fa-solid fa-people-group me-2 text-danger"></i>Constructor Teams</span>
-                                <button class="btn btn-sm btn-success" hx-get="/api/html/teams/0/edit" hx-target="#teamModal .modal-body" hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#teamModal">
+                                <button class="btn btn-sm btn-success" hx-get="/api/html/teams/0/edit" hx-target="#teamModal .modal-body" hx-swap="innerHTML" hx-indicator=".htmx-indicator" data-bs-toggle="modal" data-bs-target="#teamModal">
                                     <i class="fa-solid fa-plus me-1"></i> Add Team
                                 </button>
                             </div>
@@ -54,8 +54,8 @@
                                                 <th class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="team-list" hx-get="/api/html/teams" hx-trigger="load" hx-swap="outerHTML">
-                                            <tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading teams...</td></tr>
+                                        <tbody id="team-list" hx-get="/api/html/teams" hx-trigger="load" hx-swap="outerHTML" hx-indicator=".htmx-indicator">
+                                            <tr><td colspan="3" class="text-center text-muted py-4"><span class="htmx-indicator"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading teams...</span></td></tr>
                                         </tbody>
                                     </table>
                                 </div>

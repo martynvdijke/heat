@@ -1525,7 +1525,15 @@ async function loadSeasonRounds(seasonId: string): Promise<void> {
     `).join('');
 }
 
-// Expose functions globally for inline onclick handlers in innerHTML
+// Expose functions globally for inline onclick handlers in innerHTML and templates
+(window as any).logout = logout;
+(window as any).uploadImage = uploadImage;
+(window as any).openTrackModal = openTrackModal;
+(window as any).openStatsModal = openStatsModal;
+(window as any).startQualification = startQualification;
+(window as any).resetQualification = resetQualification;
+(window as any).previewGrid = previewGrid;
+(window as any).applyGridPositions = applyGridPositions;
 (window as any).loadRoundsList = loadRoundsList;
 (window as any).takeAdminRoundSnapshot = takeAdminRoundSnapshot;
 (window as any).deleteRound = deleteRound;
