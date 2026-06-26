@@ -1240,16 +1240,10 @@ document.getElementById('backup-tab')?.addEventListener('shown.bs.tab', () => {
 });
 
 // Listen for Bootstrap tab shown events to load sub-tab content.
-// The sub-tab buttons in Results (Stats/Rounds/Seasons) and Content (Quotes/Teams)
-// don't have element IDs, so we use a document-level delegation.
-document.addEventListener('shown.bs.tab', (event: Event) => {
-    const tab = event.target as HTMLElement;
-    const target = tab.getAttribute('data-bs-target');
-    if (target === '#rounds-pane') loadRoundsList();
-    else if (target === '#seasons-pane') loadSeasons();
+document.getElementById('rounds-subtab')?.addEventListener('shown.bs.tab', () => {
+    loadRoundsList();
 });
-
-document.getElementById('seasons-tab')?.addEventListener('shown.bs.tab', () => {
+document.getElementById('seasons-subtab')?.addEventListener('shown.bs.tab', () => {
     loadSeasons();
 });
 
