@@ -16077,6 +16077,7 @@ type RoundSnapshotMutation struct {
 	created_at    *string
 	season_id     *int
 	addseason_id  *int
+	status        *string
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*RoundSnapshot, error)
@@ -16421,6 +16422,42 @@ func (m *RoundSnapshotMutation) ResetSeasonID() {
 	delete(m.clearedFields, roundsnapshot.FieldSeasonID)
 }
 
+// SetStatus sets the "status" field.
+func (m *RoundSnapshotMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *RoundSnapshotMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the RoundSnapshot entity.
+// If the RoundSnapshot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundSnapshotMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *RoundSnapshotMutation) ResetStatus() {
+	m.status = nil
+}
+
 // Where appends a list predicates to the RoundSnapshotMutation builder.
 func (m *RoundSnapshotMutation) Where(ps ...predicate.RoundSnapshot) {
 	m.predicates = append(m.predicates, ps...)
@@ -16455,7 +16492,7 @@ func (m *RoundSnapshotMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RoundSnapshotMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.race_name != nil {
 		fields = append(fields, roundsnapshot.FieldRaceName)
 	}
@@ -16470,6 +16507,9 @@ func (m *RoundSnapshotMutation) Fields() []string {
 	}
 	if m.season_id != nil {
 		fields = append(fields, roundsnapshot.FieldSeasonID)
+	}
+	if m.status != nil {
+		fields = append(fields, roundsnapshot.FieldStatus)
 	}
 	return fields
 }
@@ -16489,6 +16529,8 @@ func (m *RoundSnapshotMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case roundsnapshot.FieldSeasonID:
 		return m.SeasonID()
+	case roundsnapshot.FieldStatus:
+		return m.Status()
 	}
 	return nil, false
 }
@@ -16508,6 +16550,8 @@ func (m *RoundSnapshotMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldCreatedAt(ctx)
 	case roundsnapshot.FieldSeasonID:
 		return m.OldSeasonID(ctx)
+	case roundsnapshot.FieldStatus:
+		return m.OldStatus(ctx)
 	}
 	return nil, fmt.Errorf("unknown RoundSnapshot field %s", name)
 }
@@ -16551,6 +16595,13 @@ func (m *RoundSnapshotMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSeasonID(v)
+		return nil
+	case roundsnapshot.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RoundSnapshot field %s", name)
@@ -16652,6 +16703,9 @@ func (m *RoundSnapshotMutation) ResetField(name string) error {
 	case roundsnapshot.FieldSeasonID:
 		m.ResetSeasonID()
 		return nil
+	case roundsnapshot.FieldStatus:
+		m.ResetStatus()
+		return nil
 	}
 	return fmt.Errorf("unknown RoundSnapshot field %s", name)
 }
@@ -16719,6 +16773,10 @@ type RoundSnapshotScoreMutation struct {
 	addpoints      *int
 	position       *int
 	addposition    *int
+	dnf            *bool
+	dns            *bool
+	spins          *int
+	addspins       *int
 	clearedFields  map[string]struct{}
 	done           bool
 	oldValue       func(context.Context) (*RoundSnapshotScore, error)
@@ -17089,6 +17147,134 @@ func (m *RoundSnapshotScoreMutation) ResetPosition() {
 	m.addposition = nil
 }
 
+// SetDnf sets the "dnf" field.
+func (m *RoundSnapshotScoreMutation) SetDnf(b bool) {
+	m.dnf = &b
+}
+
+// Dnf returns the value of the "dnf" field in the mutation.
+func (m *RoundSnapshotScoreMutation) Dnf() (r bool, exists bool) {
+	v := m.dnf
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDnf returns the old "dnf" field's value of the RoundSnapshotScore entity.
+// If the RoundSnapshotScore object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundSnapshotScoreMutation) OldDnf(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDnf is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDnf requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDnf: %w", err)
+	}
+	return oldValue.Dnf, nil
+}
+
+// ResetDnf resets all changes to the "dnf" field.
+func (m *RoundSnapshotScoreMutation) ResetDnf() {
+	m.dnf = nil
+}
+
+// SetDNS sets the "dns" field.
+func (m *RoundSnapshotScoreMutation) SetDNS(b bool) {
+	m.dns = &b
+}
+
+// DNS returns the value of the "dns" field in the mutation.
+func (m *RoundSnapshotScoreMutation) DNS() (r bool, exists bool) {
+	v := m.dns
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDNS returns the old "dns" field's value of the RoundSnapshotScore entity.
+// If the RoundSnapshotScore object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundSnapshotScoreMutation) OldDNS(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDNS is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDNS requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDNS: %w", err)
+	}
+	return oldValue.DNS, nil
+}
+
+// ResetDNS resets all changes to the "dns" field.
+func (m *RoundSnapshotScoreMutation) ResetDNS() {
+	m.dns = nil
+}
+
+// SetSpins sets the "spins" field.
+func (m *RoundSnapshotScoreMutation) SetSpins(i int) {
+	m.spins = &i
+	m.addspins = nil
+}
+
+// Spins returns the value of the "spins" field in the mutation.
+func (m *RoundSnapshotScoreMutation) Spins() (r int, exists bool) {
+	v := m.spins
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSpins returns the old "spins" field's value of the RoundSnapshotScore entity.
+// If the RoundSnapshotScore object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundSnapshotScoreMutation) OldSpins(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSpins is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSpins requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSpins: %w", err)
+	}
+	return oldValue.Spins, nil
+}
+
+// AddSpins adds i to the "spins" field.
+func (m *RoundSnapshotScoreMutation) AddSpins(i int) {
+	if m.addspins != nil {
+		*m.addspins += i
+	} else {
+		m.addspins = &i
+	}
+}
+
+// AddedSpins returns the value that was added to the "spins" field in this mutation.
+func (m *RoundSnapshotScoreMutation) AddedSpins() (r int, exists bool) {
+	v := m.addspins
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSpins resets all changes to the "spins" field.
+func (m *RoundSnapshotScoreMutation) ResetSpins() {
+	m.spins = nil
+	m.addspins = nil
+}
+
 // Where appends a list predicates to the RoundSnapshotScoreMutation builder.
 func (m *RoundSnapshotScoreMutation) Where(ps ...predicate.RoundSnapshotScore) {
 	m.predicates = append(m.predicates, ps...)
@@ -17123,7 +17309,7 @@ func (m *RoundSnapshotScoreMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RoundSnapshotScoreMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 8)
 	if m.snapshot_id != nil {
 		fields = append(fields, roundsnapshotscore.FieldSnapshotID)
 	}
@@ -17138,6 +17324,15 @@ func (m *RoundSnapshotScoreMutation) Fields() []string {
 	}
 	if m.position != nil {
 		fields = append(fields, roundsnapshotscore.FieldPosition)
+	}
+	if m.dnf != nil {
+		fields = append(fields, roundsnapshotscore.FieldDnf)
+	}
+	if m.dns != nil {
+		fields = append(fields, roundsnapshotscore.FieldDNS)
+	}
+	if m.spins != nil {
+		fields = append(fields, roundsnapshotscore.FieldSpins)
 	}
 	return fields
 }
@@ -17157,6 +17352,12 @@ func (m *RoundSnapshotScoreMutation) Field(name string) (ent.Value, bool) {
 		return m.Points()
 	case roundsnapshotscore.FieldPosition:
 		return m.Position()
+	case roundsnapshotscore.FieldDnf:
+		return m.Dnf()
+	case roundsnapshotscore.FieldDNS:
+		return m.DNS()
+	case roundsnapshotscore.FieldSpins:
+		return m.Spins()
 	}
 	return nil, false
 }
@@ -17176,6 +17377,12 @@ func (m *RoundSnapshotScoreMutation) OldField(ctx context.Context, name string) 
 		return m.OldPoints(ctx)
 	case roundsnapshotscore.FieldPosition:
 		return m.OldPosition(ctx)
+	case roundsnapshotscore.FieldDnf:
+		return m.OldDnf(ctx)
+	case roundsnapshotscore.FieldDNS:
+		return m.OldDNS(ctx)
+	case roundsnapshotscore.FieldSpins:
+		return m.OldSpins(ctx)
 	}
 	return nil, fmt.Errorf("unknown RoundSnapshotScore field %s", name)
 }
@@ -17220,6 +17427,27 @@ func (m *RoundSnapshotScoreMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetPosition(v)
 		return nil
+	case roundsnapshotscore.FieldDnf:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDnf(v)
+		return nil
+	case roundsnapshotscore.FieldDNS:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDNS(v)
+		return nil
+	case roundsnapshotscore.FieldSpins:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSpins(v)
+		return nil
 	}
 	return fmt.Errorf("unknown RoundSnapshotScore field %s", name)
 }
@@ -17240,6 +17468,9 @@ func (m *RoundSnapshotScoreMutation) AddedFields() []string {
 	if m.addposition != nil {
 		fields = append(fields, roundsnapshotscore.FieldPosition)
 	}
+	if m.addspins != nil {
+		fields = append(fields, roundsnapshotscore.FieldSpins)
+	}
 	return fields
 }
 
@@ -17256,6 +17487,8 @@ func (m *RoundSnapshotScoreMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedPoints()
 	case roundsnapshotscore.FieldPosition:
 		return m.AddedPosition()
+	case roundsnapshotscore.FieldSpins:
+		return m.AddedSpins()
 	}
 	return nil, false
 }
@@ -17292,6 +17525,13 @@ func (m *RoundSnapshotScoreMutation) AddField(name string, value ent.Value) erro
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddPosition(v)
+		return nil
+	case roundsnapshotscore.FieldSpins:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSpins(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RoundSnapshotScore numeric field %s", name)
@@ -17334,6 +17574,15 @@ func (m *RoundSnapshotScoreMutation) ResetField(name string) error {
 		return nil
 	case roundsnapshotscore.FieldPosition:
 		m.ResetPosition()
+		return nil
+	case roundsnapshotscore.FieldDnf:
+		m.ResetDnf()
+		return nil
+	case roundsnapshotscore.FieldDNS:
+		m.ResetDNS()
+		return nil
+	case roundsnapshotscore.FieldSpins:
+		m.ResetSpins()
 		return nil
 	}
 	return fmt.Errorf("unknown RoundSnapshotScore field %s", name)

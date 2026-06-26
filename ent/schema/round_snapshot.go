@@ -17,5 +17,6 @@ func (RoundSnapshot) Fields() []ent.Field {
 		field.Int("round").Default(1),
 		field.String("created_at").Default(""),
 		field.Int("season_id").Optional().Default(1),
+		field.String("status").Default("draft"),
 	}
 }

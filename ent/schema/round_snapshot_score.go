@@ -17,5 +17,8 @@ func (RoundSnapshotScore) Fields() []ent.Field {
 		field.String("racer_name"),
 		field.Int("points").Default(0),
 		field.Int("position").Default(0),
+		field.Bool("dnf").Default(false),
+		field.Bool("dns").Default(false),
+		field.Int("spins").Default(0),
 	}
 }

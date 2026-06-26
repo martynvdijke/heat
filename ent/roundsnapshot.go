@@ -25,7 +25,9 @@ type RoundSnapshot struct {
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt string `json:"created_at,omitempty"`
 	// SeasonID holds the value of the "season_id" field.
-	SeasonID     int `json:"season_id,omitempty"`
+	SeasonID int `json:"season_id,omitempty"`
+	// Status holds the value of the "status" field.
+	Status       string `json:"status,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -36,7 +38,7 @@ func (*RoundSnapshot) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case roundsnapshot.FieldID, roundsnapshot.FieldRound, roundsnapshot.FieldSeasonID:
 			values[i] = new(sql.NullInt64)
-		case roundsnapshot.FieldRaceName, roundsnapshot.FieldRaceDate, roundsnapshot.FieldCreatedAt:
+		case roundsnapshot.FieldRaceName, roundsnapshot.FieldRaceDate, roundsnapshot.FieldCreatedAt, roundsnapshot.FieldStatus:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -89,6 +91,12 @@ func (_m *RoundSnapshot) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.SeasonID = int(value.Int64)
 			}
+		case roundsnapshot.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				_m.Status = value.String
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -139,6 +147,9 @@ func (_m *RoundSnapshot) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("season_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SeasonID))
+	builder.WriteString(", ")
+	builder.WriteString("status=")
+	builder.WriteString(_m.Status)
 	builder.WriteByte(')')
 	return builder.String()
 }

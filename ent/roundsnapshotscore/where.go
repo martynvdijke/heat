@@ -78,6 +78,21 @@ func Position(v int) predicate.RoundSnapshotScore {
 	return predicate.RoundSnapshotScore(sql.FieldEQ(FieldPosition, v))
 }
 
+// Dnf applies equality check predicate on the "dnf" field. It's identical to DnfEQ.
+func Dnf(v bool) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldEQ(FieldDnf, v))
+}
+
+// DNS applies equality check predicate on the "dns" field. It's identical to DNSEQ.
+func DNS(v bool) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldEQ(FieldDNS, v))
+}
+
+// Spins applies equality check predicate on the "spins" field. It's identical to SpinsEQ.
+func Spins(v int) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldEQ(FieldSpins, v))
+}
+
 // SnapshotIDEQ applies the EQ predicate on the "snapshot_id" field.
 func SnapshotIDEQ(v int) predicate.RoundSnapshotScore {
 	return predicate.RoundSnapshotScore(sql.FieldEQ(FieldSnapshotID, v))
@@ -301,6 +316,66 @@ func PositionLT(v int) predicate.RoundSnapshotScore {
 // PositionLTE applies the LTE predicate on the "position" field.
 func PositionLTE(v int) predicate.RoundSnapshotScore {
 	return predicate.RoundSnapshotScore(sql.FieldLTE(FieldPosition, v))
+}
+
+// DnfEQ applies the EQ predicate on the "dnf" field.
+func DnfEQ(v bool) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldEQ(FieldDnf, v))
+}
+
+// DnfNEQ applies the NEQ predicate on the "dnf" field.
+func DnfNEQ(v bool) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldNEQ(FieldDnf, v))
+}
+
+// DNSEQ applies the EQ predicate on the "dns" field.
+func DNSEQ(v bool) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldEQ(FieldDNS, v))
+}
+
+// DNSNEQ applies the NEQ predicate on the "dns" field.
+func DNSNEQ(v bool) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldNEQ(FieldDNS, v))
+}
+
+// SpinsEQ applies the EQ predicate on the "spins" field.
+func SpinsEQ(v int) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldEQ(FieldSpins, v))
+}
+
+// SpinsNEQ applies the NEQ predicate on the "spins" field.
+func SpinsNEQ(v int) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldNEQ(FieldSpins, v))
+}
+
+// SpinsIn applies the In predicate on the "spins" field.
+func SpinsIn(vs ...int) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldIn(FieldSpins, vs...))
+}
+
+// SpinsNotIn applies the NotIn predicate on the "spins" field.
+func SpinsNotIn(vs ...int) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldNotIn(FieldSpins, vs...))
+}
+
+// SpinsGT applies the GT predicate on the "spins" field.
+func SpinsGT(v int) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldGT(FieldSpins, v))
+}
+
+// SpinsGTE applies the GTE predicate on the "spins" field.
+func SpinsGTE(v int) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldGTE(FieldSpins, v))
+}
+
+// SpinsLT applies the LT predicate on the "spins" field.
+func SpinsLT(v int) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldLT(FieldSpins, v))
+}
+
+// SpinsLTE applies the LTE predicate on the "spins" field.
+func SpinsLTE(v int) predicate.RoundSnapshotScore {
+	return predicate.RoundSnapshotScore(sql.FieldLTE(FieldSpins, v))
 }
 
 // And groups predicates with the AND operator between them.

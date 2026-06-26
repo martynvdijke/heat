@@ -117,6 +117,20 @@ func (_u *RoundSnapshotUpdate) ClearSeasonID() *RoundSnapshotUpdate {
 	return _u
 }
 
+// SetStatus sets the "status" field.
+func (_u *RoundSnapshotUpdate) SetStatus(v string) *RoundSnapshotUpdate {
+	_u.mutation.SetStatus(v)
+	return _u
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_u *RoundSnapshotUpdate) SetNillableStatus(v *string) *RoundSnapshotUpdate {
+	if v != nil {
+		_u.SetStatus(*v)
+	}
+	return _u
+}
+
 // Mutation returns the RoundSnapshotMutation object of the builder.
 func (_u *RoundSnapshotUpdate) Mutation() *RoundSnapshotMutation {
 	return _u.mutation
@@ -181,6 +195,9 @@ func (_u *RoundSnapshotUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.SeasonIDCleared() {
 		_spec.ClearField(roundsnapshot.FieldSeasonID, field.TypeInt)
+	}
+	if value, ok := _u.mutation.Status(); ok {
+		_spec.SetField(roundsnapshot.FieldStatus, field.TypeString, value)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -292,6 +309,20 @@ func (_u *RoundSnapshotUpdateOne) ClearSeasonID() *RoundSnapshotUpdateOne {
 	return _u
 }
 
+// SetStatus sets the "status" field.
+func (_u *RoundSnapshotUpdateOne) SetStatus(v string) *RoundSnapshotUpdateOne {
+	_u.mutation.SetStatus(v)
+	return _u
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_u *RoundSnapshotUpdateOne) SetNillableStatus(v *string) *RoundSnapshotUpdateOne {
+	if v != nil {
+		_u.SetStatus(*v)
+	}
+	return _u
+}
+
 // Mutation returns the RoundSnapshotMutation object of the builder.
 func (_u *RoundSnapshotUpdateOne) Mutation() *RoundSnapshotMutation {
 	return _u.mutation
@@ -386,6 +417,9 @@ func (_u *RoundSnapshotUpdateOne) sqlSave(ctx context.Context) (_node *RoundSnap
 	}
 	if _u.mutation.SeasonIDCleared() {
 		_spec.ClearField(roundsnapshot.FieldSeasonID, field.TypeInt)
+	}
+	if value, ok := _u.mutation.Status(); ok {
+		_spec.SetField(roundsnapshot.FieldStatus, field.TypeString, value)
 	}
 	_node = &RoundSnapshot{config: _u.config}
 	_spec.Assign = _node.assignValues

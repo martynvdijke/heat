@@ -1239,16 +1239,25 @@ document.getElementById('backup-tab')?.addEventListener('shown.bs.tab', () => {
     loadBackupList();
 });
 
-document.getElementById('rounds-tab')?.addEventListener('shown.bs.tab', () => {
-    loadRoundsList();
+// Listen for Bootstrap tab shown events to load sub-tab content.
+// The sub-tab buttons in Results (Stats/Rounds/Seasons) and Content (Quotes/Teams)
+// don't have element IDs, so we use a document-level delegation.
+document.addEventListener('shown.bs.tab', (event: Event) => {
+    const tab = event.target as HTMLElement;
+    const target = tab.getAttribute('data-bs-target');
+    if (target === '#rounds-pane') loadRoundsList();
+    else if (target === '#seasons-pane') loadSeasons();
 });
 
 document.getElementById('seasons-tab')?.addEventListener('shown.bs.tab', () => {
     loadSeasons();
 });
 
+let editingRoundId: number | null = null;
+
 async function loadRoundsList(): Promise<void> {
     try {
+        if (editingRoundId !== null) return; // don't refresh while editing
         const res = await fetch('/api/seasons');
         const seasons = await res.json();
         const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
@@ -1257,19 +1266,25 @@ async function loadRoundsList(): Promise<void> {
         const rounds = await roundsRes.json();
         const list = document.getElementById('rounds-list')!;
         if (!Array.isArray(rounds) || rounds.length === 0) {
-            list.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No rounds yet.</td></tr>';
+            list.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No rounds yet.</td></tr>';
             return;
         }
-        list.innerHTML = rounds.map((r: any) => `
-            <tr>
+        list.innerHTML = rounds.map((r: any) => {
+            const isDraft = r.status === 'draft';
+            return `<tr>
                 <td class="ps-4 fw-bold">#${r.round || r.id}</td>
                 <td>${r.race_name}</td>
                 <td>${r.race_date}</td>
+                <td><span class="badge ${isDraft ? 'bg-warning text-dark' : 'bg-success'}">${r.status}</span></td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRound(${r.id})"><i class="fa-solid fa-trash"></i></button>
+                    ${isDraft
+                        ? `<button class="btn btn-sm btn-outline-primary me-1" onclick="editRound(${r.id})"><i class="fa-solid fa-pen"></i> Edit</button>
+                           <button class="btn btn-sm btn-outline-danger" onclick="deleteRound(${r.id})"><i class="fa-solid fa-trash"></i></button>`
+                        : `<button class="btn btn-sm btn-outline-secondary" disabled><i class="fa-solid fa-lock"></i> Final</button>
+                           <button class="btn btn-sm btn-outline-danger" onclick="deleteRound(${r.id})"><i class="fa-solid fa-trash"></i></button>`}
                 </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
     } catch (e) {
         console.error('Failed to load rounds', e);
     }
@@ -1287,7 +1302,7 @@ async function takeAdminRoundSnapshot(): Promise<void> {
         body: JSON.stringify({ race_name: name, round: 0, season_id: active ? active.id : 1 })
     });
     if (res.ok) {
-        showToast('Round snapshot saved!', 'success');
+        showToast('Round draft created!', 'success');
         loadRoundsList();
     } else {
         const err = await res.json();
@@ -1299,6 +1314,137 @@ async function deleteRound(id: number): Promise<void> {
     if (!confirm('Delete this round snapshot?')) return;
     await fetch(`/api/rounds?id=${id}`, { method: 'DELETE' });
     loadRoundsList();
+}
+
+async function editRound(id: number): Promise<void> {
+    editingRoundId = id;
+    const res = await fetch(`/api/rounds?id=${id}`);
+    const round = await res.json();
+    const list = document.getElementById('rounds-list')!;
+    const scores = round.scores || [];
+    list.innerHTML = `
+        <tr><td colspan="5" class="p-0 border-0">
+            <div class="p-3 bg-light rounded">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-pen me-2"></i>Editing: ${round.race_name} (#${round.round})</h6>
+                    <div>
+                        <button class="btn btn-sm btn-success me-1" onclick="saveRoundDraft(${id})"><i class="fa-solid fa-save me-1"></i>Save Draft</button>
+                        <button class="btn btn-sm btn-primary me-1" onclick="finalizeRound(${id})"><i class="fa-solid fa-check me-1"></i>Finalize</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="cancelRoundEdit()"><i class="fa-solid fa-xmark me-1"></i>Cancel</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Driver</th>
+                                <th style="width:80px">Points</th>
+                                <th style="width:80px">Position</th>
+                                <th style="width:60px">DNF</th>
+                                <th style="width:60px">DNS</th>
+                                <th style="width:80px">Spins</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${scores.map((s: any) => `
+                                <tr>
+                                    <td class="text-muted">${s.position}</td>
+                                    <td>${s.racer_name}</td>
+                                    <td><input type="number" class="form-control form-control-sm round-score-pts" data-id="${s.id}" value="${s.points}" min="0"></td>
+                                    <td><input type="number" class="form-control form-control-sm round-score-pos" data-id="${s.id}" value="${s.position}" min="0"></td>
+                                    <td><input type="checkbox" class="form-check-input round-score-dnf" data-id="${s.id}" ${s.dnf ? 'checked' : ''}></td>
+                                    <td><input type="checkbox" class="form-check-input round-score-dns" data-id="${s.id}" ${s.dns ? 'checked' : ''}></td>
+                                    <td><input type="number" class="form-control form-control-sm round-score-spins" data-id="${s.id}" value="${s.spins}" min="0"></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </td></tr>`;
+}
+
+async function saveRoundDraft(id: number): Promise<void> {
+    const scores = buildScoresFromEditForm();
+    const res = await fetch(`/api/rounds?id=${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
+        body: JSON.stringify(scores)
+    });
+    if (res.ok) {
+        showToast('Round draft saved!', 'success');
+        editingRoundId = null;
+        loadRoundsList();
+    } else {
+        const err = await res.json();
+        showToast('Failed: ' + (err.error || 'Unknown error'), 'error');
+    }
+}
+
+async function finalizeRound(id: number): Promise<void> {
+    if (!confirm('Finalize this round? Points and stats will be applied to all drivers. This cannot be undone.')) return;
+
+    // First save any pending edits
+    const scores = buildScoresFromEditForm();
+    if (scores.length > 0) {
+        const saveRes = await fetch(`/api/rounds?id=${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
+            body: JSON.stringify(scores)
+        });
+        if (!saveRes.ok) {
+            const err = await saveRes.json();
+            showToast('Failed to save before finalizing: ' + (err.error || 'Unknown error'), 'error');
+            return;
+        }
+    }
+
+    const res = await fetch(`/api/rounds/finalize?id=${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() }
+    });
+    if (res.ok) {
+        showToast('Round finalized! Driver points and stats updated.', 'success');
+        editingRoundId = null;
+        loadRoundsList();
+    } else {
+        const err = await res.json();
+        showToast('Failed: ' + (err.error || 'Unknown error'), 'error');
+    }
+}
+
+function cancelRoundEdit(): void {
+    editingRoundId = null;
+    loadRoundsList();
+}
+
+function buildScoresFromEditForm(): any[] {
+    const scoreInputs = document.querySelectorAll('.round-score-pts');
+    return Array.from(scoreInputs).map(el => {
+        const input = el as HTMLInputElement;
+        const id = parseInt(input.getAttribute('data-id') || '0');
+        const row = input.closest('tr')!;
+        const posInput = row.querySelector('.round-score-pos') as HTMLInputElement;
+        const dnfCheck = row.querySelector('.round-score-dnf') as HTMLInputElement;
+        const dnsCheck = row.querySelector('.round-score-dns') as HTMLInputElement;
+        const spinsInput = row.querySelector('.round-score-spins') as HTMLInputElement;
+        return {
+            id,
+            points: parseInt(input.value) || 0,
+            position: parseInt(posInput?.value) || 0,
+            dnf: dnfCheck?.checked || false,
+            dns: dnsCheck?.checked || false,
+            spins: parseInt(spinsInput?.value) || 0
+        };
+    });
+}
+
+function getCSRFToken(): string {
+    // CSRF token is stored as a meta tag or cookie by the backend
+    // Fallback to reading from a cookie or return empty string
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') || '' : '';
 }
 
 async function loadSeasons(): Promise<void> {
@@ -1385,5 +1531,17 @@ async function loadSeasonRounds(seasonId: string): Promise<void> {
     `).join('');
 }
 
+// Expose functions globally for inline onclick handlers in innerHTML
+(window as any).loadRoundsList = loadRoundsList;
+(window as any).takeAdminRoundSnapshot = takeAdminRoundSnapshot;
+(window as any).deleteRound = deleteRound;
+(window as any).editRound = editRound;
+(window as any).saveRoundDraft = saveRoundDraft;
+(window as any).finalizeRound = finalizeRound;
+(window as any).cancelRoundEdit = cancelRoundEdit;
+(window as any).archiveSeason = archiveSeason;
+(window as any).deleteSeason = deleteSeason;
+(window as any).createSeason = createSeason;
+(window as any).loadSeasonRounds = loadSeasonRounds;
 init();
 

@@ -73,6 +73,20 @@ func (_c *RoundSnapshotCreate) SetNillableSeasonID(v *int) *RoundSnapshotCreate 
 	return _c
 }
 
+// SetStatus sets the "status" field.
+func (_c *RoundSnapshotCreate) SetStatus(v string) *RoundSnapshotCreate {
+	_c.mutation.SetStatus(v)
+	return _c
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_c *RoundSnapshotCreate) SetNillableStatus(v *string) *RoundSnapshotCreate {
+	if v != nil {
+		_c.SetStatus(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *RoundSnapshotCreate) SetID(v int) *RoundSnapshotCreate {
 	_c.mutation.SetID(v)
@@ -126,6 +140,10 @@ func (_c *RoundSnapshotCreate) defaults() {
 		v := roundsnapshot.DefaultSeasonID
 		_c.mutation.SetSeasonID(v)
 	}
+	if _, ok := _c.mutation.Status(); !ok {
+		v := roundsnapshot.DefaultStatus
+		_c.mutation.SetStatus(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -141,6 +159,9 @@ func (_c *RoundSnapshotCreate) check() error {
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "RoundSnapshot.created_at"`)}
+	}
+	if _, ok := _c.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "RoundSnapshot.status"`)}
 	}
 	return nil
 }
@@ -193,6 +214,10 @@ func (_c *RoundSnapshotCreate) createSpec() (*RoundSnapshot, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.SeasonID(); ok {
 		_spec.SetField(roundsnapshot.FieldSeasonID, field.TypeInt, value)
 		_node.SeasonID = value
+	}
+	if value, ok := _c.mutation.Status(); ok {
+		_spec.SetField(roundsnapshot.FieldStatus, field.TypeString, value)
+		_node.Status = value
 	}
 	return _node, _spec
 }

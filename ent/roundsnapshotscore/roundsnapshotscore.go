@@ -21,6 +21,12 @@ const (
 	FieldPoints = "points"
 	// FieldPosition holds the string denoting the position field in the database.
 	FieldPosition = "position"
+	// FieldDnf holds the string denoting the dnf field in the database.
+	FieldDnf = "dnf"
+	// FieldDNS holds the string denoting the dns field in the database.
+	FieldDNS = "dns"
+	// FieldSpins holds the string denoting the spins field in the database.
+	FieldSpins = "spins"
 	// Table holds the table name of the roundsnapshotscore in the database.
 	Table = "round_snapshot_scores"
 )
@@ -33,6 +39,9 @@ var Columns = []string{
 	FieldRacerName,
 	FieldPoints,
 	FieldPosition,
+	FieldDnf,
+	FieldDNS,
+	FieldSpins,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -50,6 +59,12 @@ var (
 	DefaultPoints int
 	// DefaultPosition holds the default value on creation for the "position" field.
 	DefaultPosition int
+	// DefaultDnf holds the default value on creation for the "dnf" field.
+	DefaultDnf bool
+	// DefaultDNS holds the default value on creation for the "dns" field.
+	DefaultDNS bool
+	// DefaultSpins holds the default value on creation for the "spins" field.
+	DefaultSpins int
 )
 
 // OrderOption defines the ordering options for the RoundSnapshotScore queries.
@@ -83,4 +98,19 @@ func ByPoints(opts ...sql.OrderTermOption) OrderOption {
 // ByPosition orders the results by the position field.
 func ByPosition(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPosition, opts...).ToFunc()
+}
+
+// ByDnf orders the results by the dnf field.
+func ByDnf(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDnf, opts...).ToFunc()
+}
+
+// ByDNS orders the results by the dns field.
+func ByDNS(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDNS, opts...).ToFunc()
+}
+
+// BySpins orders the results by the spins field.
+func BySpins(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSpins, opts...).ToFunc()
 }

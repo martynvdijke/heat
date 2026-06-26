@@ -25,7 +25,13 @@ type RoundSnapshotScore struct {
 	// Points holds the value of the "points" field.
 	Points int `json:"points,omitempty"`
 	// Position holds the value of the "position" field.
-	Position     int `json:"position,omitempty"`
+	Position int `json:"position,omitempty"`
+	// Dnf holds the value of the "dnf" field.
+	Dnf bool `json:"dnf,omitempty"`
+	// DNS holds the value of the "dns" field.
+	DNS bool `json:"dns,omitempty"`
+	// Spins holds the value of the "spins" field.
+	Spins        int `json:"spins,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -34,7 +40,9 @@ func (*RoundSnapshotScore) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case roundsnapshotscore.FieldID, roundsnapshotscore.FieldSnapshotID, roundsnapshotscore.FieldRacerID, roundsnapshotscore.FieldPoints, roundsnapshotscore.FieldPosition:
+		case roundsnapshotscore.FieldDnf, roundsnapshotscore.FieldDNS:
+			values[i] = new(sql.NullBool)
+		case roundsnapshotscore.FieldID, roundsnapshotscore.FieldSnapshotID, roundsnapshotscore.FieldRacerID, roundsnapshotscore.FieldPoints, roundsnapshotscore.FieldPosition, roundsnapshotscore.FieldSpins:
 			values[i] = new(sql.NullInt64)
 		case roundsnapshotscore.FieldRacerName:
 			values[i] = new(sql.NullString)
@@ -89,6 +97,24 @@ func (_m *RoundSnapshotScore) assignValues(columns []string, values []any) error
 			} else if value.Valid {
 				_m.Position = int(value.Int64)
 			}
+		case roundsnapshotscore.FieldDnf:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field dnf", values[i])
+			} else if value.Valid {
+				_m.Dnf = value.Bool
+			}
+		case roundsnapshotscore.FieldDNS:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field dns", values[i])
+			} else if value.Valid {
+				_m.DNS = value.Bool
+			}
+		case roundsnapshotscore.FieldSpins:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field spins", values[i])
+			} else if value.Valid {
+				_m.Spins = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -139,6 +165,15 @@ func (_m *RoundSnapshotScore) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("position=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Position))
+	builder.WriteString(", ")
+	builder.WriteString("dnf=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Dnf))
+	builder.WriteString(", ")
+	builder.WriteString("dns=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DNS))
+	builder.WriteString(", ")
+	builder.WriteString("spins=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Spins))
 	builder.WriteByte(')')
 	return builder.String()
 }

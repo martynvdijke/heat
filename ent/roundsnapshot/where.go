@@ -78,6 +78,11 @@ func SeasonID(v int) predicate.RoundSnapshot {
 	return predicate.RoundSnapshot(sql.FieldEQ(FieldSeasonID, v))
 }
 
+// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
+func Status(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldEQ(FieldStatus, v))
+}
+
 // RaceNameEQ applies the EQ predicate on the "race_name" field.
 func RaceNameEQ(v string) predicate.RoundSnapshot {
 	return predicate.RoundSnapshot(sql.FieldEQ(FieldRaceName, v))
@@ -361,6 +366,71 @@ func SeasonIDIsNil() predicate.RoundSnapshot {
 // SeasonIDNotNil applies the NotNil predicate on the "season_id" field.
 func SeasonIDNotNil() predicate.RoundSnapshot {
 	return predicate.RoundSnapshot(sql.FieldNotNull(FieldSeasonID))
+}
+
+// StatusEQ applies the EQ predicate on the "status" field.
+func StatusEQ(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldEQ(FieldStatus, v))
+}
+
+// StatusNEQ applies the NEQ predicate on the "status" field.
+func StatusNEQ(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldNEQ(FieldStatus, v))
+}
+
+// StatusIn applies the In predicate on the "status" field.
+func StatusIn(vs ...string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldIn(FieldStatus, vs...))
+}
+
+// StatusNotIn applies the NotIn predicate on the "status" field.
+func StatusNotIn(vs ...string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// StatusGT applies the GT predicate on the "status" field.
+func StatusGT(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldGT(FieldStatus, v))
+}
+
+// StatusGTE applies the GTE predicate on the "status" field.
+func StatusGTE(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldGTE(FieldStatus, v))
+}
+
+// StatusLT applies the LT predicate on the "status" field.
+func StatusLT(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldLT(FieldStatus, v))
+}
+
+// StatusLTE applies the LTE predicate on the "status" field.
+func StatusLTE(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldLTE(FieldStatus, v))
+}
+
+// StatusContains applies the Contains predicate on the "status" field.
+func StatusContains(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldContains(FieldStatus, v))
+}
+
+// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
+func StatusHasPrefix(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldHasPrefix(FieldStatus, v))
+}
+
+// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
+func StatusHasSuffix(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldHasSuffix(FieldStatus, v))
+}
+
+// StatusEqualFold applies the EqualFold predicate on the "status" field.
+func StatusEqualFold(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldEqualFold(FieldStatus, v))
+}
+
+// StatusContainsFold applies the ContainsFold predicate on the "status" field.
+func StatusContainsFold(v string) predicate.RoundSnapshot {
+	return predicate.RoundSnapshot(sql.FieldContainsFold(FieldStatus, v))
 }
 
 // And groups predicates with the AND operator between them.

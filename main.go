@@ -434,6 +434,8 @@ func main() {
 	r.POST("/api/flags", h.HandleFlag)
 	r.POST("/api/rounds", h.TakeRoundSnapshot)
 	r.GET("/api/rounds", h.GetRoundSnapshots)
+	r.PATCH("/api/rounds", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.UpdateRoundScores)
+	r.PATCH("/api/rounds/finalize", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.FinalizeRound)
 	r.DELETE("/api/rounds", h.DeleteRoundSnapshot)
 	r.GET("/api/seasons", h.GetSeasons)
 

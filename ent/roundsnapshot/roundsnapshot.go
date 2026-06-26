@@ -21,6 +21,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldSeasonID holds the string denoting the season_id field in the database.
 	FieldSeasonID = "season_id"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
 	// Table holds the table name of the roundsnapshot in the database.
 	Table = "round_snapshots"
 )
@@ -33,6 +35,7 @@ var Columns = []string{
 	FieldRound,
 	FieldCreatedAt,
 	FieldSeasonID,
+	FieldStatus,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -52,6 +55,8 @@ var (
 	DefaultCreatedAt string
 	// DefaultSeasonID holds the default value on creation for the "season_id" field.
 	DefaultSeasonID int
+	// DefaultStatus holds the default value on creation for the "status" field.
+	DefaultStatus string
 )
 
 // OrderOption defines the ordering options for the RoundSnapshot queries.
@@ -85,4 +90,9 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // BySeasonID orders the results by the season_id field.
 func BySeasonID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSeasonID, opts...).ToFunc()
+}
+
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }

@@ -221,79 +221,171 @@ test.describe.serial('Admin Extended Features', () => {
     });
   });
 
-  test('should take a round snapshot', async ({ page }) => {
-    // First ensure we have at least one racer
-    const racerCheck = await page.locator('#racer-list tr').count();
-    if (racerCheck === 0) {
-      // Create a racer for the snapshot
+  test.describe.serial('Round Editing Flow', () => {
+    let roundId = 0;
+
+    test('should create a round snapshot (draft)', async ({ page }) => {
+      // Ensure we have at least one racer
       await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
-      await page.click('button[hx-get="/api/html/racers/0/edit"]');
-      await page.waitForSelector('#racerModal.show');
-      await page.waitForSelector('#racerModal form#racer-form');
+      const racerCount = await page.locator('#racer-list tr').count();
+      if (racerCount === 0) {
+        await page.click('button[hx-get="/api/html/racers/0/edit"]');
+        await page.waitForSelector('#racerModal.show');
+        await page.fill('form#racer-form input[name="name"]', `Round-Racer-${Date.now()}`);
+        await page.fill('form#racer-form input[name="car_name"]', 'RoundCar');
+        await page.fill('form#racer-form input[name="car_color"]', '#ff0000');
+        await page.fill('form#racer-form input[name="points"]', '10');
+        await page.fill('form#racer-form input[name="rank"]', '1');
+        await page.fill('form#racer-form input[name="position"]', '0');
+        await page.click('form#racer-form button[type="submit"]');
+        await page.waitForTimeout(500);
+      }
 
-      await page.fill('form#racer-form input[name="name"]', `Snapshot-Racer-${Date.now()}`);
-      await page.fill('form#racer-form input[name="car_name"]', 'SnapCar');
-      await page.fill('form#racer-form input[name="car_color"]', '#ff0000');
-      await page.fill('form#racer-form input[name="points"]', '50');
-      await page.fill('form#racer-form input[name="rank"]', '70');
-      await page.fill('form#racer-form input[name="position"]', '0');
-
-      await page.click('form#racer-form button[type="submit"]');
+      // Navigate to rounds pane via direct sub-tab click
+      await page.click('#cat-results-tab');
+      await page.waitForTimeout(300);
+      await page.click('button[data-bs-target="#rounds-pane"]');
       await page.waitForTimeout(500);
-    }
 
-    // Navigate to rounds pane
-    await showAdminPane(page, '#cat-results-tab', '#rounds-pane');
-
-    // Create a round snapshot via API (bypassing the prompt dialog)
-    const snapshotResp = await page.evaluate(async () => {
-      // Find active season or default to 1
-      const seasonsRes = await fetch('/api/seasons');
-      const seasons = await seasonsRes.json();
-      const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
-      const seasonId = active ? active.id : 1;
-      const name = `E2E-Round-${Date.now()}`;
-      const res = await fetch('/api/rounds', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ race_name: name, round: 0, season_id: seasonId })
-      });
-      return { ok: res.ok, name };
-    });
-    expect(snapshotResp.ok).toBeTruthy();
-
-    // Reload the rounds list
-    await page.evaluate(async () => {
-      try {
+      // Create round snapshot via API (bypass prompt dialog)
+      const result = await page.evaluate(async () => {
         const seasonsRes = await fetch('/api/seasons');
         const seasons = await seasonsRes.json();
         const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
-        const sid = active ? active.id : 1;
-        const roundsRes = await fetch(`/api/rounds?season_id=${sid}`);
-        const rounds = await roundsRes.json();
-        const list = document.getElementById('rounds-list')!;
-        if (Array.isArray(rounds) && rounds.length > 0) {
-          list.innerHTML = rounds.map((r: any) => `
-            <tr>
-              <td class="ps-4 fw-bold">#${r.round || r.id}</td>
-              <td>${r.race_name}</td>
-              <td>${r.race_date}</td>
-              <td class="text-end pe-4">
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteRound(${r.id})"><i class="fa-solid fa-trash"></i></button>
-              </td>
-            </tr>
-          `).join('');
+        const seasonId = active ? active.id : 1;
+        const res = await fetch('/api/rounds', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ race_name: `E2E-Round-${Date.now()}`, round: 0, season_id: seasonId })
+        });
+        const data = await res.json();
+        return { ok: res.ok, id: data.id };
+      });
+      expect(result.ok).toBeTruthy();
+      roundId = result.id;
+    });
+
+    test('should edit round scores', async ({ page }) => {
+      expect(roundId).toBeGreaterThan(0);
+
+      // Navigate to rounds pane
+      await page.click('#cat-results-tab');
+      await page.waitForTimeout(300);
+      await page.click('button[data-bs-target="#rounds-pane"]');
+      await page.waitForTimeout(500);
+
+      // Fetch round scores via API
+      const scores = await page.evaluate(async (id) => {
+        const res = await fetch(`/api/rounds?id=${id}`);
+        const round = await res.json();
+        return round.scores || [];
+      }, roundId);
+      expect(scores.length).toBeGreaterThanOrEqual(1);
+
+      // Modify scores via API
+      const updated = scores.map((s: any) => ({
+        id: s.id,
+        points: s.points + 5,
+        position: s.position,
+        dnf: false,
+        dns: false,
+        spins: 1
+      }));
+      const saveRes = await page.evaluate(async (data) => {
+        const res = await fetch(`/api/rounds?id=${data.roundId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data.scores)
+        });
+        return res.ok;
+      }, { roundId, scores: updated });
+      expect(saveRes).toBeTruthy();
+
+      // Verify scores were updated
+      const verifyScores = await page.evaluate(async (id) => {
+        const res = await fetch(`/api/rounds?id=${id}`);
+        const round = await res.json();
+        return (round.scores || []).map((s: any) => ({ points: s.points, spins: s.spins }));
+      }, roundId);
+      expect(verifyScores[0].points).toBe(scores[0].points + 5);
+      expect(verifyScores[0].spins).toBe(1);
+    });
+
+    test('should finalize round and verify driver points updated', async ({ page }) => {
+      expect(roundId).toBeGreaterThan(0);
+
+      // Get racer points before finalizing
+      const beforePoints = await page.evaluate(async () => {
+        const res = await fetch('/api/racers');
+        const racers = await res.json();
+        return (racers || []).map((r: any) => ({ id: r.id, name: r.name, points: r.points }));
+      });
+
+      // Finalize round
+      const finalRes = await page.evaluate(async (id) => {
+        const res = await fetch(`/api/rounds/finalize?id=${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        return res.ok;
+      }, roundId);
+      expect(finalRes).toBeTruthy();
+
+      // Verify round is now final
+      const roundStatus = await page.evaluate(async (id) => {
+        const res = await fetch(`/api/rounds?id=${id}`);
+        const round = await res.json();
+        return round.status;
+      }, roundId);
+      expect(roundStatus).toBe('final');
+
+      // Verify racer points increased
+      const afterPoints = await page.evaluate(async () => {
+        const res = await fetch('/api/racers');
+        const racers = await res.json();
+        return (racers || []).reduce((acc: any, r: any) => { acc[r.id] = r.points; return acc; }, {});
+      });
+
+      // Each racer in the round should have gained points
+      const roundScores = await page.evaluate(async (id) => {
+        const res = await fetch(`/api/rounds?id=${id}`);
+        const round = await res.json();
+        return round.scores || [];
+      }, roundId);
+
+      for (const score of roundScores) {
+        const before = beforePoints.find((b: any) => b.id === score.racer_id);
+        if (before) {
+          expect(afterPoints[score.racer_id]).toBe(before.points + score.points);
         }
-      } catch (e) {
-        console.error('Failed to load rounds', e);
       }
     });
 
-    // Verify a snapshot appears in the rounds list
-    const roundsList = page.locator('#rounds-list');
-    const rows = roundsList.locator('tr');
-    const rowCount = await rows.count();
-    expect(rowCount).toBeGreaterThanOrEqual(1);
+    test('should reject editing after finalization', async ({ page }) => {
+      // Try to edit the already-finalized round from test #3
+      const editResult = await page.evaluate(async () => {
+        const roundsRes = await fetch('/api/rounds');
+        const rounds = await roundsRes.json();
+        // Find a finalized round
+        const finalRound = Array.isArray(rounds) ? rounds.find((r: any) => r.status === 'final') : null;
+        if (!finalRound) return { error: 'no final round', rounds: JSON.stringify(rounds) };
+
+        // Try to update it
+        const scoresRes = await fetch(`/api/rounds?id=${finalRound.id}`);
+        const roundDetail = await scoresRes.json();
+        const scores = roundDetail.scores || [];
+        if (scores.length === 0) return { error: 'no scores' };
+
+        const res = await fetch(`/api/rounds?id=${finalRound.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([{ id: scores[0].id, points: 999, position: 1, dnf: false, dns: false, spins: 0 }])
+        });
+        return { ok: res.ok, status: res.status, errorText: res.statusText };
+      });
+      expect(editResult.ok).toBeFalsy();
+      expect(editResult.status).toBe(409);
+    });
   });
 });
 

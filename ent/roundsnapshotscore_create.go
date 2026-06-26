@@ -65,6 +65,48 @@ func (_c *RoundSnapshotScoreCreate) SetNillablePosition(v *int) *RoundSnapshotSc
 	return _c
 }
 
+// SetDnf sets the "dnf" field.
+func (_c *RoundSnapshotScoreCreate) SetDnf(v bool) *RoundSnapshotScoreCreate {
+	_c.mutation.SetDnf(v)
+	return _c
+}
+
+// SetNillableDnf sets the "dnf" field if the given value is not nil.
+func (_c *RoundSnapshotScoreCreate) SetNillableDnf(v *bool) *RoundSnapshotScoreCreate {
+	if v != nil {
+		_c.SetDnf(*v)
+	}
+	return _c
+}
+
+// SetDNS sets the "dns" field.
+func (_c *RoundSnapshotScoreCreate) SetDNS(v bool) *RoundSnapshotScoreCreate {
+	_c.mutation.SetDNS(v)
+	return _c
+}
+
+// SetNillableDNS sets the "dns" field if the given value is not nil.
+func (_c *RoundSnapshotScoreCreate) SetNillableDNS(v *bool) *RoundSnapshotScoreCreate {
+	if v != nil {
+		_c.SetDNS(*v)
+	}
+	return _c
+}
+
+// SetSpins sets the "spins" field.
+func (_c *RoundSnapshotScoreCreate) SetSpins(v int) *RoundSnapshotScoreCreate {
+	_c.mutation.SetSpins(v)
+	return _c
+}
+
+// SetNillableSpins sets the "spins" field if the given value is not nil.
+func (_c *RoundSnapshotScoreCreate) SetNillableSpins(v *int) *RoundSnapshotScoreCreate {
+	if v != nil {
+		_c.SetSpins(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *RoundSnapshotScoreCreate) SetID(v int) *RoundSnapshotScoreCreate {
 	_c.mutation.SetID(v)
@@ -114,6 +156,18 @@ func (_c *RoundSnapshotScoreCreate) defaults() {
 		v := roundsnapshotscore.DefaultPosition
 		_c.mutation.SetPosition(v)
 	}
+	if _, ok := _c.mutation.Dnf(); !ok {
+		v := roundsnapshotscore.DefaultDnf
+		_c.mutation.SetDnf(v)
+	}
+	if _, ok := _c.mutation.DNS(); !ok {
+		v := roundsnapshotscore.DefaultDNS
+		_c.mutation.SetDNS(v)
+	}
+	if _, ok := _c.mutation.Spins(); !ok {
+		v := roundsnapshotscore.DefaultSpins
+		_c.mutation.SetSpins(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -132,6 +186,15 @@ func (_c *RoundSnapshotScoreCreate) check() error {
 	}
 	if _, ok := _c.mutation.Position(); !ok {
 		return &ValidationError{Name: "position", err: errors.New(`ent: missing required field "RoundSnapshotScore.position"`)}
+	}
+	if _, ok := _c.mutation.Dnf(); !ok {
+		return &ValidationError{Name: "dnf", err: errors.New(`ent: missing required field "RoundSnapshotScore.dnf"`)}
+	}
+	if _, ok := _c.mutation.DNS(); !ok {
+		return &ValidationError{Name: "dns", err: errors.New(`ent: missing required field "RoundSnapshotScore.dns"`)}
+	}
+	if _, ok := _c.mutation.Spins(); !ok {
+		return &ValidationError{Name: "spins", err: errors.New(`ent: missing required field "RoundSnapshotScore.spins"`)}
 	}
 	return nil
 }
@@ -184,6 +247,18 @@ func (_c *RoundSnapshotScoreCreate) createSpec() (*RoundSnapshotScore, *sqlgraph
 	if value, ok := _c.mutation.Position(); ok {
 		_spec.SetField(roundsnapshotscore.FieldPosition, field.TypeInt, value)
 		_node.Position = value
+	}
+	if value, ok := _c.mutation.Dnf(); ok {
+		_spec.SetField(roundsnapshotscore.FieldDnf, field.TypeBool, value)
+		_node.Dnf = value
+	}
+	if value, ok := _c.mutation.DNS(); ok {
+		_spec.SetField(roundsnapshotscore.FieldDNS, field.TypeBool, value)
+		_node.DNS = value
+	}
+	if value, ok := _c.mutation.Spins(); ok {
+		_spec.SetField(roundsnapshotscore.FieldSpins, field.TypeInt, value)
+		_node.Spins = value
 	}
 	return _node, _spec
 }

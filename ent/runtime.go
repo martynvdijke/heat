@@ -382,6 +382,10 @@ func init() {
 	roundsnapshotDescSeasonID := roundsnapshotFields[5].Descriptor()
 	// roundsnapshot.DefaultSeasonID holds the default value on creation for the season_id field.
 	roundsnapshot.DefaultSeasonID = roundsnapshotDescSeasonID.Default.(int)
+	// roundsnapshotDescStatus is the schema descriptor for status field.
+	roundsnapshotDescStatus := roundsnapshotFields[6].Descriptor()
+	// roundsnapshot.DefaultStatus holds the default value on creation for the status field.
+	roundsnapshot.DefaultStatus = roundsnapshotDescStatus.Default.(string)
 	roundsnapshotscoreFields := schema.RoundSnapshotScore{}.Fields()
 	_ = roundsnapshotscoreFields
 	// roundsnapshotscoreDescPoints is the schema descriptor for points field.
@@ -392,6 +396,18 @@ func init() {
 	roundsnapshotscoreDescPosition := roundsnapshotscoreFields[5].Descriptor()
 	// roundsnapshotscore.DefaultPosition holds the default value on creation for the position field.
 	roundsnapshotscore.DefaultPosition = roundsnapshotscoreDescPosition.Default.(int)
+	// roundsnapshotscoreDescDnf is the schema descriptor for dnf field.
+	roundsnapshotscoreDescDnf := roundsnapshotscoreFields[6].Descriptor()
+	// roundsnapshotscore.DefaultDnf holds the default value on creation for the dnf field.
+	roundsnapshotscore.DefaultDnf = roundsnapshotscoreDescDnf.Default.(bool)
+	// roundsnapshotscoreDescDNS is the schema descriptor for dns field.
+	roundsnapshotscoreDescDNS := roundsnapshotscoreFields[7].Descriptor()
+	// roundsnapshotscore.DefaultDNS holds the default value on creation for the dns field.
+	roundsnapshotscore.DefaultDNS = roundsnapshotscoreDescDNS.Default.(bool)
+	// roundsnapshotscoreDescSpins is the schema descriptor for spins field.
+	roundsnapshotscoreDescSpins := roundsnapshotscoreFields[8].Descriptor()
+	// roundsnapshotscore.DefaultSpins holds the default value on creation for the spins field.
+	roundsnapshotscore.DefaultSpins = roundsnapshotscoreDescSpins.Default.(int)
 	seasonFields := schema.Season{}.Fields()
 	_ = seasonFields
 	// seasonDescStatus is the schema descriptor for status field.

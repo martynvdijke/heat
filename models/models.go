@@ -219,6 +219,7 @@ type RoundSnapshot struct {
 	RaceDate  string               `json:"race_date"`
 	Round     int                  `json:"round"`
 	CreatedAt string               `json:"created_at"`
+	Status    string               `json:"status"`
 	Scores    []RoundSnapshotScore `json:"scores,omitempty"`
 }
 
@@ -229,6 +230,9 @@ type RoundSnapshotScore struct {
 	RacerName  string `json:"racer_name"`
 	Points     int    `json:"points"`
 	Position   int    `json:"position"`
+	DNF        bool   `json:"dnf"`
+	DNS        bool   `json:"dns"`
+	Spins      int    `json:"spins"`
 }
 
 type FlagCommand struct {

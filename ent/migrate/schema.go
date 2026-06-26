@@ -379,6 +379,7 @@ var (
 		{Name: "round", Type: field.TypeInt, Default: 1},
 		{Name: "created_at", Type: field.TypeString, Default: ""},
 		{Name: "season_id", Type: field.TypeInt, Nullable: true, Default: 1},
+		{Name: "status", Type: field.TypeString, Default: "draft"},
 	}
 	// RoundSnapshotsTable holds the schema information for the "round_snapshots" table.
 	RoundSnapshotsTable = &schema.Table{
@@ -394,6 +395,9 @@ var (
 		{Name: "racer_name", Type: field.TypeString},
 		{Name: "points", Type: field.TypeInt, Default: 0},
 		{Name: "position", Type: field.TypeInt, Default: 0},
+		{Name: "dnf", Type: field.TypeBool, Default: false},
+		{Name: "dns", Type: field.TypeBool, Default: false},
+		{Name: "spins", Type: field.TypeInt, Default: 0},
 	}
 	// RoundSnapshotScoresTable holds the schema information for the "round_snapshot_scores" table.
 	RoundSnapshotScoresTable = &schema.Table{

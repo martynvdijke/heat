@@ -125,6 +125,55 @@ func (_u *RoundSnapshotScoreUpdate) AddPosition(v int) *RoundSnapshotScoreUpdate
 	return _u
 }
 
+// SetDnf sets the "dnf" field.
+func (_u *RoundSnapshotScoreUpdate) SetDnf(v bool) *RoundSnapshotScoreUpdate {
+	_u.mutation.SetDnf(v)
+	return _u
+}
+
+// SetNillableDnf sets the "dnf" field if the given value is not nil.
+func (_u *RoundSnapshotScoreUpdate) SetNillableDnf(v *bool) *RoundSnapshotScoreUpdate {
+	if v != nil {
+		_u.SetDnf(*v)
+	}
+	return _u
+}
+
+// SetDNS sets the "dns" field.
+func (_u *RoundSnapshotScoreUpdate) SetDNS(v bool) *RoundSnapshotScoreUpdate {
+	_u.mutation.SetDNS(v)
+	return _u
+}
+
+// SetNillableDNS sets the "dns" field if the given value is not nil.
+func (_u *RoundSnapshotScoreUpdate) SetNillableDNS(v *bool) *RoundSnapshotScoreUpdate {
+	if v != nil {
+		_u.SetDNS(*v)
+	}
+	return _u
+}
+
+// SetSpins sets the "spins" field.
+func (_u *RoundSnapshotScoreUpdate) SetSpins(v int) *RoundSnapshotScoreUpdate {
+	_u.mutation.ResetSpins()
+	_u.mutation.SetSpins(v)
+	return _u
+}
+
+// SetNillableSpins sets the "spins" field if the given value is not nil.
+func (_u *RoundSnapshotScoreUpdate) SetNillableSpins(v *int) *RoundSnapshotScoreUpdate {
+	if v != nil {
+		_u.SetSpins(*v)
+	}
+	return _u
+}
+
+// AddSpins adds value to the "spins" field.
+func (_u *RoundSnapshotScoreUpdate) AddSpins(v int) *RoundSnapshotScoreUpdate {
+	_u.mutation.AddSpins(v)
+	return _u
+}
+
 // Mutation returns the RoundSnapshotScoreMutation object of the builder.
 func (_u *RoundSnapshotScoreUpdate) Mutation() *RoundSnapshotScoreMutation {
 	return _u.mutation
@@ -192,6 +241,18 @@ func (_u *RoundSnapshotScoreUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if value, ok := _u.mutation.AddedPosition(); ok {
 		_spec.AddField(roundsnapshotscore.FieldPosition, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.Dnf(); ok {
+		_spec.SetField(roundsnapshotscore.FieldDnf, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DNS(); ok {
+		_spec.SetField(roundsnapshotscore.FieldDNS, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Spins(); ok {
+		_spec.SetField(roundsnapshotscore.FieldSpins, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSpins(); ok {
+		_spec.AddField(roundsnapshotscore.FieldSpins, field.TypeInt, value)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -311,6 +372,55 @@ func (_u *RoundSnapshotScoreUpdateOne) AddPosition(v int) *RoundSnapshotScoreUpd
 	return _u
 }
 
+// SetDnf sets the "dnf" field.
+func (_u *RoundSnapshotScoreUpdateOne) SetDnf(v bool) *RoundSnapshotScoreUpdateOne {
+	_u.mutation.SetDnf(v)
+	return _u
+}
+
+// SetNillableDnf sets the "dnf" field if the given value is not nil.
+func (_u *RoundSnapshotScoreUpdateOne) SetNillableDnf(v *bool) *RoundSnapshotScoreUpdateOne {
+	if v != nil {
+		_u.SetDnf(*v)
+	}
+	return _u
+}
+
+// SetDNS sets the "dns" field.
+func (_u *RoundSnapshotScoreUpdateOne) SetDNS(v bool) *RoundSnapshotScoreUpdateOne {
+	_u.mutation.SetDNS(v)
+	return _u
+}
+
+// SetNillableDNS sets the "dns" field if the given value is not nil.
+func (_u *RoundSnapshotScoreUpdateOne) SetNillableDNS(v *bool) *RoundSnapshotScoreUpdateOne {
+	if v != nil {
+		_u.SetDNS(*v)
+	}
+	return _u
+}
+
+// SetSpins sets the "spins" field.
+func (_u *RoundSnapshotScoreUpdateOne) SetSpins(v int) *RoundSnapshotScoreUpdateOne {
+	_u.mutation.ResetSpins()
+	_u.mutation.SetSpins(v)
+	return _u
+}
+
+// SetNillableSpins sets the "spins" field if the given value is not nil.
+func (_u *RoundSnapshotScoreUpdateOne) SetNillableSpins(v *int) *RoundSnapshotScoreUpdateOne {
+	if v != nil {
+		_u.SetSpins(*v)
+	}
+	return _u
+}
+
+// AddSpins adds value to the "spins" field.
+func (_u *RoundSnapshotScoreUpdateOne) AddSpins(v int) *RoundSnapshotScoreUpdateOne {
+	_u.mutation.AddSpins(v)
+	return _u
+}
+
 // Mutation returns the RoundSnapshotScoreMutation object of the builder.
 func (_u *RoundSnapshotScoreUpdateOne) Mutation() *RoundSnapshotScoreMutation {
 	return _u.mutation
@@ -408,6 +518,18 @@ func (_u *RoundSnapshotScoreUpdateOne) sqlSave(ctx context.Context) (_node *Roun
 	}
 	if value, ok := _u.mutation.AddedPosition(); ok {
 		_spec.AddField(roundsnapshotscore.FieldPosition, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.Dnf(); ok {
+		_spec.SetField(roundsnapshotscore.FieldDnf, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DNS(); ok {
+		_spec.SetField(roundsnapshotscore.FieldDNS, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Spins(); ok {
+		_spec.SetField(roundsnapshotscore.FieldSpins, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSpins(); ok {
+		_spec.AddField(roundsnapshotscore.FieldSpins, field.TypeInt, value)
 	}
 	_node = &RoundSnapshotScore{config: _u.config}
 	_spec.Assign = _node.assignValues
