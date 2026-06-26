@@ -1,3 +1,10 @@
+## [1.41.3](https://github.com/martynvdijke/heat/compare/v1.41.2...v1.41.3) (2026-06-26)
+
+
+### Bug Fixes
+
+* restore admin.js script tag and expose missing functions on window ([afeeea9](https://github.com/martynvdijke/heat/commit/afeeea9b90cce9119d368cf39e48e2f9afffa23e))
+
 ## [1.41.2](https://github.com/martynvdijke/heat/compare/v1.41.1...v1.41.2) (2026-06-26)
 
 
