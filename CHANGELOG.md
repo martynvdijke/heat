@@ -1,3 +1,10 @@
+## [1.41.2](https://github.com/martynvdijke/heat/compare/v1.41.1...v1.41.2) (2026-06-26)
+
+
+### Bug Fixes
+
+* expose admin functions globally, add HTMX loading indicators ([cdfabd3](https://github.com/martynvdijke/heat/commit/cdfabd3d4de668c67b901c1bd9ece808c215a95e))
+
 ## [1.41.1](https://github.com/martynvdijke/heat/compare/v1.41.0...v1.41.1) (2026-06-26)
 
 
