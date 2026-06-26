@@ -1545,5 +1545,16 @@ async function loadSeasonRounds(seasonId: string): Promise<void> {
 (window as any).deleteSeason = deleteSeason;
 (window as any).createSeason = createSeason;
 (window as any).loadSeasonRounds = loadSeasonRounds;
+(window as any).editRacer = editRacer;
+(window as any).deleteRacer = deleteRacer;
+(window as any).generateShareLink = generateShareLink;
+(window as any).copyShareLink = copyShareLink;
+(window as any).editTrack = editTrack;
+(window as any).deleteTrack = deleteTrack;
+(window as any).extractTrackFromAI = extractTrackFromAI;
+(window as any).extractTrackFromAIStandalone = extractTrackFromAIStandalone;
+(window as any).editQuote = editQuote;
+(window as any).deleteQuote = deleteQuote;
+(window as any).editStats = editStats;
 init();
 
