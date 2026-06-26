@@ -1,3 +1,10 @@
+## [1.41.1](https://github.com/martynvdijke/heat/compare/v1.41.0...v1.41.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* add IDs to rounds/seasons sub-tab buttons so loadRoundsList triggers on tab show ([5a64eeb](https://github.com/martynvdijke/heat/commit/5a64eebb2dd6372d25f4f7316f2b3f630e02ce2a))
+
 # [1.41.0](https://github.com/martynvdijke/heat/compare/v1.40.0...v1.41.0) (2026-06-26)
 
 
