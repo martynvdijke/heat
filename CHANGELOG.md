@@ -1,3 +1,10 @@
+# [1.41.0](https://github.com/martynvdijke/heat/compare/v1.40.0...v1.41.0) (2026-06-26)
+
+
+### Features
+
+* add editable round drafts with finalization and stats integration ([c399ce1](https://github.com/martynvdijke/heat/commit/c399ce1de6f5a7fd6db22174979761f2440e69db))
+
 # [1.40.0](https://github.com/martynvdijke/heat/compare/v1.39.1...v1.40.0) (2026-06-25)
 
 
