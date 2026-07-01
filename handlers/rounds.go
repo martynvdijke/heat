@@ -36,6 +36,14 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 		input.SeasonID = 1
 	}
 
+	// Reject if season is archived
+	var seasonStatus string
+	h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", input.SeasonID).Scan(&seasonStatus)
+	if seasonStatus == "archived" {
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot create rounds in an archived season"})
+		return
+	}
+
 	raceDate := time.Now().Format("2006-01-02")
 
 	var roundNum int
@@ -186,6 +194,19 @@ func (h *Handler) DeleteRoundSnapshot(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
 		return
 	}
+
+	// Check if parent season is archived
+	var seasonID int
+	h.S.DB.QueryRow("SELECT season_id FROM round_snapshots WHERE id = ?", id).Scan(&seasonID)
+	if seasonID > 0 {
+		var seasonStatus string
+		h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus)
+		if seasonStatus == "archived" {
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot delete rounds in an archived season"})
+			return
+		}
+	}
+
 	h.S.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id = ?", id)
 	h.S.DB.Exec("DELETE FROM round_snapshots WHERE id = ?", id)
 	c.Status(http.StatusOK)
@@ -279,13 +300,21 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 	}
 
 	var status string
-	err := h.S.DB.QueryRow("SELECT status FROM round_snapshots WHERE id = ?", idStr).Scan(&status)
+	var seasonID int
+	err := h.S.DB.QueryRow("SELECT status, season_id FROM round_snapshots WHERE id = ?", idStr).Scan(&status, &seasonID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "round not found"})
 		return
 	}
 	if status != "draft" {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "round is already finalized"})
+		return
+	}
+	// Check if parent season is archived
+	var seasonStatus string
+	h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus)
+	if seasonStatus == "archived" {
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot finalize rounds in an archived season"})
 		return
 	}
 

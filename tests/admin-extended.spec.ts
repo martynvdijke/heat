@@ -387,6 +387,95 @@ test.describe.serial('Admin Extended Features', () => {
       expect(editResult.status).toBe(409);
     });
   });
+
+  test.describe.serial('Archive Lock - Round Protection', () => {
+    let roundId = 0;
+    let seasonId = 0;
+
+    test('should create a round in active season', async ({ page }) => {
+      // Create a round via API
+      const result = await page.evaluate(async () => {
+        const seasonsRes = await fetch('/api/seasons');
+        const seasons = await seasonsRes.json();
+        const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
+        const sid = active ? active.id : 1;
+        const res = await fetch('/api/rounds', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ race_name: `Archive-Round-${Date.now()}`, round: 0, season_id: sid })
+        });
+        const data = await res.json();
+        return { ok: res.ok, id: data.id, seasonId: sid };
+      });
+      expect(result.ok).toBeTruthy();
+      roundId = result.id;
+      seasonId = result.seasonId;
+    });
+
+    test('should archive the season', async ({ page }) => {
+      const result = await page.evaluate(async (sid) => {
+        const res = await fetch(`/api/seasons/archive?id=${sid}`, { method: 'POST' });
+        return res.ok;
+      }, seasonId);
+      expect(result).toBeTruthy();
+    });
+
+    test('should reject creating rounds in archived season', async ({ page }) => {
+      const result = await page.evaluate(async (sid) => {
+        const res = await fetch('/api/rounds', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ race_name: 'Should Fail', round: 0, season_id: sid })
+        });
+        return { status: res.status };
+      }, seasonId);
+      expect(result.status).toBe(409);
+    });
+
+    test('should reject editing rounds in archived season', async ({ page }) => {
+      const result = await page.evaluate(async (rid) => {
+        const scoresRes = await fetch(`/api/rounds?id=${rid}`);
+        const round = await scoresRes.json();
+        const scores = round.scores || [];
+        if (scores.length === 0) return { status: -1, error: 'no scores' };
+
+        const res = await fetch(`/api/rounds?id=${rid}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scores.slice(0, 1).map((s: any) => ({ ...s, points: 999 })))
+        });
+        return { status: res.status };
+      }, roundId);
+      expect(result.status).toBe(409);
+    });
+
+    test('should reject finalizing rounds in archived season', async ({ page }) => {
+      const result = await page.evaluate(async (rid) => {
+        const res = await fetch(`/api/rounds/finalize?id=${rid}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        return { status: res.status };
+      }, roundId);
+      expect(result.status).toBe(409);
+    });
+
+    test('should reject deleting rounds in archived season', async ({ page }) => {
+      const result = await page.evaluate(async (rid) => {
+        const res = await fetch(`/api/rounds?id=${rid}`, { method: 'DELETE' });
+        return { status: res.status };
+      }, roundId);
+      expect(result.status).toBe(409);
+    });
+
+    test('should verify round still exists after delete attempt', async ({ page }) => {
+      const result = await page.evaluate(async (rid) => {
+        const res = await fetch(`/api/rounds?id=${rid}`);
+        return { status: res.status, ok: res.ok };
+      }, roundId);
+      expect(result.ok).toBeTruthy();
+    });
+  });
 });
 
 // Helper functions (copied from admin.spec.ts for isolation)

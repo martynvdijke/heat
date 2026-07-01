@@ -70,13 +70,7 @@ function startRace(): void {
         raceSeconds = 0;
         currentLap = 1;
         updateStatus();
-        raceTimer = setInterval(() => {
-            raceSeconds++;
-            const mins = Math.floor(raceSeconds / 60);
-            const secs = raceSeconds % 60;
-            document.getElementById('race-timer')!.textContent =
-                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }, 1000);
+        startRaceTimer();
     }
 }
 
@@ -87,13 +81,7 @@ function pauseRace(): void {
         updateStatus();
     } else if (raceState === 'paused') {
         raceState = 'racing';
-        raceTimer = setInterval(() => {
-            raceSeconds++;
-            const mins = Math.floor(raceSeconds / 60);
-            const secs = raceSeconds % 60;
-            document.getElementById('race-timer')!.textContent =
-                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }, 1000);
+        startRaceTimer();
         updateStatus();
     }
 }
@@ -495,9 +483,6 @@ const actionHandlers: Record<string, () => void> = {
         const fn = (window as any).triggerStartLights;
         if (fn) fn();
     },
-    toggleSafetyCar: () => { /* keep old onclick-based behavior for flag toggles */ },
-    toggleRedFlag: () => {},
-    playSound: () => {},
 };
 
 document.addEventListener('click', (e: Event) => {

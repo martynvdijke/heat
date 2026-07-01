@@ -518,3 +518,147 @@ func TestCreateRoundSnapshot(t *testing.T) {
 	testServer.DB.Exec("DELETE FROM round_snapshot_scores")
 	testServer.DB.Exec("DELETE FROM round_snapshots")
 }
+
+func TestArchiveLock(t *testing.T) {
+	// Clean up rounds and ensure season 1 exists and is active
+	testServer.DB.Exec("DELETE FROM round_snapshot_scores")
+	testServer.DB.Exec("DELETE FROM round_snapshots")
+	testServer.DB.Exec("UPDATE seasons SET status = 'active' WHERE id = 1")
+
+	r := gin.New()
+	r.POST("/api/rounds", testHandler.TakeRoundSnapshot)
+	r.GET("/api/rounds", testHandler.GetRoundSnapshots)
+	r.PATCH("/api/rounds", testHandler.UpdateRoundScores)
+	r.PATCH("/api/rounds/finalize", testHandler.FinalizeRound)
+	r.DELETE("/api/rounds", testHandler.DeleteRoundSnapshot)
+	r.POST("/api/seasons/archive", testHandler.ArchiveSeason)
+
+	// Create a draft round
+	var roundID int
+	t.Run("create draft round in active season", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]any{
+			"race_name": "Archive Test Round",
+			"season_id": 1,
+		})
+		req, _ := http.NewRequest("POST", "/api/rounds", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("create: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+		var result map[string]any
+		json.Unmarshal(rr.Body.Bytes(), &result)
+		roundID = int(result["id"].(float64))
+	})
+
+	// Archive the season
+	t.Run("archive season", func(t *testing.T) {
+		req, _ := http.NewRequest("POST", "/api/seasons/archive?id=1", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("archive: expected 200, got %d", rr.Code)
+		}
+	})
+
+	// Verify all round operations are rejected
+	t.Run("create round in archived season returns 409", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]any{
+			"race_name": "Should Fail",
+			"season_id": 1,
+		})
+		req, _ := http.NewRequest("POST", "/api/rounds", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusConflict {
+			t.Errorf("expected 409, got %d: %s", rr.Code, rr.Body.String())
+		}
+	})
+
+	t.Run("edit round in archived season returns 409", func(t *testing.T) {
+		// Fetch the actual score IDs to update
+		req, _ := http.NewRequest("GET", "/api/rounds?id="+strconv.Itoa(roundID), nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var snap models.RoundSnapshot
+		json.Unmarshal(rr.Body.Bytes(), &snap)
+
+		if len(snap.Scores) == 0 {
+			t.Fatal("expected scores in snapshot")
+		}
+		scoresUpdate := []map[string]any{
+			{
+				"id":         snap.Scores[0].ID,
+				"points":     999,
+				"position":   1,
+				"dnf":        false,
+				"dns":        false,
+				"spins":      0,
+				"overheated": 0,
+			},
+		}
+		body, _ := json.Marshal(scoresUpdate)
+		req2, _ := http.NewRequest("PATCH", "/api/rounds?id="+strconv.Itoa(roundID), bytes.NewBuffer(body))
+		req2.Header.Set("Content-Type", "application/json")
+		rr2 := httptest.NewRecorder()
+		r.ServeHTTP(rr2, req2)
+		if rr2.Code != http.StatusConflict {
+			t.Errorf("expected 409, got %d: %s", rr2.Code, rr2.Body.String())
+		}
+	})
+
+	t.Run("finalize round in archived season returns 409", func(t *testing.T) {
+		req, _ := http.NewRequest("PATCH", "/api/rounds/finalize?id="+strconv.Itoa(roundID), nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusConflict {
+			t.Errorf("expected 409, got %d: %s", rr.Code, rr.Body.String())
+		}
+	})
+
+	t.Run("delete round in archived season returns 409", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", "/api/rounds?id="+strconv.Itoa(roundID), nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusConflict {
+			t.Errorf("expected 409, got %d: %s", rr.Code, rr.Body.String())
+		}
+	})
+
+	t.Run("round still exists after delete attempt", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/rounds?id="+strconv.Itoa(roundID), nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	// Cleanup
+	testServer.DB.Exec("DELETE FROM round_snapshot_scores")
+	testServer.DB.Exec("DELETE FROM round_snapshots")
+	testServer.DB.Exec("DELETE FROM seasons")
+}
+
+func TestRacerRanksBatch(t *testing.T) {
+	r := gin.New()
+	r.PUT("/api/racers/ranks", testHandler.UpdateRacerRanks)
+	r.GET("/api/racers", testHandler.GetRacers)
+
+	t.Run("batch update racer ranks", func(t *testing.T) {
+		updates := []map[string]any{
+			{"id": 1, "rank": 5},
+			{"id": 2, "rank": 3},
+		}
+		body, _ := json.Marshal(updates)
+		req, _ := http.NewRequest("PUT", "/api/racers/ranks", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("batch ranks: expected 200, got %d: %s", rr.Code, rr.Body.String())
+		}
+	})
+}
