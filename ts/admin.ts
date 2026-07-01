@@ -34,6 +34,8 @@ interface AdminStats {
     fastest_laps: number;
     dnf: number;
     dns: number;
+    spins: number;
+    overheated: number;
 }
 
 let adminRacers: AdminRacer[] = [];
@@ -1338,6 +1340,7 @@ async function editRound(id: number): Promise<void> {
                                 <th style="width:60px">DNF</th>
                                 <th style="width:60px">DNS</th>
                                 <th style="width:80px">Spins</th>
+                                <th style="width:80px">Overheated</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1350,6 +1353,7 @@ async function editRound(id: number): Promise<void> {
                                     <td><input type="checkbox" class="form-check-input round-score-dnf" data-id="${s.id}" ${s.dnf ? 'checked' : ''}></td>
                                     <td><input type="checkbox" class="form-check-input round-score-dns" data-id="${s.id}" ${s.dns ? 'checked' : ''}></td>
                                     <td><input type="number" class="form-control form-control-sm round-score-spins" data-id="${s.id}" value="${s.spins}" min="0"></td>
+                                    <td><input type="number" class="form-control form-control-sm round-score-overheated" data-id="${s.id}" value="${s.overheated || 0}" min="0"></td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1423,13 +1427,15 @@ function buildScoresFromEditForm(): any[] {
         const dnfCheck = row.querySelector('.round-score-dnf') as HTMLInputElement;
         const dnsCheck = row.querySelector('.round-score-dns') as HTMLInputElement;
         const spinsInput = row.querySelector('.round-score-spins') as HTMLInputElement;
+        const overheatedInput = row.querySelector('.round-score-overheated') as HTMLInputElement;
         return {
             id,
             points: parseInt(input.value) || 0,
             position: parseInt(posInput?.value) || 0,
             dnf: dnfCheck?.checked || false,
             dns: dnsCheck?.checked || false,
-            spins: parseInt(spinsInput?.value) || 0
+            spins: parseInt(spinsInput?.value) || 0,
+            overheated: parseInt(overheatedInput?.value) || 0
         };
     });
 }

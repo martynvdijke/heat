@@ -65,6 +65,8 @@ type RacerStats struct {
 	Points      int `json:"points"`
 	DNF         int `json:"dnf"`
 	DNS         int `json:"dns"`
+	Spins       int `json:"spins"`
+	Overheated  int `json:"overheated"`
 }
 
 type Quote struct {
@@ -233,6 +235,7 @@ type RoundSnapshotScore struct {
 	DNF        bool   `json:"dnf"`
 	DNS        bool   `json:"dns"`
 	Spins      int    `json:"spins"`
+	Overheated int    `json:"overheated"`
 }
 
 type FlagCommand struct {

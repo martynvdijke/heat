@@ -82,7 +82,7 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 	snapshotID, _ := res.LastInsertId()
 
 	for i, s := range scores {
-		tx.Exec("INSERT INTO round_snapshot_scores (snapshot_id, racer_id, racer_name, points, position, dnf, dns, spins) VALUES (?, ?, ?, ?, ?, 0, 0, 0)",
+		tx.Exec("INSERT INTO round_snapshot_scores (snapshot_id, racer_id, racer_name, points, position, dnf, dns, spins, overheated) VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0)",
 			snapshotID, s.ID, s.Name, s.Points, i+1)
 	}
 
@@ -117,7 +117,7 @@ func (h *Handler) GetRoundSnapshots(c *gin.Context) {
 			return
 		}
 
-		scoreRows, err := h.S.DB.Query("SELECT id, snapshot_id, racer_id, racer_name, points, position, dnf, dns, spins FROM round_snapshot_scores WHERE snapshot_id = ? ORDER BY position", id)
+		scoreRows, err := h.S.DB.Query("SELECT id, snapshot_id, racer_id, racer_name, points, position, dnf, dns, spins, overheated FROM round_snapshot_scores WHERE snapshot_id = ? ORDER BY position", id)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -126,7 +126,7 @@ func (h *Handler) GetRoundSnapshots(c *gin.Context) {
 
 		for scoreRows.Next() {
 			var sc models.RoundSnapshotScore
-			if err := scoreRows.Scan(&sc.ID, &sc.SnapshotID, &sc.RacerID, &sc.RacerName, &sc.Points, &sc.Position, &sc.DNF, &sc.DNS, &sc.Spins); err != nil {
+			if err := scoreRows.Scan(&sc.ID, &sc.SnapshotID, &sc.RacerID, &sc.RacerName, &sc.Points, &sc.Position, &sc.DNF, &sc.DNS, &sc.Spins, &sc.Overheated); err != nil {
 				continue
 			}
 			s.Scores = append(s.Scores, sc)
@@ -200,13 +200,22 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 	}
 
 	var status string
-	err := h.S.DB.QueryRow("SELECT status FROM round_snapshots WHERE id = ?", idStr).Scan(&status)
+	var seasonID int
+	err := h.S.DB.QueryRow("SELECT status, season_id FROM round_snapshots WHERE id = ?", idStr).Scan(&status, &seasonID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "round not found"})
 		return
 	}
 	if status != "draft" {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot edit a finalized round"})
+		return
+	}
+
+	// Check if parent season is archived
+	var seasonStatus string
+	h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus)
+	if seasonStatus == "archived" {
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot edit rounds in an archived season"})
 		return
 	}
 
@@ -224,8 +233,8 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 	defer tx.Rollback()
 
 	for _, sc := range scores {
-		_, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, position = ?, dnf = ?, dns = ?, spins = ? WHERE id = ? AND snapshot_id = ?",
-			sc.Points, sc.Position, sc.DNF, sc.DNS, sc.Spins, sc.ID, idStr)
+		_, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, position = ?, dnf = ?, dns = ?, spins = ?, overheated = ? WHERE id = ? AND snapshot_id = ?",
+			sc.Points, sc.Position, sc.DNF, sc.DNS, sc.Spins, sc.Overheated, sc.ID, idStr)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -269,7 +278,7 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 		return
 	}
 
-	rows, err := h.S.DB.Query("SELECT racer_id, points, dnf, dns, spins FROM round_snapshot_scores WHERE snapshot_id = ?", idStr)
+	rows, err := h.S.DB.Query("SELECT racer_id, points, dnf, dns, spins, overheated FROM round_snapshot_scores WHERE snapshot_id = ?", idStr)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -277,16 +286,17 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 	defer rows.Close()
 
 	type score struct {
-		RacerID int
-		Points  int
-		DNF     bool
-		DNS     bool
-		Spins   int
+		RacerID    int
+		Points     int
+		DNF        bool
+		DNS        bool
+		Spins      int
+		Overheated int
 	}
 	var scores []score
 	for rows.Next() {
 		var s score
-		if err := rows.Scan(&s.RacerID, &s.Points, &s.DNF, &s.DNS, &s.Spins); err != nil {
+		if err := rows.Scan(&s.RacerID, &s.Points, &s.DNF, &s.DNS, &s.Spins, &s.Overheated); err != nil {
 			continue
 		}
 		scores = append(scores, s)
@@ -319,8 +329,8 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 			if s.DNS {
 				dnsVal = 1
 			}
-			tx.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns, spins) VALUES (?, 1, 0, 0, 0, 0, ?, ?, ?)",
-				s.RacerID, dnfVal, dnsVal, s.Spins)
+			tx.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns, spins, overheated) VALUES (?, 1, 0, 0, 0, 0, ?, ?, ?, ?)",
+				s.RacerID, dnfVal, dnsVal, s.Spins, s.Overheated)
 		} else {
 			dnfAdd := 0
 			if s.DNF {
@@ -330,8 +340,8 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 			if s.DNS {
 				dnsAdd = 1
 			}
-			tx.Exec("UPDATE racer_stats SET races = races + 1, dnf = dnf + ?, dns = dns + ?, spins = spins + ? WHERE id = ?",
-				dnfAdd, dnsAdd, s.Spins, existingID)
+			tx.Exec("UPDATE racer_stats SET races = races + 1, dnf = dnf + ?, dns = dns + ?, spins = spins + ?, overheated = overheated + ? WHERE id = ?",
+				dnfAdd, dnsAdd, s.Spins, s.Overheated, existingID)
 		}
 	}
 

@@ -25,6 +25,8 @@ interface RoundScore {
     racer_name: string;
     points: number;
     position: number;
+    spins?: number;
+    overheated?: number;
 }
 
 async function loadSeasonsPage(): Promise<void> {
