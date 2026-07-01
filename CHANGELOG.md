@@ -1,3 +1,21 @@
+# [1.42.0](https://github.com/martynvdijke/heat/compare/v1.41.4...v1.42.0) (2026-07-01)
+
+
+### Bug Fixes
+
+* handle sql.ErrNoRows in archive checks, isolate e2e tests from seed season ([9b752e8](https://github.com/martynvdijke/heat/commit/9b752e80d4042b49647a3d69325ddb48c131b219))
+* test ([1eb4a86](https://github.com/martynvdijke/heat/commit/1eb4a86c9c56423586ccc4996f492cb3fe07bfe2))
+
+
+### Features
+
+* add overheated stat to rounds and enforce archive lock ([d8bcd19](https://github.com/martynvdijke/heat/commit/d8bcd196248671c901cb27ed8eea67763c2eac9d))
+
+
+### Performance Improvements
+
+* batch admin API calls, cache active season, deduplicate track fetches ([f364cbf](https://github.com/martynvdijke/heat/commit/f364cbf555b6e59f3ccb69f40ce76856e1e6a199))
+
 ## [1.41.4](https://github.com/martynvdijke/heat/compare/v1.41.3...v1.41.4) (2026-06-29)
 
 ## [1.41.3](https://github.com/martynvdijke/heat/compare/v1.41.2...v1.41.3) (2026-06-26)
