@@ -18,6 +18,16 @@ let raceSeconds = 0;
 let controllerRacers: ControllerRacer[] = [];
 let currentLap = 0;
 
+function startRaceTimer(): void {
+    raceTimer = setInterval(() => {
+        raceSeconds++;
+        const mins = Math.floor(raceSeconds / 60);
+        const secs = raceSeconds % 60;
+        document.getElementById('race-timer')!.textContent =
+            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
 async function loadControllerData(): Promise<void> {
     const [racersRes, tracksRes] = await Promise.all([
         fetch('/api/racers'),
