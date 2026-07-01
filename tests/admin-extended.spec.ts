@@ -223,6 +223,7 @@ test.describe.serial('Admin Extended Features', () => {
 
   test.describe.serial('Round Editing Flow', () => {
     let roundId = 0;
+    let seasonId = 0;
 
     test('should create a round snapshot (draft)', async ({ page }) => {
       // Ensure we have at least one racer
@@ -249,20 +250,25 @@ test.describe.serial('Admin Extended Features', () => {
 
       // Create round snapshot via API (bypass prompt dialog)
       const result = await page.evaluate(async () => {
-        const seasonsRes = await fetch('/api/seasons');
-        const seasons = await seasonsRes.json();
-        const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
-        const seasonId = active ? active.id : 1;
+        // Create a fresh season so we don't rely on SeedSeason's season 1
+        const seasonRes = await fetch('/api/seasons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: `E2E-Season-${Date.now()}` })
+        });
+        const season = await seasonRes.json();
+        const sid = season.id;
         const res = await fetch('/api/rounds', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ race_name: `E2E-Round-${Date.now()}`, round: 0, season_id: seasonId })
+          body: JSON.stringify({ race_name: `E2E-Round-${Date.now()}`, round: 0, season_id: sid })
         });
         const data = await res.json();
-        return { ok: res.ok, id: data.id };
+        return { ok: res.ok, id: data.id, seasonId: sid };
       });
       expect(result.ok).toBeTruthy();
       roundId = result.id;
+      seasonId = result.seasonId;
     });
 
     test('should edit round scores', async ({ page }) => {
@@ -395,10 +401,14 @@ test.describe.serial('Admin Extended Features', () => {
     test('should create a round in active season', async ({ page }) => {
       // Create a round via API
       const result = await page.evaluate(async () => {
-        const seasonsRes = await fetch('/api/seasons');
-        const seasons = await seasonsRes.json();
-        const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
-        const sid = active ? active.id : 1;
+        // Create a fresh season so we don't rely on SeedSeason's season 1
+        const seasonRes = await fetch('/api/seasons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: `Archive-Season-${Date.now()}` })
+        });
+        const season = await seasonRes.json();
+        const sid = season.id;
         const res = await fetch('/api/rounds', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

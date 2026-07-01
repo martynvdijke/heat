@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
 	"time"
@@ -36,9 +37,16 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 		input.SeasonID = 1
 	}
 
-	// Reject if season is archived
+	// Reject if season is archived or missing
 	var seasonStatus string
-	h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", input.SeasonID).Scan(&seasonStatus)
+	if err := h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", input.SeasonID).Scan(&seasonStatus); err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
 	if seasonStatus == "archived" {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot create rounds in an archived season"})
 		return
@@ -200,7 +208,14 @@ func (h *Handler) DeleteRoundSnapshot(c *gin.Context) {
 	h.S.DB.QueryRow("SELECT season_id FROM round_snapshots WHERE id = ?", id).Scan(&seasonID)
 	if seasonID > 0 {
 		var seasonStatus string
-		h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus)
+		if err := h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus); err != nil {
+			if err == sql.ErrNoRows {
+				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
+			} else {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
 		if seasonStatus == "archived" {
 			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot delete rounds in an archived season"})
 			return
@@ -245,7 +260,14 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 
 	// Check if parent season is archived
 	var seasonStatus string
-	h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus)
+	if err := h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus); err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
 	if seasonStatus == "archived" {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot edit rounds in an archived season"})
 		return
@@ -312,7 +334,14 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 	}
 	// Check if parent season is archived
 	var seasonStatus string
-	h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus)
+	if err := h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus); err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
 	if seasonStatus == "archived" {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot finalize rounds in an archived season"})
 		return
