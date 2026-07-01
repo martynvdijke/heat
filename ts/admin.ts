@@ -53,35 +53,33 @@ const trackModal = new bootstrap.Modal(document.getElementById('trackModal')!);
 const statsModal = new bootstrap.Modal(document.getElementById('statsModal')!);
 
 async function init(): Promise<void> {
-    await loadAdminTracks();
-    await loadRaceInfo();
-    await loadRacers();
-    await loadAllTracks();
-    await loadQuotes();
-    await loadRacerStats();
-    await loadNotificationSettings();
-    await loadUmamiSettings();
-    await loadAISettings();
-    await loadOTelSettings();
-    await loadEInkSettings();
+    // Load tracks once (shared by adminTracks + allTracks)
+    await loadTracks();
+    // Everything else can run in parallel — no dependencies between them
+    await Promise.all([
+        loadRaceInfo(),
+        loadRacers(),
+        loadQuotes(),
+        loadRacerStats(),
+        loadNotificationSettings(),
+        loadUmamiSettings(),
+        loadAISettings(),
+        loadOTelSettings(),
+        loadEInkSettings(),
+    ]);
 }
 
-async function loadAdminTracks(): Promise<void> {
+async function loadTracks(): Promise<void> {
     try {
         const res = await fetch('/api/tracks');
-        adminTracks = await res.json();
+        const tracks: AdminTrack[] = await res.json();
+        adminTracks = tracks;
+        allTracks = tracks;
         const selector = document.getElementById('track-select') as HTMLSelectElement;
         selector.innerHTML = '<option value="">Choose a circuit...</option>' +
-            adminTracks.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('');
-    } catch (e) { console.error('Failed to load tracks', e); }
-}
-
-async function loadAllTracks(): Promise<void> {
-    try {
-        const res = await fetch('/api/tracks');
-        allTracks = await res.json();
+            tracks.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('');
         renderTrackList();
-    } catch (e) { console.error('Failed to load all tracks', e); }
+    } catch (e) { console.error('Failed to load tracks', e); }
 }
 
 function renderTrackList(): void {
@@ -213,6 +211,7 @@ async function loadQuotes(): Promise<void> {
     try {
         const res = await fetch('/api/quotes');
         const quotes: Quote[] = await res.json();
+        loadedQuotes = quotes;
         const list = document.getElementById('quote-list')!;
         list.innerHTML = quotes.map(q => `
             <tr>
@@ -513,8 +512,7 @@ document.getElementById('track-form')!.addEventListener('submit', async (e: Even
     });
     if (res.ok) {
         trackModal.hide();
-        loadAdminTracks();
-        loadAllTracks();
+        loadTracks();
     }
 });
 
@@ -639,25 +637,16 @@ async function applyGridPositions(): Promise<void> {
 
     if (!confirm('Apply this grid order to the race? This will update racer ranks.')) return;
 
-    for (let i = 0; i < qualificationOrder.length; i++) {
-        const racer = qualificationOrder[i];
-        const newRank = i + 1;
+    const updates = qualificationOrder.map((racer, i) => ({
+        id: racer.id,
+        rank: i + 1
+    }));
 
-        await fetch('/api/racers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: racer.id,
-                name: racer.name,
-                profile_picture: racer.profile_picture,
-                car_name: racer.car_name,
-                car_color: racer.car_color,
-                points: racer.points,
-                rank: newRank,
-                position: racer.position
-            })
-        });
-    }
+    await fetch('/api/racers/ranks', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+    });
 
     showToast('Grid positions applied!', 'success');
     loadRacers();
@@ -771,9 +760,7 @@ function openQuoteModal(): void {
 }
 
 async function editQuote(id: number): Promise<void> {
-    const res = await fetch('/api/quotes');
-    const quotes: Quote[] = await res.json();
-    const q = quotes.find(x => x.id === id);
+    const q = loadedQuotes.find(x => x.id === id);
     if (!q) return;
     const form = document.getElementById('quote-form') as HTMLFormElement;
     (form.elements.namedItem('id') as HTMLInputElement).value = String(q.id);
@@ -1058,8 +1045,7 @@ async function saveExtractedTrack(): Promise<void> {
     });
     if (res.ok) {
         showToast('Track saved!', 'success');
-        loadAdminTracks();
-        loadAllTracks();
+        loadTracks();
     } else {
         const err = await res.json();
         showToast('Failed to save track: ' + (err.error || 'Unknown error'), 'error');
@@ -1069,8 +1055,7 @@ async function saveExtractedTrack(): Promise<void> {
 async function deleteTrack(id: string): Promise<void> {
     if (confirm('Delete this track?')) {
         await fetch(`/api/tracks?id=${id}`, { method: 'DELETE' });
-        loadAdminTracks();
-        loadAllTracks();
+        loadTracks();
     }
 }
 
@@ -1250,14 +1235,30 @@ document.getElementById('seasons-subtab')?.addEventListener('shown.bs.tab', () =
 });
 
 let editingRoundId: number | null = null;
+let activeSeasonId: number | null = null;
+let loadedQuotes: Quote[] = [];
+
+async function getActiveSeasonId(): Promise<number> {
+    if (activeSeasonId !== null) return activeSeasonId;
+    try {
+        const res = await fetch('/api/seasons');
+        const seasons = await res.json();
+        const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
+        activeSeasonId = active ? active.id : 1;
+    } catch {
+        activeSeasonId = 1;
+    }
+    return activeSeasonId!;
+}
+
+function invalidateSeasonCache(): void {
+    activeSeasonId = null;
+}
 
 async function loadRoundsList(): Promise<void> {
     try {
         if (editingRoundId !== null) return; // don't refresh while editing
-        const res = await fetch('/api/seasons');
-        const seasons = await res.json();
-        const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
-        const sid = active ? active.id : 1;
+        const sid = await getActiveSeasonId();
         const roundsRes = await fetch(`/api/rounds?season_id=${sid}`);
         const rounds = await roundsRes.json();
         const list = document.getElementById('rounds-list')!;
@@ -1289,13 +1290,11 @@ async function loadRoundsList(): Promise<void> {
 async function takeAdminRoundSnapshot(): Promise<void> {
     const name = prompt('Round name:', `Round ${new Date().toLocaleDateString()}`);
     if (!name) return;
-    const seasonsRes = await fetch('/api/seasons');
-    const seasons = await seasonsRes.json();
-    const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
+    const sid = await getActiveSeasonId();
     const res = await fetch('/api/rounds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ race_name: name, round: 0, season_id: active ? active.id : 1 })
+        body: JSON.stringify({ race_name: name, round: 0, season_id: sid })
     });
     if (res.ok) {
         showToast('Round draft created!', 'success');
@@ -1489,6 +1488,7 @@ async function createSeason(): Promise<void> {
     });
     if (res.ok) {
         showToast('Season created!', 'info');
+        invalidateSeasonCache();
         loadSeasons();
     } else {
         showToast('Failed to create season', 'error');
@@ -1500,6 +1500,7 @@ async function archiveSeason(id: number): Promise<void> {
     const res = await fetch(`/api/seasons/archive?id=${id}`, { method: 'POST' });
     if (res.ok) {
         showToast('Season archived!', 'info');
+        invalidateSeasonCache();
         loadSeasons();
     } else {
         showToast('Failed to archive season', 'error');

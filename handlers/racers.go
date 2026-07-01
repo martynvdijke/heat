@@ -88,6 +88,46 @@ func (h *Handler) UpdateRacer(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// @Summary Batch update racer ranks
+// @Description Update rank positions for multiple racers in one call
+// @Tags Racers
+// @Accept json
+// @Produce json
+// @Param ranks body []struct{ID int `json:"id"`; Rank int `json:"rank"`} true "Array of {id, rank} pairs"
+// @Success 200
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/racers/ranks [put]
+func (h *Handler) UpdateRacerRanks(c *gin.Context) {
+	var updates []struct {
+		ID   int `json:"id"`
+		Rank int `json:"rank"`
+	}
+	if err := c.ShouldBindJSON(&updates); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	tx, err := h.S.DB.Begin()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer tx.Rollback()
+
+	for _, u := range updates {
+		tx.Exec("UPDATE racers SET rank = ? WHERE id = ?", u.Rank, u.ID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.S.BroadcastRacers()
+	c.Status(http.StatusOK)
+}
+
 // @Summary Delete a racer
 // @Description Delete a racer by ID
 // @Tags Racers

@@ -81,9 +81,20 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 	}
 	snapshotID, _ := res.LastInsertId()
 
-	for i, s := range scores {
-		tx.Exec("INSERT INTO round_snapshot_scores (snapshot_id, racer_id, racer_name, points, position, dnf, dns, spins, overheated) VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0)",
-			snapshotID, s.ID, s.Name, s.Points, i+1)
+	if len(scores) > 0 {
+		query := "INSERT INTO round_snapshot_scores (snapshot_id, racer_id, racer_name, points, position, dnf, dns, spins, overheated) VALUES "
+		args := make([]interface{}, 0, len(scores)*9)
+		for i, s := range scores {
+			if i > 0 {
+				query += ", "
+			}
+			query += "(?, ?, ?, ?, ?, 0, 0, 0, 0)"
+			args = append(args, snapshotID, s.ID, s.Name, s.Points, i+1)
+		}
+		if _, err := tx.Exec(query, args...); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

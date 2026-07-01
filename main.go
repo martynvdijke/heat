@@ -300,6 +300,7 @@ func main() {
 	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(server))
 	{
 		admin.POST("/racers", h.UpdateRacer)
+		admin.PUT("/racers/ranks", h.UpdateRacerRanks)
 		admin.DELETE("/racers", h.DeleteRacer)
 		admin.POST("/race-info", h.UpdateRaceInfo)
 		admin.POST("/upload", h.HandleUpload)
