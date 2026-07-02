@@ -1,3 +1,10 @@
+## [1.42.1](https://github.com/martynvdijke/heat/compare/v1.42.0...v1.42.1) (2026-07-02)
+
+
+### Performance Improvements
+
+* reduce admin/stats page load from 30s to <3s ([b43ae69](https://github.com/martynvdijke/heat/commit/b43ae69815820999ed2e2750868cfda3b9b8c4ec))
+
 # [1.42.0](https://github.com/martynvdijke/heat/compare/v1.41.4...v1.42.0) (2026-07-01)
 
 
