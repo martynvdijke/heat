@@ -72,6 +72,8 @@ func Init(s *app.Server) {
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_player_sessions_racer_id ON player_sessions(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_round_snapshots_season_id ON round_snapshots(season_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_racerstats_racer_id ON racer_stats(racer_id)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_race ON race_results(racer_id, race_id)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_lap_records_racer_lap ON lap_records(racer_id, lap_number)")
 
 	var count int
 	srv.DB.QueryRow("SELECT COUNT(*) FROM racers").Scan(&count)

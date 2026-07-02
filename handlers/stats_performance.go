@@ -24,6 +24,11 @@ func (h *Handler) GetTrackPerformance(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid racer_id"})
 			return
 		}
+		cacheKey := "stats:track-perf:" + racerIDStr
+		if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
+			c.JSON(http.StatusOK, cached)
+			return
+		}
 		results, err := racing.TrackPerformance(h.S.DB, racerID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -32,6 +37,7 @@ func (h *Handler) GetTrackPerformance(c *gin.Context) {
 		if results == nil {
 			results = []racing.TrackPerformanceData{}
 		}
+		h.S.StatsCache.Set(cacheKey, results)
 		c.JSON(http.StatusOK, results)
 		return
 	}
@@ -142,7 +148,7 @@ func (h *Handler) GetPaceHeatmap(c *gin.Context) {
 		query += " AND lr.racer_id = ?"
 		args = append(args, racerIDStr)
 	}
-	query += " ORDER BY lr.racer_id, lr.lap_number"
+	query += " ORDER BY lr.racer_id, lr.lap_number LIMIT 1000"
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {

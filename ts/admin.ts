@@ -53,10 +53,8 @@ const trackModal = new bootstrap.Modal(document.getElementById('trackModal')!);
 const statsModal = new bootstrap.Modal(document.getElementById('statsModal')!);
 
 async function init(): Promise<void> {
-    // Load tracks once (shared by adminTracks + allTracks)
-    await loadTracks();
-    // Everything else can run in parallel — no dependencies between them
     await Promise.all([
+        loadTracks(),
         loadRaceInfo(),
         loadRacers(),
         loadQuotes(),

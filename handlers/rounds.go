@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -120,6 +122,93 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 
 	h.S.BroadcastRacers()
 	c.JSON(http.StatusOK, gin.H{"id": snapshotID, "round": roundNum})
+}
+
+// @Summary Get round snapshots batch
+// @Description Get multiple round snapshots with scores by IDs (comma-separated)
+// @Tags Seasons
+// @Produce json
+// @Param ids query string true "Comma-separated snapshot IDs"
+// @Success 200 {array} models.RoundSnapshot
+// @Router /api/rounds/batch [get]
+func (h *Handler) GetRoundSnapshotsBatch(c *gin.Context) {
+	idsStr := c.Query("ids")
+	if idsStr == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ids required"})
+		return
+	}
+
+	idStrs := strings.Split(idsStr, ",")
+	ids := make([]int, 0, len(idStrs))
+	placeholders := make([]string, 0, len(idStrs))
+	for _, s := range idStrs {
+		id, err := strconv.Atoi(strings.TrimSpace(s))
+		if err != nil {
+			continue
+		}
+		ids = append(ids, id)
+		placeholders = append(placeholders, "?")
+	}
+
+	if len(ids) == 0 {
+		c.JSON(http.StatusOK, []models.RoundSnapshot{})
+		return
+	}
+
+	query := fmt.Sprintf(
+		"SELECT id, season_id, race_name, race_date, round, created_at, status FROM round_snapshots WHERE id IN (%s) ORDER BY round ASC",
+		strings.Join(placeholders, ","),
+	)
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+
+	rows, err := h.S.DB.Query(query, args...)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	snapshotMap := make(map[int]*models.RoundSnapshot)
+	var snapshots []models.RoundSnapshot
+	for rows.Next() {
+		var s models.RoundSnapshot
+		if err := rows.Scan(&s.ID, &s.SeasonID, &s.RaceName, &s.RaceDate, &s.Round, &s.CreatedAt, &s.Status); err != nil {
+			continue
+		}
+		snapshots = append(snapshots, s)
+		snapshotMap[s.ID] = &snapshots[len(snapshots)-1]
+	}
+
+	if len(snapshots) == 0 {
+		c.JSON(http.StatusOK, snapshots)
+		return
+	}
+
+	scoreQuery := fmt.Sprintf(
+		"SELECT id, snapshot_id, racer_id, racer_name, points, position, dnf, dns, spins, overheated FROM round_snapshot_scores WHERE snapshot_id IN (%s) ORDER BY position",
+		strings.Join(placeholders, ","),
+	)
+	scoreRows, err := h.S.DB.Query(scoreQuery, args...)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer scoreRows.Close()
+
+	for scoreRows.Next() {
+		var sc models.RoundSnapshotScore
+		if err := scoreRows.Scan(&sc.ID, &sc.SnapshotID, &sc.RacerID, &sc.RacerName, &sc.Points, &sc.Position, &sc.DNF, &sc.DNS, &sc.Spins, &sc.Overheated); err != nil {
+			continue
+		}
+		if snap, ok := snapshotMap[sc.SnapshotID]; ok {
+			snap.Scores = append(snap.Scores, sc)
+		}
+	}
+
+	c.JSON(http.StatusOK, snapshots)
 }
 
 // @Summary Get round snapshots

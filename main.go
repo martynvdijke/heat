@@ -193,8 +193,8 @@ func main() {
 	server.Log = logger.New(server.DB)
 	defer server.Log.Stop()
 
-	// Initialize stats cache with 30 second TTL
-	server.StatsCache = racing.NewCache(30 * time.Second)
+	// Initialize stats cache with 5 minute TTL
+	server.StatsCache = racing.NewCache(300 * time.Second)
 
 	h := handlers.New(server)
 	wsManager := ws.NewManager(server)
@@ -435,6 +435,7 @@ func main() {
 	r.POST("/api/flags", h.HandleFlag)
 	r.POST("/api/rounds", h.TakeRoundSnapshot)
 	r.GET("/api/rounds", h.GetRoundSnapshots)
+	r.GET("/api/rounds/batch", h.GetRoundSnapshotsBatch)
 	r.PATCH("/api/rounds", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.UpdateRoundScores)
 	r.PATCH("/api/rounds/finalize", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.FinalizeRound)
 	r.DELETE("/api/rounds", h.DeleteRoundSnapshot)

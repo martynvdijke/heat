@@ -50,9 +50,9 @@ async function loadSeasonStats(seasonId?: string): Promise<void> {
         const hasDrivers = driverData.length > 0;
 
         if (hasSnapshots) {
-            const allScores = await Promise.all(
-                snapshots.map((s: any) => fetch(`/api/rounds?id=${s.id}`).then(r => r.json()))
-            );
+            const ids = snapshots.map((s: any) => s.id).join(',');
+            const batchRes = await fetch(`/api/rounds/batch?ids=${ids}`);
+            const allScores = await batchRes.json() as any[];
             renderPointsChart(snapshots, allScores);
             renderBattleChart(allScores);
             renderTrackStatsTable(allScores);
@@ -269,7 +269,7 @@ function switchSeason(value: string): void {
     loadSeasonStats(value || undefined);
 }
 
-loadSeasonStats();
+loadSeasonStats().then(() => loadDeeperStats());
 (window as any).switchSeason = switchSeason;
 
 // Deeper Stats
@@ -354,4 +354,4 @@ async function loadDeeperStats(): Promise<void> {
     }
 }
 
-setTimeout(loadDeeperStats, 1000);
+
