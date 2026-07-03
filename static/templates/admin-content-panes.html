@@ -6,7 +6,7 @@
                         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#quotes-pane" type="button" role="tab"><i class="fa-solid fa-microphone me-1"></i>Quotes</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#teams-pane" type="button" role="tab"><i class="fa-solid fa-people-group me-1"></i>Teams</button>
+                        <button class="nav-link" id="teams-subtab" data-bs-toggle="tab" data-bs-target="#teams-pane" type="button" role="tab"><i class="fa-solid fa-people-group me-1"></i>Teams</button>
                     </li>
                 </ul>
                 <div class="tab-content">
@@ -28,7 +28,7 @@
                                                 <th class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="quote-list" hx-get="/api/html/quotes" hx-trigger="load" hx-swap="outerHTML" hx-indicator=".htmx-indicator">
+                                        <tbody id="quote-list">
                                             <tr><td colspan="3" class="text-center text-muted py-4"><span class="htmx-indicator"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading quotes...</span></td></tr>
                                         </tbody>
                                     </table>
@@ -54,7 +54,7 @@
                                                 <th class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="team-list" hx-get="/api/html/teams" hx-trigger="load" hx-swap="outerHTML" hx-indicator=".htmx-indicator">
+                                        <tbody id="team-list">
                                             <tr><td colspan="3" class="text-center text-muted py-4"><span class="htmx-indicator"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading teams...</span></td></tr>
                                         </tbody>
                                     </table>

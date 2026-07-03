@@ -54,16 +54,9 @@ const statsModal = new bootstrap.Modal(document.getElementById('statsModal')!);
 
 async function init(): Promise<void> {
     await Promise.all([
-        loadTracks(),
         loadRaceInfo(),
+        loadTracks(),
         loadRacers(),
-        loadQuotes(),
-        loadRacerStats(),
-        loadNotificationSettings(),
-        loadUmamiSettings(),
-        loadAISettings(),
-        loadOTelSettings(),
-        loadEInkSettings(),
     ]);
 }
 
@@ -222,6 +215,14 @@ async function loadQuotes(): Promise<void> {
             </tr>
         `).join('');
     } catch (e) { console.error('Failed to load quotes', e); }
+}
+
+async function loadTeams(): Promise<void> {
+    try {
+        const res = await fetch('/api/html/teams');
+        const html = await res.text();
+        document.getElementById('team-list')!.innerHTML = html;
+    } catch (e) { console.error('Failed to load teams', e); }
 }
 
 async function loadRacerStats(): Promise<void> {
@@ -1224,12 +1225,43 @@ document.getElementById('backup-tab')?.addEventListener('shown.bs.tab', () => {
     loadBackupList();
 });
 
+// Lazy-load data when category tabs or subtabs are shown
+let resultsLoaded = false;
+let contentLoaded = false;
+let settingsLoaded = false;
+document.getElementById('cat-results-tab')?.addEventListener('shown.bs.tab', () => {
+    if (resultsLoaded) return;
+    resultsLoaded = true;
+    loadRacerStats();
+});
+
+document.getElementById('cat-content-tab')?.addEventListener('shown.bs.tab', () => {
+    if (contentLoaded) return;
+    contentLoaded = true;
+    loadQuotes();
+});
+
+document.getElementById('cat-settings-tab')?.addEventListener('shown.bs.tab', () => {
+    if (settingsLoaded) return;
+    settingsLoaded = true;
+    Promise.all([
+        loadNotificationSettings(),
+        loadUmamiSettings(),
+        loadAISettings(),
+        loadOTelSettings(),
+        loadEInkSettings(),
+    ]);
+});
+
 // Listen for Bootstrap tab shown events to load sub-tab content.
 document.getElementById('rounds-subtab')?.addEventListener('shown.bs.tab', () => {
     loadRoundsList();
 });
 document.getElementById('seasons-subtab')?.addEventListener('shown.bs.tab', () => {
     loadSeasons();
+});
+document.getElementById('teams-subtab')?.addEventListener('shown.bs.tab', () => {
+    loadTeams();
 });
 
 let editingRoundId: number | null = null;
