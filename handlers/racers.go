@@ -93,7 +93,7 @@ func (h *Handler) UpdateRacer(c *gin.Context) {
 // @Tags Racers
 // @Accept json
 // @Produce json
-// @Param ranks body []struct{ID int `json:"id"`; Rank int `json:"rank"`} true "Array of {id, rank} pairs"
+// @Param ranks body []models.RacerRankUpdate true "Array of {id, rank} pairs"
 // @Success 200
 // @Failure 400 {object} map[string]string
 // @Security cookieAuth

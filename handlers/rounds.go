@@ -322,7 +322,7 @@ func (h *Handler) DeleteRoundSnapshot(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id query string true "Round snapshot ID"
-// @Param scores body []RoundSnapshotScore true "Array of updated scores"
+// @Param scores body []models.RoundSnapshotScore true "Array of updated scores"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 409 {object} map[string]string

@@ -199,6 +199,8 @@ definitions:
         type: integer
       team_id:
         type: integer
+      team_name:
+        type: string
     type: object
   models.RacerEmail:
     properties:
@@ -207,6 +209,13 @@ definitions:
       id:
         type: integer
       racer_id:
+        type: integer
+    type: object
+  models.RacerRankUpdate:
+    properties:
+      id:
+        type: integer
+      rank:
         type: integer
     type: object
   models.RacerStats:
@@ -223,6 +232,8 @@ definitions:
         type: integer
       id:
         type: integer
+      overheated:
+        type: integer
       points:
         type: integer
       racer_id:
@@ -230,6 +241,8 @@ definitions:
       races:
         type: integer
       silver:
+        type: integer
+      spins:
         type: integer
       wins:
         type: integer
@@ -252,10 +265,18 @@ definitions:
         type: array
       season_id:
         type: integer
+      status:
+        type: string
     type: object
   models.RoundSnapshotScore:
     properties:
+      dnf:
+        type: boolean
+      dns:
+        type: boolean
       id:
+        type: integer
+      overheated:
         type: integer
       points:
         type: integer
@@ -266,6 +287,8 @@ definitions:
       racer_name:
         type: string
       snapshot_id:
+        type: integer
+      spins:
         type: integer
     type: object
   models.Season:
@@ -1163,6 +1186,36 @@ paths:
       summary: Create or update a racer
       tags:
       - Racers
+  /api/racers/ranks:
+    put:
+      consumes:
+      - application/json
+      description: Update rank positions for multiple racers in one call
+      parameters:
+      - description: Array of {id, rank} pairs
+        in: body
+        name: ranks
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.RacerRankUpdate'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Batch update racer ranks
+      tags:
+      - Racers
   /api/rounds:
     delete:
       description: Delete a round snapshot by ID
@@ -1209,6 +1262,51 @@ paths:
       summary: Get round snapshots
       tags:
       - Seasons
+    patch:
+      consumes:
+      - application/json
+      description: Update the scores for a draft round. Only positions < 900 are counted
+        as finished.
+      parameters:
+      - description: Round snapshot ID
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Array of updated scores
+        in: body
+        name: scores
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.RoundSnapshotScore'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Update round scores (draft only)
+      tags:
+      - Seasons
     post:
       consumes:
       - application/json
@@ -1235,6 +1333,64 @@ paths:
               type: string
             type: object
       summary: Take round snapshot
+      tags:
+      - Seasons
+  /api/rounds/batch:
+    get:
+      description: Get multiple round snapshots with scores by IDs (comma-separated)
+      parameters:
+      - description: Comma-separated snapshot IDs
+        in: query
+        name: ids
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RoundSnapshot'
+            type: array
+      summary: Get round snapshots batch
+      tags:
+      - Seasons
+  /api/rounds/finalize:
+    patch:
+      consumes:
+      - application/json
+      description: Lock a draft round and update driver totals (points, stats, spins).
+      parameters:
+      - description: Round snapshot ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Finalize a round
       tags:
       - Seasons
   /api/seasons:

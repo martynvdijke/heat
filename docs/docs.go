@@ -1332,6 +1332,54 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/racers/ranks": {
+            "put": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Update rank positions for multiple racers in one call",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Batch update racer ranks",
+                "parameters": [
+                    {
+                        "description": "Array of {id, rank} pairs",
+                        "name": "ranks",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RacerRankUpdate"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/rounds": {
             "get": {
                 "description": "Get round snapshots, optionally filtered by ID or season_id",
@@ -1434,6 +1482,164 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Update the scores for a draft round. Only positions \u003c 900 are counted as finished.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Update round scores (draft only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Round snapshot ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Array of updated scores",
+                        "name": "scores",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RoundSnapshotScore"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rounds/batch": {
+            "get": {
+                "description": "Get multiple round snapshots with scores by IDs (comma-separated)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Get round snapshots batch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma-separated snapshot IDs",
+                        "name": "ids",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RoundSnapshot"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rounds/finalize": {
+            "patch": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Lock a draft round and update driver totals (points, stats, spins).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Finalize a round",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Round snapshot ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2430,6 +2636,9 @@ const docTemplate = `{
                 },
                 "team_id": {
                     "type": "integer"
+                },
+                "team_name": {
+                    "type": "string"
                 }
             }
         },
@@ -2443,6 +2652,17 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "racer_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.RacerRankUpdate": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "rank": {
                     "type": "integer"
                 }
             }
@@ -2468,6 +2688,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "overheated": {
+                    "type": "integer"
+                },
                 "points": {
                     "type": "integer"
                 },
@@ -2478,6 +2701,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "silver": {
+                    "type": "integer"
+                },
+                "spins": {
                     "type": "integer"
                 },
                 "wins": {
@@ -2511,13 +2737,25 @@ const docTemplate = `{
                 },
                 "season_id": {
                     "type": "integer"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
         "models.RoundSnapshotScore": {
             "type": "object",
             "properties": {
+                "dnf": {
+                    "type": "boolean"
+                },
+                "dns": {
+                    "type": "boolean"
+                },
                 "id": {
+                    "type": "integer"
+                },
+                "overheated": {
                     "type": "integer"
                 },
                 "points": {
@@ -2533,6 +2771,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "snapshot_id": {
+                    "type": "integer"
+                },
+                "spins": {
                     "type": "integer"
                 }
             }

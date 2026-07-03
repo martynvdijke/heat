@@ -1249,6 +1249,7 @@ document.getElementById('cat-content-tab')?.addEventListener('shown.bs.tab', () 
     if (contentLoaded) return;
     contentLoaded = true;
     loadQuotes();
+    loadTeams();
 });
 
 document.getElementById('cat-settings-tab')?.addEventListener('shown.bs.tab', () => {

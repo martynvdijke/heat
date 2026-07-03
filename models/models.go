@@ -2,6 +2,11 @@ package models
 
 import "encoding/json"
 
+type RacerRankUpdate struct {
+	ID   int `json:"id"`
+	Rank int `json:"rank"`
+}
+
 type Racer struct {
 	ID             int    `json:"id"`
 	Name           string `json:"name"`
