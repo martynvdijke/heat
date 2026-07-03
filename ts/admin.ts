@@ -47,10 +47,12 @@ let racerStats: AdminStats[] = [];
 let driverShares: Record<number, string> = {};
 declare const bootstrap: any;
 
-const racerModal = new bootstrap.Modal(document.getElementById('racerModal')!);
-const quoteModal = new bootstrap.Modal(document.getElementById('quoteModal')!);
-const trackModal = new bootstrap.Modal(document.getElementById('trackModal')!);
-const statsModal = new bootstrap.Modal(document.getElementById('statsModal')!);
+const modals: Record<string, any> = {};
+
+function getModal(id: string): any {
+    if (!modals[id]) modals[id] = new bootstrap.Modal(document.getElementById(id)!);
+    return modals[id];
+}
 
 async function init(): Promise<void> {
     await Promise.all([
@@ -74,6 +76,8 @@ async function loadTracks(): Promise<void> {
 }
 
 function renderTrackList(): void {
+    const pane = document.getElementById('tracks-pane');
+    if (!pane || !pane.classList.contains('active')) return;
     const list = document.getElementById('track-list')!;
     list.innerHTML = allTracks.map(t => `
         <tr>
@@ -129,8 +133,15 @@ async function loadRacers(): Promise<void> {
                 driverShares[s.racer_id] = s.token;
             }
         }
-        const list = document.getElementById('racer-list')!;
-        list.innerHTML = adminRacers.map(r => {
+        renderRacerList();
+    } catch (e) { console.error('Failed to load racers', e); }
+}
+
+function renderRacerList(): void {
+    const pane = document.getElementById('racers-pane');
+    if (!pane || !pane.classList.contains('active')) return;
+    const list = document.getElementById('racer-list')!;
+    list.innerHTML = adminRacers.map(r => {
             const token = driverShares[r.id];
             const shareLink = token ? `${window.location.origin}/driver.html?token=${token}` : '';
             return `
@@ -157,7 +168,6 @@ async function loadRacers(): Promise<void> {
                 </td>
             </tr>
         `}).join('');
-    } catch (e) { console.error('Failed to load racers', e); }
 }
 
 async function generateShareLink(racerId: number): Promise<void> {
@@ -379,7 +389,7 @@ function openStatsModal(stat?: AdminStats): void {
         (document.getElementById('statsModalLabel') as HTMLElement).textContent = 'Add New Stats';
     }
 
-    statsModal.show();
+    getModal('statsModal').show();
 }
 
 function editStats(id: number): void {
@@ -418,7 +428,7 @@ document.getElementById('stats-form')!.addEventListener('submit', async (e: Even
         body: JSON.stringify(data)
     });
     if (res.ok) {
-        statsModal.hide();
+        getModal('statsModal').hide();
         loadRacerStats();
     } else {
         const err = await res.json();
@@ -463,7 +473,7 @@ document.getElementById('racer-form')!.addEventListener('submit', async (e: Even
         body: JSON.stringify(data)
     });
     if (res.ok) {
-        racerModal.hide();
+        getModal('racerModal').hide();
         loadRacers();
     } else {
         const err = await res.json();
@@ -487,7 +497,7 @@ document.getElementById('quote-form')!.addEventListener('submit', async (e: Even
         body: JSON.stringify(data)
     });
     if (res.ok) {
-        quoteModal.hide();
+        getModal('quoteModal').hide();
         loadQuotes();
     }
 });
@@ -510,7 +520,7 @@ document.getElementById('track-form')!.addEventListener('submit', async (e: Even
         body: JSON.stringify(data)
     });
     if (res.ok) {
-        trackModal.hide();
+        getModal('trackModal').hide();
         loadTracks();
     }
 });
@@ -703,7 +713,7 @@ function openRacerModal(): void {
     (document.getElementById('racer-id') as HTMLInputElement).value = '';
     document.getElementById('racer-pic-preview')!.style.display = 'none';
     document.getElementById('racerModalLabel')!.textContent = 'Add New Racer';
-    racerModal.show();
+    getModal('racerModal').show();
 }
 
 function updateCarPreview(color: string): void {
@@ -741,7 +751,7 @@ function editRacer(id: number): void {
     preview.src = r.profile_picture;
     preview.style.display = 'inline-block';
     document.getElementById('racerModalLabel')!.textContent = 'Edit Racer: ' + r.name;
-    racerModal.show();
+    getModal('racerModal').show();
 }
 
 async function deleteRacer(id: number): Promise<void> {
@@ -755,7 +765,7 @@ function openQuoteModal(): void {
     (document.getElementById('quote-form') as HTMLFormElement).reset();
     (document.getElementById('quote-id') as HTMLInputElement).value = '';
     document.getElementById('quoteModalLabel')!.textContent = 'Add Quote';
-    quoteModal.show();
+    getModal('quoteModal').show();
 }
 
 async function editQuote(id: number): Promise<void> {
@@ -766,7 +776,7 @@ async function editQuote(id: number): Promise<void> {
     (form.elements.namedItem('text') as HTMLTextAreaElement).value = q.text;
     (form.elements.namedItem('author') as HTMLInputElement).value = q.author;
     document.getElementById('quoteModalLabel')!.textContent = 'Edit Quote';
-    quoteModal.show();
+    getModal('quoteModal').show();
 }
 
 async function deleteQuote(id: number): Promise<void> {
@@ -801,7 +811,7 @@ function openTrackModal(): void {
     (document.getElementById('track-form') as HTMLFormElement).reset();
     (document.getElementById('track-id') as HTMLInputElement).value = '';
     document.getElementById('trackModalLabel')!.textContent = 'Add New Track';
-    trackModal.show();
+    getModal('trackModal').show();
 }
 
 function editTrack(id: string): void {
@@ -819,7 +829,7 @@ function editTrack(id: string): void {
     (document.getElementById('map-image-url') as HTMLInputElement).value = t.map_image_url || '';
     document.getElementById('map-image-settings')!.style.display = t.use_map_image ? 'block' : 'none';
     document.getElementById('trackModalLabel')!.innerText = 'Edit Track';
-    trackModal.show();
+    getModal('trackModal').show();
 }
 
 async function uploadMapImage(input: HTMLInputElement): Promise<void> {
@@ -1262,6 +1272,12 @@ document.getElementById('seasons-subtab')?.addEventListener('shown.bs.tab', () =
 });
 document.getElementById('teams-subtab')?.addEventListener('shown.bs.tab', () => {
     loadTeams();
+});
+document.getElementById('tracks-subtab')?.addEventListener('shown.bs.tab', () => {
+    renderTrackList();
+});
+document.getElementById('racers-subtab')?.addEventListener('shown.bs.tab', () => {
+    renderRacerList();
 });
 
 let editingRoundId: number | null = null;
