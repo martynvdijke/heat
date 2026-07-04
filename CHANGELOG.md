@@ -1,3 +1,15 @@
+## [1.42.3](https://github.com/martynvdijke/heat/compare/v1.42.2...v1.42.3) (2026-07-04)
+
+
+### Bug Fixes
+
+* admin perf trace test fails when admin already exists ([e1a17a7](https://github.com/martynvdijke/heat/commit/e1a17a78236b0045778a1e03557e18d5ef3ceaa2))
+
+
+### Performance Improvements
+
+* non-blocking admin CSS, cache-control headers, remove dead admin.html ([e2ec0cd](https://github.com/martynvdijke/heat/commit/e2ec0cdd9648b60474c77888fa493f643ac02257))
+
 ## [1.42.2](https://github.com/martynvdijke/heat/compare/v1.42.1...v1.42.2) (2026-07-04)
 
 
