@@ -1,3 +1,17 @@
+## [1.42.2](https://github.com/martynvdijke/heat/compare/v1.42.1...v1.42.2) (2026-07-04)
+
+
+### Bug Fixes
+
+* replace team list via tbody swap with htmx.process to fix edit/delete buttons ([37d6ed5](https://github.com/martynvdijke/heat/commit/37d6ed5665fa5587b6652d56551adb5e9a562fcd))
+* resolve swagger generation failure with inline/partial type refs ([0855111](https://github.com/martynvdijke/heat/commit/0855111b3f57c25cfd9d3da8aedc128c3620f50a))
+
+
+### Performance Improvements
+
+* defer admin UI rendering, lazy init modals, skip hidden tab rendering ([95ac50c](https://github.com/martynvdijke/heat/commit/95ac50c7af160926c5768c95f26befc01248a214))
+* lazy-load admin tab data, fix CSS/CDN bottlenecks ([2fa91cc](https://github.com/martynvdijke/heat/commit/2fa91cc37e943dc93d4ba20b1537f4ae22712080))
+
 ## [1.42.1](https://github.com/martynvdijke/heat/compare/v1.42.0...v1.42.1) (2026-07-02)
 
 
