@@ -27,6 +27,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"html/template"
 	"io/fs"
 	"log"
@@ -65,10 +66,46 @@ type PageData struct {
 	EInkEnabled bool
 }
 
+type AdminData struct {
+	Version      string
+	EInkEnabled  bool
+	TabID        string
+	VendorCSS    string
+	VendorJS     string
+	VendorFA     string
+	VendorNavCss string
+}
+
 var (
 	templateCache sync.Map
 	adminTemplate *template.Template
+	vendorCSSPath string
+	vendorJSPath  string
+	vendorFAPath  string
+	vendorNavCss  string
 )
+
+func loadVendorManifest(basePath string) {
+	data, err := os.ReadFile(filepath.Join(basePath, "static/vendor/manifest.json"))
+	if err != nil {
+		log.Printf("Warning: vendor manifest not found (run 'node build.mjs'): %v", err)
+		return
+	}
+	var m struct {
+		BootstrapCss   string `json:"bootstrapCss"`
+		BootstrapJs    string `json:"bootstrapJs"`
+		FontawesomeCss string `json:"fontawesomeCss"`
+		AdminNavCss    string `json:"adminNavCss"`
+	}
+	if err := json.Unmarshal(data, &m); err != nil {
+		log.Printf("Warning: vendor manifest parse error: %v", err)
+		return
+	}
+	vendorCSSPath = m.BootstrapCss
+	vendorJSPath = m.BootstrapJs
+	vendorFAPath = m.FontawesomeCss
+	vendorNavCss = m.AdminNavCss
+}
 
 var swaggerHandler = func() *webdav.Handler {
 	h := &webdav.Handler{
@@ -141,13 +178,19 @@ func initAdminTemplate(basePath string) {
 		filepath.Join(basePath, "static/templates/admin.html"),
 		filepath.Join(basePath, "static/templates/admin-header.html"),
 		filepath.Join(basePath, "static/templates/admin-footer.html"),
-		filepath.Join(basePath, "static/templates/admin-modals.html"),
-		filepath.Join(basePath, "static/templates/admin-race-panes.html"),
-		filepath.Join(basePath, "static/templates/admin-results-panes.html"),
-		filepath.Join(basePath, "static/templates/admin-content-panes.html"),
-		filepath.Join(basePath, "static/templates/admin-settings-panes.html"),
-		filepath.Join(basePath, "static/templates/admin-system-panes.html"),
+		filepath.Join(basePath, "static/templates/tab-race-day.html"),
+		filepath.Join(basePath, "static/templates/tab-season.html"),
+		filepath.Join(basePath, "static/templates/tab-drivers.html"),
+		filepath.Join(basePath, "static/templates/tab-config.html"),
 	))
+}
+
+func isValidAdminTab(tab string) bool {
+	switch tab {
+	case "race-day", "season", "drivers", "config":
+		return true
+	}
+	return false
 }
 
 func main() {
@@ -200,6 +243,7 @@ func main() {
 	wsManager := ws.NewManager(server)
 
 	// Pre-parse templates at startup
+	loadVendorManifest(server.BasePath)
 	initAdminTemplate(server.BasePath)
 	// Warm up page templates in cache
 	loadCachedTemplate(
@@ -405,6 +449,39 @@ func main() {
 		admin.POST("/html/seasons/:id/archive", h.HtmxSeasonsArchive)
 		admin.DELETE("/html/seasons/:id", h.HtmxSeasonsDelete)
 
+		// Admin tab fragment endpoints
+		admin.GET("/html/admin/:tab", func(c *gin.Context) {
+			tabID := c.Param("tab")
+			if !isValidAdminTab(tabID) {
+				c.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+			tmplName := "tabRaceDay"
+			switch tabID {
+			case "season":
+				tmplName = "tabSeason"
+			case "drivers":
+				tmplName = "tabDrivers"
+			case "config":
+				tmplName = "tabConfig"
+			}
+			c.Header("Content-Type", "text/html; charset=utf-8")
+			c.Header("Cache-Control", "no-store")
+			adminData := AdminData{
+				Version:      server.CurrentVersion,
+				EInkEnabled:  server.EInkEnabled,
+				TabID:        tabID,
+				VendorCSS:    vendorCSSPath,
+				VendorJS:     vendorJSPath,
+				VendorFA:     vendorFAPath,
+				VendorNavCss: vendorNavCss,
+			}
+			if err := adminTemplate.ExecuteTemplate(c.Writer, tmplName, adminData); err != nil {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+		})
+
 		// Admin: Logs
 		admin.GET("/admin/logs", h.GetLogs)
 		admin.GET("/admin/logs/modules", h.GetLogModules)
@@ -540,7 +617,7 @@ func main() {
 	pages.Use(middleware.UmamiMiddleware(server))
 	pages.Use(h.I18nMiddleware())
 	{
-		pages.GET("/admin.html", func(c *gin.Context) {
+		pages.GET("/admin.html", cacheControl("no-store"), func(c *gin.Context) {
 			var validSession string
 			for _, cookie := range c.Request.Cookies() {
 				if cookie.Name == "session" {
@@ -559,7 +636,16 @@ func main() {
 				return
 			}
 			c.Header("Content-Type", "text/html; charset=utf-8")
-			if err := adminTemplate.ExecuteTemplate(c.Writer, "admin.html", nil); err != nil {
+			adminData := AdminData{
+				Version:      server.CurrentVersion,
+				EInkEnabled:  server.EInkEnabled,
+				TabID:        "race-day",
+				VendorCSS:    vendorCSSPath,
+				VendorJS:     vendorJSPath,
+				VendorFA:     vendorFAPath,
+				VendorNavCss: vendorNavCss,
+			}
+			if err := adminTemplate.ExecuteTemplate(c.Writer, "admin.html", adminData); err != nil {
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
 			}

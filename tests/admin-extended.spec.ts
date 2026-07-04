@@ -9,7 +9,7 @@ test.describe.serial('Admin Extended Features', () => {
     const teamName = `Team-${Date.now()}`;
 
     test('should create a team', async ({ page }) => {
-      await showAdminPane(page, '#cat-content-tab', '#teams-pane');
+      await showAdminPane(page, 'button[data-tab-id="drivers"]', '#teams-pane');
       await page.click('button[hx-get="/api/html/teams/0/edit"]');
       await page.waitForSelector('#teamModal.show');
       await page.waitForSelector('#teamModal form#team-form');
@@ -24,7 +24,7 @@ test.describe.serial('Admin Extended Features', () => {
     });
 
     test('should edit the team', async ({ page }) => {
-      await showAdminPane(page, '#cat-content-tab', '#teams-pane');
+      await showAdminPane(page, 'button[data-tab-id="drivers"]', '#teams-pane');
       await page.waitForTimeout(500);
 
       // Find the edit button in the row containing our team name
@@ -42,7 +42,7 @@ test.describe.serial('Admin Extended Features', () => {
     });
 
     test('should delete the team', async ({ page }) => {
-      await showAdminPane(page, '#cat-content-tab', '#teams-pane');
+      await showAdminPane(page, 'button[data-tab-id="drivers"]', '#teams-pane');
       await page.waitForTimeout(500);
 
       // Find delete button in the row containing our renamed team
@@ -56,7 +56,7 @@ test.describe.serial('Admin Extended Features', () => {
   });
 
   test('should create racer with profile picture URL', async ({ page }) => {
-    await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
+    await clickAdminSubTab(page, 'button[data-tab-id="drivers"]', '#racers-subtab');
 
     // Create racer with an existing image URL (no direct API upload needed)
     await page.click('button[hx-get="/api/html/racers/0/edit"]');
@@ -79,7 +79,7 @@ test.describe.serial('Admin Extended Features', () => {
   });
 
   test('should edit racer points', async ({ page }) => {
-    await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
+    await clickAdminSubTab(page, 'button[data-tab-id="drivers"]', '#racers-subtab');
     await page.waitForTimeout(500);
 
     // Create a racer with known points
@@ -117,7 +117,7 @@ test.describe.serial('Admin Extended Features', () => {
     const carName = 'Speedster-X';
 
     test('should create racer with car name and color', async ({ page }) => {
-      await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
+      await clickAdminSubTab(page, 'button[data-tab-id="drivers"]', '#racers-subtab');
 
       await page.click('button[hx-get="/api/html/racers/0/edit"]');
       await page.waitForSelector('#racerModal.show');
@@ -153,7 +153,7 @@ test.describe.serial('Admin Extended Features', () => {
 
     test('should create team and assign racer', async ({ page }) => {
       // Create team via admin UI
-      await showAdminPane(page, '#cat-content-tab', '#teams-pane');
+      await showAdminPane(page, 'button[data-tab-id="drivers"]', '#teams-pane');
       await page.click('button[hx-get="/api/html/teams/0/edit"]');
       await page.waitForSelector('#teamModal.show');
       await page.waitForSelector('#teamModal form#team-form');
@@ -174,7 +174,7 @@ test.describe.serial('Admin Extended Features', () => {
       teamId = parseInt(teamMatch![1]);
 
       // Create racer
-      await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
+      await clickAdminSubTab(page, 'button[data-tab-id="drivers"]', '#racers-subtab');
       await page.click('button[hx-get="/api/html/racers/0/edit"]');
       await page.waitForSelector('#racerModal.show');
       await page.waitForSelector('#racerModal form#racer-form');
@@ -227,7 +227,7 @@ test.describe.serial('Admin Extended Features', () => {
 
     test('should create a round snapshot (draft)', async ({ page }) => {
       // Ensure we have at least one racer
-      await clickAdminSubTab(page, '#cat-race-tab', '#racers-subtab');
+      await clickAdminSubTab(page, 'button[data-tab-id="drivers"]', '#racers-subtab');
       const racerCount = await page.locator('#racer-list tr').count();
       if (racerCount === 0) {
         await page.click('button[hx-get="/api/html/racers/0/edit"]');
@@ -243,7 +243,7 @@ test.describe.serial('Admin Extended Features', () => {
       }
 
       // Navigate to rounds pane via direct sub-tab click
-      await page.click('#cat-results-tab');
+      await page.click('button[data-tab-id="season"]');
       await page.waitForTimeout(300);
       await page.click('button[data-bs-target="#rounds-pane"]');
       await page.waitForTimeout(500);
@@ -275,7 +275,7 @@ test.describe.serial('Admin Extended Features', () => {
       expect(roundId).toBeGreaterThan(0);
 
       // Navigate to rounds pane
-      await page.click('#cat-results-tab');
+      await page.click('button[data-tab-id="season"]');
       await page.waitForTimeout(300);
       await page.click('button[data-bs-target="#rounds-pane"]');
       await page.waitForTimeout(500);
@@ -489,15 +489,15 @@ test.describe.serial('Admin Extended Features', () => {
 });
 
 // Helper functions (copied from admin.spec.ts for isolation)
-async function clickAdminSubTab(page: Page, categoryTabId: string, subTabSelector: string) {
-  await page.click(categoryTabId);
-  await page.locator(subTabSelector).waitFor({ state: 'visible', timeout: 5000 });
+async function clickAdminSubTab(page: Page, tabSelector: string, subTabSelector: string) {
+  await page.click(tabSelector);
+  await page.locator(subTabSelector).waitFor({ state: 'visible', timeout: 10000 });
   await page.click(subTabSelector);
 }
 
-async function showAdminPane(page: Page, categoryTabId: string, paneId: string) {
-  await page.click(categoryTabId);
-  await expect(page.locator(categoryTabId.replace('-tab', ''))).toHaveClass(/active/, { timeout: 5000 });
+async function showAdminPane(page: Page, tabSelector: string, paneId: string) {
+  await page.click(tabSelector);
+  await expect(page.locator(paneId)).toBeAttached({ timeout: 10000 });
   await page.evaluate((id) => {
     const pane = document.getElementById(id.replace('#', ''));
     if (pane) pane.classList.add('show', 'active');
@@ -523,7 +523,7 @@ async function closeTeamModal(page: Page) {
 
 async function loginAsAdmin(page: Page) {
   await page.goto('/admin.html');
-  if (await page.locator('#adminCategories').count() > 0) return;
+  if (await page.locator('#admin-nav').count() > 0) return;
 
   await page.waitForSelector('#setup-form, #login-form', { timeout: 10000 });
 
@@ -548,5 +548,5 @@ async function loginAsAdmin(page: Page) {
   }
 
   await page.waitForURL(/admin/, { timeout: 20000 });
-  await expect(page.locator('#adminCategories')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('#admin-nav')).toBeVisible({ timeout: 10000 });
 }

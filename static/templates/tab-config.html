@@ -1,6 +1,4 @@
-{{define "settingsPanes"}}
-            <!-- === SETTINGS CATEGORY === -->
-            <div class="tab-pane fade" id="cat-settings" role="tabpanel">
+{{define "tabConfig"}}
                 <ul class="nav nav-pills mb-3" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#notify-pane" type="button" role="tab"><i class="fa-solid fa-bell me-1"></i>Notifications</button>
@@ -23,9 +21,12 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#eink-pane" type="button" role="tab"><i class="fa-solid fa-file-lines me-1"></i>E-Ink</button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs-pane" type="button" role="tab"><i class="fa-solid fa-list me-1"></i>Logs</button>
+                    </li>
                 </ul>
                 <div class="tab-content">
-                    <div class="tab-pane fade" id="notify-pane">
+                    <div class="tab-pane fade show active" id="notify-pane">
                         <div class="row">
                             <div class="col-lg-6">
                                 <div class="card">
@@ -287,36 +288,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="eink-pane">
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="card">
-                                    <div class="card-header"><i class="fa-solid fa-file-lines me-2 text-danger"></i>E-Ink Display Mode</div>
-                                    <div class="card-body">
-                                        <form id="eink-form">
-                                            <div class="mb-3">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" id="eink-enabled">
-                                                    <label class="form-check-label small fw-bold" for="eink-enabled">Enable E-Ink Mode Site-Wide</label>
-                                                </div>
-                                                <div class="form-text mt-1">When enabled, all pages will render in high-contrast black-on-white e-ink mode by default.</div>
-                                            </div>
-                                            <button type="submit" class="btn btn-primary w-100">Save E-Ink Settings</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="card">
-                                    <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About E-Ink Mode</div>
-                                    <div class="card-body">
-                                        <p class="small text-muted mb-2">E-ink mode adapts HEAT's UI for low-power, high-contrast e-ink displays. It disables all animations, shadows, and color-dependent indicators.</p>
-                                        <p class="small text-muted mb-0">Users can also toggle e-ink mode individually via the <i class="fa-solid fa-file-pen"></i> button in the navigation bar, or by adding <code>?eink=1</code> to any page URL.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div class="tab-pane fade" id="backup-pane">
                         <div class="row">
                             <div class="col-lg-6">
@@ -388,6 +359,137 @@
                             </div>
                         </div>
                     </div>
+                    <div class="tab-pane fade" id="eink-pane">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-file-lines me-2 text-danger"></i>E-Ink Display Mode</div>
+                                    <div class="card-body">
+                                        <form id="eink-form">
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="eink-enabled">
+                                                    <label class="form-check-label small fw-bold" for="eink-enabled">Enable E-Ink Mode Site-Wide</label>
+                                                </div>
+                                                <div class="form-text mt-1">When enabled, all pages will render in high-contrast black-on-white e-ink mode by default.</div>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100">Save E-Ink Settings</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About E-Ink Mode</div>
+                                    <div class="card-body">
+                                        <p class="small text-muted mb-2">E-ink mode adapts HEAT's UI for low-power, high-contrast e-ink displays. It disables all animations, shadows, and color-dependent indicators.</p>
+                                        <p class="small text-muted mb-0">Users can also toggle e-ink mode individually via the <i class="fa-solid fa-file-pen"></i> button in the navigation bar, or by adding <code>?eink=1</code> to any page URL.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="logs-pane">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <span><i class="fa-solid fa-list me-2 text-danger"></i>Application Logs</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
+                                                <i class="fa-solid fa-rotate me-1"></i> Refresh
+                                            </button>
+                                            <small class="text-muted" id="logs-poll-status">Live</small>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Level</label>
+                                                <select class="form-select form-select-sm" id="log-filter-level">
+                                                    <option value="">All</option>
+                                                    <option value="DEBUG">DEBUG</option>
+                                                    <option value="INFO">INFO</option>
+                                                    <option value="WARN">WARN</option>
+                                                    <option value="ERROR">ERROR</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Module</label>
+                                                <select class="form-select form-select-sm" id="log-filter-module">
+                                                    <option value="">All</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-end">
+                                                <button class="btn btn-sm btn-primary w-100" onclick="applyLogFilters()">
+                                                    <i class="fa-solid fa-filter me-1"></i> Apply
+                                                </button>
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-end">
+                                                <button class="btn btn-sm btn-outline-warning w-100" onclick="clearLogFilters()">
+                                                    <i class="fa-solid fa-eraser me-1"></i> Clear
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-hover table-sm align-middle mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:160px">Timestamp</th>
+                                                        <th style="width:80px">Level</th>
+                                                        <th style="width:100px">Module</th>
+                                                        <th>Message</th>
+                                                        <th style="width:60px">Trace</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="logs-list">
+                                                    <tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading logs...</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <small class="text-muted" id="logs-total">0 entries</small>
+                                            <div>
+                                                <button class="btn btn-sm btn-outline-secondary me-1" id="logs-prev-btn" onclick="changeLogPage(-1)" disabled>
+                                                    <i class="fa-solid fa-chevron-left"></i> Previous
+                                                </button>
+                                                <span class="small text-muted mx-2" id="logs-page-info">Page 1</span>
+                                                <button class="btn btn-sm btn-outline-secondary" id="logs-next-btn" onclick="changeLogPage(1)" disabled>
+                                                    Next <i class="fa-solid fa-chevron-right"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-header">
+                                        <span><i class="fa-solid fa-sliders me-2 text-danger"></i>Log Settings</span>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="small text-muted mb-3">Configure log verbosity per module. Unconfigured modules default to <strong>WARN</strong>.</p>
+                                        <div class="table-responsive">
+                                            <table class="table table-hover table-sm align-middle mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Module</th>
+                                                        <th style="width:150px">Verbosity Level</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="log-settings-list">
+                                                    <tr><td colspan="2" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading settings...</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button class="btn btn-sm btn-primary" onclick="saveLogSettings()">
+                                                <i class="fa-solid fa-save me-1"></i> Save Settings
+                                            </button>
+                                            <span id="log-settings-status" class="small ms-2"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 {{end}}

@@ -268,19 +268,23 @@ func TestAdminPageLoadsQuickly(t *testing.T) {
 			filepath.Join(testServer.BasePath, "static/templates/admin.html"),
 			filepath.Join(testServer.BasePath, "static/templates/admin-header.html"),
 			filepath.Join(testServer.BasePath, "static/templates/admin-footer.html"),
-			filepath.Join(testServer.BasePath, "static/templates/admin-modals.html"),
-			filepath.Join(testServer.BasePath, "static/templates/admin-race-panes.html"),
-			filepath.Join(testServer.BasePath, "static/templates/admin-results-panes.html"),
-			filepath.Join(testServer.BasePath, "static/templates/admin-content-panes.html"),
-			filepath.Join(testServer.BasePath, "static/templates/admin-settings-panes.html"),
-			filepath.Join(testServer.BasePath, "static/templates/admin-system-panes.html"),
+			filepath.Join(testServer.BasePath, "static/templates/tab-race-day.html"),
+			filepath.Join(testServer.BasePath, "static/templates/tab-season.html"),
+			filepath.Join(testServer.BasePath, "static/templates/tab-drivers.html"),
+			filepath.Join(testServer.BasePath, "static/templates/tab-config.html"),
 		)
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 		c.Header("Content-Type", "text/html; charset=utf-8")
-		if err := tmpl.ExecuteTemplate(c.Writer, "admin.html", nil); err != nil {
+		adminData := struct {
+			VendorCSS    string
+			VendorJS     string
+			VendorFA     string
+			VendorNavCss string
+		}{}
+		if err := tmpl.ExecuteTemplate(c.Writer, "admin.html", adminData); err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}

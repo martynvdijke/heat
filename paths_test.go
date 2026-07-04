@@ -68,12 +68,10 @@ func TestAdminHTMLTabPaneStructure(t *testing.T) {
 		"static/templates/admin.html",
 		"static/templates/admin-header.html",
 		"static/templates/admin-footer.html",
-		"static/templates/admin-modals.html",
-		"static/templates/admin-race-panes.html",
-		"static/templates/admin-results-panes.html",
-		"static/templates/admin-content-panes.html",
-		"static/templates/admin-settings-panes.html",
-		"static/templates/admin-system-panes.html",
+		"static/templates/tab-race-day.html",
+		"static/templates/tab-season.html",
+		"static/templates/tab-drivers.html",
+		"static/templates/tab-config.html",
 	}
 
 	var content strings.Builder

@@ -1,4 +1,15 @@
-{{define "racePanes"}}
+{{define "tabRaceDay"}}
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="race-subtab" data-bs-toggle="tab" data-bs-target="#race-pane" type="button" role="tab"><i class="fa-solid fa-gauge-high me-1"></i>Race</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="qualification-subtab" data-bs-toggle="tab" data-bs-target="#qualification-pane" type="button" role="tab"><i class="fa-solid fa-random me-1"></i>Qualification</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tracks-subtab" data-bs-toggle="tab" data-bs-target="#tracks-pane" type="button" role="tab"><i class="fa-solid fa-road me-1"></i>Tracks</button>
+                    </li>
+                </ul>
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="race-pane">
                         <div class="row">
@@ -110,36 +121,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="racers-pane">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i class="fa-solid fa-users me-2 text-danger"></i>Racer Standings</span>
-                                <button class="btn btn-sm btn-success" hx-get="/api/html/racers/0/edit" hx-target="#racerModal .modal-body" hx-swap="innerHTML" hx-indicator=".htmx-indicator" data-bs-toggle="modal" data-bs-target="#racerModal">
-                                    <i class="fa-solid fa-plus me-1"></i> Add Racer
-                                </button>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th class="ps-4">Rank</th>
-                                                <th>Driver</th>
-                                                <th>Car</th>
-                                                <th>Points</th>
-                                                <th>Pos</th>
-                                                <th>Share</th>
-                                                <th class="text-end pe-4">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="racer-list">
-                                            <tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading racers...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div class="tab-pane fade" id="tracks-pane">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
@@ -166,6 +147,69 @@
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Race Day-owned modals -->
+                <div class="modal fade" id="trackModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="trackModalLabel">Edit Track</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="track-form">
+                                    <input type="hidden" name="id" id="track-id">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Track ID</label>
+                                        <input type="text" class="form-control" name="id_visible" id="track-id-visible" required placeholder="e.g. zandvoort">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Track Name</label>
+                                        <input type="text" class="form-control" name="name" required placeholder="e.g. Circuit Zandvoort">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Country</label>
+                                        <input type="text" class="form-control" name="country" required placeholder="e.g. Netherlands">
+                                    </div>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-bold">Length (km)</label>
+                                            <input type="number" class="form-control" name="length_km" required>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-bold">Lap Record</label>
+                                            <input type="text" class="form-control" name="lap_record" placeholder="e.g. 1:09.000">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="refresh-geojson" name="refresh_geojson" checked>
+                                            <label class="form-check-label small fw-bold" for="refresh-geojson">Live GeoJSON Refresh</label>
+                                        </div>
+                                        <div class="form-text mt-0 mb-2">Enable to update car positions on the map in real-time.</div>
+                                    </div>
+                                    <div class="mb-3 border rounded p-3 bg-light">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="use-map-image" name="use_map_image" onchange="document.getElementById('map-image-settings').style.display = this.checked ? 'block' : 'none'">
+                                            <label class="form-check-label small fw-bold" for="use-map-image">Use Map Image Background</label>
+                                        </div>
+                                        <div id="map-image-settings" style="display:none">
+                                            <label class="form-label small fw-bold">Map Image URL</label>
+                                            <div class="input-group mb-2">
+                                                <input type="text" class="form-control" name="map_image_url" id="map-image-url">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('map-image-upload').click()">Upload</button>
+                                            </div>
+                                            <input type="file" id="map-image-upload" style="display:none" accept="image/*" onchange="uploadMapImage(this)">
+                                            <button type="button" class="btn btn-sm btn-outline-info w-100" onclick="extractTrackFromAI()">
+                                                <i aria-hidden="true" class="fa-solid fa-wand-magic-sparkles me-1"></i> Extract Track with AI (Alpha)
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">Save Track</button>
+                                </form>
                             </div>
                         </div>
                     </div>

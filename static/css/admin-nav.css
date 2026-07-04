@@ -1,0 +1,111 @@
+/* Admin Navigation — bottom bar (mobile) / side rail (desktop) */
+#admin-nav {
+  display: flex;
+  background: #fff;
+  border-top: 1px solid #dee2e6;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1030;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+#admin-nav .admin-nav__tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  color: #6c757d;
+  font-size: 0.65rem;
+  line-height: 1.1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+#admin-nav .admin-nav__tab i {
+  font-size: 1.1rem;
+}
+#admin-nav .admin-nav__tab.active {
+  color: #d40000;
+}
+#admin-nav .admin-nav__tab.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 3px;
+  background: #d40000;
+  border-radius: 0 0 2px 2px;
+}
+#admin-nav .admin-nav__tab:hover {
+  background: rgba(212, 0, 0, 0.06);
+}
+
+.admin-content {
+  padding-bottom: 64px;
+}
+
+/* Side rail layout ≥768px */
+@media (min-width: 768px) {
+  #admin-nav {
+    flex-direction: column;
+    width: 220px;
+    height: 100vh;
+    border-top: none;
+    border-right: 1px solid #dee2e6;
+    background: #111;
+    padding-bottom: 0;
+  }
+  #admin-nav .admin-nav__tab {
+    flex: 0 0 auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 48px;
+    padding: 12px 20px;
+    color: #999;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #222;
+  }
+  #admin-nav .admin-nav__tab i {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+  }
+  #admin-nav .admin-nav__tab.active {
+    color: #fff;
+    background: rgba(212, 0, 0, 0.2);
+    border-left: 3px solid #d40000;
+  }
+  #admin-nav .admin-nav__tab.active::after {
+    display: none;
+  }
+  #admin-nav .admin-nav__tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .admin-content {
+    margin-left: 220px;
+    padding-bottom: 0;
+  }
+}
+
+/* 44px minimum tap targets (already satisfied by min-height:48px) */
+
+/* Tab content fade */
+#admin-tab-container {
+  transition: opacity 150ms ease-in-out;
+}
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  #admin-tab-container {
+    transition: none;
+  }
+}

@@ -4,7 +4,7 @@ test.describe.serial('Admin Performance Trace', () => {
 
   async function loginAsAdmin(page: Page) {
     await page.goto('/admin.html');
-    if (await page.locator('#adminCategories').count() > 0) return;
+    if (await page.locator('#admin-nav').count() > 0) return;
     await page.waitForSelector('#setup-form, #login-form', { timeout: 10000 });
     if (await page.locator('#setup-form').count() > 0) {
       await page.fill('#setup-form input[name="username"]', 'admin');
@@ -20,7 +20,7 @@ test.describe.serial('Admin Performance Trace', () => {
       await page.click('#login-form button[type="submit"]');
     }
     await page.waitForURL(/admin/, { timeout: 20000 });
-    await expect(page.locator('#adminCategories')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#admin-nav')).toBeVisible({ timeout: 10000 });
   }
 
   test('capture performance timeline', async ({ page }) => {

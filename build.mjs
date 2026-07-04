@@ -1,5 +1,7 @@
 import * as esbuild from 'esbuild';
 import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 const isDev = process.argv.includes('--dev');
 
@@ -22,6 +24,66 @@ const config = {
   outbase: 'ts',
 };
 
+// --- Vendor bundling: self-host Bootstrap + FontAwesome with content-hashed filenames ---
+function hashContent(buf) {
+  return crypto.createHash('sha256').update(buf).digest('hex').slice(0, 12);
+}
+
+async function buildVendor() {
+  const outDir = 'static/vendor';
+  fs.rmSync(outDir, { recursive: true, force: true });
+  fs.mkdirSync(path.join(outDir, 'webfonts'), { recursive: true });
+
+  const manifest = {};
+
+  // Bootstrap CSS (only inline data: URIs — safe to copy verbatim)
+  const bsCssSrc = fs.readFileSync('node_modules/bootstrap/dist/css/bootstrap.min.css');
+  const bsCssHash = hashContent(bsCssSrc);
+  const bsCssName = `bootstrap.${bsCssHash}.min.css`;
+  fs.writeFileSync(path.join(outDir, bsCssName), bsCssSrc);
+  manifest.bootstrapCss = `/static/vendor/${bsCssName}`;
+
+  // Bootstrap JS bundle (includes Popper)
+  const bsJsSrc = fs.readFileSync('node_modules/bootstrap/dist/js/bootstrap.bundle.min.js');
+  const bsJsHash = hashContent(bsJsSrc);
+  const bsJsName = `bootstrap.${bsJsHash}.bundle.min.js`;
+  fs.writeFileSync(path.join(outDir, bsJsName), bsJsSrc);
+  manifest.bootstrapJs = `/static/vendor/${bsJsName}`;
+
+  // FontAwesome CSS — rewrite ../webfonts/ -> ./webfonts/ so it resolves next to the hashed file
+  const faCssSrcRaw = fs.readFileSync('node_modules/@fortawesome/fontawesome-free/css/all.min.css', 'utf8');
+  const faCssSrc = faCssSrcRaw.replace(/\.\.\/webfonts\//g, './webfonts/');
+  const faCssHash = hashContent(Buffer.from(faCssSrc, 'utf8'));
+  const faCssName = `fontawesome.${faCssHash}.min.css`;
+  fs.writeFileSync(path.join(outDir, faCssName), faCssSrc);
+  manifest.fontawesomeCss = `/static/vendor/${faCssName}`;
+
+  // FontAwesome webfonts — copied verbatim (their contents are stable per release)
+  const webfontsDir = 'node_modules/@fortawesome/fontawesome-free/webfonts';
+  const webfontFiles = fs.readdirSync(webfontsDir);
+  for (const f of webfontFiles) {
+    fs.copyFileSync(path.join(webfontsDir, f), path.join(outDir, 'webfonts', f));
+  }
+  manifest.fontawesomeWebfonts = webfontFiles.map((f) => `/static/vendor/webfonts/${f}`);
+
+  // Admin nav CSS — content-hashed for cache-busting
+  const navCssPath = 'static/css/admin-nav.css';
+  try {
+    const navCssSrc = fs.readFileSync(navCssPath);
+    const navCssHash = hashContent(navCssSrc);
+    const navCssName = `admin-nav.${navCssHash}.css`;
+    fs.writeFileSync(path.join(outDir, navCssName), navCssSrc);
+    manifest.adminNavCss = `/static/vendor/${navCssName}`;
+  } catch {
+    console.warn('Warning: static/css/admin-nav.css not found, skipping');
+  }
+
+  fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  console.log('Vendor manifest:', manifest);
+}
+
+// --- end vendor bundling ---
+
 if (isDev) {
   const ctx = await esbuild.context(config);
   await ctx.watch();
@@ -30,3 +92,6 @@ if (isDev) {
   await esbuild.build(config);
   console.log('Build complete');
 }
+
+// Always (re)build vendor bundle so manifest stays in sync with installed deps
+await buildVendor();
