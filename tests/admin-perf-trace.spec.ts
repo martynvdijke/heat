@@ -24,18 +24,7 @@ test.describe.serial('Admin Performance Trace', () => {
   }
 
   test('capture performance timeline', async ({ page }) => {
-    await page.coverage.startJSCoverage();
-    await page.coverage.startCSSCoverage();
-    await page.goto('/login.html');
-    await page.goto('/admin.html');
-    if (await page.locator('#setup-form').count() > 0) {
-      await page.fill('#setup-form input[name="username"]', 'admin');
-      await page.fill('#setup-form input[name="password"]', 'admin123');
-      await page.fill('#setup-form input[name="confirm_password"]', 'admin123');
-      await page.click('#setup-form button[type="submit"]');
-    }
-    await page.waitForURL(/admin/, { timeout: 20000 });
-    await page.waitForSelector('#adminCategories', { timeout: 10000 });
+    await loginAsAdmin(page);
 
     // Capture timing via Performance API
     const perfData = await page.evaluate(() => {
