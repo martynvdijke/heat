@@ -231,7 +231,15 @@ async function loadTeams(): Promise<void> {
     try {
         const res = await fetch('/api/html/teams');
         const html = await res.text();
-        document.getElementById('team-list')!.innerHTML = html;
+        const wrapper = document.createElement('table');
+        wrapper.innerHTML = html;
+        const newTbody = wrapper.firstElementChild as HTMLElement;
+        if (newTbody) {
+            document.getElementById('team-list')!.replaceWith(newTbody);
+            if (typeof (window as any).htmx !== 'undefined') {
+                (window as any).htmx.process(newTbody);
+            }
+        }
     } catch (e) { console.error('Failed to load teams', e); }
 }
 
