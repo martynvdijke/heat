@@ -1,3 +1,10 @@
+# [1.43.0](https://github.com/martynvdijke/heat/compare/v1.42.4...v1.43.0) (2026-07-04)
+
+
+### Features
+
+* redesign admin UI with bottom tabs, lazy htmx panes, and self-hosted assets ([7852475](https://github.com/martynvdijke/heat/commit/7852475adf1f62dbc2449a4e7aadb654c8eb7ac4))
+
 ## [1.42.4](https://github.com/martynvdijke/heat/compare/v1.42.3...v1.42.4) (2026-07-04)
 
 ## [1.42.3](https://github.com/martynvdijke/heat/compare/v1.42.2...v1.42.3) (2026-07-04)
