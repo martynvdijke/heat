@@ -522,9 +522,19 @@ func main() {
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerHandler))
 
-	r.Static("/media", server.MediaPath)
-	r.Static("/static", filepath.Join(server.BasePath, "static"))
-	r.StaticFile("/sw.js", filepath.Join(server.BasePath, "static/sw.js"))
+	cacheControl := func(value string) gin.HandlerFunc {
+		return func(c *gin.Context) {
+			c.Header("Cache-Control", value)
+			c.Next()
+		}
+	}
+
+	r.Group("/static", cacheControl("public, max-age=31536000, immutable")).Static("", filepath.Join(server.BasePath, "static"))
+	r.Group("/media", cacheControl("public, max-age=86400")).Static("", server.MediaPath)
+	r.GET("/sw.js", func(c *gin.Context) {
+		c.Header("Cache-Control", "no-cache")
+		c.File(filepath.Join(server.BasePath, "static/sw.js"))
+	})
 
 	pages := r.Group("")
 	pages.Use(middleware.UmamiMiddleware(server))

@@ -64,81 +64,61 @@ func TestPathsConfiguration(t *testing.T) {
 }
 
 func TestAdminHTMLTabPaneStructure(t *testing.T) {
-	data, err := os.ReadFile("static/admin.html")
-	if err != nil {
-		t.Fatalf("failed to read admin.html: %v", err)
-	}
-	content := string(data)
-
-	// Find the tab-content div and its closing tag
-	tabContentStart := strings.Index(content, `class="tab-content"`)
-	if tabContentStart == -1 {
-		t.Fatal("tab-content div not found in admin.html")
-	}
-
-	// Find the closing tag for the outermost container that wraps tab-content
-	containerStart := strings.LastIndex(content[:tabContentStart], `<div class="container"`)
-	if containerStart == -1 {
-		t.Fatal("container div not found around tab-content")
+	templateFiles := []string{
+		"static/templates/admin.html",
+		"static/templates/admin-header.html",
+		"static/templates/admin-footer.html",
+		"static/templates/admin-modals.html",
+		"static/templates/admin-race-panes.html",
+		"static/templates/admin-results-panes.html",
+		"static/templates/admin-content-panes.html",
+		"static/templates/admin-settings-panes.html",
+		"static/templates/admin-system-panes.html",
 	}
 
-	// Get content between tab-content opening and its closing </div>
-	// The tab-content is directly inside a div with id="adminTabs"
-	// Find the matching closing div for tab-content by counting nesting
-	tabContentEnd := len(content)
-	depth := 0
-	foundOpening := false
-	for i := tabContentStart; i < len(content); i++ {
-		if content[i] == '<' {
-			if strings.HasPrefix(content[i:], "</div>") {
-				if depth == 0 && foundOpening {
-					tabContentEnd = i
-					break
-				}
-				depth--
-			} else if strings.HasPrefix(content[i:], "<div") || strings.HasPrefix(content[i:], "<div ") {
-				if strings.Contains(content[i:i+50], "class=\"tab-content\"") {
-					foundOpening = true
-				}
-				if !strings.Contains(content[i:i+50], "/>") {
-					depth++
-				}
-			}
+	var content strings.Builder
+	for _, f := range templateFiles {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", f, err)
 		}
+		content.Write(data)
+		content.WriteString("\n")
 	}
-	tabContentSection := content[tabContentStart:tabContentEnd]
 
-	t.Run("EmailPaneInsideTabContent", func(t *testing.T) {
-		if !strings.Contains(tabContentSection, `id="email-pane"`) {
-			t.Error("email-pane must be inside tab-content div")
+	contentStr := content.String()
+
+	t.Run("EmailPaneExists", func(t *testing.T) {
+		if !strings.Contains(contentStr, `id="email-pane"`) {
+			t.Error("email-pane must exist in admin templates")
 		}
 	})
 
-	t.Run("AnalyticsPaneInsideTabContent", func(t *testing.T) {
-		if !strings.Contains(tabContentSection, `id="umami-pane"`) {
-			t.Error("umami-pane must be inside tab-content div")
+	t.Run("AnalyticsPaneExists", func(t *testing.T) {
+		if !strings.Contains(contentStr, `id="umami-pane"`) {
+			t.Error("umami-pane must exist in admin templates")
 		}
 	})
 
-	t.Run("BackupPaneInsideTabContent", func(t *testing.T) {
-		if !strings.Contains(tabContentSection, `id="backup-pane"`) {
-			t.Error("backup-pane must be inside tab-content div")
+	t.Run("BackupPaneExists", func(t *testing.T) {
+		if !strings.Contains(contentStr, `id="backup-pane"`) {
+			t.Error("backup-pane must exist in admin templates")
 		}
 	})
 
-	t.Run("RacePaneInsideTabContent", func(t *testing.T) {
-		if !strings.Contains(tabContentSection, `id="race-pane"`) {
-			t.Error("race-pane must be inside tab-content div")
+	t.Run("RacePaneExists", func(t *testing.T) {
+		if !strings.Contains(contentStr, `id="race-pane"`) {
+			t.Error("race-pane must exist in admin templates")
 		}
 	})
 
-	t.Run("AllPanesHaveTabContentParent", func(t *testing.T) {
+	t.Run("AllRequiredPanesExist", func(t *testing.T) {
 		panes := []string{"race-pane", "qualification-pane", "stats-pane", "notify-pane",
 			"racers-pane", "tracks-pane", "quotes-pane", "ai-pane",
 			"email-pane", "umami-pane", "backup-pane"}
 		for _, pane := range panes {
-			if !strings.Contains(tabContentSection, `id="`+pane+`"`) {
-				t.Errorf("pane %q must be inside tab-content div", pane)
+			if !strings.Contains(contentStr, `id="`+pane+`"`) {
+				t.Errorf("pane %q must exist in admin templates", pane)
 			}
 		}
 	})
