@@ -40,15 +40,35 @@ test.describe('Car Color Rendering', () => {
     });
 
     test('should display named red car color as mapped hex', async ({ page }) => {
-      // A seeded racer (e.g. rank 1) should have car_color "red"
+      // Create a racer with named color "red" to avoid depending on seed data
+      await clickAdminSubTab(page, 'button[data-tab-id="drivers"]', '#racers-subtab');
+      await page.click('button[hx-get="/api/html/racers/0/edit"]');
+      await page.waitForSelector('#racerModal.show');
+      await page.waitForSelector('#racerModal form#racer-form');
+
+      await page.fill('form#racer-form input[name="name"]', 'Red Racer');
+      await page.fill('form#racer-form input[name="profile_picture"]', '/static/images/helmet.svg');
+      await page.fill('form#racer-form input[name="car_name"]', 'Red Car');
+      await page.fill('form#racer-form input[name="car_color"]', 'red');
+      await page.fill('form#racer-form input[name="points"]', '30');
+      await page.fill('form#racer-form input[name="rank"]', '15');
+      await page.fill('form#racer-form input[name="position"]', '0');
+
+      await page.click('form#racer-form button[type="submit"]');
+      await page.waitForTimeout(500);
+
+      // Navigate to the main leaderboard
       await page.goto('/');
       await page.waitForSelector('#leaderboard-body tr');
 
-      // The first row's color indicator should have background matching #ff4444
-      const firstColorDot = page.locator('#leaderboard-body .color-indicator').first();
-      const bg = await firstColorDot.evaluate(el => getComputedStyle(el).backgroundColor);
+      // Find our racer by name
+      const racerRow = page.locator('#leaderboard-body tr', { hasText: 'Red Racer' });
+      await expect(racerRow.first()).toBeVisible();
 
-      // #ff4444 in rgb
+      const colorDot = racerRow.first().locator('.color-indicator').first();
+      const bg = await colorDot.evaluate(el => getComputedStyle(el).backgroundColor);
+
+      // "red" should normalize to #ff4444 → rgb(255, 68, 68)
       expect(bg).toBe('rgb(255, 68, 68)');
     });
   });
