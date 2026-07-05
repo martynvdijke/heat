@@ -1,5 +1,7 @@
 import './i18n';
 import './theme';
+import { normalizeHex } from './color';
+import { escapeHtml } from './toast';
 
 interface Racer {
     id: number;
@@ -166,16 +168,11 @@ function updateMapMarkers(racers: Racer[]): void {
     racers.forEach(r => {
         const percentage = r.position / totalVakjes;
         const pos = getPointAtDistance(geojson, percentage);
-        const colorMap: Record<string, string> = {
-            'red': '#ff4444', 'blue': '#4444ff', 'green': '#44ff44',
-            'yellow': '#ffff44', 'grey': '#aaaaaa', 'silver': '#aaaaaa',
-            'black': '#333333', 'purple': '#9b59b6', 'orange': '#e67e22'
-        };
         if (racerMarkers[r.id]) {
             racerMarkers[r.id].setLatLng(pos);
         } else {
             racerMarkers[r.id] = L.circleMarker(pos, {
-                radius: 8, fillColor: colorMap[r.car_color] || '#ffffff',
+                radius: 8, fillColor: normalizeHex(r.car_color),
                 color: '#000', weight: 2, opacity: 1, fillOpacity: 0.8
             }).addTo(map).bindTooltip(r.name, { permanent: false, direction: 'top' });
         }
@@ -237,7 +234,7 @@ function renderRacers(): void {
                 <td>
                     <div class="driver-info">
                         <img src="${r.profile_picture}" class="avatar" alt="${r.name}" onerror="this.src='/static/images/helmet.svg'">
-                        <span class="driver-name"><span class="color-indicator ${r.car_color} me-2"></span>${r.name}</span>
+                        <span class="driver-name"><span class="color-indicator me-2" style="background:${normalizeHex(r.car_color)}"></span>${r.name}</span>
                     </div>
                 </td>
                 <td>${r.team_name || '-'}</td>
@@ -268,7 +265,7 @@ async function showDriverStats(id: number): Promise<void> {
         <div class="text-center mb-4">
             <img src="${r.profile_picture || '/static/images/helmet.svg'}" class="rounded-circle mb-3" width="100" height="100" onerror="this.src='/static/images/helmet.svg'">
             <h4 class="mb-1">${r.car_name || 'Unknown Car'}</h4>
-            <span class="color-indicator ${r.car_color}"></span> ${r.car_color}
+            <span class="color-indicator" style="background:${normalizeHex(r.car_color)}"></span> ${escapeHtml(r.car_color)}
         </div>
         <div class="row g-3">
             <div class="col-6"><div class="stat-box"><span class="stat-value">${s.races || 0}</span><span class="stat-label">Races</span></div></div>
@@ -300,7 +297,7 @@ async function loadQualificationGrid(): Promise<void> {
                     <div class="mb-2"><span class="badge ${i === 0 ? 'bg-warning text-dark' : 'bg-secondary'} fs-6">P${i + 1}</span></div>
                     <img src="${r.profile_picture}" class="rounded-circle mb-2" width="48" height="48" style="object-fit: cover" onerror="this.src='/static/images/helmet.svg'">
                     <div class="fw-bold small">${r.name}</div>
-                    <div class="small text-muted"><span class="color-indicator ${r.car_color}"></span>${r.car_name}</div>
+                    <div class="small text-muted"><span class="color-indicator" style="background:${normalizeHex(r.car_color)}"></span>${r.car_name}</div>
                     ${i === 0 ? '<i class="fa-solid fa-crown text-warning"></i>' : ''}
                 </div>
             </div>

@@ -258,14 +258,6 @@ h2::before {
     border: 1px solid rgba(0,0,0,0.2);
 }
 
-.color-indicator.red { background-color: #ff4444; }
-.color-indicator.blue { background-color: #4444ff; }
-.color-indicator.green { background-color: #44ff44; }
-.color-indicator.yellow { background-color: #ffff44; }
-.color-indicator.grey, .color-indicator.silver { background-color: #aaaaaa; }
-.color-indicator.black { background-color: #333333; }
-.color-indicator.purple { background-color: #9b59b6; }
-.color-indicator.orange { background-color: #e67e22; }
 
 .sidebar-info {
     background: var(--surface);
