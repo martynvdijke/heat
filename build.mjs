@@ -80,6 +80,26 @@ async function buildVendor() {
 
   fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
   console.log('Vendor manifest:', manifest);
+
+  // --- Generate service worker from template ---
+  const templatePath = 'static/sw.template.js';
+  const swOutPath = 'static/sw.js';
+  try {
+    let swTemplate = fs.readFileSync(templatePath, 'utf8');
+    // Precaches: the same set the old hardcoded sw.js used (core vendor assets)
+    const precacheUrls = [
+      manifest.bootstrapCss,
+      manifest.bootstrapJs,
+      manifest.fontawesomeCss,
+      manifest.adminNavCss,
+    ].filter(Boolean);
+    swTemplate = swTemplate.replace('__PRECACHE_URLS__', JSON.stringify(precacheUrls, null, 2));
+    swTemplate = swTemplate.replaceAll('__CACHE_VERSION__', 'heat-cache-v4');
+    fs.writeFileSync(swOutPath, swTemplate);
+    console.log(`Generated ${swOutPath} with ${precacheUrls.length} precache URLs`);
+  } catch (err) {
+    console.error('Error generating sw.js from template:', err.message);
+  }
 }
 
 // --- end vendor bundling ---

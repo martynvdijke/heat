@@ -9,7 +9,8 @@
     "build:frontend": "node build.mjs",
     "build:frontend:dev": "node build.mjs --dev",
     "typecheck": "tsc --noEmit",
-    "build:ts": "tsc"
+    "build:ts": "tsc",
+    "verify:sw-precache": "node scripts/verify-sw-precache.mjs"
   },
   "repository": {
     "type": "git",

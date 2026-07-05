@@ -50,6 +50,9 @@ jobs:
       - name: Build TypeScript
         run: npm run build:frontend
 
+      - name: Verify SW precache URLs
+        run: npm run verify:sw-precache
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium firefox
 

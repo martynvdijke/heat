@@ -34,6 +34,12 @@ tasks:
     desc: Build frontend (esbuild production)
     cmds:
       - npm run build:frontend
+      - task: verify:sw-precache
+
+  verify:sw-precache:
+    desc: Verify sw.js precache URLs all exist on disk
+    cmds:
+      - npm run verify:sw-precache
 
   build:frontend:dev:
     desc: Build frontend with sourcemaps (dev)
