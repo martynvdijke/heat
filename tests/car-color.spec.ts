@@ -40,22 +40,26 @@ test.describe('Car Color Rendering', () => {
     });
 
     test('should display named red car color as mapped hex', async ({ page }) => {
-      // Create a racer with named color "red" to avoid depending on seed data
-      await clickAdminSubTab(page, 'button[data-tab-id="drivers"]', '#racers-subtab');
-      await page.click('button[hx-get="/api/html/racers/0/edit"]');
-      await page.waitForSelector('#racerModal.show');
-      await page.waitForSelector('#racerModal form#racer-form');
-
-      await page.fill('form#racer-form input[name="name"]', 'Red Racer');
-      await page.fill('form#racer-form input[name="profile_picture"]', '/static/images/helmet.svg');
-      await page.fill('form#racer-form input[name="car_name"]', 'Red Car');
-      await page.fill('form#racer-form input[name="car_color"]', 'red');
-      await page.fill('form#racer-form input[name="points"]', '30');
-      await page.fill('form#racer-form input[name="rank"]', '15');
-      await page.fill('form#racer-form input[name="position"]', '0');
-
-      await page.click('form#racer-form button[type="submit"]');
-      await page.waitForTimeout(500);
+      // Create a racer with named color "red" via fetch from within the page context
+      // (this ensures cookies + Origin/Referer headers are properly included for auth+CSRF)
+      const created = await page.evaluate(async () => {
+        const res = await fetch('/api/racers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: 0,
+            name: 'Red Racer',
+            profile_picture: '/static/images/helmet.svg',
+            car_color: 'red',
+            car_name: 'Red Car',
+            points: 30,
+            rank: 15,
+            position: 0,
+          }),
+        });
+        return { ok: res.ok, status: res.status };
+      });
+      expect(created.ok).toBeTruthy();
 
       // Navigate to the main leaderboard
       await page.goto('/');
