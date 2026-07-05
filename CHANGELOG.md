@@ -1,3 +1,10 @@
+## [1.43.4](https://github.com/martynvdijke/heat/compare/v1.43.3...v1.43.4) (2026-07-05)
+
+
+### Bug Fixes
+
+* update admin tab selectors in tests, archive superseded fix-admin-ui-perf change ([3bb9881](https://github.com/martynvdijke/heat/commit/3bb9881e20f44bb82524aa324934243596c4dbb2)), closes [#adminCategories](https://github.com/martynvdijke/heat/issues/adminCategories) [#admin-nav](https://github.com/martynvdijke/heat/issues/admin-nav) [#racer-list](https://github.com/martynvdijke/heat/issues/racer-list)
+
 ## [1.43.3](https://github.com/martynvdijke/heat/compare/v1.43.2...v1.43.3) (2026-07-05)
 
 
