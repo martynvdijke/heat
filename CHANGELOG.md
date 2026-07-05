@@ -1,3 +1,10 @@
+## [1.43.3](https://github.com/martynvdijke/heat/compare/v1.43.2...v1.43.3) (2026-07-05)
+
+
+### Bug Fixes
+
+* bump playwright timeouts in showAdminPane helpers to eliminate flaky tests ([1da56ac](https://github.com/martynvdijke/heat/commit/1da56ac22c8a0442f3c8e4a0bf8dd818a472775d))
+
 ## [1.43.2](https://github.com/martynvdijke/heat/compare/v1.43.1...v1.43.2) (2026-07-05)
 
 
