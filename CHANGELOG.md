@@ -1,3 +1,15 @@
+## [1.43.2](https://github.com/martynvdijke/heat/compare/v1.43.1...v1.43.2) (2026-07-05)
+
+
+### Bug Fixes
+
+* generate sw.js from manifest at build time to prevent precache hash drift ([fc16aa7](https://github.com/martynvdijke/heat/commit/fc16aa71809e7757ab0f17ad1b009472436c0eac))
+* make car-color named-red test self-contained to avoid parallel worker pollution ([555829b](https://github.com/martynvdijke/heat/commit/555829b6e45d6780238a9b40b9074382da2f9915))
+* render any hex car color in the leaderboard via shared normalizeHex helper ([000be05](https://github.com/martynvdijke/heat/commit/000be05e6ce97252e875039a671e85bc239a849b)), closes [#800080](https://github.com/martynvdijke/heat/issues/800080) [#cccccc](https://github.com/martynvdijke/heat/issues/cccccc)
+* resolve Docker build failure from lockfile drift and missing vendor/css in ts-builder ([82c9c58](https://github.com/martynvdijke/heat/commit/82c9c5829abce2e793c00c5dc4d15f8e66fbb416)), closes [#48](https://github.com/martynvdijke/heat/issues/48)
+* use .first() in car-color test to handle parallel workers creating duplicate racers ([f274037](https://github.com/martynvdijke/heat/commit/f274037717681850cf02ffd4ee9130b5e9b2a6a5))
+* use page.evaluate fetch for car-color named-red test to carry auth/csrf headers ([fce1085](https://github.com/martynvdijke/heat/commit/fce10854a783cf6721b23e443e36219371408b0f))
+
 ## [1.43.1](https://github.com/martynvdijke/heat/compare/v1.43.0...v1.43.1) (2026-07-05)
 
 
