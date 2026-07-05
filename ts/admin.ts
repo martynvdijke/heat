@@ -1154,10 +1154,7 @@ async function saveRacerEmailField(input: HTMLInputElement): Promise<void> {
     });
 }
 
-document.getElementById('email-tab')?.addEventListener('shown.bs.tab', () => {
-    loadEmailSettings();
-    loadRacerEmails();
-});
+// email-tab is handled via document delegation in the shown.bs.tab listener above
 
 // Backup settings
 interface BackupInfo {
@@ -1239,55 +1236,41 @@ document.getElementById('backup-form')!.addEventListener('submit', async (e: Eve
     else showToast('Failed to save backup settings', 'error');
 });
 
-document.getElementById('backup-tab')?.addEventListener('shown.bs.tab', () => {
-    loadBackupSettings();
-    loadBackupList();
+// backup-tab is handled via document delegation in the shown.bs.tab listener above
+
+// Listen for Bootstrap tab shown events via document delegation.
+// These subtab elements live inside HTMX-loaded content, so direct
+// getElementById listeners would never attach (element doesn't exist yet).
+let configSettingsLoaded = false;
+document.addEventListener('shown.bs.tab', (event: Event) => {
+    const btn = event.target as HTMLElement;
+    const id = btn?.id;
+    if (id === 'stats-subtab') loadRacerStats();
+    if (id === 'rounds-subtab') loadRoundsList();
+    if (id === 'seasons-subtab') loadSeasons();
+    if (id === 'teams-subtab') loadTeams();
+    if (id === 'quotes-subtab') { loadQuotes(); loadTeams(); }
+    if (id === 'tracks-subtab') renderTrackList();
+    if (id === 'racers-subtab') renderRacerList();
+    if (id === 'backup-tab') { loadBackupSettings(); loadBackupList(); }
+    if (id === 'email-tab') { loadEmailSettings(); loadRacerEmails(); }
 });
 
-// Lazy-load data when category tabs or subtabs are shown
-let resultsLoaded = false;
-let contentLoaded = false;
-let settingsLoaded = false;
-document.getElementById('cat-results-tab')?.addEventListener('shown.bs.tab', () => {
-    if (resultsLoaded) return;
-    resultsLoaded = true;
-    loadRacerStats();
-});
-
-document.getElementById('cat-content-tab')?.addEventListener('shown.bs.tab', () => {
-    if (contentLoaded) return;
-    contentLoaded = true;
-    loadQuotes();
-    loadTeams();
-});
-
-document.getElementById('cat-settings-tab')?.addEventListener('shown.bs.tab', () => {
-    if (settingsLoaded) return;
-    settingsLoaded = true;
-    Promise.all([
-        loadNotificationSettings(),
-        loadUmamiSettings(),
-        loadAISettings(),
-        loadOTelSettings(),
-        loadEInkSettings(),
-    ]);
-});
-
-// Listen for Bootstrap tab shown events to load sub-tab content.
-document.getElementById('rounds-subtab')?.addEventListener('shown.bs.tab', () => {
-    loadRoundsList();
-});
-document.getElementById('seasons-subtab')?.addEventListener('shown.bs.tab', () => {
-    loadSeasons();
-});
-document.getElementById('teams-subtab')?.addEventListener('shown.bs.tab', () => {
-    loadTeams();
-});
-document.getElementById('tracks-subtab')?.addEventListener('shown.bs.tab', () => {
-    renderTrackList();
-});
-document.getElementById('racers-subtab')?.addEventListener('shown.bs.tab', () => {
-    renderRacerList();
+// Load all config-pane settings when the Config main tab is first opened via HTMX.
+document.body.addEventListener('htmx:afterOnLoad', (evt: any) => {
+    const path = evt.detail?.requestConfig?.path || '';
+    if (path === '/api/html/admin/config' && !configSettingsLoaded) {
+        configSettingsLoaded = true;
+        loadNotificationSettings();
+        loadUmamiSettings();
+        loadAISettings();
+        loadOTelSettings();
+        loadEInkSettings();
+        loadBackupSettings();
+        loadBackupList();
+        loadEmailSettings();
+        loadRacerEmails();
+    }
 });
 
 let editingRoundId: number | null = null;

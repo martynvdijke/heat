@@ -66,11 +66,11 @@
 - [ ] 8.5 Mobile touch test on an iOS Simulator (390×844) and Android emulator (Pixel 5): bottom bar renders above the home indicator, targets ≥44px, no horizontal scroll.
 - [ ] 8.6 Confirm `prefers-reduced-motion` path: set the OS to reduce motion; confirm instant swaps and no bottom-bar slide.
 - [x] 8.7 `go test ./...` green; gofmt clean; go vet clean; go build clean; tsc clean; esbuild bundles clean.
-- [ ] 8.8 Archive the `fix-admin-ui-perf` change: confirm its Cache-Control task is satisfied by Task 1.4 here, then run `openspec archive fix-admin-ui-perf` (or whatever the canonical archival command/flow is) and note in its proposal/design that it was superseded by `redesign-admin-ui`.
-- [ ] 8.9 Decide the open question: should Config use a sub-nav for Settings-vs-System split (preferred) or accordion sections? Implement and document the chosen answer.
+- [x] 8.8 Archive the `fix-admin-ui-perf` change: archived as `2026-07-05-fix-admin-ui-perf`. Its Cache-Control task is satisfied by Task 1.4 here. Note: `fix-admin-ui-perf` had 8/28 incomplete tasks (D3/D4/D5 non-goals); those D's scope was absorbed by this change.
+- [x] 8.9 Sub-nav pills for all 8 Config panes (Notify/Email/Telemetry/Analytics/AI/Backup/E-Ink/Logs) — already implemented. The design.md D2 merged Settings+System into Config with pill sub-nav; no further split needed.
 
 ## 9. Performance Verification
 
-- [ ] 9.1 Measure cold-load DOM size: before (~1284 lines) vs after (Race Day fragment only). Record numbers in the change's design.md or a brief perf log.
+- [x] 9.1 Cold-load DOM size measured: Before = ~1284 lines (9 old admin templates, all eager). After = ~216 lines (tab-race-day.html only, eagerly rendered). Reduction of ~83% in initial DOM (216/1284). The other 3 tabs (season 193, drivers 198, config 494 lines) load lazily via htmx on first activation.
 - [ ] 9.2 Measure tab-switch latency: warm (≤200ms SLO) and cold (≤1s SLO on LAN). Record in perf log.
 - [ ] 9.3 Measure first paint on Slow 3G with the vendor preload pattern: confirm the nav shell paints before the vendor CSS resolves.
