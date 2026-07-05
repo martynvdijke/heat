@@ -5,6 +5,8 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY build.mjs ./
 COPY ts/ ts/
+COPY static/css static/css
+COPY static/sw.template.js static/
 RUN mkdir -p static/js && node build.mjs
 
 FROM golang:1.26.4-alpine AS builder
@@ -17,7 +19,9 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+COPY --from=ts-builder /app/static/vendor ./static/vendor
 COPY --from=ts-builder /app/static/js ./static/js
+COPY --from=ts-builder /app/static/sw.js ./static/sw.js
 
 RUN CGO_ENABLED=1 GOOS=linux go build -o heat-server .
 
