@@ -28,12 +28,12 @@ test.describe('Car Color Rendering', () => {
       await page.goto('/');
       await page.waitForSelector('#leaderboard-body tr');
 
-      // Find the row for Hex Racer and check the color-dot style
-      const racerRow = page.locator('#leaderboard-body tr', { hasText: 'Hex Racer' });
-      await expect(racerRow).toBeVisible();
+      // Find rows for Hex Racer (multiple workers create the same racer, use .first())
+      const racerRows = page.locator('#leaderboard-body tr', { hasText: 'Hex Racer' });
+      await expect(racerRows.first()).toBeVisible();
 
       // The color indicator inside the driver-name should have background containing the hex
-      const colorDot = racerRow.locator('.color-indicator').first();
+      const colorDot = racerRows.first().locator('.color-indicator').first();
       const bg = await colorDot.evaluate(el => getComputedStyle(el).backgroundColor);
       // rgb(128, 0, 128) is the CSS computed value for #800080
       expect(bg).toBe('rgb(128, 0, 128)');
