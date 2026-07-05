@@ -1,3 +1,10 @@
+## [1.43.1](https://github.com/martynvdijke/heat/compare/v1.43.0...v1.43.1) (2026-07-05)
+
+
+### Bug Fixes
+
+* **deps:** update dependency bootstrap to v5.3.8 ([#48](https://github.com/martynvdijke/heat/issues/48)) ([2e75bd7](https://github.com/martynvdijke/heat/commit/2e75bd7d611b35d5cc06e04cd98475d4bb0fd97f))
+
 # [1.43.0](https://github.com/martynvdijke/heat/compare/v1.42.4...v1.43.0) (2026-07-04)
 
 
