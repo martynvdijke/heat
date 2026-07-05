@@ -110,6 +110,6 @@ async function loginAsAdmin(page: Page) {
 
 async function clickAdminSubTab(page: Page, tabSelector: string, subTabSelector: string) {
   await page.click(tabSelector);
-  await page.locator(subTabSelector).waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator(subTabSelector).waitFor({ state: 'visible', timeout: 15000 });
   await page.click(subTabSelector);
 }

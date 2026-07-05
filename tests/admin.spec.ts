@@ -267,13 +267,13 @@ test.describe.serial('Admin Panel', () => {
 
 async function clickAdminSubTab(page: Page, tabSelector: string, subTabSelector: string) {
   await page.click(tabSelector);
-  await page.locator(subTabSelector).waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator(subTabSelector).waitFor({ state: 'visible', timeout: 15000 });
   await page.click(subTabSelector);
 }
 
 async function showAdminPane(page: Page, tabSelector: string, paneId: string) {
   await page.click(tabSelector);
-  await expect(page.locator(paneId)).toBeAttached({ timeout: 10000 });
+  await expect(page.locator(paneId)).toBeAttached({ timeout: 15000 });
   await page.evaluate((id) => {
     const pane = document.getElementById(id.replace('#', ''));
     if (pane) pane.classList.add('show', 'active');

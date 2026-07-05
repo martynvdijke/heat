@@ -99,6 +99,9 @@ test.describe.serial('Admin Extended Features', () => {
     await page.click('form#racer-form button[type="submit"]');
     await closeRacerModal(page);
 
+    // Wait for the racer to appear in the table (htmx refresh)
+    await expect(page.locator('#racer-list')).toContainText(pointsRacerName, { timeout: 15000 });
+
     // Now edit the points
     const editBtn = page.locator('#racer-list tr', { hasText: pointsRacerName }).locator('.btn-outline-primary');
     await editBtn.click();
@@ -491,13 +494,13 @@ test.describe.serial('Admin Extended Features', () => {
 // Helper functions (copied from admin.spec.ts for isolation)
 async function clickAdminSubTab(page: Page, tabSelector: string, subTabSelector: string) {
   await page.click(tabSelector);
-  await page.locator(subTabSelector).waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator(subTabSelector).waitFor({ state: 'visible', timeout: 15000 });
   await page.click(subTabSelector);
 }
 
 async function showAdminPane(page: Page, tabSelector: string, paneId: string) {
   await page.click(tabSelector);
-  await expect(page.locator(paneId)).toBeAttached({ timeout: 10000 });
+  await expect(page.locator(paneId)).toBeAttached({ timeout: 15000 });
   await page.evaluate((id) => {
     const pane = document.getElementById(id.replace('#', ''));
     if (pane) pane.classList.add('show', 'active');

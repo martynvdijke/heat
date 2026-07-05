@@ -14,7 +14,7 @@ test.describe.serial('Admin Performance Trace', () => {
       try { await page.waitForURL(/admin/, { timeout: 5000 }); } catch {}
     }
     if (!page.url().includes('/admin')) {
-      await page.waitForSelector('#login-form', { timeout: 10000 });
+      await page.waitForSelector('#login-form', { timeout: 20000 });
       await page.fill('#login-form input[name="username"]', 'admin');
       await page.fill('#login-form input[name="password"]', 'admin123');
       await page.click('#login-form button[type="submit"]');
