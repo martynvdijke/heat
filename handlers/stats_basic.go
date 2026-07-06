@@ -100,6 +100,7 @@ func (h *Handler) UpdateRacerStats(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.S.StatsCache.InvalidatePrefix("stats:")
 	c.Status(http.StatusOK)
 }
 

@@ -6,7 +6,7 @@ const PRECACHE_URLS = [
   "/static/vendor/bootstrap.7f1d37f0d90b.min.css",
   "/static/vendor/bootstrap.aa53d582f97e.bundle.min.js",
   "/static/vendor/fontawesome.7954fe83f51c.min.css",
-  "/static/vendor/admin-nav.ca3c352da7b9.css"
+  "/static/vendor/admin-nav.f16329c57591.css"
 ];
 const CACHE = "heat-cache-v4";
 

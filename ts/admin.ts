@@ -263,7 +263,7 @@ async function loadUmamiSettings(): Promise<void> {
     } catch (e) { console.error('Failed to load umami settings', e); }
 }
 
-document.getElementById('umami-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('umami-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const data = {
         url: (document.getElementById('umami-url') as HTMLInputElement).value,
@@ -290,7 +290,7 @@ async function loadNotificationSettings(): Promise<void> {
     } catch (e) { console.error('Failed to load notification settings', e); }
 }
 
-document.getElementById('notify-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('notify-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const data = {
         gotify_url: (document.getElementById('gotify-url') as HTMLInputElement).value,
@@ -307,9 +307,9 @@ document.getElementById('notify-form')!.addEventListener('submit', async (e: Eve
     if (res.ok) showToast('Notification settings saved!', 'success');
 });
 
-document.getElementById('notify-winner')!.addEventListener('change', saveNotifyToggle);
-document.getElementById('notify-podium')!.addEventListener('change', saveNotifyToggle);
-document.getElementById('notify-race-start')!.addEventListener('change', saveNotifyToggle);
+document.getElementById('notify-winner')?.addEventListener('change', saveNotifyToggle);
+document.getElementById('notify-podium')?.addEventListener('change', saveNotifyToggle);
+document.getElementById('notify-race-start')?.addEventListener('change', saveNotifyToggle);
 
 async function saveNotifyToggle(): Promise<void> {
     const data = {
@@ -407,7 +407,7 @@ function editStats(id: number): void {
     openStatsModal(stat);
 }
 
-document.getElementById('stats-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('stats-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const select = document.getElementById('stats-racer-select') as HTMLSelectElement;
     const racerId = parseInt(select.value);
@@ -445,7 +445,7 @@ document.getElementById('stats-form')!.addEventListener('submit', async (e: Even
     }
 });
 
-document.getElementById('race-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('race-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const data: Record<string, any> = {};
@@ -461,7 +461,7 @@ document.getElementById('race-form')!.addEventListener('submit', async (e: Event
     if (res.ok) showToast('Race data updated!', 'success');
 });
 
-document.getElementById('racer-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('racer-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const data: Record<string, any> = {};
@@ -490,7 +490,7 @@ document.getElementById('racer-form')!.addEventListener('submit', async (e: Even
     }
 });
 
-document.getElementById('quote-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('quote-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const data: Record<string, any> = {};
@@ -511,7 +511,7 @@ document.getElementById('quote-form')!.addEventListener('submit', async (e: Even
     }
 });
 
-document.getElementById('track-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('track-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const data: Record<string, any> = {};
@@ -624,7 +624,7 @@ function renderQualificationGrid(order: AdminRacer[], locked: number): void {
     `;
 }
 
-document.getElementById('grid-layout')!.addEventListener('change', function(this: HTMLSelectElement) {
+document.getElementById('grid-layout')?.addEventListener('change', function(this: HTMLSelectElement) {
     if (qualificationOrder.length > 0 && !shuffleInterval) {
         renderFinalGrid(qualificationOrder);
     }
@@ -879,7 +879,7 @@ async function loadOTelSettings(): Promise<void> {
     } catch (e) { console.error('Failed to load OTel settings', e); }
 }
 
-document.getElementById('otel-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('otel-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const data = {
         endpoint: (document.getElementById('otel-endpoint') as HTMLInputElement).value,
@@ -907,7 +907,7 @@ async function loadEInkSettings(): Promise<void> {
     } catch (e) { console.error('Failed to load e-ink settings', e); }
 }
 
-document.getElementById('eink-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('eink-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const data = {
         enabled: (document.getElementById('eink-enabled') as HTMLInputElement).checked
@@ -924,7 +924,7 @@ document.getElementById('eink-form')!.addEventListener('submit', async (e: Event
     }
 });
 
-document.getElementById('ai-settings-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('ai-settings-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const data = {
         track_extract_url: (document.getElementById('ai-track-extract-url') as HTMLInputElement).value,
@@ -1102,7 +1102,7 @@ async function loadEmailSettings(): Promise<void> {
     } catch (e) { console.error('Failed to load email settings', e); }
 }
 
-document.getElementById('email-settings-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('email-settings-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const data = {
         smtp_host: (document.getElementById('smtp-host') as HTMLInputElement).value,
@@ -1220,7 +1220,7 @@ async function triggerManualBackup(): Promise<void> {
     }
 }
 
-document.getElementById('backup-form')!.addEventListener('submit', async (e: Event) => {
+document.getElementById('backup-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const data = {
         enabled: (document.getElementById('backup-enabled') as HTMLInputElement).checked,
@@ -1238,22 +1238,227 @@ document.getElementById('backup-form')!.addEventListener('submit', async (e: Eve
 
 // backup-tab is handled via document delegation in the shown.bs.tab listener above
 
-// Listen for Bootstrap tab shown events via document delegation.
-// These subtab elements live inside HTMX-loaded content, so direct
-// getElementById listeners would never attach (element doesn't exist yet).
+// Document delegation: load subtab data when a subtab button is clicked.
+// Bootstrap fires `shown.bs.tab` after the tab transition, but in some
+// Bootstrap versions it may not reliably bubble to document; a click
+// handler with setTimeout(0) ensures data loads after the tab pane
+// becomes visible.
 let configSettingsLoaded = false;
-document.addEventListener('shown.bs.tab', (event: Event) => {
-    const btn = event.target as HTMLElement;
-    const id = btn?.id;
-    if (id === 'stats-subtab') loadRacerStats();
-    if (id === 'rounds-subtab') loadRoundsList();
-    if (id === 'seasons-subtab') loadSeasons();
-    if (id === 'teams-subtab') loadTeams();
-    if (id === 'quotes-subtab') { loadQuotes(); loadTeams(); }
-    if (id === 'tracks-subtab') renderTrackList();
-    if (id === 'racers-subtab') renderRacerList();
-    if (id === 'backup-tab') { loadBackupSettings(); loadBackupList(); }
-    if (id === 'email-tab') { loadEmailSettings(); loadRacerEmails(); }
+document.addEventListener('click', (event: MouseEvent) => {
+    const btn = (event.target as HTMLElement).closest('.nav-pills .nav-link, #backup-tab, #email-tab') as HTMLElement;
+    if (!btn) return;
+    const id = btn.id;
+    setTimeout(() => {
+        if (id === 'stats-subtab') loadRacerStats();
+        if (id === 'rounds-subtab') loadRoundsList();
+        if (id === 'seasons-subtab') loadSeasons();
+        if (id === 'teams-subtab') loadTeams();
+        if (id === 'quotes-subtab') { loadQuotes(); loadTeams(); }
+        if (id === 'tracks-subtab') renderTrackList();
+        if (id === 'racers-subtab') renderRacerList();
+        if (id === 'backup-tab') { loadBackupSettings(); loadBackupList(); }
+        if (id === 'email-tab') { loadEmailSettings(); loadRacerEmails(); }
+    }, 0);
+});
+
+// Event delegation for forms loaded dynamically by HTMX
+document.body.addEventListener('submit', async (e: SubmitEvent) => {
+    const form = (e.target as HTMLElement).closest('form') as HTMLFormElement | null;
+    const formId = form?.getAttribute('id') || '';
+    if (!form || !formId) return;
+
+    if (formId === 'stats-form') {
+        e.preventDefault();
+        const select = document.getElementById('stats-racer-select') as HTMLSelectElement;
+        const racerId = parseInt(select.value);
+        if (!racerId) {
+            showToast('Please select a driver', 'error');
+            return;
+        }
+        const el = (id: string) => document.getElementById(id) as HTMLInputElement;
+        const gold = parseInt(el('stats-gold')?.value) || 0;
+        const data = {
+            id: parseInt(el('stats-id')?.value) || 0,
+            racer_id: racerId,
+            races: parseInt(el('stats-races')?.value) || 0,
+            wins: gold,
+            gold: gold,
+            silver: parseInt(el('stats-silver')?.value) || 0,
+            bronze: parseInt(el('stats-bronze')?.value) || 0,
+            fastest_laps: parseInt(el('stats-fastest-laps')?.value) || 0,
+            dnf: parseInt(el('stats-dnf')?.value) || 0,
+            dns: parseInt(el('stats-dns')?.value) || 0
+        };
+        const res = await fetch('/api/racer-stats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            getModal('statsModal').hide();
+            loadRacerStats();
+        } else {
+            const err = await res.json();
+            showToast('Failed to save stats: ' + (err.error || 'Unknown error'), 'error');
+        }
+    } else if (formId === 'notify-form') {
+        e.preventDefault();
+        const data = {
+            gotify_url: (document.getElementById('gotify-url') as HTMLInputElement).value,
+            gotify_token: (document.getElementById('gotify-token') as HTMLInputElement).value,
+            notify_winner: (document.getElementById('notify-winner') as HTMLInputElement).checked,
+            notify_podium: (document.getElementById('notify-podium') as HTMLInputElement).checked,
+            notify_race_start: (document.getElementById('notify-race-start') as HTMLInputElement).checked
+        };
+        const res = await fetch('/api/notification-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) showToast('Notification settings saved!', 'success');
+    } else if (formId === 'umami-form') {
+        e.preventDefault();
+        const data = {
+            url: (document.getElementById('umami-url') as HTMLInputElement).value,
+            website_id: (document.getElementById('umami-website-id') as HTMLInputElement).value,
+            enabled: (document.getElementById('umami-enabled') as HTMLInputElement).checked
+        };
+        const res = await fetch('/api/umami-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) showToast('Analytics settings saved!', 'success');
+    } else if (formId === 'otel-form') {
+        e.preventDefault();
+        const data = {
+            endpoint: (document.getElementById('otel-endpoint') as HTMLInputElement).value,
+            traces_enabled: (document.getElementById('otel-traces-enabled') as HTMLInputElement).checked,
+            metrics_enabled: (document.getElementById('otel-metrics-enabled') as HTMLInputElement).checked,
+            logs_enabled: (document.getElementById('otel-logs-enabled') as HTMLInputElement).checked
+        };
+        const res = await fetch('/api/otel-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) showToast('Telemetry settings saved!', 'success');
+        else {
+            const err = await res.json();
+            showToast('Failed to save telemetry settings: ' + (err.error || 'Unknown error'), 'error');
+        }
+    } else if (formId === 'eink-form') {
+        e.preventDefault();
+        const data = {
+            enabled: (document.getElementById('eink-enabled') as HTMLInputElement).checked
+        };
+        const res = await fetch('/api/eink-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) showToast('E-Ink settings saved!', 'success');
+        else {
+            const err = await res.json();
+            showToast('Failed to save e-ink settings: ' + (err.error || 'Unknown error'), 'error');
+        }
+    } else if (formId === 'ai-settings-form') {
+        e.preventDefault();
+        const data = {
+            track_extract_url: (document.getElementById('ai-track-extract-url') as HTMLInputElement).value,
+            api_key: (document.getElementById('ai-api-key') as HTMLInputElement).value,
+            enabled: (document.getElementById('ai-enabled') as HTMLInputElement).checked
+        };
+        const res = await fetch('/api/ai-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) showToast('AI settings saved!', 'success');
+    } else if (formId === 'email-settings-form') {
+        e.preventDefault();
+        const data = {
+            smtp_host: (document.getElementById('smtp-host') as HTMLInputElement).value,
+            smtp_port: parseInt((document.getElementById('smtp-port') as HTMLInputElement).value) || 587,
+            username: (document.getElementById('smtp-username') as HTMLInputElement).value,
+            password: (document.getElementById('smtp-password') as HTMLInputElement).value,
+            from_addr: (document.getElementById('smtp-from') as HTMLInputElement).value,
+            enabled: (document.getElementById('email-enabled') as HTMLInputElement).checked
+        };
+        const res = await fetch('/api/email-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) showToast('Email settings saved!', 'success');
+        else showToast('Failed to save email settings', 'error');
+    } else if (formId === 'backup-form') {
+        e.preventDefault();
+        const data = {
+            enabled: (document.getElementById('backup-enabled') as HTMLInputElement).checked,
+            interval_hrs: parseInt((document.getElementById('backup-interval') as HTMLSelectElement).value) || 24,
+            retention_count: parseInt((document.getElementById('backup-retention') as HTMLInputElement).value) || 7
+        };
+        const res = await fetch('/api/backup-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) showToast('Backup settings saved!', 'success');
+        else showToast('Failed to save backup settings', 'error');
+    } else if (formId === 'racer-form') {
+        e.preventDefault();
+        const data: Record<string, any> = {};
+        for (const pair of new FormData(form)) {
+            data[pair[0] as string] = pair[1];
+        }
+        data.id = data.id ? parseInt(data.id) : 0;
+        data.points = parseInt(data.points) || 0;
+        data.rank = parseInt(data.rank) || 0;
+        data.position = parseInt(data.position) || 0;
+        if (!data.profile_picture) {
+            data.profile_picture = '/static/images/helmet.svg';
+        }
+        const res = await fetch('/api/racers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            getModal('racerModal').hide();
+            loadRacers();
+        } else {
+            const err = await res.json();
+            showToast('Failed to save racer: ' + (err.error || 'Unknown error'), 'error');
+        }
+    } else if (formId === 'quote-form') {
+        e.preventDefault();
+        const data: Record<string, any> = {};
+        for (const pair of new FormData(form)) {
+            data[pair[0] as string] = pair[1];
+        }
+        data.id = data.id ? parseInt(data.id) : 0;
+        const res = await fetch('/api/quotes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            getModal('quoteModal').hide();
+            loadQuotes();
+        } else {
+            const err = await res.json();
+            showToast('Failed to save quote: ' + (err.error || 'Unknown error'), 'error');
+        }
+    }
+});
+
+// Event delegation for notification toggle checkboxes loaded dynamically
+document.body.addEventListener('change', async (e: Event) => {
+    const el = e.target as HTMLElement;
+    if (el.id === 'notify-winner' || el.id === 'notify-podium' || el.id === 'notify-race-start') {
+        await saveNotifyToggle();
+    }
 });
 
 // Load all config-pane settings when the Config main tab is first opened via HTMX.
