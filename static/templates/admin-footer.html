@@ -27,6 +27,20 @@
                     btn.classList.toggle('active', btn.getAttribute('data-tab-id') === tabId);
                     btn.setAttribute('aria-selected', btn.getAttribute('data-tab-id') === tabId ? 'true' : 'false');
                 });
+                // Load data for the initially active subtab (shown.bs.tab doesn't fire on first load)
+                if (container && tabId === 'season') {
+                    var active = container.querySelector('.nav-pills .nav-link.active');
+                    if (active && active.id === 'stats-subtab' && window.loadRacerStats) setTimeout(window.loadRacerStats, 0);
+                    if (active && active.id === 'rounds-subtab' && window.loadRoundsList) setTimeout(window.loadRoundsList, 0);
+                    if (active && active.id === 'seasons-subtab' && window.loadSeasons) setTimeout(window.loadSeasons, 0);
+                }
+                if (container && tabId === 'drivers') {
+                    var active = container.querySelector('.nav-pills .nav-link.active');
+                    if (active && active.id === 'racers-subtab' && window.renderRacerList) setTimeout(window.renderRacerList, 0);
+                    if (active && active.id === 'tracks-subtab' && window.renderTrackList) setTimeout(window.renderTrackList, 0);
+                    if (active && active.id === 'quotes-subtab' && window.loadQuotes) setTimeout(window.loadQuotes, 0);
+                    if (active && active.id === 'teams-subtab' && window.loadTeams) setTimeout(window.loadTeams, 0);
+                }
             }
         });
         // URL hash sync
@@ -70,6 +84,9 @@
         document.body.addEventListener('htmx:afterSwap', function(evt) {
             if (evt.detail.target && evt.detail.target.matches('#racerModal .modal-body')) {
                 new bootstrap.Modal(document.getElementById('racerModal')).show();
+            }
+            if (evt.detail.target && evt.detail.target.matches('#seasonsModal .modal-body')) {
+                new bootstrap.Modal(document.getElementById('seasonsModal')).show();
             }
         });
     </script>

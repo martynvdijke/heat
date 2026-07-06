@@ -57,7 +57,8 @@
   #admin-nav {
     flex-direction: column;
     width: 220px;
-    height: 100vh;
+    top: 68px;
+    height: calc(100vh - 68px);
     border-top: none;
     border-right: 1px solid #dee2e6;
     background: #111;
