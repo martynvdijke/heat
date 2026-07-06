@@ -1,3 +1,10 @@
+## [1.43.5](https://github.com/martynvdijke/heat/compare/v1.43.4...v1.43.5) (2026-07-06)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @fortawesome/fontawesome-free to v7 ([50773f4](https://github.com/martynvdijke/heat/commit/50773f4c759253774e249f4c78a1e856af0e3838))
+
 ## [1.43.4](https://github.com/martynvdijke/heat/compare/v1.43.3...v1.43.4) (2026-07-05)
 
 
