@@ -182,7 +182,7 @@ test.describe('Public Seasons Page', () => {
   });
 });
 
-test.describe('Public Stats Page with Data', () => {
+test.describe('Public Stats Page', () => {
   test('should load stats page', async ({ page }) => {
     await page.goto('/stats.html');
     await expect(page).toHaveTitle(/HEAT: Season Statistics/);
@@ -193,14 +193,6 @@ test.describe('Public Stats Page with Data', () => {
     await expect(page.locator('#total-races')).toBeVisible();
     await expect(page.locator('#total-drivers')).toBeVisible();
     await expect(page.locator('#fastest-laps')).toBeVisible();
-  });
-
-  test('should have season selector populated', async ({ page }) => {
-    await page.goto('/stats.html');
-    await page.waitForTimeout(1000);
-    const select = page.locator('#stats-season-select');
-    const optionCount = await select.locator('option').count();
-    expect(optionCount).toBeGreaterThan(1);
   });
 
   test('should render driver performance table', async ({ page }) => {
@@ -355,6 +347,14 @@ test.describe.serial('Admin Round Editing Flow', () => {
     await page.waitForTimeout(800);
 
     await expect(page.locator('#rounds-list .fa-lock')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('should load stats page with season data', async ({ page }) => {
+    await page.goto('/stats.html');
+    await expect(page).toHaveTitle(/HEAT: Season Statistics/);
+    const select = page.locator('#stats-season-select');
+    const optionCount = await select.locator('option').count();
+    expect(optionCount).toBeGreaterThan(1);
   });
 
   test('should cleanup round and season', async ({ page }) => {
