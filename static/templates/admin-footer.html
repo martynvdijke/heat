@@ -83,10 +83,10 @@
     <script>
         document.body.addEventListener('htmx:afterSwap', function(evt) {
             if (evt.detail.target && evt.detail.target.matches('#racerModal .modal-body')) {
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('racerModal')).show();
+                new bootstrap.Modal(document.getElementById('racerModal')).show();
             }
             if (evt.detail.target && evt.detail.target.matches('#seasonsModal .modal-body')) {
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('seasonsModal')).show();
+                new bootstrap.Modal(document.getElementById('seasonsModal')).show();
             }
         });
     </script>
