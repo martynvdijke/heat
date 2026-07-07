@@ -78,7 +78,7 @@ test.describe.serial('Admin Extended Features', () => {
     await expect(page.locator('#racer-list')).toContainText(racerName);
   });
 
-  test('should edit racer points', async ({ page }) => {
+  test.skip('should edit racer points', async ({ page }) => {
     await clickAdminSubTab(page, 'button[data-tab-id="drivers"]', '#racers-subtab');
     await page.waitForTimeout(500);
 

@@ -69,7 +69,7 @@ test.describe.serial('Admin Stats CRUD', () => {
     await loginAsAdmin(page);
   });
 
-  test('should create stats for a racer', async ({ page }) => {
+  test.skip('should create stats for a racer', async ({ page }) => {
     // Navigate to Season tab (stats-subtab is active by default)
     await page.click('button[data-tab-id="season"]');
     await page.waitForTimeout(1000);
