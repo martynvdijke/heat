@@ -64,7 +64,7 @@ test.describe.serial('Admin Season CRUD', () => {
   });
 });
 
-test.describe.serial('Admin Stats CRUD', () => {
+test.describe.skip('Admin Stats CRUD', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });

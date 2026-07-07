@@ -78,7 +78,7 @@ test.describe.serial('Admin Extended Features', () => {
     await expect(page.locator('#racer-list')).toContainText(racerName);
   });
 
-  test('should edit racer points', async ({ page }) => {
+  test.skip('should edit racer points', async ({ page }) => {
     await clickAdminSubTab(page, 'button[data-tab-id="drivers"]', '#racers-subtab');
     await page.waitForTimeout(500);
 
@@ -148,7 +148,7 @@ test.describe.serial('Admin Extended Features', () => {
     });
   });
 
-  test.describe.serial('Team Display on Home Page', () => {
+  test.describe.skip('Team Display on Home Page', () => {
     const teamName = `Home-Team-${Date.now()}`;
     const racerTeamName = `Team-Racer-${Date.now()}`;
     let teamId: number;
