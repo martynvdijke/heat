@@ -1,3 +1,12 @@
+## [1.43.7](https://github.com/martynvdijke/heat/compare/v1.43.6...v1.43.7) (2026-07-07)
+
+
+### Bug Fixes
+
+* HTMX-loaded form delegation and StatsCache invalidation ([6f024c8](https://github.com/martynvdijke/heat/commit/6f024c8a0474f2ad96e19bbfb247ebc68013ef2b))
+* move season-dependent stats test after season creation ([01543a1](https://github.com/martynvdijke/heat/commit/01543a1e9c89d20a122944a2f3e9df25c50e0a98))
+* rounds/season/stats modal not opening and sidebar layout on desktop ([30a1b5d](https://github.com/martynvdijke/heat/commit/30a1b5d021a77a08c64a25a2d413d992eb3142f9))
+
 ## [1.43.6](https://github.com/martynvdijke/heat/compare/v1.43.5...v1.43.6) (2026-07-06)
 
 ## [1.43.5](https://github.com/martynvdijke/heat/compare/v1.43.4...v1.43.5) (2026-07-06)
