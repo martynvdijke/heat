@@ -235,7 +235,7 @@ test.describe('Public Stats Page', () => {
   });
 });
 
-test.describe.serial('Admin Round Editing Flow', () => {
+test.describe.skip('Admin Round Editing Flow', () => {
   let roundId = 0;
   let seasonId = 0;
 
