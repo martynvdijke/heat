@@ -461,35 +461,6 @@ document.getElementById('race-form')?.addEventListener('submit', async (e: Event
     if (res.ok) showToast('Race data updated!', 'success');
 });
 
-document.getElementById('racer-form')?.addEventListener('submit', async (e: Event) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const data: Record<string, any> = {};
-    for (const pair of new FormData(form)) {
-        data[pair[0] as string] = pair[1];
-    }
-    data.id = data.id ? parseInt(data.id) : 0;
-    data.points = parseInt(data.points) || 0;
-    data.rank = parseInt(data.rank) || 0;
-    data.position = parseInt(data.position) || 0;
-    if (!data.profile_picture) {
-        data.profile_picture = '/static/images/helmet.svg';
-    }
-
-    const res = await fetch('/api/racers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    if (res.ok) {
-        getModal('racerModal').hide();
-        loadRacers();
-    } else {
-        const err = await res.json();
-        showToast('Failed to save racer: ' + (err.error || 'Unknown error'), 'error');
-    }
-});
-
 document.getElementById('quote-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
@@ -1267,41 +1238,7 @@ document.body.addEventListener('submit', async (e: SubmitEvent) => {
     const formId = form?.getAttribute('id') || '';
     if (!form || !formId) return;
 
-    if (formId === 'stats-form') {
-        e.preventDefault();
-        const select = document.getElementById('stats-racer-select') as HTMLSelectElement;
-        const racerId = parseInt(select.value);
-        if (!racerId) {
-            showToast('Please select a driver', 'error');
-            return;
-        }
-        const el = (id: string) => document.getElementById(id) as HTMLInputElement;
-        const gold = parseInt(el('stats-gold')?.value) || 0;
-        const data = {
-            id: parseInt(el('stats-id')?.value) || 0,
-            racer_id: racerId,
-            races: parseInt(el('stats-races')?.value) || 0,
-            wins: gold,
-            gold: gold,
-            silver: parseInt(el('stats-silver')?.value) || 0,
-            bronze: parseInt(el('stats-bronze')?.value) || 0,
-            fastest_laps: parseInt(el('stats-fastest-laps')?.value) || 0,
-            dnf: parseInt(el('stats-dnf')?.value) || 0,
-            dns: parseInt(el('stats-dns')?.value) || 0
-        };
-        const res = await fetch('/api/racer-stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (res.ok) {
-            getModal('statsModal').hide();
-            loadRacerStats();
-        } else {
-            const err = await res.json();
-            showToast('Failed to save stats: ' + (err.error || 'Unknown error'), 'error');
-        }
-    } else if (formId === 'notify-form') {
+    if (formId === 'notify-form') {
         e.preventDefault();
         const data = {
             gotify_url: (document.getElementById('gotify-url') as HTMLInputElement).value,
@@ -1406,50 +1343,6 @@ document.body.addEventListener('submit', async (e: SubmitEvent) => {
         });
         if (res.ok) showToast('Backup settings saved!', 'success');
         else showToast('Failed to save backup settings', 'error');
-    } else if (formId === 'racer-form') {
-        e.preventDefault();
-        const data: Record<string, any> = {};
-        for (const pair of new FormData(form)) {
-            data[pair[0] as string] = pair[1];
-        }
-        data.id = data.id ? parseInt(data.id) : 0;
-        data.points = parseInt(data.points) || 0;
-        data.rank = parseInt(data.rank) || 0;
-        data.position = parseInt(data.position) || 0;
-        if (!data.profile_picture) {
-            data.profile_picture = '/static/images/helmet.svg';
-        }
-        const res = await fetch('/api/racers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (res.ok) {
-            getModal('racerModal').hide();
-            loadRacers();
-        } else {
-            const err = await res.json();
-            showToast('Failed to save racer: ' + (err.error || 'Unknown error'), 'error');
-        }
-    } else if (formId === 'quote-form') {
-        e.preventDefault();
-        const data: Record<string, any> = {};
-        for (const pair of new FormData(form)) {
-            data[pair[0] as string] = pair[1];
-        }
-        data.id = data.id ? parseInt(data.id) : 0;
-        const res = await fetch('/api/quotes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (res.ok) {
-            getModal('quoteModal').hide();
-            loadQuotes();
-        } else {
-            const err = await res.json();
-            showToast('Failed to save quote: ' + (err.error || 'Unknown error'), 'error');
-        }
     }
 });
 

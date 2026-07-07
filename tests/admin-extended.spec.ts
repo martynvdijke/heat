@@ -103,7 +103,7 @@ test.describe.serial('Admin Extended Features', () => {
     await expect(page.locator('#racer-list')).toContainText(pointsRacerName, { timeout: 15000 });
 
     // Now edit the points
-    const editBtn = page.locator('#racer-list tr', { hasText: pointsRacerName }).locator('.btn-outline-primary');
+    const editBtn = page.locator('#racer-list tr', { hasText: pointsRacerName }).locator('.btn-outline-primary').first();
     await editBtn.click();
     await page.waitForSelector('#racerModal.show');
 
@@ -509,11 +509,21 @@ async function showAdminPane(page: Page, tabSelector: string, paneId: string) {
 }
 
 async function closeRacerModal(page: Page) {
-  await page.locator('#racerModal').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-  await page.evaluate(() => {
-    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-    document.body.classList.remove('modal-open');
-  });
+    await page.locator('#racerModal').waitFor({ state: 'hidden', timeout: 5000 }).catch(async () => {
+        await page.evaluate(() => {
+            const el = document.getElementById('racerModal');
+            if (el) {
+                const modal = bootstrap.Modal.getInstance(el);
+                if (modal) modal.hide();
+                else {
+                    el.classList.remove('show');
+                    el.style.display = 'none';
+                }
+            }
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+        });
+    });
 }
 
 async function closeTeamModal(page: Page) {
