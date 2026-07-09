@@ -1,3 +1,16 @@
+# [1.44.0](https://github.com/martynvdijke/heat/compare/v1.43.10...v1.44.0) (2026-07-09)
+
+
+### Bug Fixes
+
+* render points leaderboard in season stats view ([8c5c914](https://github.com/martynvdijke/heat/commit/8c5c9145a563c2ac059c639b391ad314acb31f98)), closes [#points-body](https://github.com/martynvdijke/heat/issues/points-body)
+
+
+### Features
+
+* derive season stats from round snapshots, add spins/overheated display ([5925692](https://github.com/martynvdijke/heat/commit/5925692003b461e95e6ce1f7667e8f7f985f8dfd))
+* enforce round-season linkage and add email on finalize ([3bbd546](https://github.com/martynvdijke/heat/commit/3bbd54680952a4ba142b35d2c576d6e4ea9f4d80))
+
 ## [1.43.10](https://github.com/martynvdijke/heat/compare/v1.43.9...v1.43.10) (2026-07-09)
 
 
