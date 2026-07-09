@@ -49,10 +49,11 @@ async function loadSeasonStats(seasonId?: string): Promise<void> {
         const driverData = hasStats ? allStats.filter((s: any) => s.races > 0) : [];
         const hasDrivers = driverData.length > 0;
 
+        let allScores: any[] = [];
         if (hasSnapshots) {
             const ids = snapshots.map((s: any) => s.id).join(',');
             const batchRes = await fetch(`/api/rounds/batch?ids=${ids}`);
-            const allScores = await batchRes.json() as any[];
+            allScores = await batchRes.json() as any[];
             renderPointsChart(snapshots, allScores);
             renderBattleChart(allScores);
             renderTrackStatsTable(allScores);
@@ -64,8 +65,10 @@ async function loadSeasonStats(seasonId?: string): Promise<void> {
         if (hasDrivers) {
             renderDriverStatsTable(allStats, racers);
             renderWinsChart(driverData, racers);
+            renderPointsLeaderboard(allStats, racers, allScores);
         } else {
             document.querySelector('#driver-stats-table tbody')!.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No driver stats yet</td></tr>';
+            document.querySelector('#points-body')!.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No points data yet</td></tr>';
         }
     } catch (err) {
         console.error('Failed to load stats:', err);
@@ -265,6 +268,53 @@ function renderBattleChart(allScores: any[]): void {
             scales: { x: { beginAtZero: true } },
         },
     });
+}
+
+function renderPointsLeaderboard(allStats: any[], racers: any[], allScores?: any[]): void {
+    const tbody = document.querySelector('#points-body')!;
+    const sorted = [...allStats].filter((s: any) => s.races > 0).sort((a: any, b: any) => (b.points || 0) - (a.points || 0));
+
+    const avgFinishMap: Record<number, number> = {};
+    if (allScores && allScores.length > 0) {
+        const posSums: Record<number, { total: number; count: number }> = {};
+        allScores.forEach((snap: any) => {
+            (snap.scores || []).forEach((sc: any) => {
+                if (sc.racer_id && sc.position > 0) {
+                    if (!posSums[sc.racer_id]) posSums[sc.racer_id] = { total: 0, count: 0 };
+                    posSums[sc.racer_id].total += sc.position;
+                    posSums[sc.racer_id].count++;
+                }
+            });
+        });
+        Object.entries(posSums).forEach(([id, data]) => {
+            avgFinishMap[Number(id)] = Math.round((data.total / data.count) * 10) / 10;
+        });
+    }
+
+    const nameMap: Record<number, string> = {};
+    const carMap: Record<number, string> = {};
+    racers.forEach((r: any) => {
+        nameMap[r.id] = r.name;
+        carMap[r.id] = r.car_name || '';
+    });
+
+    tbody.innerHTML = sorted.map((s: any, i: number) => {
+        const podiums = (s.gold || 0) + (s.silver || 0) + (s.bronze || 0);
+        const name = nameMap[s.racer_id] || s.racer_name || `Racer #${s.racer_id}`;
+        const car = carMap[s.racer_id] || '-';
+        const avgFinish = avgFinishMap[s.racer_id] !== undefined ? avgFinishMap[s.racer_id].toFixed(1) : '-';
+        return `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${name}</td>
+                <td>${car}</td>
+                <td class="text-end">${s.points || 0}</td>
+                <td class="text-end">${s.gold || s.wins || 0}</td>
+                <td class="text-end">${podiums}</td>
+                <td class="text-end">${avgFinish}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function switchSeason(value: string): void {
