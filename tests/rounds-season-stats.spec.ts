@@ -244,6 +244,138 @@ test.describe('Public Stats Page', () => {
 
     expect(combined).toMatch(/spins/i);
     expect(combined).toMatch(/overheated/i);
+
+    // Should have 8 columns: Driver, Races, Wins, G/S/B, Podiums, Points, Spins, Overheated
+    await expect(headers).toHaveCount(8);
+  });
+});
+
+test.describe.serial('Stats Page Round-Trip', () => {
+  let seasonId = 0;
+  let roundId = 0;
+
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
+  test('should create and finalize a round with spins and overheated', async ({ page }) => {
+    const setup = await page.evaluate(async () => {
+      // Create a season
+      const sRes = await fetch('/api/seasons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: `StatsRR-${Date.now()}` }),
+      });
+      if (!sRes.ok) throw new Error('Failed to create season');
+      const s = await sRes.json();
+
+      // Create a round snapshot
+      const rRes = await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ race_name: `Round-${Date.now()}`, season_id: s.id }),
+      });
+      if (!rRes.ok) throw new Error('Failed to create round');
+      const r = await rRes.json();
+
+      // Fetch the snapshot scores
+      const batchRes = await fetch(`/api/rounds/batch?ids=${r.id}`);
+      const snaps = await batchRes.json();
+      const snap = snaps[0];
+
+      if (snap?.scores?.length) {
+        // Update scores with spins and overheated
+        const updated = snap.scores.map((sc: any, i: number) => ({
+          ...sc,
+          spins: (i + 1) * 2,
+          overheated: i + 1,
+        }));
+        const patchRes = await fetch(`/api/rounds?id=${r.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        });
+        if (!patchRes.ok) throw new Error('Failed to update scores');
+
+        // Finalize round
+        const finalRes = await fetch(`/api/rounds/finalize?id=${r.id}`, { method: 'PATCH' });
+        if (!finalRes.ok) throw new Error('Failed to finalize round');
+      }
+
+      return { seasonId: s.id, roundId: r.id };
+    });
+
+    seasonId = setup.seasonId;
+    roundId = setup.roundId;
+    expect(seasonId).toBeGreaterThan(0);
+    expect(roundId).toBeGreaterThan(0);
+  });
+
+  test('should display spins and overheated values on stats page', async ({ page }) => {
+    expect(seasonId).toBeGreaterThan(0);
+
+    await page.goto('/stats.html');
+    await page.waitForTimeout(1500);
+
+    // Select the season we created
+    const select = page.locator('#stats-season-select');
+    await select.selectOption(String(seasonId));
+    await page.waitForTimeout(1500);
+
+    // Verify driver table has data rows
+    const tbody = page.locator('#driver-stats-table tbody');
+    const rows = tbody.locator('tr');
+    const rowCount = await rows.count();
+    expect(rowCount).toBeGreaterThan(0);
+
+    // Each row should have 8 columns: Driver, Races, Wins, G/S/B, Podiums, Points, Spins, Overheated
+    const firstRowCells = rows.first().locator('td');
+    await expect(firstRowCells).toHaveCount(8);
+
+    // Spins (column 7, index 6) and Overheated (column 8, index 7) should be numbers
+    const cellTexts = await firstRowCells.allTextContents();
+    const spins = parseInt(cellTexts[6], 10);
+    const overheated = parseInt(cellTexts[7], 10);
+    expect(spins).toBeGreaterThan(0);
+    expect(overheated).toBeGreaterThan(0);
+  });
+
+  test('should verify points leaderboard shows season data from rounds', async ({ page }) => {
+    expect(seasonId).toBeGreaterThan(0);
+
+    await page.goto('/stats.html');
+    await page.waitForTimeout(1500);
+
+    // Select our season
+    const select = page.locator('#stats-season-select');
+    await select.selectOption(String(seasonId));
+    await page.waitForTimeout(1500);
+
+    // Points leaderboard should have data rows (not the empty placeholder)
+    const pointsBody = page.locator('#points-body');
+    const pointsRows = pointsBody.locator('tr');
+    const rowCount = await pointsRows.count();
+    expect(rowCount).toBeGreaterThan(0);
+
+    // First row should show the #1 racer with positive points
+    const firstPointsRow = pointsRows.first().locator('td');
+    const ptsCells = await firstPointsRow.allTextContents();
+    // Columns: Rank, Driver, Car, Points, Wins, Podiums, Avg Finish
+    expect(ptsCells.length).toBeGreaterThanOrEqual(7);
+    const points = parseInt(ptsCells[3], 10);
+    expect(points).toBeGreaterThan(0);
+  });
+
+  test('should cleanup season and rounds', async ({ page }) => {
+    expect(seasonId).toBeGreaterThan(0);
+    const cleaned = await page.evaluate(async (sid) => {
+      // Delete rounds first
+      const roundsRes = await fetch(`/api/rounds?season_id=${sid}`, { method: 'DELETE' });
+      // Delete season
+      const seasonRes = await fetch(`/api/seasons?id=${sid}`, { method: 'DELETE' });
+      return seasonRes.ok;
+    }, seasonId);
+    expect(cleaned).toBeTruthy();
   });
 });
 
