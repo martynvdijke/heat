@@ -1,3 +1,10 @@
+## [1.43.10](https://github.com/martynvdijke/heat/compare/v1.43.9...v1.43.10) (2026-07-09)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([#53](https://github.com/martynvdijke/heat/issues/53)) ([8bb67e2](https://github.com/martynvdijke/heat/commit/8bb67e2ffa7788b02eed97cf68ce2f72dbe361ca))
+
 ## [1.43.9](https://github.com/martynvdijke/heat/compare/v1.43.8...v1.43.9) (2026-07-08)
 
 ## [1.43.8](https://github.com/martynvdijke/heat/compare/v1.43.7...v1.43.8) (2026-07-08)
