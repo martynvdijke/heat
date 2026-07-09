@@ -90,8 +90,8 @@ func (h *Handler) GetDriverStatsByToken(c *gin.Context) {
 	}
 
 	var s models.RacerStats
-	err = h.S.DB.QueryRow("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, COALESCE((SELECT SUM(points) FROM racers WHERE id = racer_id), 0) as pts, dnf, dns FROM racer_stats WHERE racer_id = ?", racerID).
-		Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS)
+	err = h.S.DB.QueryRow("SELECT id, racer_id, races, wins, gold, silver, bronze, fastest_laps, COALESCE((SELECT SUM(points) FROM racers WHERE id = racer_id), 0) as pts, dnf, dns, spins, overheated FROM racer_stats WHERE racer_id = ?", racerID).
+		Scan(&s.ID, &s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS, &s.Spins, &s.Overheated)
 	if err != nil {
 		s = models.RacerStats{RacerID: racerID}
 	}

@@ -28,11 +28,6 @@ func (h *Handler) GetRacerStats(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid season_id"})
 			return
 		}
-		startDate, endDate, err := racing.SeasonDates(h.S.DB, sid)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
-			return
-		}
 
 		if id == "" {
 			cacheKey := "stats:racer-stats:season:" + seasonID
@@ -40,7 +35,7 @@ func (h *Handler) GetRacerStats(c *gin.Context) {
 				c.JSON(http.StatusOK, cached)
 				return
 			}
-			stats := racing.RacerStatsBySeason(h.S.DB, startDate, endDate)
+			stats := racing.RacerStatsBySeason(h.S.DB, sid)
 			if len(stats) == 0 {
 				stats = racing.AllRacerStats(h.S.DB)
 			}
@@ -50,7 +45,7 @@ func (h *Handler) GetRacerStats(c *gin.Context) {
 		}
 
 		racerID, _ := strconv.Atoi(id)
-		s, found := racing.SingleRacerStatsBySeason(h.S.DB, racerID, startDate, endDate)
+		s, found := racing.SingleRacerStatsBySeason(h.S.DB, racerID, sid)
 		if !found {
 			s, _ = racing.SingleRacerStatsFallback(h.S.DB, racerID)
 		}

@@ -203,6 +203,8 @@ function renderDriverStatsTable(allStats: any[], racers: any[]): void {
                 <td><span class="text-warning">${s.gold || 0}</span> / <span class="text-secondary">${s.silver || 0}</span> / <span class="bronze-text">${s.bronze || 0}</span></td>
                 <td>${totalPodiums}</td>
                 <td>${s.points || 0}</td>
+                <td>${s.spins || 0}</td>
+                <td>${s.overheated || 0}</td>
             </tr>
         `;
     }).join('');

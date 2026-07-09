@@ -1084,6 +1084,28 @@ func TestDriverShare(t *testing.T) {
 		if result["stats"] == nil {
 			t.Error("expected stats data")
 		}
+		// Verify spins and overheated are present in stats
+		statsMap, ok := result["stats"].(map[string]any)
+		if !ok {
+			t.Error("expected stats to be a map")
+		} else {
+			if _, exists := statsMap["spins"]; !exists {
+				t.Error("expected spins field in stats")
+			}
+			if _, exists := statsMap["overheated"]; !exists {
+				t.Error("expected overheated field in stats")
+			}
+			if _, exists := statsMap["spins"]; exists {
+				if _, isNum := statsMap["spins"].(float64); !isNum {
+					t.Error("expected spins to be a number")
+				}
+			}
+			if _, exists := statsMap["overheated"]; exists {
+				if _, isNum := statsMap["overheated"].(float64); !isNum {
+					t.Error("expected overheated to be a number")
+				}
+			}
+		}
 	})
 
 	t.Run("invalid token returns 404", func(t *testing.T) {

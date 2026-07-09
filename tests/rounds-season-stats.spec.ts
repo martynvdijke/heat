@@ -233,6 +233,18 @@ test.describe('Public Stats Page', () => {
     await expect(page.locator('#incidents-body')).toBeAttached();
     await expect(page.locator('#pace-heatmap-body')).toBeAttached();
   });
+
+  test('should display spins and overheated columns in driver performance table', async ({ page }) => {
+    await page.goto('/stats.html');
+    await page.waitForTimeout(2000);
+
+    const headers = page.locator('#driver-stats-table thead th');
+    const headerTexts = await headers.allTextContents();
+    const combined = headerTexts.join(' ');
+
+    expect(combined).toMatch(/spins/i);
+    expect(combined).toMatch(/overheated/i);
+  });
 });
 
 test.describe.skip('Admin Round Editing Flow', () => {
