@@ -21,7 +21,19 @@ func Init(s *app.Server) {
 		log.Fatalf("[DB] Failed to run Ent auto-migration: %v", err)
 	}
 
+	// Backfill round_snapshots: set season_id to the active season or 1 for NULL/0 values
+	srv.DB.Exec(`UPDATE round_snapshots SET season_id = (SELECT COALESCE((SELECT id FROM seasons WHERE status = 'active' LIMIT 1), 1)) WHERE season_id IS NULL OR season_id = 0`)
+
+	// Deduplicate (season_id, round) pairs: re-number duplicate rounds to the next available number
+	srv.DB.Exec(`UPDATE round_snapshots SET round = (SELECT COALESCE(MAX(r2.round), 0) + 1 FROM round_snapshots r2 WHERE r2.season_id = round_snapshots.season_id AND r2.id != round_snapshots.id) WHERE id IN (SELECT id FROM round_snapshots r1 WHERE (SELECT COUNT(*) FROM round_snapshots r2 WHERE r2.season_id = r1.season_id AND r2.round = r1.round AND r2.id < r1.id) > 0)`)
+
+	// Add UNIQUE constraint on (season_id, round) for round-season enforcement
+	srv.DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_round_snapshots_season_round ON round_snapshots(season_id, round)")
+
 	srv.DB.Exec("PRAGMA foreign_keys=OFF")
+	defer func() {
+		srv.DB.Exec("PRAGMA foreign_keys=ON")
+	}()
 
 	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS app_logs (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

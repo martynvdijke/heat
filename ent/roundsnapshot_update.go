@@ -111,12 +111,6 @@ func (_u *RoundSnapshotUpdate) AddSeasonID(v int) *RoundSnapshotUpdate {
 	return _u
 }
 
-// ClearSeasonID clears the value of the "season_id" field.
-func (_u *RoundSnapshotUpdate) ClearSeasonID() *RoundSnapshotUpdate {
-	_u.mutation.ClearSeasonID()
-	return _u
-}
-
 // SetStatus sets the "status" field.
 func (_u *RoundSnapshotUpdate) SetStatus(v string) *RoundSnapshotUpdate {
 	_u.mutation.SetStatus(v)
@@ -192,9 +186,6 @@ func (_u *RoundSnapshotUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if value, ok := _u.mutation.AddedSeasonID(); ok {
 		_spec.AddField(roundsnapshot.FieldSeasonID, field.TypeInt, value)
-	}
-	if _u.mutation.SeasonIDCleared() {
-		_spec.ClearField(roundsnapshot.FieldSeasonID, field.TypeInt)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(roundsnapshot.FieldStatus, field.TypeString, value)
@@ -303,12 +294,6 @@ func (_u *RoundSnapshotUpdateOne) AddSeasonID(v int) *RoundSnapshotUpdateOne {
 	return _u
 }
 
-// ClearSeasonID clears the value of the "season_id" field.
-func (_u *RoundSnapshotUpdateOne) ClearSeasonID() *RoundSnapshotUpdateOne {
-	_u.mutation.ClearSeasonID()
-	return _u
-}
-
 // SetStatus sets the "status" field.
 func (_u *RoundSnapshotUpdateOne) SetStatus(v string) *RoundSnapshotUpdateOne {
 	_u.mutation.SetStatus(v)
@@ -414,9 +399,6 @@ func (_u *RoundSnapshotUpdateOne) sqlSave(ctx context.Context) (_node *RoundSnap
 	}
 	if value, ok := _u.mutation.AddedSeasonID(); ok {
 		_spec.AddField(roundsnapshot.FieldSeasonID, field.TypeInt, value)
-	}
-	if _u.mutation.SeasonIDCleared() {
-		_spec.ClearField(roundsnapshot.FieldSeasonID, field.TypeInt)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(roundsnapshot.FieldStatus, field.TypeString, value)

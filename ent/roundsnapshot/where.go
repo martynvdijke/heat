@@ -358,16 +358,6 @@ func SeasonIDLTE(v int) predicate.RoundSnapshot {
 	return predicate.RoundSnapshot(sql.FieldLTE(FieldSeasonID, v))
 }
 
-// SeasonIDIsNil applies the IsNil predicate on the "season_id" field.
-func SeasonIDIsNil() predicate.RoundSnapshot {
-	return predicate.RoundSnapshot(sql.FieldIsNull(FieldSeasonID))
-}
-
-// SeasonIDNotNil applies the NotNil predicate on the "season_id" field.
-func SeasonIDNotNil() predicate.RoundSnapshot {
-	return predicate.RoundSnapshot(sql.FieldNotNull(FieldSeasonID))
-}
-
 // StatusEQ applies the EQ predicate on the "status" field.
 func StatusEQ(v string) predicate.RoundSnapshot {
 	return predicate.RoundSnapshot(sql.FieldEQ(FieldStatus, v))

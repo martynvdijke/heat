@@ -378,10 +378,6 @@ func init() {
 	roundsnapshotDescCreatedAt := roundsnapshotFields[4].Descriptor()
 	// roundsnapshot.DefaultCreatedAt holds the default value on creation for the created_at field.
 	roundsnapshot.DefaultCreatedAt = roundsnapshotDescCreatedAt.Default.(string)
-	// roundsnapshotDescSeasonID is the schema descriptor for season_id field.
-	roundsnapshotDescSeasonID := roundsnapshotFields[5].Descriptor()
-	// roundsnapshot.DefaultSeasonID holds the default value on creation for the season_id field.
-	roundsnapshot.DefaultSeasonID = roundsnapshotDescSeasonID.Default.(int)
 	// roundsnapshotDescStatus is the schema descriptor for status field.
 	roundsnapshotDescStatus := roundsnapshotFields[6].Descriptor()
 	// roundsnapshot.DefaultStatus holds the default value on creation for the status field.

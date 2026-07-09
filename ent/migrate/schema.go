@@ -378,7 +378,7 @@ var (
 		{Name: "race_date", Type: field.TypeString},
 		{Name: "round", Type: field.TypeInt, Default: 1},
 		{Name: "created_at", Type: field.TypeString, Default: ""},
-		{Name: "season_id", Type: field.TypeInt, Nullable: true, Default: 1},
+		{Name: "season_id", Type: field.TypeInt},
 		{Name: "status", Type: field.TypeString, Default: "draft"},
 	}
 	// RoundSnapshotsTable holds the schema information for the "round_snapshots" table.
@@ -386,6 +386,13 @@ var (
 		Name:       "round_snapshots",
 		Columns:    RoundSnapshotsColumns,
 		PrimaryKey: []*schema.Column{RoundSnapshotsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "roundsnapshot_season_id_round",
+				Unique:  true,
+				Columns: []*schema.Column{RoundSnapshotsColumns[5], RoundSnapshotsColumns[3]},
+			},
+		},
 	}
 	// RoundSnapshotScoresColumns holds the columns for the "round_snapshot_scores" table.
 	RoundSnapshotScoresColumns = []*schema.Column{

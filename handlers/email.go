@@ -186,6 +186,79 @@ func (h *Handler) SendRaceEmail(raceName, country, track string, totalLaps int, 
 	}
 }
 
+func buildRoundEmailContent(raceName, raceDate string, scores []models.RoundSnapshotScore) string {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("Subject: HEAT Round Results - %s\n", raceName))
+	b.WriteString("MIME-Version: 1.0\n")
+	b.WriteString("Content-Type: text/html; charset=\"UTF-8\"\n\n")
+	b.WriteString("<!DOCTYPE html><html><head><style>")
+	b.WriteString("body{font-family:Arial,sans-serif;background:#111;color:#eee;padding:20px}")
+	b.WriteString("h1{color:#d40000;border-bottom:3px solid #d40000;padding-bottom:10px}")
+	b.WriteString("table{width:100%%;border-collapse:collapse;margin:20px 0}")
+	b.WriteString("th{background:#d40000;color:#fff;padding:10px;text-align:left}")
+	b.WriteString("td{padding:10px;border-bottom:1px solid #333}")
+	b.WriteString("tr:nth-child(even){background:#1a1a1a}")
+	b.WriteString(".gold{color:#ffd700}.silver{color:#c0c0c0}.bronze{color:#cd7f32}")
+	b.WriteString("</style></head><body>")
+	b.WriteString(fmt.Sprintf("<h1>Round: %s</h1>", html.EscapeString(raceName)))
+	b.WriteString(fmt.Sprintf("<p><strong>Date:</strong> %s</p>", html.EscapeString(raceDate)))
+	b.WriteString("<h2>Final Standings</h2><table><thead><tr><th>Pos</th><th>Driver</th><th>Points</th><th>DNF</th><th>DNS</th></tr></thead><tbody>")
+	for _, s := range scores {
+		cls := ""
+		if s.Position == 1 {
+			cls = "gold"
+		} else if s.Position == 2 {
+			cls = "silver"
+		} else if s.Position == 3 {
+			cls = "bronze"
+		}
+		dnf := ""
+		if s.DNF {
+			dnf = "Yes"
+		}
+		dns := ""
+		if s.DNS {
+			dns = "Yes"
+		}
+		b.WriteString(fmt.Sprintf("<tr><td class=\"%s\">#%d</td><td class=\"%s\">%s</td><td>%d pts</td><td>%s</td><td>%s</td></tr>",
+			cls, s.Position, cls, html.EscapeString(s.RacerName), s.Points, dnf, dns))
+	}
+	b.WriteString("</tbody></table>")
+	b.WriteString("<p style=\"color:#666;font-size:12px;margin-top:30px\">HEAT: Pedal to the Metal Board Game Companion</p>")
+	b.WriteString("</body></html>")
+	return b.String()
+}
+
+func (h *Handler) SendRoundEmail(raceName, raceDate string, scores []models.RoundSnapshotScore) {
+	var s models.EmailSettings
+	var enabled int
+	err := h.S.DB.QueryRow("SELECT smtp_host, COALESCE(smtp_port, 587), username, password, from_addr, COALESCE(enabled, 0) FROM email_settings WHERE id = 1").
+		Scan(&s.SMTPHost, &s.SMTPPort, &s.Username, &s.Password, &s.FromAddr, &enabled)
+	if err != nil || enabled == 0 || s.SMTPHost == "" || s.FromAddr == "" {
+		return
+	}
+
+	content := buildRoundEmailContent(raceName, raceDate, scores)
+
+	rows, err := h.S.DB.Query(`SELECT re.email, r.name FROM racer_emails re JOIN racers r ON r.id = re.racer_id WHERE re.email != ''`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var email, name string
+		if err := rows.Scan(&email, &name); err != nil {
+			continue
+		}
+		go func(to, racerName, content string) {
+			if err := sendSMTP(s, to, content); err != nil {
+				h.S.Log.Errorf("email", "Failed to send round email to %s: %v", to, err)
+			}
+		}(email, name, content)
+	}
+}
+
 func sendSMTP(s models.EmailSettings, to, content string) error {
 	addr := fmt.Sprintf("%s:%d", s.SMTPHost, s.SMTPPort)
 	auth := smtp.PlainAuth("", s.Username, s.Password, s.SMTPHost)

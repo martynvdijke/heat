@@ -53,8 +53,6 @@ var (
 	DefaultRound int
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt string
-	// DefaultSeasonID holds the default value on creation for the "season_id" field.
-	DefaultSeasonID int
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 )

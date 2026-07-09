@@ -36,7 +36,8 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 		input.RaceName = time.Now().Format("Round 2006-01-02")
 	}
 	if input.SeasonID == 0 {
-		input.SeasonID = 1
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "season_id is required"})
+		return
 	}
 
 	// Reject if season is archived or missing
@@ -94,7 +95,11 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 	res, err := tx.Exec("INSERT INTO round_snapshots (season_id, race_name, race_date, round, status) VALUES (?, ?, ?, ?, 'draft')",
 		input.SeasonID, input.RaceName, raceDate, roundNum)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if strings.Contains(err.Error(), "UNIQUE constraint") {
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "round number already exists in this season"})
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 	snapshotID, _ := res.LastInsertId()
@@ -412,7 +417,8 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 
 	var status string
 	var seasonID int
-	err := h.S.DB.QueryRow("SELECT status, season_id FROM round_snapshots WHERE id = ?", idStr).Scan(&status, &seasonID)
+	var raceName, raceDate string
+	err := h.S.DB.QueryRow("SELECT status, season_id, race_name, race_date FROM round_snapshots WHERE id = ?", idStr).Scan(&status, &seasonID, &raceName, &raceDate)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "round not found"})
 		return
@@ -436,7 +442,7 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 		return
 	}
 
-	rows, err := h.S.DB.Query("SELECT racer_id, points, dnf, dns, spins, overheated FROM round_snapshot_scores WHERE snapshot_id = ?", idStr)
+	rows, err := h.S.DB.Query("SELECT racer_id, racer_name, points, position, dnf, dns, spins, overheated FROM round_snapshot_scores WHERE snapshot_id = ?", idStr)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -445,19 +451,32 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 
 	type score struct {
 		RacerID    int
+		RacerName  string
 		Points     int
+		Position   int
 		DNF        bool
 		DNS        bool
 		Spins      int
 		Overheated int
 	}
 	var scores []score
+	var emailScores []models.RoundSnapshotScore
 	for rows.Next() {
 		var s score
-		if err := rows.Scan(&s.RacerID, &s.Points, &s.DNF, &s.DNS, &s.Spins, &s.Overheated); err != nil {
+		if err := rows.Scan(&s.RacerID, &s.RacerName, &s.Points, &s.Position, &s.DNF, &s.DNS, &s.Spins, &s.Overheated); err != nil {
 			continue
 		}
 		scores = append(scores, s)
+		emailScores = append(emailScores, models.RoundSnapshotScore{
+			RacerID:    s.RacerID,
+			RacerName:  s.RacerName,
+			Points:     s.Points,
+			Position:   s.Position,
+			DNF:        s.DNF,
+			DNS:        s.DNS,
+			Spins:      s.Spins,
+			Overheated: s.Overheated,
+		})
 	}
 	rows.Close()
 
@@ -516,6 +535,10 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 	}
 
 	h.S.BroadcastRacers()
+
+	// Send email notifications asynchronously
+	go h.SendRoundEmail(raceName, raceDate, emailScores)
+
 	c.JSON(http.StatusOK, gin.H{"status": "finalized"})
 }
 

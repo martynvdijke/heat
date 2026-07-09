@@ -65,14 +65,6 @@ func (_c *RoundSnapshotCreate) SetSeasonID(v int) *RoundSnapshotCreate {
 	return _c
 }
 
-// SetNillableSeasonID sets the "season_id" field if the given value is not nil.
-func (_c *RoundSnapshotCreate) SetNillableSeasonID(v *int) *RoundSnapshotCreate {
-	if v != nil {
-		_c.SetSeasonID(*v)
-	}
-	return _c
-}
-
 // SetStatus sets the "status" field.
 func (_c *RoundSnapshotCreate) SetStatus(v string) *RoundSnapshotCreate {
 	_c.mutation.SetStatus(v)
@@ -136,10 +128,6 @@ func (_c *RoundSnapshotCreate) defaults() {
 		v := roundsnapshot.DefaultCreatedAt
 		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := _c.mutation.SeasonID(); !ok {
-		v := roundsnapshot.DefaultSeasonID
-		_c.mutation.SetSeasonID(v)
-	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := roundsnapshot.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -159,6 +147,9 @@ func (_c *RoundSnapshotCreate) check() error {
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "RoundSnapshot.created_at"`)}
+	}
+	if _, ok := _c.mutation.SeasonID(); !ok {
+		return &ValidationError{Name: "season_id", err: errors.New(`ent: missing required field "RoundSnapshot.season_id"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "RoundSnapshot.status"`)}
