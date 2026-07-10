@@ -1,3 +1,10 @@
+# [1.45.0](https://github.com/martynvdijke/heat/compare/v1.44.0...v1.45.0) (2026-07-10)
+
+
+### Features
+
+* plot cumulative points progression chart on season stats page ([4c564d7](https://github.com/martynvdijke/heat/commit/4c564d7212ef71b46557d859d93ec19928ec704f))
+
 # [1.44.0](https://github.com/martynvdijke/heat/compare/v1.43.10...v1.44.0) (2026-07-09)
 
 
