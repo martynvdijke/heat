@@ -82,43 +82,52 @@ function renderPointsChart(snapshots: any[], allScores: any[]): void {
     const labels = snapshots.map((s: any) => s.race_name || `R${s.round}`);
     const colors = ['#ff4444', '#4444ff', '#44ff44', '#ffff44', '#ff00ff'];
 
-    const racerPoints: Record<number, { name: string; pts: number[] }> = {};
-    allScores.forEach((snap: any) => {
+    const N = snapshots.length;
+    const racerData: Record<number, { name: string; roundPts: number[]; cum: number[] }> = {};
+    allScores.forEach((snap: any, i: number) => {
         (snap.scores || []).forEach((sc: any) => {
-            if (!racerPoints[sc.racer_id]) {
-                racerPoints[sc.racer_id] = { name: sc.racer_name, pts: [] };
+            if (!racerData[sc.racer_id]) {
+                racerData[sc.racer_id] = { name: sc.racer_name, roundPts: new Array(N).fill(0), cum: new Array(N).fill(0) };
             }
-            racerPoints[sc.racer_id].pts.push(sc.points);
+            racerData[sc.racer_id].roundPts[i] = sc.points;
         });
     });
 
-    const sorted = Object.entries(racerPoints)
+    for (const id in racerData) {
+        const d = racerData[id];
+        let running = 0;
+        for (let i = 0; i < N; i++) {
+            running += d.roundPts[i];
+            d.cum[i] = running;
+        }
+    }
+
+    const sorted = Object.entries(racerData)
         .sort(([, a]: any, [, b]: any) => {
-            const aLast = a.pts[a.pts.length - 1] || 0;
-            const bLast = b.pts[b.pts.length - 1] || 0;
-            return bLast - aLast;
+            const aLast = a.cum[a.cum.length - 1] || 0;
+            const bLast = b.cum[b.cum.length - 1] || 0;
+            if (bLast !== aLast) return bLast - aLast;
+            return a.name.localeCompare(b.name);
         })
         .slice(0, 5);
 
     const datasets = sorted.map(([id, d]: [string, any], i: number) => ({
         label: d.name,
-        data: d.pts,
+        data: d.cum,
         borderColor: colors[i % colors.length],
         backgroundColor: colors[i % colors.length] + '20',
         fill: true,
         tension: 0.4,
     }));
 
-    const championships = Math.max(...Object.values(racerPoints).map((d: any) => {
-        const pts = d.pts;
+    const championships = Math.max(...Object.values(racerData).map((d: any) => {
         let champCount = 0;
-        for (let r = 0; r < snapshots.length; r++) {
-            const roundScores = allScores[r]?.scores || [];
-            const topScore = Math.max(...roundScores.map((sc: any) => sc.points), 0);
-            const thisRacer = roundScores.find((sc: any) => sc.racer_name === d.name);
-            if (thisRacer && thisRacer.points === topScore && topScore > 0) {
-                champCount++;
+        for (let r = 0; r < N; r++) {
+            let topScore = 0;
+            for (const id in racerData) {
+                if (racerData[id].roundPts[r] > topScore) topScore = racerData[id].roundPts[r];
             }
+            if (topScore > 0 && d.roundPts[r] === topScore) champCount++;
         }
         return champCount;
     }), 0);
