@@ -44,6 +44,8 @@ interface RacerStats {
     points: number;
     dnf: number;
     dns: number;
+    spins: number;
+    overheated: number;
 }
 
 interface StatsResponse {
@@ -276,6 +278,8 @@ async function showDriverStats(id: number): Promise<void> {
             <div class="col-6"><div class="stat-box"><span class="stat-value">${s.fastest_laps || 0}</span><span class="stat-label">Fastest Laps</span></div></div>
             <div class="col-6"><div class="stat-box"><span class="stat-value">${s.points || r.points || 0}</span><span class="stat-label">Total Points</span></div></div>
             <div class="col-6"><div class="stat-box"><span class="stat-value">${s.dnf || 0}</span><span class="stat-label">DNF</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.spins || 0}</span><span class="stat-label">Spins</span></div></div>
+            <div class="col-6"><div class="stat-box"><span class="stat-value">${s.overheated || 0}</span><span class="stat-label">Overheated</span></div></div>
         </div>
     `;
     new (window as any).bootstrap.Modal(document.getElementById('statsModal')!).show();

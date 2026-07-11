@@ -176,15 +176,15 @@ func (h *Handler) GetRoundSnapshotsBatch(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	snapshotMap := make(map[int]*models.RoundSnapshot)
+	snapshotIdx := make(map[int]int)
 	var snapshots []models.RoundSnapshot
 	for rows.Next() {
 		var s models.RoundSnapshot
 		if err := rows.Scan(&s.ID, &s.SeasonID, &s.RaceName, &s.RaceDate, &s.Round, &s.CreatedAt, &s.Status); err != nil {
 			continue
 		}
+		snapshotIdx[s.ID] = len(snapshots)
 		snapshots = append(snapshots, s)
-		snapshotMap[s.ID] = &snapshots[len(snapshots)-1]
 	}
 
 	if len(snapshots) == 0 {
@@ -208,8 +208,8 @@ func (h *Handler) GetRoundSnapshotsBatch(c *gin.Context) {
 		if err := scoreRows.Scan(&sc.ID, &sc.SnapshotID, &sc.RacerID, &sc.RacerName, &sc.Points, &sc.Position, &sc.DNF, &sc.DNS, &sc.Spins, &sc.Overheated); err != nil {
 			continue
 		}
-		if snap, ok := snapshotMap[sc.SnapshotID]; ok {
-			snap.Scores = append(snap.Scores, sc)
+		if idx, ok := snapshotIdx[sc.SnapshotID]; ok {
+			snapshots[idx].Scores = append(snapshots[idx].Scores, sc)
 		}
 	}
 
