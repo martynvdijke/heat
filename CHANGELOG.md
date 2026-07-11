@@ -1,3 +1,16 @@
+# [1.46.0](https://github.com/martynvdijke/heat/compare/v1.45.0...v1.46.0) (2026-07-11)
+
+
+### Bug Fixes
+
+* stale pointer in batch endpoint losing first round scores; add spins/overheated to homepage modal ([d40f99e](https://github.com/martynvdijke/heat/commit/d40f99e174ec61a178dbe38957dfdeb0c17e542f))
+* unblock Umami script via dynamic CSP and add missing tracks columns ([6742acc](https://github.com/martynvdijke/heat/commit/6742acc9b44d2a9f275353154d5b8a21c71cc72e))
+
+
+### Features
+
+* fix gotify notification (auth header + test routing), remove eink mode entirely ([01ee3eb](https://github.com/martynvdijke/heat/commit/01ee3ebc6553d7b0e139ccd05502ad114aea2b8e))
+
 # [1.45.0](https://github.com/martynvdijke/heat/compare/v1.44.0...v1.45.0) (2026-07-10)
 
 
