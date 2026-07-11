@@ -59,6 +59,11 @@ func Init(s *app.Server) {
 	srv.DB.Exec("ALTER TABLE round_snapshot_scores ADD COLUMN overheated INTEGER NOT NULL DEFAULT 0")
 	srv.DB.Exec("ALTER TABLE racer_stats ADD COLUMN overheated INTEGER NOT NULL DEFAULT 0")
 
+	// Migrate tracks table: ensure columns from the Ent schema exist
+	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN use_map_image INTEGER NOT NULL DEFAULT 0")
+	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN map_image_url TEXT NOT NULL DEFAULT ''")
+	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN refresh_geojson INTEGER NOT NULL DEFAULT 1")
+
 	// Performance indexes for common query patterns
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_id ON race_results(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_race_id ON race_results(race_id)")

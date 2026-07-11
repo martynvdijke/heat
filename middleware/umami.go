@@ -35,6 +35,15 @@ func UmamiMiddleware(s *app.Server) gin.HandlerFunc {
 			if err == nil && umami.Enabled && umami.URL != "" && umami.WebsiteID != "" {
 				script := fmt.Sprintf(`<script defer src="%s/script.js" data-website-id="%s"></script>`, umami.URL, umami.WebsiteID)
 				html = strings.Replace(html, "</head>", script+"\n</head>", 1)
+
+				// Add the Umami URL to Content-Security-Policy so the script isn't blocked
+				schemeHost := strings.TrimRight(umami.URL, "/")
+				csp := w.ResponseWriter.Header().Get("Content-Security-Policy")
+				if csp != "" {
+					csp = strings.Replace(csp, "script-src 'self'", "script-src 'self' "+schemeHost, 1)
+					csp = strings.Replace(csp, "connect-src 'self'", "connect-src 'self' "+schemeHost, 1)
+					w.ResponseWriter.Header().Set("Content-Security-Policy", csp)
+				}
 			}
 			w.ResponseWriter.WriteHeader(w.Status())
 			w.ResponseWriter.Write([]byte(html))
