@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"context"
+	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"heat/db"
+	"heat/middleware"
 	"heat/models"
 )
 
@@ -234,8 +237,10 @@ func (h *Handler) SaveUmamiSettings(c *gin.Context) {
 func (h *Handler) GetOTelSettings(c *gin.Context) {
 	var s models.OTelSettings
 	var tracesEnabled, metricsEnabled, logsEnabled int
-	err := h.S.DB.QueryRow("SELECT id, COALESCE(endpoint, ''), COALESCE(traces_enabled, 0), COALESCE(metrics_enabled, 0), COALESCE(logs_enabled, 0) FROM otel_settings WHERE id = 1").
-		Scan(&s.ID, &s.Endpoint, &tracesEnabled, &metricsEnabled, &logsEnabled)
+	err := middleware.TraceDBQuery(c.Request.Context(), "GetOTelSettings", func(ctx context.Context) error {
+		return h.S.DB.QueryRowContext(ctx, "SELECT id, COALESCE(endpoint, ''), COALESCE(traces_enabled, 0), COALESCE(metrics_enabled, 0), COALESCE(logs_enabled, 0) FROM otel_settings WHERE id = 1").
+			Scan(&s.ID, &s.Endpoint, &tracesEnabled, &metricsEnabled, &logsEnabled)
+	})
 	if err != nil {
 		s = models.OTelSettings{ID: 1}
 		c.JSON(http.StatusOK, s)
@@ -283,8 +288,13 @@ func (h *Handler) SaveOTelSettings(c *gin.Context) {
 // @Success 200 {array} models.RaceHistory
 // @Router /api/oneoff-races [get]
 func (h *Handler) GetOneOffRaces(c *gin.Context) {
-	rows, err := h.S.DB.Query(`SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps, COALESCE(race_type, 'oneoff')
+	var rows *sql.Rows
+	err := middleware.TraceDBQuery(c.Request.Context(), "GetOneOffRaces", func(ctx context.Context) error {
+		var innerErr error
+		rows, innerErr = h.S.DB.QueryContext(ctx, `SELECT id, COALESCE(name, ''), race_date, country, track, track_id, total_laps, COALESCE(race_type, 'oneoff')
 					   FROM race_history WHERE race_type = 'oneoff' ORDER BY race_date DESC LIMIT 20`)
+		return innerErr
+	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

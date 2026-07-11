@@ -1,14 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"sort"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
+	"heat/ent"
 	"heat/ent/racer"
 	"heat/ent/team"
+	"heat/middleware"
 	"heat/models"
 )
 
@@ -74,25 +77,43 @@ func (h *Handler) DeleteTeam(c *gin.Context) {
 func (h *Handler) GetConstructorStandings(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	teams, err := h.S.Ent.Team.Query().All(ctx)
+	var teams []*ent.Team
+	var racers []*ent.Racer
+	var raceHistories []*ent.RaceHistory
+	var raceResults []*ent.RaceResult
+	var err error
+
+	err = middleware.TraceDBQuery(ctx, "GetConstructorStandings/teams", func(ctx context.Context) error {
+		teams, err = h.S.Ent.Team.Query().All(ctx)
+		return err
+	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	racers, err := h.S.Ent.Racer.Query().All(ctx)
+	err = middleware.TraceDBQuery(ctx, "GetConstructorStandings/racers", func(ctx context.Context) error {
+		racers, err = h.S.Ent.Racer.Query().All(ctx)
+		return err
+	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	raceHistories, err := h.S.Ent.RaceHistory.Query().All(ctx)
+	err = middleware.TraceDBQuery(ctx, "GetConstructorStandings/raceHistories", func(ctx context.Context) error {
+		raceHistories, err = h.S.Ent.RaceHistory.Query().All(ctx)
+		return err
+	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	raceResults, err := h.S.Ent.RaceResult.Query().All(ctx)
+	err = middleware.TraceDBQuery(ctx, "GetConstructorStandings/raceResults", func(ctx context.Context) error {
+		raceResults, err = h.S.Ent.RaceResult.Query().All(ctx)
+		return err
+	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

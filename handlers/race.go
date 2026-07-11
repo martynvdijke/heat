@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"database/sql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -9,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"heat/db"
+	"heat/middleware"
 	"heat/models"
 )
 
@@ -208,7 +211,12 @@ func (h *Handler) GetRaceHistory(c *gin.Context) {
 		}
 	}
 
-	rows, err := h.S.DB.Query(query, args...)
+	var rows *sql.Rows
+	err := middleware.TraceDBQuery(c.Request.Context(), "GetRaceHistory", func(ctx context.Context) error {
+		var innerErr error
+		rows, innerErr = h.S.DB.QueryContext(ctx, query, args...)
+		return innerErr
+	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

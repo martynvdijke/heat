@@ -41,6 +41,7 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"golang.org/x/net/webdav"
 
 	"entgo.io/ent/dialect"
@@ -267,6 +268,8 @@ func main() {
 	// Initialize OpenTelemetry after DB is ready (reads OTel settings from database)
 	otelShutdown := initOTel(server)
 	defer otelShutdown()
+	// Create OTel metric instruments (requires global MeterProvider from initOTel)
+	initOTelMetrics()
 	go wsManager.BroadcastManager()
 	go wsManager.BroadcastFlags()
 	go wsManager.BroadcastGameMechanics()
@@ -313,6 +316,7 @@ func main() {
 	r := gin.New()
 	r.MaxMultipartMemory = 32 << 20
 	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(otelgin.Middleware("heat"))
 	// Exclude /ws from gzip — the gzip middleware wraps c.Writer, which breaks
 	// gorilla/websocket's Upgrader.Upgrade() (it needs the raw ResponseWriter
 	// to hijack the connection for the WebSocket handshake).
@@ -552,6 +556,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"version": server.CurrentVersion})
 	})
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	r.GET("/metrics/prometheus", gin.WrapH(promhttp.Handler()))
 
 	r.GET("/api/admin/backup", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.TriggerManualBackup)
 

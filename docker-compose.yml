@@ -8,6 +8,17 @@ services:
       - heat-db:/db
     container_name: heat
     restart: unless-stopped
+    # OpenTelemetry configuration (optional — falls back to DB settings if unset)
+    environment:
+      # OTLP endpoint for exporting traces, metrics, and logs
+      # Leave empty to use DB-based configuration (otel_settings table)
+      - OTEL_EXPORTER_OTLP_ENDPOINT=
+      # Protocol: "grpc" (default) or "http"
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      # Service name (defaults to "heat" via OTEL_SERVICE_NAME or code default)
+      - OTEL_SERVICE_NAME=heat
+      # Resource attributes in key=value,key2=value2 format
+      - OTEL_RESOURCE_ATTRIBUTES=
 
 volumes:
   heat-data:
