@@ -284,9 +284,20 @@ func (h *Handler) TestNotification(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Gotify URL not configured"})
 		return
 	}
+	if s.GotiFyToken == "" {
+		h.S.Log.Errorf("notification", "TestNotification: Gotify token not configured")
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Gotify token not configured"})
+		return
+	}
+
+	err := sendGotifyNotification("Test Notification", "This is a test notification from HEAT", s.GotiFyURL, s.GotiFyToken)
+	if err != nil {
+		h.S.Log.Errorf("notification", "TestNotification failed: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	h.S.Log.Infof("notification", "Test notification sent to %s", s.GotiFyURL)
-	h.NotifyRaceWinner("Test Driver", "Test Track")
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
@@ -326,7 +337,7 @@ func sendGotifyNotification(title, message, gotifyURL, token string) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Token", token)
+	req.Header.Set("X-Gotify-Key", token)
 
 	resp, err := client.Do(req)
 	if err != nil {

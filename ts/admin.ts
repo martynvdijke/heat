@@ -899,31 +899,6 @@ document.getElementById('otel-form')?.addEventListener('submit', async (e: Event
     }
 });
 
-async function loadEInkSettings(): Promise<void> {
-    try {
-        const res = await fetch('/api/eink-settings');
-        const data = await res.json();
-        (document.getElementById('eink-enabled') as HTMLInputElement).checked = data.enabled;
-    } catch (e) { console.error('Failed to load e-ink settings', e); }
-}
-
-document.getElementById('eink-form')?.addEventListener('submit', async (e: Event) => {
-    e.preventDefault();
-    const data = {
-        enabled: (document.getElementById('eink-enabled') as HTMLInputElement).checked
-    };
-    const res = await fetch('/api/eink-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    if (res.ok) showToast('E-Ink settings saved!', 'success');
-    else {
-        const err = await res.json();
-        showToast('Failed to save e-ink settings: ' + (err.error || 'Unknown error'), 'error');
-    }
-});
-
 document.getElementById('ai-settings-form')?.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     const data = {
@@ -1347,21 +1322,6 @@ document.body.addEventListener('submit', async (e: SubmitEvent) => {
             const err = await res.json();
             showToast('Failed to save telemetry settings: ' + (err.error || 'Unknown error'), 'error');
         }
-    } else if (formId === 'eink-form') {
-        e.preventDefault();
-        const data = {
-            enabled: (document.getElementById('eink-enabled') as HTMLInputElement).checked
-        };
-        const res = await fetch('/api/eink-settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (res.ok) showToast('E-Ink settings saved!', 'success');
-        else {
-            const err = await res.json();
-            showToast('Failed to save e-ink settings: ' + (err.error || 'Unknown error'), 'error');
-        }
     } else if (formId === 'ai-settings-form') {
         e.preventDefault();
         const data = {
@@ -1470,7 +1430,6 @@ document.body.addEventListener('htmx:afterOnLoad', (evt: any) => {
         loadUmamiSettings();
         loadAISettings();
         loadOTelSettings();
-        loadEInkSettings();
         loadBackupSettings();
         loadBackupList();
         loadEmailSettings();

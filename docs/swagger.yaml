@@ -31,13 +31,6 @@ definitions:
       retention_count:
         type: integer
     type: object
-  models.EInkSettings:
-    properties:
-      enabled:
-        type: boolean
-      id:
-        type: integer
-    type: object
   models.EmailSettings:
     properties:
       enabled:
@@ -577,46 +570,6 @@ paths:
       summary: Check if admin is set up
       tags:
       - Auth
-  /api/eink-settings:
-    get:
-      description: Get the current e-ink display mode setting
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.EInkSettings'
-      security:
-      - cookieAuth: []
-      summary: Get e-ink settings
-      tags:
-      - Settings
-    post:
-      consumes:
-      - application/json
-      description: Enable or disable e-ink display mode site-wide
-      parameters:
-      - description: E-ink settings
-        in: body
-        name: settings
-        required: true
-        schema:
-          $ref: '#/definitions/models.EInkSettings'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - cookieAuth: []
-      summary: Save e-ink settings
-      tags:
-      - Settings
   /api/email-settings:
     get:
       description: Get SMTP email settings

@@ -62,13 +62,11 @@ import (
 )
 
 type PageData struct {
-	Version     string
-	EInkEnabled bool
+	Version string
 }
 
 type AdminData struct {
 	Version      string
-	EInkEnabled  bool
 	TabID        string
 	VendorCSS    string
 	VendorJS     string
@@ -162,8 +160,7 @@ func serveTemplate(c *gin.Context, name string, s *app.Server) {
 		filepath.Join(s.BasePath, "static/templates/base.html"),
 		filepath.Join(s.BasePath, "static/templates", name),
 	)
-	einkEnabled := s.EInkEnabled
-	data := PageData{Version: s.CurrentVersion, EInkEnabled: einkEnabled}
+	data := PageData{Version: s.CurrentVersion}
 	var buf bytes.Buffer
 	if err := tmpl.ExecuteTemplate(&buf, "base", data); err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -293,14 +290,6 @@ func main() {
 	go func() {
 		for {
 			var enabled int
-			server.DB.QueryRow("SELECT COALESCE(enabled, 0) FROM eink_settings WHERE id = 1").Scan(&enabled)
-			server.EInkEnabled = enabled == 1
-			time.Sleep(30 * time.Second)
-		}
-	}()
-	go func() {
-		for {
-			var enabled int
 			var intervalHrs int
 			server.DB.QueryRow("SELECT enabled, interval_hrs FROM backup_settings WHERE id = 1").Scan(&enabled, &intervalHrs)
 			if enabled == 1 && intervalHrs > 0 {
@@ -374,8 +363,6 @@ func main() {
 		admin.DELETE("/quotes", h.HandleQuotes)
 		admin.GET("/backup-settings", h.GetBackupSettings)
 		admin.POST("/backup-settings", h.SaveBackupSettings)
-		admin.GET("/eink-settings", h.GetEInkSettings)
-		admin.POST("/eink-settings", h.SaveEInkSettings)
 		admin.POST("/backup/manual", h.TriggerManualBackup)
 		admin.GET("/backup/list", h.ListBackups)
 		admin.POST("/seasons", h.CreateSeason)
@@ -469,7 +456,6 @@ func main() {
 			c.Header("Cache-Control", "no-store")
 			adminData := AdminData{
 				Version:      server.CurrentVersion,
-				EInkEnabled:  server.EInkEnabled,
 				TabID:        tabID,
 				VendorCSS:    vendorCSSPath,
 				VendorJS:     vendorJSPath,
@@ -638,7 +624,6 @@ func main() {
 			c.Header("Content-Type", "text/html; charset=utf-8")
 			adminData := AdminData{
 				Version:      server.CurrentVersion,
-				EInkEnabled:  server.EInkEnabled,
 				TabID:        "race-day",
 				VendorCSS:    vendorCSSPath,
 				VendorJS:     vendorJSPath,

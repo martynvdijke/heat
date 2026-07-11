@@ -50,9 +50,8 @@ type Server struct {
 	BroadcastRacers      func()
 	BroadcastSelfService func(action models.SelfServiceAction)
 
-	Log         *logger.Logger
-	EInkEnabled bool
-	StatsCache  *racing.Cache
+	Log        *logger.Logger
+	StatsCache *racing.Cache
 }
 
 func NewServer() *Server {

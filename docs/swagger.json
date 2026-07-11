@@ -360,71 +360,6 @@
                 }
             }
         },
-        "/api/eink-settings": {
-            "get": {
-                "security": [
-                    {
-                        "cookieAuth": []
-                    }
-                ],
-                "description": "Get the current e-ink display mode setting",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Settings"
-                ],
-                "summary": "Get e-ink settings",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.EInkSettings"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "cookieAuth": []
-                    }
-                ],
-                "description": "Enable or disable e-ink display mode site-wide",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Settings"
-                ],
-                "summary": "Save e-ink settings",
-                "parameters": [
-                    {
-                        "description": "E-ink settings",
-                        "name": "settings",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.EInkSettings"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/email-settings": {
             "get": {
                 "security": [
@@ -2365,17 +2300,6 @@
                     "type": "integer"
                 },
                 "retention_count": {
-                    "type": "integer"
-                }
-            }
-        },
-        "models.EInkSettings": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "id": {
                     "type": "integer"
                 }
             }
