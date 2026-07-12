@@ -1,3 +1,10 @@
+# [1.47.0](https://github.com/martynvdijke/heat/compare/v1.46.0...v1.47.0) (2026-07-12)
+
+
+### Features
+
+* add OpenTelemetry support with OTLP export, metrics, tracing, and logs ([a11ffe9](https://github.com/martynvdijke/heat/commit/a11ffe9f5b1f91e67eacbcda2a6311c2b031d29e))
+
 # [1.46.0](https://github.com/martynvdijke/heat/compare/v1.45.0...v1.46.0) (2026-07-11)
 
 
