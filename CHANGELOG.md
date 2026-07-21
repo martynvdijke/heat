@@ -1,3 +1,10 @@
+## [1.47.5](https://github.com/martynvdijke/heat/compare/v1.47.4...v1.47.5) (2026-07-21)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/prometheus/client_golang to v1.24.0 ([#58](https://github.com/martynvdijke/heat/issues/58)) ([172dfb2](https://github.com/martynvdijke/heat/commit/172dfb2a02dece6fcd7e9ab442aaf079362bba19))
+
 ## [1.47.4](https://github.com/martynvdijke/heat/compare/v1.47.3...v1.47.4) (2026-07-20)
 
 ## [1.47.3](https://github.com/martynvdijke/heat/compare/v1.47.2...v1.47.3) (2026-07-19)
