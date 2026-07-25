@@ -1,6 +1,60 @@
 import { test, expect, Page } from '@playwright/test';
 
 test.describe('Car Color Rendering', () => {
+  test('should display car color indicator in standings container', async ({ page }) => {
+    // Navigate to the main page
+    await page.goto('/');
+    await page.waitForSelector('#standings-container .standing-item');
+
+    // Check that at least one standing item has a color-indicator
+    const standingColorDots = page.locator('#standings-container .standing-item .color-indicator');
+    await expect(standingColorDots.first()).toBeVisible();
+
+    // Verify the color indicator has a valid background color (not the default fallback)
+    const standingDot = standingColorDots.first();
+    const bg = await standingDot.evaluate(el => getComputedStyle(el).backgroundColor);
+    // Should be a valid RGB color (not transparent or default #cccccc fallback)
+    expect(bg).not.toBe('rgba(0, 0, 0, 0)');
+    expect(bg).not.toBe('transparent');
+  });
+
+  test('should display custom hex car color in standings container', async ({ page }) => {
+    // Create a racer with a distinct hex color directly via API
+    await loginAsAdmin(page);
+    const created = await page.evaluate(async () => {
+      const res = await fetch('/api/racers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 0,
+          name: 'Standings Hex Racer',
+          profile_picture: '/static/images/helmet.svg',
+          car_color: '#800080',
+          car_name: 'Purple Car',
+          points: 999,
+          rank: 2,
+          position: 0,
+        }),
+      });
+      return { ok: res.ok, status: res.status };
+    });
+    expect(created.ok).toBeTruthy();
+
+    // Navigate to the main page
+    await page.goto('/');
+    await page.waitForSelector('#standings-container .standing-item');
+
+    // The racer with 999 points should be first in standings (sorted by points desc)
+    const standingItem = page.locator('#standings-container .standing-item').first();
+    await expect(standingItem).toContainText('Standings Hex Racer');
+
+    // The color indicator should have the correct purple color
+    const colorDot = standingItem.locator('.color-indicator').first();
+    const bg = await colorDot.evaluate(el => getComputedStyle(el).backgroundColor);
+    // rgb(128, 0, 128) is the computed value for #800080
+    expect(bg).toBe('rgb(128, 0, 128)');
+  });
+
   test.describe.serial('Admin sets custom hex and named colors', () => {
     test.beforeEach(async ({ page }) => {
       await loginAsAdmin(page);

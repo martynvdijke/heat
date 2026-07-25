@@ -251,7 +251,7 @@ function renderRacers(): void {
         <div class="standing-item" style="cursor:pointer" onclick="showDriverStats(${r.id})">
             <span class="rank">${i + 1}</span>
             <img src="${r.profile_picture}" class="avatar-sm" alt="${r.name}" onerror="this.src='/static/images/helmet.svg'">
-            <span class="driver text-uppercase fw-bold">${r.name}</span>
+            <span class="driver text-uppercase fw-bold"><span class="color-indicator me-2" style="background:${normalizeHex(r.car_color)}"></span>${r.name}</span>
             <span class="points ms-auto">${r.points} PTS</span>
         </div>
     `).join('');
