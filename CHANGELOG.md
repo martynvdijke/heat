@@ -1,3 +1,10 @@
+## [1.47.8](https://github.com/martynvdijke/heat/compare/v1.47.7...v1.47.8) (2026-07-25)
+
+
+### Bug Fixes
+
+* show custom car color in frontpage standings section ([d6f7bec](https://github.com/martynvdijke/heat/commit/d6f7bec10b93084cc7a13456522437a153388f01))
+
 ## [1.47.7](https://github.com/martynvdijke/heat/compare/v1.47.6...v1.47.7) (2026-07-24)
 
 
