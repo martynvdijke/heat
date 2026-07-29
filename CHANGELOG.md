@@ -1,3 +1,10 @@
+## [1.47.13](https://github.com/martynvdijke/heat/compare/v1.47.12...v1.47.13) (2026-07-29)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/mattn/go-sqlite3 to v1.14.49 ([#65](https://github.com/martynvdijke/heat/issues/65)) ([de4ab50](https://github.com/martynvdijke/heat/commit/de4ab50d8de5c05b8f842119cffc6ef243b48f63))
+
 ## [1.47.12](https://github.com/martynvdijke/heat/compare/v1.47.11...v1.47.12) (2026-07-28)
 
 ## [1.47.11](https://github.com/martynvdijke/heat/compare/v1.47.10...v1.47.11) (2026-07-27)
