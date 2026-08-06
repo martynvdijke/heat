@@ -8,14 +8,20 @@
 
 ## 2. Backend — Update driver share endpoint
 
-- [ ] 2.1 Update `GetDriverStatsByToken()` in `handlers/driver_share.go` to include `spins` and `overheated` in the SELECT query
+- [x] 2.1 Update `GetDriverStatsByToken()` in `handlers/driver_share.go` to include `spins` and `overheated` in the SELECT query
 
 ## 3. Frontend — Add spins and overheated to stats page
 
-- [ ] 3.1 Add "Spins" and "Overheated" column headers to the Driver Performance table in `static/templates/stats.html`
-- [ ] 3.2 Update `renderDriverStatsTable()` in `ts/stats.ts` to display spins and overheated values in each row
+- [x] 3.1 Add "Spins" and "Overheated" column headers to the Driver Performance table in `static/templates/stats.html`
+- [x] 3.2 Update `renderDriverStatsTable()` in `ts/stats.ts` to display spins and overheated values in each row
 
 ## 4. Tests/Validation
 
-- [ ] 4.1 Update existing stats test in `05_test_stats_test.go` to verify round-based aggregation returns correct spins and overheated
-- [ ] 4.2 Update `08_test_api_test.go` driver-stats test to verify spins and overheated are returned
+- [x] 4.1 Update existing stats test in `05_test_stats_test.go` to verify round-based aggregation returns correct spins and overheated
+- [x] 4.2 Update `08_test_api_test.go` driver-stats test to verify spins and overheated are returned
+
+## Verification notes (2026-08-06)
+
+- All 10/10 tasks complete. 2.1: handlers/driver_share.go:93 SELECT includes `spins`, `overheated`. 3.1: static/templates/stats.html:95-96 `<th>Spins</th><th>Overheated</th>`. 3.2: ts/stats.ts:218-219 renders `${s.spins||0}` / `${s.overheated||0}`.
+- 4.1: 05_test_stats_test.go:17-18,50-53,85-88 asserts spins=8/overheated=3 from round-based aggregation. 4.2: 08_test_api_test.go:1087-1095 asserts spins/overheated fields in driver-stats API.
+- `go test ./...` PASS. Committed in 5925692.
