@@ -91,3 +91,34 @@ if (!allOk) {
 }
 
 console.log(`\n✅ All ${precacheUrls.length} precache URLs verified on disk.`);
+
+// ---------------------------------------------------------------------------
+// --self-test mode: verify the guard actually catches a drifted precache list.
+// Corrupts the admin-nav path in a copy of sw.js and asserts the check fails.
+// ---------------------------------------------------------------------------
+if (process.argv.includes('--self-test')) {
+  const corrupted = swContent.replace(/(\/static\/vendor\/admin-nav\.)[a-f0-9]+(\.css)/, '$1deadbeef$2');
+  if (corrupted === swContent) {
+    console.error('❌ Self-test: could not find admin-nav hash in sw.js to corrupt.');
+    process.exit(1);
+  }
+  const original = fs.readFileSync(swPath, 'utf8');
+  fs.writeFileSync(swPath, corrupted);
+  try {
+    const { execFileSync } = await import('child_process');
+    const scriptPath = new URL('./verify-sw-precache.mjs', import.meta.url).pathname;
+    let exitCode = 0;
+    try {
+      execFileSync(process.execPath, [scriptPath], { cwd: path.resolve('.') });
+    } catch (e) {
+      exitCode = e.status ?? 1;
+    }
+    if (exitCode === 0) {
+      console.error('❌ Self-test: guard did NOT fail on corrupted sw.js. Expected non-zero exit.');
+      process.exit(1);
+    }
+    console.log(`✅ Self-test: guard correctly rejected corrupted sw.js (exit ${exitCode}).`);
+  } finally {
+    fs.writeFileSync(swPath, original);
+  }
+}

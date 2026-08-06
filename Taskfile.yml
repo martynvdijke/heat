@@ -24,6 +24,11 @@ tasks:
     cmds:
       - go test -v ./...
 
+  test:color:
+    desc: Run normalizeHex unit tests (node:test)
+    cmds:
+      - npm run test:color
+
   test:e2e:
     desc: Run Playwright end-to-end tests
     cmds:
@@ -40,6 +45,7 @@ tasks:
     desc: Verify sw.js precache URLs all exist on disk
     cmds:
       - npm run verify:sw-precache
+      - npm run verify:sw-precache:self-test
 
   build:frontend:dev:
     desc: Build frontend with sourcemaps (dev)

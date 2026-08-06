@@ -10,7 +10,9 @@
     "build:frontend:dev": "node build.mjs --dev",
     "typecheck": "tsc --noEmit",
     "build:ts": "tsc",
-    "verify:sw-precache": "node scripts/verify-sw-precache.mjs"
+    "verify:sw-precache": "node scripts/verify-sw-precache.mjs",
+    "verify:sw-precache:self-test": "node scripts/verify-sw-precache.mjs --self-test",
+    "test:color": "node --test tests/color.test.mjs"
   },
   "repository": {
     "type": "git",
