@@ -107,6 +107,11 @@ func (h *Handler) SaveNotificationSettings(c *gin.Context) {
 		return
 	}
 
+	if s.GotiFyURL == "" {
+		var existingURL string
+		h.S.DB.QueryRow("SELECT COALESCE(gotify_url, '') FROM notification_settings WHERE id = 1").Scan(&existingURL)
+		s.GotiFyURL = existingURL
+	}
 	if s.GotiFyToken == "" {
 		var existingToken string
 		h.S.DB.QueryRow("SELECT COALESCE(gotify_token, '') FROM notification_settings WHERE id = 1").Scan(&existingToken)

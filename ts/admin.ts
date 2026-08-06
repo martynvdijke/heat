@@ -290,40 +290,29 @@ async function loadNotificationSettings(): Promise<void> {
     } catch (e) { console.error('Failed to load notification settings', e); }
 }
 
-document.getElementById('notify-form')?.addEventListener('submit', async (e: Event) => {
-    e.preventDefault();
-    const data = {
-        gotify_url: (document.getElementById('gotify-url') as HTMLInputElement).value,
-        gotify_token: (document.getElementById('gotify-token') as HTMLInputElement).value,
-        notify_winner: (document.getElementById('notify-winner') as HTMLInputElement).checked,
-        notify_podium: (document.getElementById('notify-podium') as HTMLInputElement).checked,
-        notify_race_start: (document.getElementById('notify-race-start') as HTMLInputElement).checked
-    };
-    const res = await fetch('/api/notification-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    if (res.ok) showToast('Notification settings saved!', 'success');
-});
-
-document.getElementById('notify-winner')?.addEventListener('change', saveNotifyToggle);
-document.getElementById('notify-podium')?.addEventListener('change', saveNotifyToggle);
-document.getElementById('notify-race-start')?.addEventListener('change', saveNotifyToggle);
-
 async function saveNotifyToggle(): Promise<void> {
-    const data = {
-        gotify_url: (document.getElementById('gotify-url') as HTMLInputElement).value,
-        gotify_token: (document.getElementById('gotify-token') as HTMLInputElement).value,
-        notify_winner: (document.getElementById('notify-winner') as HTMLInputElement).checked,
-        notify_podium: (document.getElementById('notify-podium') as HTMLInputElement).checked,
-        notify_race_start: (document.getElementById('notify-race-start') as HTMLInputElement).checked
-    };
-    await fetch('/api/notification-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
+    try {
+        const data = {
+            gotify_url: (document.getElementById('gotify-url') as HTMLInputElement).value,
+            gotify_token: (document.getElementById('gotify-token') as HTMLInputElement).value,
+            notify_winner: (document.getElementById('notify-winner') as HTMLInputElement).checked,
+            notify_podium: (document.getElementById('notify-podium') as HTMLInputElement).checked,
+            notify_race_start: (document.getElementById('notify-race-start') as HTMLInputElement).checked
+        };
+        const res = await fetch('/api/notification-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const err = await res.text();
+            showToast('Failed to save notification: ' + err, 'error');
+        } else {
+            showToast('Notification settings saved!', 'success');
+        }
+    } catch (e: any) {
+        showToast('Error saving notification: ' + e.message, 'error');
+    }
 }
 
 async function testNotification(this: HTMLButtonElement, event: MouseEvent): Promise<void> {
@@ -1218,7 +1207,7 @@ document.getElementById('backup-form')?.addEventListener('submit', async (e: Eve
 // Bootstrap versions it may not reliably bubble to document; a click
 // handler with setTimeout(0) ensures data loads after the tab pane
 // becomes visible.
-let configSettingsLoaded = false;
+
 document.addEventListener('click', (event: MouseEvent) => {
     const btn = (event.target as HTMLElement).closest('.nav-pills .nav-link, #backup-tab, #email-tab') as HTMLElement;
     if (!btn) return;
@@ -1290,7 +1279,12 @@ document.body.addEventListener('submit', async (e: SubmitEvent) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        if (res.ok) showToast('Notification settings saved!', 'success');
+        if (res.ok) {
+            showToast('Notification settings saved!', 'success');
+        } else {
+            const err = await res.text();
+            showToast('Failed to save notification: ' + err, 'error');
+        }
     } else if (formId === 'umami-form') {
         e.preventDefault();
         const data = {
@@ -1424,8 +1418,7 @@ document.body.addEventListener('change', async (e: Event) => {
 // Load all config-pane settings when the Config main tab is first opened via HTMX.
 document.body.addEventListener('htmx:afterOnLoad', (evt: any) => {
     const path = evt.detail?.requestConfig?.path || '';
-    if (path === '/api/html/admin/config' && !configSettingsLoaded) {
-        configSettingsLoaded = true;
+    if (path === '/api/html/admin/config') {
         loadNotificationSettings();
         loadUmamiSettings();
         loadAISettings();
