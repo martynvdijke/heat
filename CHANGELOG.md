@@ -1,9 +1,15 @@
+## [Unreleased]
+
+### Features
+
+* **trmnl:** add TRMNL e-ink plugin (`trmnl/` templates + settings) with new public `GET /api/trmnl/summary` endpoint showing latest race results and season championship standings
+
 ## [1.47.18](https://github.com/martynvdijke/heat/compare/v1.47.17...v1.47.18) (2026-08-07)
 
 
 ### Bug Fixes
 
-* preserve gotify url and surface notification save errors ([6393b68](https://github.com/martynvdijke/heat/commit/6393b68bf19f225124bbe09d1907683d0aaeaab0))
+* preserve gotify url and surface notification save errors ([6393b68](https://github.com/martynvdijke/heat/commit/6393b68bf19f225124bbe09d1907683d0aaea0ab))
 
 ## [1.47.17](https://github.com/martynvdijke/heat/compare/v1.47.16...v1.47.17) (2026-08-05)
 

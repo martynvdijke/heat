@@ -1,0 +1,63 @@
+<div class="columns">
+  <div class="column">
+    {% if latest_race %}
+      <div class="item">
+        <div class="meta">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% endif %}</div>
+        <div class="content">
+          <span class="value value--medium">{{ latest_race.name }}</span>
+        </div>
+        <div class="meta">{{ latest_race.race_date }}</div>
+      </div>
+      <div class="hr"></div>
+      {% for result in latest_race.results %}
+        {% if forloop.index <= 3 %}
+          <div class="item">
+            <div class="meta">P{{ result.position }}</div>
+            <div class="content">
+              <span class="value value--small">{{ result.racer_name }}</span>
+              <span class="label">{{ result.points }} pts</span>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <div class="item">
+        <div class="content">
+          <span class="value value--medium">No race data yet</span>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="column">
+    {% if standings.size > 0 %}
+      <div class="item">
+        <div class="content">
+          <span class="value value--medium">Standings</span>
+        </div>
+      </div>
+      <div class="hr"></div>
+      {% for standing in standings %}
+        {% if forloop.index <= 3 %}
+          <div class="item">
+            <div class="meta">{{ forloop.index }}</div>
+            <div class="content">
+              <span class="value value--small">{{ standing.racer_name }}</span>
+              <span class="label">{{ standing.wins }} wins - {{ standing.points }} pts</span>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <div class="item">
+        <div class="content">
+          <span class="value value--small">No standings yet</span>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="title_bar">
+  <span class="title">Heat{% if season %} - {{ season.name }}{% endif %}</span>
+</div>

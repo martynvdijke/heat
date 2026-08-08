@@ -1,0 +1,86 @@
+<div class="layout layout--col gap">
+  {% if latest_race %}
+    <div class="grid grid--cols-1">
+      <div class="item">
+        <div class="meta">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% endif %}</div>
+        <div class="content">
+          <span class="value value--medium">{{ latest_race.name }}</span>
+        </div>
+        <div class="meta">{{ latest_race.race_date }}</div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    {% for result in latest_race.results %}
+      {% if forloop.index <= 3 %}
+        <div class="grid grid--cols-2">
+          <div class="item">
+            <div class="meta">P{{ result.position }}</div>
+            <div class="content">
+              <span class="value value--small">{{ result.racer_name }}</span>
+            </div>
+          </div>
+          <div class="item">
+            <div class="content">
+              <span class="label">{{ result.points }} pts</span>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    <div class="grid grid--cols-1">
+      <div class="item">
+        <div class="content">
+          <span class="value value--medium">No race data yet</span>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="hr"></div>
+
+  {% if standings.size > 0 %}
+    <div class="grid grid--cols-1">
+      <div class="item">
+        <div class="content">
+          <span class="value value--medium">Standings</span>
+        </div>
+      </div>
+    </div>
+    {% for standing in standings %}
+      {% if forloop.index <= 3 %}
+        <div class="grid grid--cols-3">
+          <div class="item">
+            <div class="content"><span class="value value--small">{{ forloop.index }}</span></div>
+          </div>
+          <div class="item">
+            <div class="content"><span class="value value--small">{{ standing.racer_name }}</span></div>
+          </div>
+          <div class="item">
+            <div class="content"><span class="label">{{ standing.points }} pts</span></div>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% elsif latest_race == nil %}
+    <div class="grid grid--cols-1">
+      <div class="item">
+        <div class="content">
+          <span class="value value--medium">No race data yet</span>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="grid grid--cols-1">
+      <div class="item">
+        <div class="content">
+          <span class="value value--small">No standings yet</span>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<div class="title_bar">
+  <span class="title">Heat{% if season %} - {{ season.name }}{% endif %}</span>
+</div>

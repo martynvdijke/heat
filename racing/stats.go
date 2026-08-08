@@ -42,6 +42,43 @@ func RacerStatsBySeason(db *sql.DB, seasonID int) []models.RacerStats {
 	return stats
 }
 
+// SeasonStandings computes the championship standings for a season,
+// aggregated from finalized round snapshot scores and limited to the top N
+// racers. Each entry carries the racer name as stored on the snapshot scores.
+func SeasonStandings(db *sql.DB, seasonID int, limit int) []models.SeasonStanding {
+	query := `
+		SELECT rss.racer_id,
+			MAX(rss.racer_name) as racer_name,
+			COUNT(*) as races,
+			SUM(CASE WHEN rss.position = 1 THEN 1 ELSE 0 END) as wins,
+			SUM(rss.points) as points
+		FROM round_snapshot_scores rss
+		JOIN round_snapshots rs ON rs.id = rss.snapshot_id
+		WHERE rs.season_id = ? AND rs.status = 'final'
+		GROUP BY rss.racer_id
+		ORDER BY points DESC`
+	args := []any{seasonID}
+	if limit > 0 {
+		query += " LIMIT ?"
+		args = append(args, limit)
+	}
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	standings := make([]models.SeasonStanding, 0)
+	for rows.Next() {
+		var s models.SeasonStanding
+		if err := rows.Scan(&s.RacerID, &s.RacerName, &s.Races, &s.Wins, &s.Points); err != nil {
+			continue
+		}
+		standings = append(standings, s)
+	}
+	return standings
+}
+
 // SingleRacerStatsBySeason computes season statistics for a single racer,
 // aggregated from finalized round snapshot scores.
 // Returns the stats and whether the racer was found.
