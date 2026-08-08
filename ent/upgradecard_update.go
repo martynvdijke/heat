@@ -104,6 +104,27 @@ func (_u *UpgradeCardUpdate) SetNillableEffects(v *string) *UpgradeCardUpdate {
 	return _u
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (_u *UpgradeCardUpdate) SetExtensionID(v int) *UpgradeCardUpdate {
+	_u.mutation.ResetExtensionID()
+	_u.mutation.SetExtensionID(v)
+	return _u
+}
+
+// SetNillableExtensionID sets the "extension_id" field if the given value is not nil.
+func (_u *UpgradeCardUpdate) SetNillableExtensionID(v *int) *UpgradeCardUpdate {
+	if v != nil {
+		_u.SetExtensionID(*v)
+	}
+	return _u
+}
+
+// AddExtensionID adds value to the "extension_id" field.
+func (_u *UpgradeCardUpdate) AddExtensionID(v int) *UpgradeCardUpdate {
+	_u.mutation.AddExtensionID(v)
+	return _u
+}
+
 // Mutation returns the UpgradeCardMutation object of the builder.
 func (_u *UpgradeCardUpdate) Mutation() *UpgradeCardMutation {
 	return _u.mutation
@@ -162,6 +183,12 @@ func (_u *UpgradeCardUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if value, ok := _u.mutation.Effects(); ok {
 		_spec.SetField(upgradecard.FieldEffects, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ExtensionID(); ok {
+		_spec.SetField(upgradecard.FieldExtensionID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedExtensionID(); ok {
+		_spec.AddField(upgradecard.FieldExtensionID, field.TypeInt, value)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -260,6 +287,27 @@ func (_u *UpgradeCardUpdateOne) SetNillableEffects(v *string) *UpgradeCardUpdate
 	return _u
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (_u *UpgradeCardUpdateOne) SetExtensionID(v int) *UpgradeCardUpdateOne {
+	_u.mutation.ResetExtensionID()
+	_u.mutation.SetExtensionID(v)
+	return _u
+}
+
+// SetNillableExtensionID sets the "extension_id" field if the given value is not nil.
+func (_u *UpgradeCardUpdateOne) SetNillableExtensionID(v *int) *UpgradeCardUpdateOne {
+	if v != nil {
+		_u.SetExtensionID(*v)
+	}
+	return _u
+}
+
+// AddExtensionID adds value to the "extension_id" field.
+func (_u *UpgradeCardUpdateOne) AddExtensionID(v int) *UpgradeCardUpdateOne {
+	_u.mutation.AddExtensionID(v)
+	return _u
+}
+
 // Mutation returns the UpgradeCardMutation object of the builder.
 func (_u *UpgradeCardUpdateOne) Mutation() *UpgradeCardMutation {
 	return _u.mutation
@@ -348,6 +396,12 @@ func (_u *UpgradeCardUpdateOne) sqlSave(ctx context.Context) (_node *UpgradeCard
 	}
 	if value, ok := _u.mutation.Effects(); ok {
 		_spec.SetField(upgradecard.FieldEffects, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ExtensionID(); ok {
+		_spec.SetField(upgradecard.FieldExtensionID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedExtensionID(); ok {
+		_spec.AddField(upgradecard.FieldExtensionID, field.TypeInt, value)
 	}
 	_node = &UpgradeCard{config: _u.config}
 	_spec.Assign = _node.assignValues

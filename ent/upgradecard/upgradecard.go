@@ -21,6 +21,8 @@ const (
 	FieldCost = "cost"
 	// FieldEffects holds the string denoting the effects field in the database.
 	FieldEffects = "effects"
+	// FieldExtensionID holds the string denoting the extension_id field in the database.
+	FieldExtensionID = "extension_id"
 	// Table holds the table name of the upgradecard in the database.
 	Table = "upgrade_cards"
 )
@@ -33,6 +35,7 @@ var Columns = []string{
 	FieldCardType,
 	FieldCost,
 	FieldEffects,
+	FieldExtensionID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -52,6 +55,8 @@ var (
 	DefaultCost int
 	// DefaultEffects holds the default value on creation for the "effects" field.
 	DefaultEffects string
+	// DefaultExtensionID holds the default value on creation for the "extension_id" field.
+	DefaultExtensionID int
 )
 
 // OrderOption defines the ordering options for the UpgradeCard queries.
@@ -85,4 +90,9 @@ func ByCost(opts ...sql.OrderTermOption) OrderOption {
 // ByEffects orders the results by the effects field.
 func ByEffects(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEffects, opts...).ToFunc()
+}
+
+// ByExtensionID orders the results by the extension_id field.
+func ByExtensionID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExtensionID, opts...).ToFunc()
 }

@@ -115,6 +115,20 @@ func (_c *TrackCreate) SetNillableRefreshGeojson(v *int) *TrackCreate {
 	return _c
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (_c *TrackCreate) SetExtensionID(v int) *TrackCreate {
+	_c.mutation.SetExtensionID(v)
+	return _c
+}
+
+// SetNillableExtensionID sets the "extension_id" field if the given value is not nil.
+func (_c *TrackCreate) SetNillableExtensionID(v *int) *TrackCreate {
+	if v != nil {
+		_c.SetExtensionID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *TrackCreate) SetID(v string) *TrackCreate {
 	_c.mutation.SetID(v)
@@ -180,6 +194,10 @@ func (_c *TrackCreate) defaults() {
 		v := track.DefaultRefreshGeojson
 		_c.mutation.SetRefreshGeojson(v)
 	}
+	if _, ok := _c.mutation.ExtensionID(); !ok {
+		v := track.DefaultExtensionID
+		_c.mutation.SetExtensionID(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -207,6 +225,9 @@ func (_c *TrackCreate) check() error {
 	}
 	if _, ok := _c.mutation.RefreshGeojson(); !ok {
 		return &ValidationError{Name: "refresh_geojson", err: errors.New(`ent: missing required field "Track.refresh_geojson"`)}
+	}
+	if _, ok := _c.mutation.ExtensionID(); !ok {
+		return &ValidationError{Name: "extension_id", err: errors.New(`ent: missing required field "Track.extension_id"`)}
 	}
 	return nil
 }
@@ -274,6 +295,10 @@ func (_c *TrackCreate) createSpec() (*Track, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.RefreshGeojson(); ok {
 		_spec.SetField(track.FieldRefreshGeojson, field.TypeInt, value)
 		_node.RefreshGeojson = value
+	}
+	if value, ok := _c.mutation.ExtensionID(); ok {
+		_spec.SetField(track.FieldExtensionID, field.TypeInt, value)
+		_node.ExtensionID = value
 	}
 	return _node, _spec
 }

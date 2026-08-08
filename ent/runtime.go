@@ -10,6 +10,7 @@ import (
 	"heat/ent/gearshift"
 	"heat/ent/heatcard"
 	"heat/ent/laprecord"
+	"heat/ent/legendability"
 	"heat/ent/notificationsetting"
 	"heat/ent/otelsetting"
 	"heat/ent/playersession"
@@ -144,6 +145,12 @@ func init() {
 	laprecordDescTimestamp := laprecordFields[8].Descriptor()
 	// laprecord.DefaultTimestamp holds the default value on creation for the timestamp field.
 	laprecord.DefaultTimestamp = laprecordDescTimestamp.Default.(string)
+	legendabilityFields := schema.LegendAbility{}.Fields()
+	_ = legendabilityFields
+	// legendabilityDescExtensionID is the schema descriptor for extension_id field.
+	legendabilityDescExtensionID := legendabilityFields[5].Descriptor()
+	// legendability.DefaultExtensionID holds the default value on creation for the extension_id field.
+	legendability.DefaultExtensionID = legendabilityDescExtensionID.Default.(int)
 	notificationsettingFields := schema.NotificationSetting{}.Fields()
 	_ = notificationsettingFields
 	// notificationsettingDescNotifyWinner is the schema descriptor for notify_winner field.
@@ -456,6 +463,10 @@ func init() {
 	trackDescRefreshGeojson := trackFields[8].Descriptor()
 	// track.DefaultRefreshGeojson holds the default value on creation for the refresh_geojson field.
 	track.DefaultRefreshGeojson = trackDescRefreshGeojson.Default.(int)
+	// trackDescExtensionID is the schema descriptor for extension_id field.
+	trackDescExtensionID := trackFields[9].Descriptor()
+	// track.DefaultExtensionID holds the default value on creation for the extension_id field.
+	track.DefaultExtensionID = trackDescExtensionID.Default.(int)
 	turbologFields := schema.TurboLog{}.Fields()
 	_ = turbologFields
 	// turbologDescRaceID is the schema descriptor for race_id field.
@@ -490,6 +501,10 @@ func init() {
 	upgradecardDescEffects := upgradecardFields[5].Descriptor()
 	// upgradecard.DefaultEffects holds the default value on creation for the effects field.
 	upgradecard.DefaultEffects = upgradecardDescEffects.Default.(string)
+	// upgradecardDescExtensionID is the schema descriptor for extension_id field.
+	upgradecardDescExtensionID := upgradecardFields[6].Descriptor()
+	// upgradecard.DefaultExtensionID holds the default value on creation for the extension_id field.
+	upgradecard.DefaultExtensionID = upgradecardDescExtensionID.Default.(int)
 	uploadFields := schema.Upload{}.Fields()
 	_ = uploadFields
 	// uploadDescCreatedAt is the schema descriptor for created_at field.

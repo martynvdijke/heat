@@ -160,6 +160,27 @@ func (_u *TrackUpdate) AddRefreshGeojson(v int) *TrackUpdate {
 	return _u
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (_u *TrackUpdate) SetExtensionID(v int) *TrackUpdate {
+	_u.mutation.ResetExtensionID()
+	_u.mutation.SetExtensionID(v)
+	return _u
+}
+
+// SetNillableExtensionID sets the "extension_id" field if the given value is not nil.
+func (_u *TrackUpdate) SetNillableExtensionID(v *int) *TrackUpdate {
+	if v != nil {
+		_u.SetExtensionID(*v)
+	}
+	return _u
+}
+
+// AddExtensionID adds value to the "extension_id" field.
+func (_u *TrackUpdate) AddExtensionID(v int) *TrackUpdate {
+	_u.mutation.AddExtensionID(v)
+	return _u
+}
+
 // Mutation returns the TrackMutation object of the builder.
 func (_u *TrackUpdate) Mutation() *TrackMutation {
 	return _u.mutation
@@ -233,6 +254,12 @@ func (_u *TrackUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedRefreshGeojson(); ok {
 		_spec.AddField(track.FieldRefreshGeojson, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ExtensionID(); ok {
+		_spec.SetField(track.FieldExtensionID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedExtensionID(); ok {
+		_spec.AddField(track.FieldExtensionID, field.TypeInt, value)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -387,6 +414,27 @@ func (_u *TrackUpdateOne) AddRefreshGeojson(v int) *TrackUpdateOne {
 	return _u
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (_u *TrackUpdateOne) SetExtensionID(v int) *TrackUpdateOne {
+	_u.mutation.ResetExtensionID()
+	_u.mutation.SetExtensionID(v)
+	return _u
+}
+
+// SetNillableExtensionID sets the "extension_id" field if the given value is not nil.
+func (_u *TrackUpdateOne) SetNillableExtensionID(v *int) *TrackUpdateOne {
+	if v != nil {
+		_u.SetExtensionID(*v)
+	}
+	return _u
+}
+
+// AddExtensionID adds value to the "extension_id" field.
+func (_u *TrackUpdateOne) AddExtensionID(v int) *TrackUpdateOne {
+	_u.mutation.AddExtensionID(v)
+	return _u
+}
+
 // Mutation returns the TrackMutation object of the builder.
 func (_u *TrackUpdateOne) Mutation() *TrackMutation {
 	return _u.mutation
@@ -490,6 +538,12 @@ func (_u *TrackUpdateOne) sqlSave(ctx context.Context) (_node *Track, err error)
 	}
 	if value, ok := _u.mutation.AddedRefreshGeojson(); ok {
 		_spec.AddField(track.FieldRefreshGeojson, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ExtensionID(); ok {
+		_spec.SetField(track.FieldExtensionID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedExtensionID(); ok {
+		_spec.AddField(track.FieldExtensionID, field.TypeInt, value)
 	}
 	_node = &Track{config: _u.config}
 	_spec.Assign = _node.assignValues

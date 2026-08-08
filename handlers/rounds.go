@@ -564,6 +564,23 @@ func (h *Handler) GetSeasons(c *gin.Context) {
 		}
 		seasons = append(seasons, s)
 	}
+
+	// Attach configured modules per season
+	moduleRows, err := h.S.DB.Query("SELECT season_id, module_id FROM season_modules ORDER BY season_id, module_id")
+	if err == nil {
+		modulesBySeason := make(map[int][]int)
+		for moduleRows.Next() {
+			var seasonID, moduleID int
+			if moduleRows.Scan(&seasonID, &moduleID) == nil {
+				modulesBySeason[seasonID] = append(modulesBySeason[seasonID], moduleID)
+			}
+		}
+		moduleRows.Close()
+		for i := range seasons {
+			seasons[i].ModuleIDs = modulesBySeason[seasons[i].ID]
+		}
+	}
+
 	c.JSON(http.StatusOK, seasons)
 }
 
@@ -579,7 +596,8 @@ func (h *Handler) GetSeasons(c *gin.Context) {
 // @Router /api/seasons [post]
 func (h *Handler) CreateSeason(c *gin.Context) {
 	var input struct {
-		Name string `json:"name"`
+		Name    string `json:"name"`
+		Modules []int  `json:"modules"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil || input.Name == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "name required"})
@@ -592,6 +610,12 @@ func (h *Handler) CreateSeason(c *gin.Context) {
 		return
 	}
 	id, _ := res.LastInsertId()
+
+	if len(input.Modules) > 0 {
+		for _, moduleID := range input.Modules {
+			h.S.DB.Exec("INSERT OR IGNORE INTO season_modules (season_id, module_id) VALUES (?, ?)", id, moduleID)
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }
 
@@ -611,6 +635,7 @@ func (h *Handler) DeleteSeason(c *gin.Context) {
 	}
 	h.S.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id IN (SELECT id FROM round_snapshots WHERE season_id = ?)", id)
 	h.S.DB.Exec("DELETE FROM round_snapshots WHERE season_id = ?", id)
+	h.S.DB.Exec("DELETE FROM season_modules WHERE season_id = ?", id)
 	h.S.DB.Exec("DELETE FROM seasons WHERE id = ?", id)
 	c.Status(http.StatusOK)
 }

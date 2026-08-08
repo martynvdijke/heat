@@ -183,7 +183,7 @@ func (h *Handler) DeleteGearShift(c *gin.Context) {
 // Upgrades
 
 func (h *Handler) GetUpgradeCards(c *gin.Context) {
-	rows, err := h.S.DB.Query("SELECT id, name, description, card_type, cost, effects FROM upgrade_cards ORDER BY card_type, cost")
+	rows, err := h.S.DB.Query("SELECT id, name, description, card_type, cost, effects, extension_id FROM upgrade_cards ORDER BY card_type, cost")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -193,7 +193,7 @@ func (h *Handler) GetUpgradeCards(c *gin.Context) {
 	upgrades := make([]models.UpgradeCard, 0)
 	for rows.Next() {
 		var u models.UpgradeCard
-		if err := rows.Scan(&u.ID, &u.Name, &u.Description, &u.CardType, &u.Cost, &u.Effects); err != nil {
+		if err := rows.Scan(&u.ID, &u.Name, &u.Description, &u.CardType, &u.Cost, &u.Effects, &u.ExtensionID); err != nil {
 			continue
 		}
 		upgrades = append(upgrades, u)
@@ -208,15 +208,15 @@ func (h *Handler) SaveUpgradeCard(c *gin.Context) {
 		return
 	}
 	if u.ID == 0 {
-		_, err := h.S.DB.Exec("INSERT INTO upgrade_cards (name, description, card_type, cost, effects) VALUES (?, ?, ?, ?, ?)",
-			u.Name, u.Description, u.CardType, u.Cost, u.Effects)
+		_, err := h.S.DB.Exec("INSERT INTO upgrade_cards (name, description, card_type, cost, effects, extension_id) VALUES (?, ?, ?, ?, ?, ?)",
+			u.Name, u.Description, u.CardType, u.Cost, u.Effects, u.ExtensionID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
-		_, err := h.S.DB.Exec("UPDATE upgrade_cards SET name=?, description=?, card_type=?, cost=?, effects=? WHERE id=?",
-			u.Name, u.Description, u.CardType, u.Cost, u.Effects, u.ID)
+		_, err := h.S.DB.Exec("UPDATE upgrade_cards SET name=?, description=?, card_type=?, cost=?, effects=?, extension_id=? WHERE id=?",
+			u.Name, u.Description, u.CardType, u.Cost, u.Effects, u.ExtensionID, u.ID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -346,7 +346,7 @@ func (h *Handler) DeletePlayerUpgrade(c *gin.Context) {
 // Legend Abilities
 
 func (h *Handler) GetLegendAbilities(c *gin.Context) {
-	rows, err := h.S.DB.Query("SELECT id, name, description, ability_type, racer_name FROM legend_abilities")
+	rows, err := h.S.DB.Query("SELECT id, name, description, ability_type, racer_name, extension_id FROM legend_abilities")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -356,7 +356,7 @@ func (h *Handler) GetLegendAbilities(c *gin.Context) {
 	abilities := make([]models.LegendAbility, 0)
 	for rows.Next() {
 		var la models.LegendAbility
-		if err := rows.Scan(&la.ID, &la.Name, &la.Description, &la.AbilityType, &la.RacerName); err != nil {
+		if err := rows.Scan(&la.ID, &la.Name, &la.Description, &la.AbilityType, &la.RacerName, &la.ExtensionID); err != nil {
 			continue
 		}
 		abilities = append(abilities, la)

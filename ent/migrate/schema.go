@@ -134,6 +134,7 @@ var (
 		{Name: "description", Type: field.TypeString},
 		{Name: "ability_type", Type: field.TypeString},
 		{Name: "racer_name", Type: field.TypeString},
+		{Name: "extension_id", Type: field.TypeInt, Default: 0},
 	}
 	// LegendAbilitiesTable holds the schema information for the "legend_abilities" table.
 	LegendAbilitiesTable = &schema.Table{
@@ -464,6 +465,7 @@ var (
 		{Name: "use_map_image", Type: field.TypeInt, Default: 0},
 		{Name: "map_image_url", Type: field.TypeString, Default: ""},
 		{Name: "refresh_geojson", Type: field.TypeInt, Default: 1},
+		{Name: "extension_id", Type: field.TypeInt, Default: 0},
 	}
 	// TracksTable holds the schema information for the "tracks" table.
 	TracksTable = &schema.Table{
@@ -506,6 +508,7 @@ var (
 		{Name: "card_type", Type: field.TypeString, Default: "upgrade"},
 		{Name: "cost", Type: field.TypeInt, Default: 0},
 		{Name: "effects", Type: field.TypeString, Default: "{}"},
+		{Name: "extension_id", Type: field.TypeInt, Default: 0},
 	}
 	// UpgradeCardsTable holds the schema information for the "upgrade_cards" table.
 	UpgradeCardsTable = &schema.Table{

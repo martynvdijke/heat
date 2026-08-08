@@ -24,7 +24,7 @@ func SeedTracks() {
 		{ID: "interlagos", Name: "Interlagos", Country: "Brazil", GeoJSON: geojson["interlagos"], Length: 4, LapRecord: "1:07.369"},
 	}
 	for _, t := range tracks {
-		srv.DB.Exec("INSERT OR IGNORE INTO tracks (id, name, country, geojson, length_km, lap_record) VALUES (?, ?, ?, ?, ?, ?)",
+		srv.DB.Exec("INSERT OR IGNORE INTO tracks (id, name, country, geojson, length_km, lap_record, extension_id) VALUES (?, ?, ?, ?, ?, ?, 1)",
 			t.ID, t.Name, t.Country, t.GeoJSON, t.Length, t.LapRecord)
 	}
 }

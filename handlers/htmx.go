@@ -243,29 +243,44 @@ var tracksTableTmpl = template.Must(template.New("tracks_table").Parse(`<tbody i
 {{end}}
 </tbody>`))
 
+// trackFormData carries the track being edited plus the extension options
+// for the extension selector.
+type trackFormData struct {
+	Track      models.Track
+	Extensions []ExtensionSummary
+}
+
 var trackEditFormTmpl = template.Must(template.New("track_form").Parse(`<form id="track-form" hx-post="/api/html/tracks" hx-target="#track-list" hx-swap="outerHTML" hx-trigger="submit">
-    <input type="hidden" name="id" value="{{if .}}{{.ID}}{{end}}">
+    <input type="hidden" name="id" value="{{.Track.ID}}">
     <div class="mb-3">
         <label class="form-label small fw-bold">Track ID</label>
-        <input type="text" class="form-control" name="id_visible" value="{{if .}}{{.ID}}{{end}}" required>
+        <input type="text" class="form-control" name="id_visible" value="{{.Track.ID}}" required>
     </div>
     <div class="mb-3">
         <label class="form-label small fw-bold">Track Name</label>
-        <input type="text" class="form-control" name="name" value="{{if .}}{{.Name}}{{end}}" required>
+        <input type="text" class="form-control" name="name" value="{{.Track.Name}}" required>
     </div>
     <div class="mb-3">
         <label class="form-label small fw-bold">Country</label>
-        <input type="text" class="form-control" name="country" value="{{if .}}{{.Country}}{{end}}" required>
+        <input type="text" class="form-control" name="country" value="{{.Track.Country}}" required>
     </div>
     <div class="row g-3 mb-3">
         <div class="col-6">
             <label class="form-label small fw-bold">Length (km)</label>
-            <input type="number" class="form-control" name="length_km" value="{{if .}}{{.Length}}{{end}}" required>
+            <input type="number" class="form-control" name="length_km" value="{{.Track.Length}}" required>
         </div>
         <div class="col-6">
             <label class="form-label small fw-bold">Lap Record</label>
-            <input type="text" class="form-control" name="lap_record" value="{{if .}}{{.LapRecord}}{{end}}">
+            <input type="text" class="form-control" name="lap_record" value="{{.Track.LapRecord}}">
         </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label small fw-bold">Extension</label>
+        <select class="form-select" name="extension_id">
+        {{range .Extensions}}
+            <option value="{{.ID}}" {{if eq $.Track.ExtensionID .ID}}selected{{end}}>{{.Name}}{{if .IsBase}} (Base){{end}}</option>
+        {{end}}
+        </select>
     </div>
     <button type="submit" class="btn btn-primary w-100">Save Track</button>
 </form>`))
@@ -299,8 +314,8 @@ func (h *Handler) HtmxTracksEditForm(c *gin.Context) {
 
 	var t models.Track
 	var useMapImage, refreshGeoJSON int
-	err := h.S.DB.QueryRow("SELECT id, name, country, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks WHERE id=?", id).
-		Scan(&t.ID, &t.Name, &t.Country, &t.Length, &t.LapRecord, &useMapImage, &t.MapImageURL, &refreshGeoJSON)
+	err := h.S.DB.QueryRow("SELECT id, name, country, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1), extension_id FROM tracks WHERE id=?", id).
+		Scan(&t.ID, &t.Name, &t.Country, &t.Length, &t.LapRecord, &useMapImage, &t.MapImageURL, &refreshGeoJSON, &t.ExtensionID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "track not found"})
 		return
@@ -308,8 +323,10 @@ func (h *Handler) HtmxTracksEditForm(c *gin.Context) {
 	t.UseMapImage = useMapImage == 1
 	t.RefreshGeoJSON = refreshGeoJSON == 1
 
+	extensions := h.queryExtensions()
+
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	trackEditFormTmpl.Execute(c.Writer, &t)
+	trackEditFormTmpl.Execute(c.Writer, trackFormData{Track: t, Extensions: extensions})
 }
 
 func (h *Handler) HtmxTracksSave(c *gin.Context) {
@@ -319,6 +336,10 @@ func (h *Handler) HtmxTracksSave(c *gin.Context) {
 	country := strings.TrimSpace(c.PostForm("country"))
 	lengthStr := strings.TrimSpace(c.PostForm("length_km"))
 	lapRecord := strings.TrimSpace(c.PostForm("lap_record"))
+	extensionID, _ := strconv.Atoi(strings.TrimSpace(c.PostForm("extension_id")))
+	if extensionID <= 0 {
+		extensionID = 1 // default to Base Game
+	}
 
 	if name == "" || country == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "name and country required"})
@@ -334,8 +355,8 @@ func (h *Handler) HtmxTracksSave(c *gin.Context) {
 		id = idVisible
 	}
 
-	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson) VALUES (?, ?, ?, ?, ?, ?, 0, '', 1)`,
-		id, name, country, id, length, lapRecord)
+	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson, extension_id) VALUES (?, ?, ?, ?, ?, ?, 0, '', 1, ?)`,
+		id, name, country, id, length, lapRecord, extensionID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -517,10 +538,18 @@ func (h *Handler) HtmxSeasonsCreate(c *gin.Context) {
 		return
 	}
 
-	_, err := h.S.DB.Exec("INSERT INTO seasons (name, start_date, status) VALUES (?, date('now'), 'active')", name)
+	res, err := h.S.DB.Exec("INSERT INTO seasons (name, start_date, status) VALUES (?, date('now'), 'active')", name)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	id, _ := res.LastInsertId()
+
+	// Attach selected gameplay modules (checkboxes named "modules")
+	for _, m := range c.PostFormArray("modules") {
+		if moduleID, err := strconv.Atoi(m); err == nil && moduleID > 0 {
+			h.S.DB.Exec("INSERT OR IGNORE INTO season_modules (season_id, module_id) VALUES (?, ?)", id, moduleID)
+		}
 	}
 
 	h.HtmxSeasonsTable(c)
@@ -669,15 +698,36 @@ func (h *Handler) HtmxTeamsDelete(c *gin.Context) {
 	h.HtmxTeamsTable(c)
 }
 
+// seasonFormData carries the modules available for the season-creation form.
+type seasonFormData struct {
+	Modules []ModuleSummary
+}
+
 var seasonNewFormTmpl = template.Must(template.New("season_form").Parse(`<form id="season-form" hx-post="/api/html/seasons" hx-target="#seasons-list" hx-swap="outerHTML" hx-trigger="submit">
     <div class="mb-3">
         <label class="form-label small fw-bold">Season Name</label>
         <input type="text" class="form-control" name="name" placeholder="e.g. 2024 Championship" required>
     </div>
+    <div class="mb-3">
+        <label class="form-label small fw-bold">Modules</label>
+        {{range .Modules}}
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="modules" value="{{.ID}}" id="module-{{.ID}}">
+            <label class="form-check-label small" for="module-{{.ID}}">{{.Name}}{{if .Extension}} <span class="text-muted">({{.Extension}})</span>{{end}}</label>
+        </div>
+        {{else}}
+        <div class="form-text">No modules configured yet.</div>
+        {{end}}
+    </div>
     <button type="submit" class="btn btn-primary w-100">Create Season</button>
 </form>`))
 
 func (h *Handler) HtmxSeasonsNewForm(c *gin.Context) {
+	modules, err := h.queryModules()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	seasonNewFormTmpl.Execute(c.Writer, nil)
+	seasonNewFormTmpl.Execute(c.Writer, seasonFormData{Modules: modules})
 }

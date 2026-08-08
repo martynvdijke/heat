@@ -23,7 +23,9 @@ type LegendAbility struct {
 	// AbilityType holds the value of the "ability_type" field.
 	AbilityType string `json:"ability_type,omitempty"`
 	// RacerName holds the value of the "racer_name" field.
-	RacerName    string `json:"racer_name,omitempty"`
+	RacerName string `json:"racer_name,omitempty"`
+	// ExtensionID holds the value of the "extension_id" field.
+	ExtensionID  int `json:"extension_id,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -32,7 +34,7 @@ func (*LegendAbility) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case legendability.FieldID:
+		case legendability.FieldID, legendability.FieldExtensionID:
 			values[i] = new(sql.NullInt64)
 		case legendability.FieldName, legendability.FieldDescription, legendability.FieldAbilityType, legendability.FieldRacerName:
 			values[i] = new(sql.NullString)
@@ -81,6 +83,12 @@ func (_m *LegendAbility) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.RacerName = value.String
 			}
+		case legendability.FieldExtensionID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field extension_id", values[i])
+			} else if value.Valid {
+				_m.ExtensionID = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -128,6 +136,9 @@ func (_m *LegendAbility) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("racer_name=")
 	builder.WriteString(_m.RacerName)
+	builder.WriteString(", ")
+	builder.WriteString("extension_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExtensionID))
 	builder.WriteByte(')')
 	return builder.String()
 }

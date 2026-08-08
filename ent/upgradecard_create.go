@@ -73,6 +73,20 @@ func (_c *UpgradeCardCreate) SetNillableEffects(v *string) *UpgradeCardCreate {
 	return _c
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (_c *UpgradeCardCreate) SetExtensionID(v int) *UpgradeCardCreate {
+	_c.mutation.SetExtensionID(v)
+	return _c
+}
+
+// SetNillableExtensionID sets the "extension_id" field if the given value is not nil.
+func (_c *UpgradeCardCreate) SetNillableExtensionID(v *int) *UpgradeCardCreate {
+	if v != nil {
+		_c.SetExtensionID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *UpgradeCardCreate) SetID(v int) *UpgradeCardCreate {
 	_c.mutation.SetID(v)
@@ -126,6 +140,10 @@ func (_c *UpgradeCardCreate) defaults() {
 		v := upgradecard.DefaultEffects
 		_c.mutation.SetEffects(v)
 	}
+	if _, ok := _c.mutation.ExtensionID(); !ok {
+		v := upgradecard.DefaultExtensionID
+		_c.mutation.SetExtensionID(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -144,6 +162,9 @@ func (_c *UpgradeCardCreate) check() error {
 	}
 	if _, ok := _c.mutation.Effects(); !ok {
 		return &ValidationError{Name: "effects", err: errors.New(`ent: missing required field "UpgradeCard.effects"`)}
+	}
+	if _, ok := _c.mutation.ExtensionID(); !ok {
+		return &ValidationError{Name: "extension_id", err: errors.New(`ent: missing required field "UpgradeCard.extension_id"`)}
 	}
 	return nil
 }
@@ -196,6 +217,10 @@ func (_c *UpgradeCardCreate) createSpec() (*UpgradeCard, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Effects(); ok {
 		_spec.SetField(upgradecard.FieldEffects, field.TypeString, value)
 		_node.Effects = value
+	}
+	if value, ok := _c.mutation.ExtensionID(); ok {
+		_spec.SetField(upgradecard.FieldExtensionID, field.TypeInt, value)
+		_node.ExtensionID = value
 	}
 	return _node, _spec
 }

@@ -1,0 +1,244 @@
+{{define "tabExtensions"}}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="fa-solid fa-box-open me-2 text-danger"></i>Extensions &amp; Modules</h5>
+                    <button class="btn btn-primary btn-sm" onclick="openExtensionModal()">
+                        <i class="fa-solid fa-plus me-1"></i> New Extension
+                    </button>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">Extension</th>
+                                        <th>Description</th>
+                                        <th class="text-center">Tracks</th>
+                                        <th class="text-center">Upgrades</th>
+                                        <th class="text-center">Legends</th>
+                                        <th class="text-center">Modules</th>
+                                        <th class="text-end pe-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="extensions-list">
+                                    <tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading extensions...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="extension-detail"></div>
+
+                <!-- Extension create/edit modal -->
+                <div class="modal fade" id="extensionsModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="extensionsModalTitle">New Extension</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="ext-id" value="0">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Name</label>
+                                    <input type="text" class="form-control" id="ext-name" placeholder="e.g. Heavy Rain" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Description</label>
+                                    <textarea class="form-control" id="ext-description" rows="2" placeholder="What does this expansion add?"></textarea>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-7">
+                                        <label class="form-label small fw-bold">Sort Order</label>
+                                        <input type="number" class="form-control" id="ext-sort-order" value="3" min="0">
+                                    </div>
+                                    <div class="col-5 d-flex align-items-end">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="ext-is-base">
+                                            <label class="form-check-label small fw-bold" for="ext-is-base">Base Game</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary w-100" onclick="saveExtension()">
+                                    <i class="fa-solid fa-save me-1"></i> Save Extension
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    var _exts = [];
+
+                    function extApi(url, method, body) {
+                        var opts = { method: method || 'GET', headers: { 'Content-Type': 'application/json' } };
+                        if (body) opts.body = JSON.stringify(body);
+                        return fetch(url, opts).then(function(r) {
+                            if (!r.ok) return r.json().then(function(j) { throw new Error(j.error || r.statusText); });
+                            return r.status === 204 ? null : r.json();
+                        });
+                    }
+
+                    function esc(s) {
+                        return String(s == null ? '' : s).replace(/[&<>"']/g, function(m) {
+                            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+                        });
+                    }
+
+                    function loadExtensions() {
+                        extApi('/api/extensions').then(function(list) {
+                            _exts = list || [];
+                            var el = document.getElementById('extensions-list');
+                            if (!el) return;
+                            if (!_exts.length) {
+                                el.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No extensions yet. Create one to get started.</td></tr>';
+                                return;
+                            }
+                            el.innerHTML = _exts.map(function(e) {
+                                return '<tr>' +
+                                    '<td class="ps-4 fw-bold">' + esc(e.name) + (e.is_base ? ' <span class="badge bg-success">Base</span>' : '') + '</td>' +
+                                    '<td class="text-muted small">' + esc(e.description) + '</td>' +
+                                    '<td class="text-center">' + e.track_count + '</td>' +
+                                    '<td class="text-center">' + e.upgrade_count + '</td>' +
+                                    '<td class="text-center">' + e.legend_count + '</td>' +
+                                    '<td class="text-center">' + e.module_count + '</td>' +
+                                    '<td class="text-end pe-4">' +
+                                        '<button class="btn btn-sm btn-outline-secondary" onclick="loadExtensionDetail(' + e.id + ')" title="Manage content"><i class="fa-solid fa-layer-group"></i></button> ' +
+                                        '<button class="btn btn-sm btn-outline-primary" onclick="openExtensionModal(' + e.id + ')" title="Edit"><i class="fa-solid fa-pen"></i></button> ' +
+                                        '<button class="btn btn-sm btn-outline-danger" onclick="deleteExtension(' + e.id + ')" title="Delete"><i class="fa-solid fa-trash"></i></button>' +
+                                    '</td></tr>';
+                            }).join('');
+                        }).catch(function(err) {
+                            var el = document.getElementById('extensions-list');
+                            if (el) el.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Failed to load: ' + esc(err.message) + '</td></tr>';
+                        });
+                    }
+
+                    function openExtensionModal(id) {
+                        var ext = id ? _exts.find(function(e) { return e.id === id; }) : null;
+                        document.getElementById('ext-id').value = ext ? ext.id : 0;
+                        document.getElementById('ext-name').value = ext ? ext.name : '';
+                        document.getElementById('ext-description').value = ext ? ext.description : '';
+                        document.getElementById('ext-sort-order').value = ext ? ext.sort_order : (_exts.length + 1);
+                        document.getElementById('ext-is-base').checked = ext ? ext.is_base === 1 : false;
+                        document.getElementById('extensionsModalTitle').textContent = ext ? 'Edit Extension' : 'New Extension';
+                        new bootstrap.Modal(document.getElementById('extensionsModal')).show();
+                    }
+
+                    function saveExtension() {
+                        var id = parseInt(document.getElementById('ext-id').value) || 0;
+                        var payload = {
+                            name: document.getElementById('ext-name').value.trim(),
+                            description: document.getElementById('ext-description').value.trim(),
+                            is_base: document.getElementById('ext-is-base').checked ? 1 : 0,
+                            sort_order: parseInt(document.getElementById('ext-sort-order').value) || 0
+                        };
+                        if (!payload.name) { alert('Name is required'); return; }
+                        var req = id ? extApi('/api/extensions', 'PUT', Object.assign({ id: id }, payload)) : extApi('/api/extensions', 'POST', payload);
+                        req.then(function() {
+                            bootstrap.Modal.getInstance(document.getElementById('extensionsModal')).hide();
+                            loadExtensions();
+                        }).catch(function(err) { alert('Failed: ' + err.message); });
+                    }
+
+                    function deleteExtension(id) {
+                        if (!confirm('Delete this extension? Its content will be reset to the Base Game and its modules removed.')) return;
+                        extApi('/api/extensions?id=' + id, 'DELETE').then(function() {
+                            document.getElementById('extension-detail').innerHTML = '';
+                            loadExtensions();
+                        }).catch(function(err) { alert('Failed: ' + err.message); });
+                    }
+
+                    function loadExtensionDetail(id) {
+                        extApi('/api/extensions/detail?id=' + id).then(function(d) {
+                            var el = document.getElementById('extension-detail');
+                            var moduleRows = (d.modules || []).map(function(m) {
+                                return '<li class="list-group-item d-flex justify-content-between align-items-center">' +
+                                    '<div><span class="fw-bold">' + esc(m.name) + '</span><div class="small text-muted">' + esc(m.description) + '</div></div>' +
+                                    '<button class="btn btn-sm btn-outline-danger" onclick="deleteModule(' + m.id + ')"><i class="fa-solid fa-trash"></i></button></li>';
+                            }).join('');
+                            if (!moduleRows) moduleRows = '<li class="list-group-item text-muted small">No modules for this extension yet.</li>';
+
+                            var extOptions = _exts.map(function(e) {
+                                return '<option value="' + e.id + '"' + (e.id === d.id ? ' selected' : '') + '>' + esc(e.name) + '</option>';
+                            }).join('');
+
+                            var contentTable = function(title, rows, type) {
+                                var body = (rows || []).map(function(r) {
+                                    return '<tr><td class="ps-4">' + esc(r.name) + (r.country ? ' <span class="text-muted small">(' + esc(r.country) + ')</span>' : '') +
+                                        (r.card_type ? ' <span class="badge bg-secondary">' + esc(r.card_type) + '</span>' : '') +
+                                        (r.racer_name ? ' <span class="text-muted small">' + esc(r.racer_name) + '</span>' : '') + '</td>' +
+                                        '<td class="text-end pe-4"><div class="input-group input-group-sm" style="max-width:260px;margin-left:auto">' +
+                                        '<select class="form-select" id="assign-' + type + '-' + esc(r.id) + '">' + extOptions + '</select>' +
+                                        '<button class="btn btn-outline-primary" onclick="assignContent(\'' + type + '\', \'' + esc(r.id) + '\', ' + d.id + ')">Move</button>' +
+                                        '</div></td></tr>';
+                                }).join('');
+                                if (!body) body = '<tr><td colspan="2" class="text-center text-muted py-3 small">None</td></tr>';
+                                return '<div class="card"><div class="card-header py-2"><span class="small fw-bold">' + title + '</span></div>' +
+                                    '<div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0"><tbody>' + body + '</tbody></table></div></div>';
+                            };
+
+                            el.innerHTML =
+                                '<div class="card mb-3">' +
+                                    '<div class="card-header d-flex justify-content-between align-items-center">' +
+                                        '<span><i class="fa-solid fa-box-open me-2 text-danger"></i><strong>' + esc(d.name) + '</strong>' + (d.is_base ? ' <span class="badge bg-success">Base</span>' : '') + ' <span class="small text-muted">' + esc(d.description) + '</span></span>' +
+                                        '<button class="btn btn-sm btn-outline-secondary" onclick="this.closest(\'#extension-detail\').innerHTML=\'\'"><i class="fa-solid fa-xmark"></i></button>' +
+                                    '</div>' +
+                                    '<div class="card-body">' +
+                                        '<div class="row g-3">' +
+                                            '<div class="col-lg-5">' +
+                                                '<div class="card"><div class="card-header py-2"><span class="small fw-bold">Modules</span></div>' +
+                                                '<ul class="list-group list-group-flush">' + moduleRows + '</ul>' +
+                                                '<div class="card-body border-top">' +
+                                                    '<div class="input-group input-group-sm">' +
+                                                        '<input type="text" class="form-control" id="new-module-name" placeholder="Module name">' +
+                                                        '<button class="btn btn-sm btn-primary" onclick="addModule(' + d.id + ')">Add</button>' +
+                                                    '</div>' +
+                                                '</div></div>' +
+                                            '</div>' +
+                                            '<div class="col-lg-7 d-flex flex-column gap-3">' +
+                                                contentTable('Tracks', d.tracks, 'track') +
+                                                contentTable('Upgrade Cards', d.upgrades, 'upgrade') +
+                                                contentTable('Legend Abilities', d.legends, 'legend') +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>';
+                        }).catch(function(err) { alert('Failed: ' + err.message); });
+                    }
+
+                    function addModule(extId) {
+                        var name = document.getElementById('new-module-name').value.trim();
+                        if (!name) { alert('Module name required'); return; }
+                        extApi('/api/modules', 'POST', { name: name, description: '', extension_id: extId, sort_order: 0 }).then(function() {
+                            loadExtensionDetail(extId);
+                            loadExtensions();
+                        }).catch(function(err) { alert('Failed: ' + err.message); });
+                    }
+
+                    function deleteModule(id) {
+                        if (!confirm('Delete this module? Season links will also be removed.')) return;
+                        var detail = document.getElementById('extension-detail');
+                        var extId = _exts.length ? _exts[0].id : 1;
+                        extApi('/api/modules?id=' + id, 'DELETE').then(function() {
+                            if (detail.querySelector('strong')) loadExtensionDetail(extId);
+                            loadExtensions();
+                        }).catch(function(err) { alert('Failed: ' + err.message); });
+                    }
+
+                    function assignContent(type, contentId, currentExtId) {
+                        var target = document.getElementById('assign-' + type + '-' + contentId);
+                        if (!target) return;
+                        var extId = parseInt(target.value);
+                        if (extId === currentExtId) return;
+                        extApi('/api/content/extension', 'PUT', { content_type: type, content_id: contentId, extension_id: extId }).then(function() {
+                            loadExtensionDetail(currentExtId);
+                            loadExtensions();
+                        }).catch(function(err) { alert('Failed: ' + err.message); });
+                    }
+
+                    if (document.getElementById('extensions-list')) loadExtensions();
+                </script>
+{{end}}

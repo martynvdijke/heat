@@ -85,6 +85,9 @@
         <button class="admin-nav__tab" id="tab-config" role="tab" aria-controls="admin-tab-container" aria-selected="false" data-tab-id="config" hx-get="/api/html/admin/config" hx-target="#admin-tab-container" hx-swap="innerHTML">
             <i aria-hidden="true" class="fa-solid fa-gear"></i><span class="admin-nav__label">Config</span>
         </button>
+        <button class="admin-nav__tab" id="tab-extensions" role="tab" aria-controls="admin-tab-container" aria-selected="false" data-tab-id="extensions" hx-get="/api/html/admin/extensions" hx-target="#admin-tab-container" hx-swap="innerHTML">
+            <i aria-hidden="true" class="fa-solid fa-box-open"></i><span class="admin-nav__label">Extensions</span>
+        </button>
     </nav>
     <div class="container admin-content">
 {{end}}

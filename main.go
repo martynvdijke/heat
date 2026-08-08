@@ -180,12 +180,13 @@ func initAdminTemplate(basePath string) {
 		filepath.Join(basePath, "static/templates/tab-season.html"),
 		filepath.Join(basePath, "static/templates/tab-drivers.html"),
 		filepath.Join(basePath, "static/templates/tab-config.html"),
+		filepath.Join(basePath, "static/templates/tab-extensions.html"),
 	))
 }
 
 func isValidAdminTab(tab string) bool {
 	switch tab {
-	case "race-day", "season", "drivers", "config":
+	case "race-day", "season", "drivers", "config", "extensions":
 		return true
 	}
 	return false
@@ -373,6 +374,18 @@ func main() {
 		admin.POST("/seasons/archive", h.ArchiveSeason)
 		admin.DELETE("/seasons", h.DeleteSeason)
 
+		// Admin: Extension & module catalog
+		admin.GET("/extensions", h.GetExtensions)
+		admin.POST("/extensions", h.CreateExtension)
+		admin.PUT("/extensions", h.UpdateExtension)
+		admin.DELETE("/extensions", h.DeleteExtension)
+		admin.GET("/extensions/detail", h.GetExtensionDetail)
+		admin.GET("/modules", h.GetModules)
+		admin.POST("/modules", h.CreateModule)
+		admin.PUT("/modules", h.UpdateModule)
+		admin.DELETE("/modules", h.DeleteModule)
+		admin.PUT("/content/extension", h.AssignContentExtension)
+
 		// Admin: Game Mechanics
 		admin.POST("/heat-cards", h.AddHeatCard)
 		admin.PUT("/heat-cards/move", h.MoveHeatCard)
@@ -455,6 +468,8 @@ func main() {
 				tmplName = "tabDrivers"
 			case "config":
 				tmplName = "tabConfig"
+			case "extensions":
+				tmplName = "tabExtensions"
 			}
 			c.Header("Content-Type", "text/html; charset=utf-8")
 			c.Header("Cache-Control", "no-store")
@@ -507,6 +522,7 @@ func main() {
 	r.PATCH("/api/rounds/finalize", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.FinalizeRound)
 	r.DELETE("/api/rounds", h.DeleteRoundSnapshot)
 	r.GET("/api/seasons", h.GetSeasons)
+	r.GET("/api/trmnl/summary", h.GetTRMNLSummary)
 
 	// Game Mechanics routes
 	r.GET("/api/heat-cards", h.GetHeatCards)

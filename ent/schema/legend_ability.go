@@ -16,5 +16,6 @@ func (LegendAbility) Fields() []ent.Field {
 		field.String("description"),
 		field.String("ability_type"),
 		field.String("racer_name"),
+		field.Int("extension_id").Default(0),
 	}
 }

@@ -27,6 +27,8 @@ const (
 	FieldMapImageURL = "map_image_url"
 	// FieldRefreshGeojson holds the string denoting the refresh_geojson field in the database.
 	FieldRefreshGeojson = "refresh_geojson"
+	// FieldExtensionID holds the string denoting the extension_id field in the database.
+	FieldExtensionID = "extension_id"
 	// Table holds the table name of the track in the database.
 	Table = "tracks"
 )
@@ -42,6 +44,7 @@ var Columns = []string{
 	FieldUseMapImage,
 	FieldMapImageURL,
 	FieldRefreshGeojson,
+	FieldExtensionID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -67,6 +70,8 @@ var (
 	DefaultMapImageURL string
 	// DefaultRefreshGeojson holds the default value on creation for the "refresh_geojson" field.
 	DefaultRefreshGeojson int
+	// DefaultExtensionID holds the default value on creation for the "extension_id" field.
+	DefaultExtensionID int
 )
 
 // OrderOption defines the ordering options for the Track queries.
@@ -115,4 +120,9 @@ func ByMapImageURL(opts ...sql.OrderTermOption) OrderOption {
 // ByRefreshGeojson orders the results by the refresh_geojson field.
 func ByRefreshGeojson(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRefreshGeojson, opts...).ToFunc()
+}
+
+// ByExtensionID orders the results by the extension_id field.
+func ByExtensionID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExtensionID, opts...).ToFunc()
 }

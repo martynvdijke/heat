@@ -43,6 +43,20 @@ func (_c *LegendAbilityCreate) SetRacerName(v string) *LegendAbilityCreate {
 	return _c
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (_c *LegendAbilityCreate) SetExtensionID(v int) *LegendAbilityCreate {
+	_c.mutation.SetExtensionID(v)
+	return _c
+}
+
+// SetNillableExtensionID sets the "extension_id" field if the given value is not nil.
+func (_c *LegendAbilityCreate) SetNillableExtensionID(v *int) *LegendAbilityCreate {
+	if v != nil {
+		_c.SetExtensionID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *LegendAbilityCreate) SetID(v int) *LegendAbilityCreate {
 	_c.mutation.SetID(v)
@@ -56,6 +70,7 @@ func (_c *LegendAbilityCreate) Mutation() *LegendAbilityMutation {
 
 // Save creates the LegendAbility in the database.
 func (_c *LegendAbilityCreate) Save(ctx context.Context) (*LegendAbility, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -81,6 +96,14 @@ func (_c *LegendAbilityCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *LegendAbilityCreate) defaults() {
+	if _, ok := _c.mutation.ExtensionID(); !ok {
+		v := legendability.DefaultExtensionID
+		_c.mutation.SetExtensionID(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *LegendAbilityCreate) check() error {
 	if _, ok := _c.mutation.Name(); !ok {
@@ -94,6 +117,9 @@ func (_c *LegendAbilityCreate) check() error {
 	}
 	if _, ok := _c.mutation.RacerName(); !ok {
 		return &ValidationError{Name: "racer_name", err: errors.New(`ent: missing required field "LegendAbility.racer_name"`)}
+	}
+	if _, ok := _c.mutation.ExtensionID(); !ok {
+		return &ValidationError{Name: "extension_id", err: errors.New(`ent: missing required field "LegendAbility.extension_id"`)}
 	}
 	return nil
 }
@@ -143,6 +169,10 @@ func (_c *LegendAbilityCreate) createSpec() (*LegendAbility, *sqlgraph.CreateSpe
 		_spec.SetField(legendability.FieldRacerName, field.TypeString, value)
 		_node.RacerName = value
 	}
+	if value, ok := _c.mutation.ExtensionID(); ok {
+		_spec.SetField(legendability.FieldExtensionID, field.TypeInt, value)
+		_node.ExtensionID = value
+	}
 	return _node, _spec
 }
 
@@ -164,6 +194,7 @@ func (_c *LegendAbilityCreateBulk) Save(ctx context.Context) ([]*LegendAbility, 
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*LegendAbilityMutation)
 				if !ok {

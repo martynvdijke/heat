@@ -78,6 +78,11 @@ func Effects(v string) predicate.UpgradeCard {
 	return predicate.UpgradeCard(sql.FieldEQ(FieldEffects, v))
 }
 
+// ExtensionID applies equality check predicate on the "extension_id" field. It's identical to ExtensionIDEQ.
+func ExtensionID(v int) predicate.UpgradeCard {
+	return predicate.UpgradeCard(sql.FieldEQ(FieldExtensionID, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.UpgradeCard {
 	return predicate.UpgradeCard(sql.FieldEQ(FieldName, v))
@@ -376,6 +381,46 @@ func EffectsEqualFold(v string) predicate.UpgradeCard {
 // EffectsContainsFold applies the ContainsFold predicate on the "effects" field.
 func EffectsContainsFold(v string) predicate.UpgradeCard {
 	return predicate.UpgradeCard(sql.FieldContainsFold(FieldEffects, v))
+}
+
+// ExtensionIDEQ applies the EQ predicate on the "extension_id" field.
+func ExtensionIDEQ(v int) predicate.UpgradeCard {
+	return predicate.UpgradeCard(sql.FieldEQ(FieldExtensionID, v))
+}
+
+// ExtensionIDNEQ applies the NEQ predicate on the "extension_id" field.
+func ExtensionIDNEQ(v int) predicate.UpgradeCard {
+	return predicate.UpgradeCard(sql.FieldNEQ(FieldExtensionID, v))
+}
+
+// ExtensionIDIn applies the In predicate on the "extension_id" field.
+func ExtensionIDIn(vs ...int) predicate.UpgradeCard {
+	return predicate.UpgradeCard(sql.FieldIn(FieldExtensionID, vs...))
+}
+
+// ExtensionIDNotIn applies the NotIn predicate on the "extension_id" field.
+func ExtensionIDNotIn(vs ...int) predicate.UpgradeCard {
+	return predicate.UpgradeCard(sql.FieldNotIn(FieldExtensionID, vs...))
+}
+
+// ExtensionIDGT applies the GT predicate on the "extension_id" field.
+func ExtensionIDGT(v int) predicate.UpgradeCard {
+	return predicate.UpgradeCard(sql.FieldGT(FieldExtensionID, v))
+}
+
+// ExtensionIDGTE applies the GTE predicate on the "extension_id" field.
+func ExtensionIDGTE(v int) predicate.UpgradeCard {
+	return predicate.UpgradeCard(sql.FieldGTE(FieldExtensionID, v))
+}
+
+// ExtensionIDLT applies the LT predicate on the "extension_id" field.
+func ExtensionIDLT(v int) predicate.UpgradeCard {
+	return predicate.UpgradeCard(sql.FieldLT(FieldExtensionID, v))
+}
+
+// ExtensionIDLTE applies the LTE predicate on the "extension_id" field.
+func ExtensionIDLTE(v int) predicate.UpgradeCard {
+	return predicate.UpgradeCard(sql.FieldLTE(FieldExtensionID, v))
 }
 
 // And groups predicates with the AND operator between them.

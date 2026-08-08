@@ -45,6 +45,7 @@ type Track struct {
 	UseMapImage    bool   `json:"use_map_image"`
 	MapImageURL    string `json:"map_image_url"`
 	RefreshGeoJSON bool   `json:"refresh_geojson"`
+	ExtensionID    int    `json:"extension_id"`
 }
 
 type RaceResult struct {
@@ -72,6 +73,16 @@ type RacerStats struct {
 	DNS         int `json:"dns"`
 	Spins       int `json:"spins"`
 	Overheated  int `json:"overheated"`
+}
+
+// SeasonStanding is a single row of a season championship standings table,
+// aggregated from finalized round snapshot scores.
+type SeasonStanding struct {
+	RacerID   int    `json:"-"`
+	RacerName string `json:"racer_name"`
+	Races     int    `json:"races"`
+	Wins      int    `json:"wins"`
+	Points    int    `json:"points"`
 }
 
 type Quote struct {
@@ -212,6 +223,7 @@ type Season struct {
 	EndDate   string `json:"end_date,omitempty"`
 	Status    string `json:"status"`
 	CreatedAt string `json:"created_at"`
+	ModuleIDs []int  `json:"module_ids,omitempty"`
 }
 
 type RoundSnapshot struct {
@@ -272,6 +284,7 @@ type UpgradeCard struct {
 	CardType    string `json:"card_type"` // upgrade, legendary, sponsorship
 	Cost        int    `json:"cost"`
 	Effects     string `json:"effects"` // JSON string of effects
+	ExtensionID int    `json:"extension_id"`
 }
 
 type PlayerUpgrade struct {
@@ -290,6 +303,7 @@ type LegendAbility struct {
 	Description string `json:"description"`
 	AbilityType string `json:"ability_type"`
 	RacerName   string `json:"racer_name"`
+	ExtensionID int    `json:"extension_id"`
 }
 
 type RacerLegendAbility struct {

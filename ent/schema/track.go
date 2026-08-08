@@ -20,5 +20,6 @@ func (Track) Fields() []ent.Field {
 		field.Int("use_map_image").Default(0),
 		field.String("map_image_url").Default(""),
 		field.Int("refresh_geojson").Default(1),
+		field.Int("extension_id").Default(0),
 	}
 }

@@ -73,6 +73,11 @@ func RacerName(v string) predicate.LegendAbility {
 	return predicate.LegendAbility(sql.FieldEQ(FieldRacerName, v))
 }
 
+// ExtensionID applies equality check predicate on the "extension_id" field. It's identical to ExtensionIDEQ.
+func ExtensionID(v int) predicate.LegendAbility {
+	return predicate.LegendAbility(sql.FieldEQ(FieldExtensionID, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.LegendAbility {
 	return predicate.LegendAbility(sql.FieldEQ(FieldName, v))
@@ -331,6 +336,46 @@ func RacerNameEqualFold(v string) predicate.LegendAbility {
 // RacerNameContainsFold applies the ContainsFold predicate on the "racer_name" field.
 func RacerNameContainsFold(v string) predicate.LegendAbility {
 	return predicate.LegendAbility(sql.FieldContainsFold(FieldRacerName, v))
+}
+
+// ExtensionIDEQ applies the EQ predicate on the "extension_id" field.
+func ExtensionIDEQ(v int) predicate.LegendAbility {
+	return predicate.LegendAbility(sql.FieldEQ(FieldExtensionID, v))
+}
+
+// ExtensionIDNEQ applies the NEQ predicate on the "extension_id" field.
+func ExtensionIDNEQ(v int) predicate.LegendAbility {
+	return predicate.LegendAbility(sql.FieldNEQ(FieldExtensionID, v))
+}
+
+// ExtensionIDIn applies the In predicate on the "extension_id" field.
+func ExtensionIDIn(vs ...int) predicate.LegendAbility {
+	return predicate.LegendAbility(sql.FieldIn(FieldExtensionID, vs...))
+}
+
+// ExtensionIDNotIn applies the NotIn predicate on the "extension_id" field.
+func ExtensionIDNotIn(vs ...int) predicate.LegendAbility {
+	return predicate.LegendAbility(sql.FieldNotIn(FieldExtensionID, vs...))
+}
+
+// ExtensionIDGT applies the GT predicate on the "extension_id" field.
+func ExtensionIDGT(v int) predicate.LegendAbility {
+	return predicate.LegendAbility(sql.FieldGT(FieldExtensionID, v))
+}
+
+// ExtensionIDGTE applies the GTE predicate on the "extension_id" field.
+func ExtensionIDGTE(v int) predicate.LegendAbility {
+	return predicate.LegendAbility(sql.FieldGTE(FieldExtensionID, v))
+}
+
+// ExtensionIDLT applies the LT predicate on the "extension_id" field.
+func ExtensionIDLT(v int) predicate.LegendAbility {
+	return predicate.LegendAbility(sql.FieldLT(FieldExtensionID, v))
+}
+
+// ExtensionIDLTE applies the LTE predicate on the "extension_id" field.
+func ExtensionIDLTE(v int) predicate.LegendAbility {
+	return predicate.LegendAbility(sql.FieldLTE(FieldExtensionID, v))
 }
 
 // And groups predicates with the AND operator between them.

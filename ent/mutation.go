@@ -5329,17 +5329,19 @@ func (m *LapRecordMutation) ResetEdge(name string) error {
 // LegendAbilityMutation represents an operation that mutates the LegendAbility nodes in the graph.
 type LegendAbilityMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	description   *string
-	ability_type  *string
-	racer_name    *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*LegendAbility, error)
-	predicates    []predicate.LegendAbility
+	op              Op
+	typ             string
+	id              *int
+	name            *string
+	description     *string
+	ability_type    *string
+	racer_name      *string
+	extension_id    *int
+	addextension_id *int
+	clearedFields   map[string]struct{}
+	done            bool
+	oldValue        func(context.Context) (*LegendAbility, error)
+	predicates      []predicate.LegendAbility
 }
 
 var _ ent.Mutation = (*LegendAbilityMutation)(nil)
@@ -5590,6 +5592,62 @@ func (m *LegendAbilityMutation) ResetRacerName() {
 	m.racer_name = nil
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (m *LegendAbilityMutation) SetExtensionID(i int) {
+	m.extension_id = &i
+	m.addextension_id = nil
+}
+
+// ExtensionID returns the value of the "extension_id" field in the mutation.
+func (m *LegendAbilityMutation) ExtensionID() (r int, exists bool) {
+	v := m.extension_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExtensionID returns the old "extension_id" field's value of the LegendAbility entity.
+// If the LegendAbility object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LegendAbilityMutation) OldExtensionID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExtensionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExtensionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExtensionID: %w", err)
+	}
+	return oldValue.ExtensionID, nil
+}
+
+// AddExtensionID adds i to the "extension_id" field.
+func (m *LegendAbilityMutation) AddExtensionID(i int) {
+	if m.addextension_id != nil {
+		*m.addextension_id += i
+	} else {
+		m.addextension_id = &i
+	}
+}
+
+// AddedExtensionID returns the value that was added to the "extension_id" field in this mutation.
+func (m *LegendAbilityMutation) AddedExtensionID() (r int, exists bool) {
+	v := m.addextension_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetExtensionID resets all changes to the "extension_id" field.
+func (m *LegendAbilityMutation) ResetExtensionID() {
+	m.extension_id = nil
+	m.addextension_id = nil
+}
+
 // Where appends a list predicates to the LegendAbilityMutation builder.
 func (m *LegendAbilityMutation) Where(ps ...predicate.LegendAbility) {
 	m.predicates = append(m.predicates, ps...)
@@ -5624,7 +5682,7 @@ func (m *LegendAbilityMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *LegendAbilityMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, legendability.FieldName)
 	}
@@ -5636,6 +5694,9 @@ func (m *LegendAbilityMutation) Fields() []string {
 	}
 	if m.racer_name != nil {
 		fields = append(fields, legendability.FieldRacerName)
+	}
+	if m.extension_id != nil {
+		fields = append(fields, legendability.FieldExtensionID)
 	}
 	return fields
 }
@@ -5653,6 +5714,8 @@ func (m *LegendAbilityMutation) Field(name string) (ent.Value, bool) {
 		return m.AbilityType()
 	case legendability.FieldRacerName:
 		return m.RacerName()
+	case legendability.FieldExtensionID:
+		return m.ExtensionID()
 	}
 	return nil, false
 }
@@ -5670,6 +5733,8 @@ func (m *LegendAbilityMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldAbilityType(ctx)
 	case legendability.FieldRacerName:
 		return m.OldRacerName(ctx)
+	case legendability.FieldExtensionID:
+		return m.OldExtensionID(ctx)
 	}
 	return nil, fmt.Errorf("unknown LegendAbility field %s", name)
 }
@@ -5707,6 +5772,13 @@ func (m *LegendAbilityMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRacerName(v)
 		return nil
+	case legendability.FieldExtensionID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExtensionID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown LegendAbility field %s", name)
 }
@@ -5714,13 +5786,21 @@ func (m *LegendAbilityMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *LegendAbilityMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addextension_id != nil {
+		fields = append(fields, legendability.FieldExtensionID)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *LegendAbilityMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case legendability.FieldExtensionID:
+		return m.AddedExtensionID()
+	}
 	return nil, false
 }
 
@@ -5729,6 +5809,13 @@ func (m *LegendAbilityMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *LegendAbilityMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case legendability.FieldExtensionID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddExtensionID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown LegendAbility numeric field %s", name)
 }
@@ -5767,6 +5854,9 @@ func (m *LegendAbilityMutation) ResetField(name string) error {
 		return nil
 	case legendability.FieldRacerName:
 		m.ResetRacerName()
+		return nil
+	case legendability.FieldExtensionID:
+		m.ResetExtensionID()
 		return nil
 	}
 	return fmt.Errorf("unknown LegendAbility field %s", name)
@@ -19116,6 +19206,8 @@ type TrackMutation struct {
 	map_image_url      *string
 	refresh_geojson    *int
 	addrefresh_geojson *int
+	extension_id       *int
+	addextension_id    *int
 	clearedFields      map[string]struct{}
 	done               bool
 	oldValue           func(context.Context) (*Track, error)
@@ -19574,6 +19666,62 @@ func (m *TrackMutation) ResetRefreshGeojson() {
 	m.addrefresh_geojson = nil
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (m *TrackMutation) SetExtensionID(i int) {
+	m.extension_id = &i
+	m.addextension_id = nil
+}
+
+// ExtensionID returns the value of the "extension_id" field in the mutation.
+func (m *TrackMutation) ExtensionID() (r int, exists bool) {
+	v := m.extension_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExtensionID returns the old "extension_id" field's value of the Track entity.
+// If the Track object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TrackMutation) OldExtensionID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExtensionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExtensionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExtensionID: %w", err)
+	}
+	return oldValue.ExtensionID, nil
+}
+
+// AddExtensionID adds i to the "extension_id" field.
+func (m *TrackMutation) AddExtensionID(i int) {
+	if m.addextension_id != nil {
+		*m.addextension_id += i
+	} else {
+		m.addextension_id = &i
+	}
+}
+
+// AddedExtensionID returns the value that was added to the "extension_id" field in this mutation.
+func (m *TrackMutation) AddedExtensionID() (r int, exists bool) {
+	v := m.addextension_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetExtensionID resets all changes to the "extension_id" field.
+func (m *TrackMutation) ResetExtensionID() {
+	m.extension_id = nil
+	m.addextension_id = nil
+}
+
 // Where appends a list predicates to the TrackMutation builder.
 func (m *TrackMutation) Where(ps ...predicate.Track) {
 	m.predicates = append(m.predicates, ps...)
@@ -19608,7 +19756,7 @@ func (m *TrackMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TrackMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.name != nil {
 		fields = append(fields, track.FieldName)
 	}
@@ -19632,6 +19780,9 @@ func (m *TrackMutation) Fields() []string {
 	}
 	if m.refresh_geojson != nil {
 		fields = append(fields, track.FieldRefreshGeojson)
+	}
+	if m.extension_id != nil {
+		fields = append(fields, track.FieldExtensionID)
 	}
 	return fields
 }
@@ -19657,6 +19808,8 @@ func (m *TrackMutation) Field(name string) (ent.Value, bool) {
 		return m.MapImageURL()
 	case track.FieldRefreshGeojson:
 		return m.RefreshGeojson()
+	case track.FieldExtensionID:
+		return m.ExtensionID()
 	}
 	return nil, false
 }
@@ -19682,6 +19835,8 @@ func (m *TrackMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldMapImageURL(ctx)
 	case track.FieldRefreshGeojson:
 		return m.OldRefreshGeojson(ctx)
+	case track.FieldExtensionID:
+		return m.OldExtensionID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Track field %s", name)
 }
@@ -19747,6 +19902,13 @@ func (m *TrackMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRefreshGeojson(v)
 		return nil
+	case track.FieldExtensionID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExtensionID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Track field %s", name)
 }
@@ -19764,6 +19926,9 @@ func (m *TrackMutation) AddedFields() []string {
 	if m.addrefresh_geojson != nil {
 		fields = append(fields, track.FieldRefreshGeojson)
 	}
+	if m.addextension_id != nil {
+		fields = append(fields, track.FieldExtensionID)
+	}
 	return fields
 }
 
@@ -19778,6 +19943,8 @@ func (m *TrackMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedUseMapImage()
 	case track.FieldRefreshGeojson:
 		return m.AddedRefreshGeojson()
+	case track.FieldExtensionID:
+		return m.AddedExtensionID()
 	}
 	return nil, false
 }
@@ -19807,6 +19974,13 @@ func (m *TrackMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddRefreshGeojson(v)
+		return nil
+	case track.FieldExtensionID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddExtensionID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Track numeric field %s", name)
@@ -19858,6 +20032,9 @@ func (m *TrackMutation) ResetField(name string) error {
 		return nil
 	case track.FieldRefreshGeojson:
 		m.ResetRefreshGeojson()
+		return nil
+	case track.FieldExtensionID:
+		m.ResetExtensionID()
 		return nil
 	}
 	return fmt.Errorf("unknown Track field %s", name)
@@ -21060,19 +21237,21 @@ func (m *UmamiSettingMutation) ResetEdge(name string) error {
 // UpgradeCardMutation represents an operation that mutates the UpgradeCard nodes in the graph.
 type UpgradeCardMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	description   *string
-	card_type     *string
-	cost          *int
-	addcost       *int
-	effects       *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*UpgradeCard, error)
-	predicates    []predicate.UpgradeCard
+	op              Op
+	typ             string
+	id              *int
+	name            *string
+	description     *string
+	card_type       *string
+	cost            *int
+	addcost         *int
+	effects         *string
+	extension_id    *int
+	addextension_id *int
+	clearedFields   map[string]struct{}
+	done            bool
+	oldValue        func(context.Context) (*UpgradeCard, error)
+	predicates      []predicate.UpgradeCard
 }
 
 var _ ent.Mutation = (*UpgradeCardMutation)(nil)
@@ -21379,6 +21558,62 @@ func (m *UpgradeCardMutation) ResetEffects() {
 	m.effects = nil
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (m *UpgradeCardMutation) SetExtensionID(i int) {
+	m.extension_id = &i
+	m.addextension_id = nil
+}
+
+// ExtensionID returns the value of the "extension_id" field in the mutation.
+func (m *UpgradeCardMutation) ExtensionID() (r int, exists bool) {
+	v := m.extension_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExtensionID returns the old "extension_id" field's value of the UpgradeCard entity.
+// If the UpgradeCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UpgradeCardMutation) OldExtensionID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExtensionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExtensionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExtensionID: %w", err)
+	}
+	return oldValue.ExtensionID, nil
+}
+
+// AddExtensionID adds i to the "extension_id" field.
+func (m *UpgradeCardMutation) AddExtensionID(i int) {
+	if m.addextension_id != nil {
+		*m.addextension_id += i
+	} else {
+		m.addextension_id = &i
+	}
+}
+
+// AddedExtensionID returns the value that was added to the "extension_id" field in this mutation.
+func (m *UpgradeCardMutation) AddedExtensionID() (r int, exists bool) {
+	v := m.addextension_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetExtensionID resets all changes to the "extension_id" field.
+func (m *UpgradeCardMutation) ResetExtensionID() {
+	m.extension_id = nil
+	m.addextension_id = nil
+}
+
 // Where appends a list predicates to the UpgradeCardMutation builder.
 func (m *UpgradeCardMutation) Where(ps ...predicate.UpgradeCard) {
 	m.predicates = append(m.predicates, ps...)
@@ -21413,7 +21648,7 @@ func (m *UpgradeCardMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UpgradeCardMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, upgradecard.FieldName)
 	}
@@ -21428,6 +21663,9 @@ func (m *UpgradeCardMutation) Fields() []string {
 	}
 	if m.effects != nil {
 		fields = append(fields, upgradecard.FieldEffects)
+	}
+	if m.extension_id != nil {
+		fields = append(fields, upgradecard.FieldExtensionID)
 	}
 	return fields
 }
@@ -21447,6 +21685,8 @@ func (m *UpgradeCardMutation) Field(name string) (ent.Value, bool) {
 		return m.Cost()
 	case upgradecard.FieldEffects:
 		return m.Effects()
+	case upgradecard.FieldExtensionID:
+		return m.ExtensionID()
 	}
 	return nil, false
 }
@@ -21466,6 +21706,8 @@ func (m *UpgradeCardMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldCost(ctx)
 	case upgradecard.FieldEffects:
 		return m.OldEffects(ctx)
+	case upgradecard.FieldExtensionID:
+		return m.OldExtensionID(ctx)
 	}
 	return nil, fmt.Errorf("unknown UpgradeCard field %s", name)
 }
@@ -21510,6 +21752,13 @@ func (m *UpgradeCardMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEffects(v)
 		return nil
+	case upgradecard.FieldExtensionID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExtensionID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown UpgradeCard field %s", name)
 }
@@ -21521,6 +21770,9 @@ func (m *UpgradeCardMutation) AddedFields() []string {
 	if m.addcost != nil {
 		fields = append(fields, upgradecard.FieldCost)
 	}
+	if m.addextension_id != nil {
+		fields = append(fields, upgradecard.FieldExtensionID)
+	}
 	return fields
 }
 
@@ -21531,6 +21783,8 @@ func (m *UpgradeCardMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case upgradecard.FieldCost:
 		return m.AddedCost()
+	case upgradecard.FieldExtensionID:
+		return m.AddedExtensionID()
 	}
 	return nil, false
 }
@@ -21546,6 +21800,13 @@ func (m *UpgradeCardMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddCost(v)
+		return nil
+	case upgradecard.FieldExtensionID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddExtensionID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown UpgradeCard numeric field %s", name)
@@ -21588,6 +21849,9 @@ func (m *UpgradeCardMutation) ResetField(name string) error {
 		return nil
 	case upgradecard.FieldEffects:
 		m.ResetEffects()
+		return nil
+	case upgradecard.FieldExtensionID:
+		m.ResetExtensionID()
 		return nil
 	}
 	return fmt.Errorf("unknown UpgradeCard field %s", name)

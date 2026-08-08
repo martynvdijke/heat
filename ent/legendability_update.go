@@ -83,6 +83,27 @@ func (_u *LegendAbilityUpdate) SetNillableRacerName(v *string) *LegendAbilityUpd
 	return _u
 }
 
+// SetExtensionID sets the "extension_id" field.
+func (_u *LegendAbilityUpdate) SetExtensionID(v int) *LegendAbilityUpdate {
+	_u.mutation.ResetExtensionID()
+	_u.mutation.SetExtensionID(v)
+	return _u
+}
+
+// SetNillableExtensionID sets the "extension_id" field if the given value is not nil.
+func (_u *LegendAbilityUpdate) SetNillableExtensionID(v *int) *LegendAbilityUpdate {
+	if v != nil {
+		_u.SetExtensionID(*v)
+	}
+	return _u
+}
+
+// AddExtensionID adds value to the "extension_id" field.
+func (_u *LegendAbilityUpdate) AddExtensionID(v int) *LegendAbilityUpdate {
+	_u.mutation.AddExtensionID(v)
+	return _u
+}
+
 // Mutation returns the LegendAbilityMutation object of the builder.
 func (_u *LegendAbilityUpdate) Mutation() *LegendAbilityMutation {
 	return _u.mutation
@@ -135,6 +156,12 @@ func (_u *LegendAbilityUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if value, ok := _u.mutation.RacerName(); ok {
 		_spec.SetField(legendability.FieldRacerName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ExtensionID(); ok {
+		_spec.SetField(legendability.FieldExtensionID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedExtensionID(); ok {
+		_spec.AddField(legendability.FieldExtensionID, field.TypeInt, value)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -209,6 +236,27 @@ func (_u *LegendAbilityUpdateOne) SetNillableRacerName(v *string) *LegendAbility
 	if v != nil {
 		_u.SetRacerName(*v)
 	}
+	return _u
+}
+
+// SetExtensionID sets the "extension_id" field.
+func (_u *LegendAbilityUpdateOne) SetExtensionID(v int) *LegendAbilityUpdateOne {
+	_u.mutation.ResetExtensionID()
+	_u.mutation.SetExtensionID(v)
+	return _u
+}
+
+// SetNillableExtensionID sets the "extension_id" field if the given value is not nil.
+func (_u *LegendAbilityUpdateOne) SetNillableExtensionID(v *int) *LegendAbilityUpdateOne {
+	if v != nil {
+		_u.SetExtensionID(*v)
+	}
+	return _u
+}
+
+// AddExtensionID adds value to the "extension_id" field.
+func (_u *LegendAbilityUpdateOne) AddExtensionID(v int) *LegendAbilityUpdateOne {
+	_u.mutation.AddExtensionID(v)
 	return _u
 }
 
@@ -294,6 +342,12 @@ func (_u *LegendAbilityUpdateOne) sqlSave(ctx context.Context) (_node *LegendAbi
 	}
 	if value, ok := _u.mutation.RacerName(); ok {
 		_spec.SetField(legendability.FieldRacerName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ExtensionID(); ok {
+		_spec.SetField(legendability.FieldExtensionID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedExtensionID(); ok {
+		_spec.AddField(legendability.FieldExtensionID, field.TypeInt, value)
 	}
 	_node = &LegendAbility{config: _u.config}
 	_spec.Assign = _node.assignValues

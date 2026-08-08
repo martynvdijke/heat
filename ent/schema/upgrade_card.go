@@ -17,5 +17,6 @@ func (UpgradeCard) Fields() []ent.Field {
 		field.String("card_type").Default("upgrade"),
 		field.Int("cost").Default(0),
 		field.String("effects").Default("{}"),
+		field.Int("extension_id").Default(0),
 	}
 }

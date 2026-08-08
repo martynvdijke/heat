@@ -19,6 +19,8 @@ const (
 	FieldAbilityType = "ability_type"
 	// FieldRacerName holds the string denoting the racer_name field in the database.
 	FieldRacerName = "racer_name"
+	// FieldExtensionID holds the string denoting the extension_id field in the database.
+	FieldExtensionID = "extension_id"
 	// Table holds the table name of the legendability in the database.
 	Table = "legend_abilities"
 )
@@ -30,6 +32,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldAbilityType,
 	FieldRacerName,
+	FieldExtensionID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -41,6 +44,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultExtensionID holds the default value on creation for the "extension_id" field.
+	DefaultExtensionID int
+)
 
 // OrderOption defines the ordering options for the LegendAbility queries.
 type OrderOption func(*sql.Selector)
@@ -68,4 +76,9 @@ func ByAbilityType(opts ...sql.OrderTermOption) OrderOption {
 // ByRacerName orders the results by the racer_name field.
 func ByRacerName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRacerName, opts...).ToFunc()
+}
+
+// ByExtensionID orders the results by the extension_id field.
+func ByExtensionID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExtensionID, opts...).ToFunc()
 }

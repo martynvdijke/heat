@@ -25,7 +25,9 @@ type UpgradeCard struct {
 	// Cost holds the value of the "cost" field.
 	Cost int `json:"cost,omitempty"`
 	// Effects holds the value of the "effects" field.
-	Effects      string `json:"effects,omitempty"`
+	Effects string `json:"effects,omitempty"`
+	// ExtensionID holds the value of the "extension_id" field.
+	ExtensionID  int `json:"extension_id,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -34,7 +36,7 @@ func (*UpgradeCard) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case upgradecard.FieldID, upgradecard.FieldCost:
+		case upgradecard.FieldID, upgradecard.FieldCost, upgradecard.FieldExtensionID:
 			values[i] = new(sql.NullInt64)
 		case upgradecard.FieldName, upgradecard.FieldDescription, upgradecard.FieldCardType, upgradecard.FieldEffects:
 			values[i] = new(sql.NullString)
@@ -89,6 +91,12 @@ func (_m *UpgradeCard) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Effects = value.String
 			}
+		case upgradecard.FieldExtensionID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field extension_id", values[i])
+			} else if value.Valid {
+				_m.ExtensionID = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -139,6 +147,9 @@ func (_m *UpgradeCard) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("effects=")
 	builder.WriteString(_m.Effects)
+	builder.WriteString(", ")
+	builder.WriteString("extension_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExtensionID))
 	builder.WriteByte(')')
 	return builder.String()
 }

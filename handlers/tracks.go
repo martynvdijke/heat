@@ -96,6 +96,7 @@ func (h *Handler) GetTracks(c *gin.Context) {
 			UseMapImage:    t.UseMapImage == 1,
 			MapImageURL:    t.MapImageURL,
 			RefreshGeoJSON: t.RefreshGeojson == 1,
+			ExtensionID:    t.ExtensionID,
 		}
 	}
 	c.JSON(http.StatusOK, result)
@@ -121,6 +122,7 @@ func (h *Handler) SaveTrack(c *gin.Context) {
 			SetUseMapImage(boolToInt(t.UseMapImage)).
 			SetMapImageURL(t.MapImageURL).
 			SetRefreshGeojson(boolToInt(t.RefreshGeoJSON)).
+			SetExtensionID(t.ExtensionID).
 			Save(ctx)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -139,6 +141,7 @@ func (h *Handler) SaveTrack(c *gin.Context) {
 			SetUseMapImage(boolToInt(t.UseMapImage)).
 			SetMapImageURL(t.MapImageURL).
 			SetRefreshGeojson(boolToInt(t.RefreshGeoJSON)).
+			SetExtensionID(t.ExtensionID).
 			Save(ctx)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

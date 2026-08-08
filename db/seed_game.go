@@ -23,7 +23,7 @@ func SeedUpgrades() {
 		{Name: "Turbo Charger", Description: "Extra turbo boost per race", CardType: "upgrade", Cost: 5, Effects: "{\"extra_turbo\":1}"},
 	}
 	for _, u := range upgrades {
-		srv.DB.Exec("INSERT INTO upgrade_cards (name, description, card_type, cost, effects) VALUES (?, ?, ?, ?, ?)",
+		srv.DB.Exec("INSERT INTO upgrade_cards (name, description, card_type, cost, effects, extension_id) VALUES (?, ?, ?, ?, ?, 1)",
 			u.Name, u.Description, u.CardType, u.Cost, u.Effects)
 	}
 	log.Printf("[DB] Seeded %d upgrade cards", len(upgrades))
@@ -43,7 +43,7 @@ func SeedLegendAbilities() {
 		{Name: "Smooth Operator", Description: "Generate 1 less heat per gear shift", AbilityType: "smoothness", RacerName: "J. STEWART"},
 	}
 	for _, a := range abilities {
-		srv.DB.Exec("INSERT INTO legend_abilities (name, description, ability_type, racer_name) VALUES (?, ?, ?, ?)",
+		srv.DB.Exec("INSERT INTO legend_abilities (name, description, ability_type, racer_name, extension_id) VALUES (?, ?, ?, ?, 1)",
 			a.Name, a.Description, a.AbilityType, a.RacerName)
 	}
 	log.Printf("[DB] Seeded %d legend abilities", len(abilities))

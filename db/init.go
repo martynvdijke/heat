@@ -64,6 +64,34 @@ func Init(s *app.Server) {
 	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN map_image_url TEXT NOT NULL DEFAULT ''")
 	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN refresh_geojson INTEGER NOT NULL DEFAULT 1")
 
+	// Extension/module catalog tables (module-extension-tracker)
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS extensions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		description TEXT NOT NULL DEFAULT '',
+		is_base INTEGER NOT NULL DEFAULT 0,
+		sort_order INTEGER NOT NULL DEFAULT 0,
+		created_at TEXT NOT NULL DEFAULT (datetime('now'))
+	)`)
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS modules (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		description TEXT NOT NULL DEFAULT '',
+		extension_id INTEGER NOT NULL DEFAULT 0,
+		sort_order INTEGER NOT NULL DEFAULT 0,
+		created_at TEXT NOT NULL DEFAULT (datetime('now'))
+	)`)
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS season_modules (
+		season_id INTEGER NOT NULL,
+		module_id INTEGER NOT NULL,
+		PRIMARY KEY (season_id, module_id)
+	)`)
+
+	// Migrate content tables: attribute tracks/upgrades/legends to an extension
+	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN extension_id INTEGER NOT NULL DEFAULT 0")
+	srv.DB.Exec("ALTER TABLE upgrade_cards ADD COLUMN extension_id INTEGER NOT NULL DEFAULT 0")
+	srv.DB.Exec("ALTER TABLE legend_abilities ADD COLUMN extension_id INTEGER NOT NULL DEFAULT 0")
+
 	// Performance indexes for common query patterns
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_id ON race_results(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_race_id ON race_results(race_id)")
@@ -103,6 +131,9 @@ func Init(s *app.Server) {
 	SeedBackupSettings()
 	SeedUpgrades()
 	SeedLegendAbilities()
+	SeedExtensions()
+	backfillBaseGameContent()
+	SeedModules()
 	SeedSectors()
 	SeedLogSettings()
 	SeedOTelSettings()

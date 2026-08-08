@@ -1,4 +1,74 @@
 definitions:
+  handlers.ExtensionDetail:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      is_base:
+        type: integer
+      legends:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+      modules:
+        items:
+          additionalProperties: {}
+          type: object
+        type: array
+      name:
+        type: string
+      tracks:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+      upgrades:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+    type: object
+  handlers.ExtensionSummary:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      is_base:
+        type: integer
+      legend_count:
+        type: integer
+      module_count:
+        type: integer
+      name:
+        type: string
+      sort_order:
+        type: integer
+      track_count:
+        type: integer
+      upgrade_count:
+        type: integer
+    type: object
+  handlers.ModuleSummary:
+    properties:
+      description:
+        type: string
+      extension:
+        type: string
+      extension_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      sort_order:
+        type: integer
+    type: object
   handlers.logSettingInput:
     properties:
       level:
@@ -292,6 +362,10 @@ definitions:
         type: string
       id:
         type: integer
+      module_ids:
+        items:
+          type: integer
+        type: array
       name:
         type: string
       start_date:
@@ -570,6 +644,26 @@ paths:
       summary: Check if admin is set up
       tags:
       - Auth
+  /api/content/extension:
+    put:
+      consumes:
+      - application/json
+      description: Assign a track, upgrade card, or legend ability to an extension
+      parameters:
+      - description: Assignment
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      responses:
+        "200":
+          description: OK
+      security:
+      - cookieAuth: []
+      summary: Assign content to extension
+      tags:
+      - Extensions
   /api/email-settings:
     get:
       description: Get SMTP email settings
@@ -611,6 +705,96 @@ paths:
       summary: Save email settings
       tags:
       - Settings
+  /api/extensions:
+    delete:
+      description: Delete an extension; its content is reset to the Base Game extension
+        and its modules (and season module links) are removed
+      parameters:
+      - description: Extension ID
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+      security:
+      - cookieAuth: []
+      summary: Delete extension
+      tags:
+      - Extensions
+    get:
+      description: List all extensions with content counts (tracks, upgrades, legends,
+        modules)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.ExtensionSummary'
+            type: array
+      security:
+      - cookieAuth: []
+      summary: List extensions
+      tags:
+      - Extensions
+    post:
+      consumes:
+      - application/json
+      description: Create a new extension pack
+      parameters:
+      - description: Extension
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.ExtensionSummary'
+      security:
+      - cookieAuth: []
+      summary: Create extension
+      tags:
+      - Extensions
+    put:
+      consumes:
+      - application/json
+      description: Update an extension's fields
+      responses: {}
+      security:
+      - cookieAuth: []
+      summary: Update extension
+      tags:
+      - Extensions
+  /api/extensions/detail:
+    get:
+      description: Get one extension with its modules, tracks, upgrade cards, and
+        legend abilities
+      parameters:
+      - description: Extension ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.ExtensionDetail'
+      security:
+      - cookieAuth: []
+      summary: Extension detail
+      tags:
+      - Extensions
   /api/flags:
     post:
       consumes:
@@ -685,6 +869,59 @@ paths:
       summary: Logout
       tags:
       - Auth
+  /api/modules:
+    delete:
+      description: Delete a gameplay module and its season links
+      parameters:
+      - description: Module ID
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+      security:
+      - cookieAuth: []
+      summary: Delete module
+      tags:
+      - Extensions
+    get:
+      description: List all gameplay modules with their owning extension
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.ModuleSummary'
+            type: array
+      security:
+      - cookieAuth: []
+      summary: List modules
+      tags:
+      - Extensions
+    post:
+      consumes:
+      - application/json
+      description: Create a gameplay module, optionally owned by an extension
+      responses: {}
+      security:
+      - cookieAuth: []
+      summary: Create module
+      tags:
+      - Extensions
+    put:
+      consumes:
+      - application/json
+      description: Update a gameplay module
+      responses: {}
+      security:
+      - cookieAuth: []
+      summary: Update module
+      tags:
+      - Extensions
   /api/notification-settings:
     get:
       description: Get Gotify notification settings

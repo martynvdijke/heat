@@ -360,6 +360,39 @@
                 }
             }
         },
+        "/api/content/extension": {
+            "put": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Assign a track, upgrade card, or legend ability to an extension",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Assign content to extension",
+                "parameters": [
+                    {
+                        "description": "Assignment",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/email-settings": {
             "get": {
                 "security": [
@@ -421,6 +454,147 @@
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/extensions": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "List all extensions with content counts (tracks, upgrades, legends, modules)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "List extensions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.ExtensionSummary"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Update an extension's fields",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Update extension",
+                "responses": {}
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Create a new extension pack",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Create extension",
+                "parameters": [
+                    {
+                        "description": "Extension",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ExtensionSummary"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Delete an extension; its content is reset to the Base Game extension and its modules (and season module links) are removed",
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Delete extension",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Extension ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/extensions/detail": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Get one extension with its modules, tracks, upgrade cards, and legend abilities",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Extension detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Extension ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ExtensionDetail"
                         }
                     }
                 }
@@ -536,6 +710,92 @@
                                 "type": "string"
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/api/modules": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "List all gameplay modules with their owning extension",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "List modules",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.ModuleSummary"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Update a gameplay module",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Update module",
+                "responses": {}
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Create a gameplay module, optionally owned by an extension",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Create module",
+                "responses": {}
+            },
+            "delete": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Delete a gameplay module and its season links",
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Delete module",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -2255,6 +2515,112 @@
         }
     },
     "definitions": {
+        "handlers.ExtensionDetail": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_base": {
+                    "type": "integer"
+                },
+                "legends": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "modules": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tracks": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "upgrades": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "handlers.ExtensionSummary": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_base": {
+                    "type": "integer"
+                },
+                "legend_count": {
+                    "type": "integer"
+                },
+                "module_count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "track_count": {
+                    "type": "integer"
+                },
+                "upgrade_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.ModuleSummary": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "extension": {
+                    "type": "string"
+                },
+                "extension_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                }
+            }
+        },
         "handlers.logSettingInput": {
             "type": "object",
             "required": [
@@ -2702,6 +3068,12 @@
                 },
                 "id": {
                     "type": "integer"
+                },
+                "module_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "name": {
                     "type": "string"
