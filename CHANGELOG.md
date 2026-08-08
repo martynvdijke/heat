@@ -1,3 +1,11 @@
+# [1.48.0](https://github.com/martynvdijke/heat/compare/v1.47.18...v1.48.0) (2026-08-08)
+
+
+### Features
+
+* add TRMNL e-ink display plugin with summary endpoint ([92f6a8c](https://github.com/martynvdijke/heat/commit/92f6a8c01896de3bd0425642e962508d58f32572))
+* track board game extensions and modules in admin settings ([9ac84b3](https://github.com/martynvdijke/heat/commit/9ac84b3bd275abe8751716759acd67be147423ba))
+
 ## [Unreleased]
 
 ### Features
