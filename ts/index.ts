@@ -13,6 +13,7 @@ interface Racer {
     rank: number;
     position: number;
     team_name?: string;
+    team_color?: string;
 }
 
 interface TrackInfo {
@@ -239,7 +240,7 @@ function renderRacers(): void {
                         <span class="driver-name"><span class="color-indicator me-2" style="background:${normalizeHex(r.car_color)}"></span>${r.name}</span>
                     </div>
                 </td>
-                <td>${r.team_name || '-'}</td>
+                <td>${r.team_name ? `<span class="color-indicator me-2" style="background:${normalizeHex(r.team_color || '')}"></span>${r.team_name}` : '-'}</td>
                 <td>${r.car_name}</td>
                 <td class="gap-cell">${gapText}</td>
                 <td class="pe-4 text-end ${i === 0 ? 'fw-bold' : ''}">${r.points}</td>

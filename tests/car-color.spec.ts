@@ -132,6 +132,65 @@ test.describe('Car Color Rendering', () => {
   });
 });
 
+test.describe('Team Color Rendering', () => {
+  test('should display team color in leaderboard TEAM column', async ({ page }) => {
+    await loginAsAdmin(page);
+
+    const teamName = `Color-Team-${Date.now()}`;
+    const racerName = `Color-Racer-${Date.now()}`;
+
+    // Create a team with a distinct color via API (same path as admin settings)
+    const team = await page.evaluate(async (name) => {
+      const res = await fetch('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: 0, name, color: '#00ff88' }),
+      });
+      const teams = await (await fetch('/api/teams')).json();
+      const created = teams.find((t: any) => t.name === name);
+      return { ok: res.ok, id: created ? created.id : 0 };
+    }, teamName);
+    expect(team.ok).toBeTruthy();
+    expect(team.id).toBeGreaterThan(0);
+
+    // Create a racer assigned to the team
+    const created = await page.evaluate(async ({ teamId, racerName }) => {
+      const res = await fetch('/api/racers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 0,
+          name: racerName,
+          profile_picture: '/static/images/helmet.svg',
+          car_color: '#111111',
+          car_name: 'Team Color Car',
+          points: 10,
+          rank: 40,
+          position: 0,
+          team_id: teamId,
+        }),
+      });
+      return res.ok;
+    }, { teamId: team.id, racerName });
+    expect(created).toBeTruthy();
+
+    // Frontpage: the TEAM column (3rd cell) should show a color indicator with the team color
+    await page.goto('/');
+    await page.waitForSelector('#leaderboard-body tr');
+
+    const racerRow = page.locator('#leaderboard-body tr', { hasText: racerName });
+    await expect(racerRow.first()).toBeVisible();
+
+    const teamCell = racerRow.first().locator('td').nth(2);
+    await expect(teamCell).toContainText(teamName);
+
+    const colorDot = teamCell.locator('.color-indicator').first();
+    const bg = await colorDot.evaluate(el => getComputedStyle(el).backgroundColor);
+    // rgb(0, 255, 136) is the CSS computed value for #00ff88
+    expect(bg).toBe('rgb(0, 255, 136)');
+  });
+});
+
 // Reuse helpers from admin.spec.ts (same pattern)
 async function loginAsAdmin(page: Page) {
   await page.goto('/admin.html');

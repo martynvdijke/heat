@@ -2927,6 +2927,9 @@ const docTemplate = `{
                 "rank": {
                     "type": "integer"
                 },
+                "team_color": {
+                    "type": "string"
+                },
                 "team_id": {
                     "type": "integer"
                 },

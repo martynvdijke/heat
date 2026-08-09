@@ -95,7 +95,7 @@ func (h *Handler) HtmxRacersTable(c *gin.Context) {
 		srows.Close()
 	}
 
-	rows, err := h.S.DB.Query("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id ORDER BY r.rank ASC")
+	rows, err := h.S.DB.Query("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, ''), COALESCE(t.color, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id ORDER BY r.rank ASC")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -110,7 +110,7 @@ func (h *Handler) HtmxRacersTable(c *gin.Context) {
 	racers := make([]racerRow, 0)
 	for rows.Next() {
 		var r models.Racer
-		if err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID, &r.TeamName); err != nil {
+		if err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID, &r.TeamName, &r.TeamColor); err != nil {
 			continue
 		}
 		row := racerRow{Racer: r}
@@ -139,8 +139,8 @@ func (h *Handler) HtmxRacersEditForm(c *gin.Context) {
 	}
 
 	var r models.Racer
-	err = h.S.DB.QueryRow("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id WHERE r.id=?", id).
-		Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID, &r.TeamName)
+	err = h.S.DB.QueryRow("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, ''), COALESCE(t.color, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id WHERE r.id=?", id).
+		Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID, &r.TeamName, &r.TeamColor)
 	if err != nil {
 		racerEditFormTmpl.Execute(c.Writer, nil)
 		return
