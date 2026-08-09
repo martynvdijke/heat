@@ -117,6 +117,7 @@ async function loadRaceInfo(): Promise<void> {
         (form.elements.namedItem('track') as HTMLInputElement).value = data.track || '';
         (form.elements.namedItem('laps') as HTMLInputElement).value = data.laps || 0;
         (form.elements.namedItem('track_id') as HTMLInputElement).value = data.track_id || '';
+        (form.elements.namedItem('next_race_date') as HTMLInputElement).value = data.next_race_date || '';
     } catch (e) { console.error('Failed to load race info', e); }
 }
 

@@ -23,8 +23,8 @@ import (
 // @Router /api/race-info [get]
 func (h *Handler) GetRaceInfo(c *gin.Context) {
 	var ri models.RaceInfo
-	err := h.S.DB.QueryRow("SELECT country, track, COALESCE(track_id, 'monza'), laps FROM race_info ORDER BY id DESC LIMIT 1").
-		Scan(&ri.Country, &ri.Track, &ri.TrackID, &ri.Laps)
+	err := h.S.DB.QueryRow("SELECT country, track, COALESCE(track_id, 'monza'), laps, COALESCE(next_race_date, '') FROM race_info ORDER BY id DESC LIMIT 1").
+		Scan(&ri.Country, &ri.Track, &ri.TrackID, &ri.Laps, &ri.NextRaceDate)
 	if err != nil {
 		ri = models.RaceInfo{Country: "Italy", Track: "Monza", TrackID: "monza", Laps: 53}
 	}
@@ -52,8 +52,16 @@ func (h *Handler) UpdateRaceInfo(c *gin.Context) {
 		ri.TrackID = "monza"
 	}
 
-	_, err := h.S.DB.Exec("INSERT INTO race_info (country, track, track_id, laps) VALUES (?, ?, ?, ?)",
-		ri.Country, ri.Track, ri.TrackID, ri.Laps)
+	// Validate next_race_date format (YYYY-MM-DD); empty string means unset
+	if ri.NextRaceDate != "" {
+		if _, err := time.Parse("2006-01-02", ri.NextRaceDate); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "next_race_date must be in YYYY-MM-DD format"})
+			return
+		}
+	}
+
+	_, err := h.S.DB.Exec("INSERT INTO race_info (country, track, track_id, laps, next_race_date) VALUES (?, ?, ?, ?, ?)",
+		ri.Country, ri.Track, ri.TrackID, ri.Laps, ri.NextRaceDate)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -64,6 +64,9 @@ func Init(s *app.Server) {
 	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN map_image_url TEXT NOT NULL DEFAULT ''")
 	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN refresh_geojson INTEGER NOT NULL DEFAULT 1")
 
+	// Migrate race_info table: next race event date ('' = unset)
+	srv.DB.Exec("ALTER TABLE race_info ADD COLUMN next_race_date TEXT NOT NULL DEFAULT ''")
+
 	// Extension/module catalog tables (module-extension-tracker)
 	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS extensions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

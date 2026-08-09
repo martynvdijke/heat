@@ -59,6 +59,113 @@ func TestRaceInfo(t *testing.T) {
 			t.Errorf("unexpected race info after update: %+v", updated)
 		}
 	})
+
+	t.Run("GetRaceInfoNextRaceDateUnset", func(t *testing.T) {
+		r := gin.New()
+		r.GET("/api/race-info", testHandler.GetRaceInfo)
+
+		req, _ := http.NewRequest("GET", "/api/race-info", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		var ri models.RaceInfo
+		json.Unmarshal(rr.Body.Bytes(), &ri)
+		if ri.NextRaceDate != "" {
+			t.Errorf("expected empty next_race_date when unset, got %q", ri.NextRaceDate)
+		}
+	})
+
+	t.Run("SetNextRaceDateRoundTrip", func(t *testing.T) {
+		r := gin.New()
+		r.POST("/api/race-info", testHandler.UpdateRaceInfo)
+		r.GET("/api/race-info", testHandler.GetRaceInfo)
+
+		ri := models.RaceInfo{Country: "Italy", Track: "Monza", Laps: 53, TrackID: "monza", NextRaceDate: "2026-08-22"}
+		body, _ := json.Marshal(ri)
+		req, _ := http.NewRequest("POST", "/api/race-info", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if status := rr.Code; status != http.StatusOK {
+			t.Fatalf("expected status 200, got %v", status)
+		}
+
+		req, _ = http.NewRequest("GET", "/api/race-info", nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var stored models.RaceInfo
+		json.Unmarshal(rr.Body.Bytes(), &stored)
+		if stored.NextRaceDate != "2026-08-22" {
+			t.Errorf("expected next_race_date %q, got %q", "2026-08-22", stored.NextRaceDate)
+		}
+	})
+
+	t.Run("ClearNextRaceDate", func(t *testing.T) {
+		r := gin.New()
+		r.POST("/api/race-info", testHandler.UpdateRaceInfo)
+		r.GET("/api/race-info", testHandler.GetRaceInfo)
+
+		ri := models.RaceInfo{Country: "Italy", Track: "Monza", Laps: 53, TrackID: "monza", NextRaceDate: "2026-08-22"}
+		body, _ := json.Marshal(ri)
+		req, _ := http.NewRequest("POST", "/api/race-info", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		ri.NextRaceDate = ""
+		body, _ = json.Marshal(ri)
+		req, _ = http.NewRequest("POST", "/api/race-info", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if status := rr.Code; status != http.StatusOK {
+			t.Fatalf("expected status 200, got %v", status)
+		}
+
+		req, _ = http.NewRequest("GET", "/api/race-info", nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var stored models.RaceInfo
+		json.Unmarshal(rr.Body.Bytes(), &stored)
+		if stored.NextRaceDate != "" {
+			t.Errorf("expected empty next_race_date after clear, got %q", stored.NextRaceDate)
+		}
+	})
+
+	t.Run("InvalidNextRaceDateRejected", func(t *testing.T) {
+		r := gin.New()
+		r.POST("/api/race-info", testHandler.UpdateRaceInfo)
+		r.GET("/api/race-info", testHandler.GetRaceInfo)
+
+		// Seed a valid date first
+		ri := models.RaceInfo{Country: "Italy", Track: "Monza", Laps: 53, TrackID: "monza", NextRaceDate: "2026-08-22"}
+		body, _ := json.Marshal(ri)
+		req, _ := http.NewRequest("POST", "/api/race-info", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		// Submit an invalid date
+		ri.NextRaceDate = "not-a-date"
+		body, _ = json.Marshal(ri)
+		req, _ = http.NewRequest("POST", "/api/race-info", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Fatalf("expected status 400, got %v", status)
+		}
+
+		// Stored value must be unchanged
+		req, _ = http.NewRequest("GET", "/api/race-info", nil)
+		rr = httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		var stored models.RaceInfo
+		json.Unmarshal(rr.Body.Bytes(), &stored)
+		if stored.NextRaceDate != "2026-08-22" {
+			t.Errorf("expected stored next_race_date unchanged (%q), got %q", "2026-08-22", stored.NextRaceDate)
+		}
+	})
 }
 
 func TestRaceHistory(t *testing.T) {

@@ -28,11 +28,12 @@ type Team struct {
 }
 
 type RaceInfo struct {
-	ID      int    `json:"id"`
-	Country string `json:"country"`
-	Track   string `json:"track"`
-	Laps    int    `json:"laps"`
-	TrackID string `json:"track_id"`
+	ID           int    `json:"id"`
+	Country      string `json:"country"`
+	Track        string `json:"track"`
+	Laps         int    `json:"laps"`
+	TrackID      string `json:"track_id"`
+	NextRaceDate string `json:"next_race_date"`
 }
 
 type Track struct {
