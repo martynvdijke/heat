@@ -1,3 +1,10 @@
+# [1.50.0](https://github.com/martynvdijke/heat/compare/v1.49.0...v1.50.0) (2026-08-09)
+
+
+### Features
+
+* add module tracks and board game track list ([68580f7](https://github.com/martynvdijke/heat/commit/68580f7a3d681b51b1bd6dacd65396407263c5f7))
+
 # [1.49.0](https://github.com/martynvdijke/heat/compare/v1.48.0...v1.49.0) (2026-08-09)
 
 
