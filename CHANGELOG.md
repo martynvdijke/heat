@@ -1,3 +1,10 @@
+# [1.49.0](https://github.com/martynvdijke/heat/compare/v1.48.0...v1.49.0) (2026-08-09)
+
+
+### Features
+
+* add next race date setting to admin race day tab ([aafd0a4](https://github.com/martynvdijke/heat/commit/aafd0a4cef6c0f7eb20ca7e7b02798ce10507249))
+
 # [1.48.0](https://github.com/martynvdijke/heat/compare/v1.47.18...v1.48.0) (2026-08-08)
 
 
