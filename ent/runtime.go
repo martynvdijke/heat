@@ -467,6 +467,10 @@ func init() {
 	trackDescExtensionID := trackFields[9].Descriptor()
 	// track.DefaultExtensionID holds the default value on creation for the extension_id field.
 	track.DefaultExtensionID = trackDescExtensionID.Default.(int)
+	// trackDescModuleID is the schema descriptor for module_id field.
+	trackDescModuleID := trackFields[10].Descriptor()
+	// track.DefaultModuleID holds the default value on creation for the module_id field.
+	track.DefaultModuleID = trackDescModuleID.Default.(int)
 	turbologFields := schema.TurboLog{}.Fields()
 	_ = turbologFields
 	// turbologDescRaceID is the schema descriptor for race_id field.

@@ -95,6 +95,14 @@ func Init(s *app.Server) {
 	srv.DB.Exec("ALTER TABLE upgrade_cards ADD COLUMN extension_id INTEGER NOT NULL DEFAULT 0")
 	srv.DB.Exec("ALTER TABLE legend_abilities ADD COLUMN extension_id INTEGER NOT NULL DEFAULT 0")
 
+	// Migrate tracks table: module attribution (0 = not module-specific)
+	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN module_id INTEGER NOT NULL DEFAULT 0")
+
+	// Board game track list: the curated set of tracks the group plays with
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS board_game_tracks (
+		track_id TEXT PRIMARY KEY
+	)`)
+
 	// Performance indexes for common query patterns
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_id ON race_results(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_race_id ON race_results(race_id)")
@@ -137,6 +145,7 @@ func Init(s *app.Server) {
 	SeedExtensions()
 	backfillBaseGameContent()
 	SeedModules()
+	SeedBoardGameTracks()
 	SeedSectors()
 	SeedLogSettings()
 	SeedOTelSettings()

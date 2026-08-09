@@ -33,7 +33,9 @@ type Track struct {
 	// RefreshGeojson holds the value of the "refresh_geojson" field.
 	RefreshGeojson int `json:"refresh_geojson,omitempty"`
 	// ExtensionID holds the value of the "extension_id" field.
-	ExtensionID  int `json:"extension_id,omitempty"`
+	ExtensionID int `json:"extension_id,omitempty"`
+	// ModuleID holds the value of the "module_id" field.
+	ModuleID     int `json:"module_id,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -42,7 +44,7 @@ func (*Track) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case track.FieldLengthKm, track.FieldUseMapImage, track.FieldRefreshGeojson, track.FieldExtensionID:
+		case track.FieldLengthKm, track.FieldUseMapImage, track.FieldRefreshGeojson, track.FieldExtensionID, track.FieldModuleID:
 			values[i] = new(sql.NullInt64)
 		case track.FieldID, track.FieldName, track.FieldCountry, track.FieldGeojson, track.FieldLapRecord, track.FieldMapImageURL:
 			values[i] = new(sql.NullString)
@@ -121,6 +123,12 @@ func (_m *Track) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ExtensionID = int(value.Int64)
 			}
+		case track.FieldModuleID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field module_id", values[i])
+			} else if value.Valid {
+				_m.ModuleID = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -183,6 +191,9 @@ func (_m *Track) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("extension_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ExtensionID))
+	builder.WriteString(", ")
+	builder.WriteString("module_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ModuleID))
 	builder.WriteByte(')')
 	return builder.String()
 }

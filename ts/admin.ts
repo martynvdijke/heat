@@ -22,6 +22,21 @@ interface AdminTrack {
     use_map_image: boolean;
     map_image_url: string;
     refresh_geojson: boolean;
+    extension_id: number;
+    module_id: number;
+    is_board_game: boolean;
+}
+
+interface AdminExtension {
+    id: number;
+    name: string;
+    is_base: boolean;
+}
+
+interface AdminModule {
+    id: number;
+    extension_id: number;
+    name: string;
 }
 
 interface AdminStats {
@@ -46,6 +61,9 @@ let qualificationOrder: AdminRacer[] = [];
 let shuffleInterval: ReturnType<typeof setInterval> | null = null;
 let racerStats: AdminStats[] = [];
 let driverShares: Record<number, string> = {};
+let trackExtensions: AdminExtension[] = [];
+let trackModules: AdminModule[] = [];
+const boardGameTrackIds: Set<string> = new Set();
 declare const bootstrap: any;
 
 const modals: Record<string, any> = {};
@@ -60,7 +78,43 @@ async function init(): Promise<void> {
         loadRaceInfo(),
         loadTracks(),
         loadRacers(),
+        loadTrackMeta(),
     ]);
+}
+
+async function loadTrackMeta(): Promise<void> {
+    try {
+        const [extRes, modRes, bgRes] = await Promise.all([
+            fetch('/api/extensions'),
+            fetch('/api/modules'),
+            fetch('/api/board-game/tracks'),
+        ]);
+        trackExtensions = await extRes.json();
+        trackModules = await modRes.json();
+        const bg = await bgRes.json();
+        boardGameTrackIds.clear();
+        (bg.track_ids || []).forEach((id: string) => boardGameTrackIds.add(id));
+        populateTrackMetaSelects();
+    } catch (e) { console.error('Failed to load track metadata', e); }
+}
+
+function populateTrackMetaSelects(): void {
+    const extSel = document.getElementById('track-extension') as HTMLSelectElement;
+    const modSel = document.getElementById('track-module') as HTMLSelectElement;
+    if (!extSel || !modSel) return;
+    const currentMod = modSel.value;
+    extSel.innerHTML = trackExtensions.map(e =>
+        `<option value="${e.id}">${escapeHtml(e.name)}${e.is_base ? ' (Base)' : ''}</option>`).join('');
+    modSel.innerHTML = '<option value="0">None (not module-specific)</option>' +
+        trackModules.map(m => {
+            const ext = trackExtensions.find(e => e.id === m.extension_id);
+            return `<option value="${m.id}">${escapeHtml(m.name)}${ext ? ' (' + escapeHtml(ext.name) + ')' : ''}</option>`;
+        }).join('');
+    if (currentMod) modSel.value = currentMod;
+    modSel.onchange = () => {
+        const m = trackModules.find(x => x.id === parseInt(modSel.value));
+        if (m && extSel) extSel.value = String(m.extension_id);
+    };
 }
 
 async function loadTracks(): Promise<void> {
@@ -70,10 +124,55 @@ async function loadTracks(): Promise<void> {
         adminTracks = tracks;
         allTracks = tracks;
         const selector = document.getElementById('track-select') as HTMLSelectElement;
-        selector.innerHTML = '<option value="">Choose a circuit...</option>' +
-            tracks.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('');
+        const boardGame = tracks.filter(t => t.is_board_game);
+        const custom = tracks.filter(t => !t.is_board_game);
+        selector.innerHTML = '<option value="">Choose a circuit...</option>';
+        if (boardGame.length) {
+            selector.innerHTML += '<optgroup label="Board Game">' +
+                boardGame.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('') +
+                '</optgroup>';
+        }
+        if (custom.length) {
+            selector.innerHTML += '<optgroup label="Custom">' +
+                custom.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('') +
+                '</optgroup>';
+        }
         renderTrackList();
+        renderBoardGameEditor();
     } catch (e) { console.error('Failed to load tracks', e); }
+}
+
+function renderBoardGameEditor(): void {
+    const container = document.getElementById('board-game-track-list');
+    if (!container) return;
+    container.innerHTML = allTracks.map(t => `
+        <div class="col-md-4 col-lg-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="${t.id}" id="bg-${t.id}"
+                    ${boardGameTrackIds.has(t.id) ? 'checked' : ''}>
+                <label class="form-check-label" for="bg-${t.id}">${escapeHtml(t.name)}</label>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function saveBoardGameTracks(): Promise<void> {
+    const checks = Array.from(document.querySelectorAll<HTMLInputElement>('#board-game-track-list input:checked'));
+    const trackIds = checks.map(c => c.value);
+    try {
+        const res = await fetch('/api/board-game/tracks', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ track_ids: trackIds }),
+        });
+        if (!res.ok) throw new Error('Failed to save board game tracks');
+        boardGameTrackIds.clear();
+        trackIds.forEach(id => boardGameTrackIds.add(id));
+        showToast('Board game tracks saved', 'success');
+        loadTracks();
+    } catch (e: any) {
+        showToast('Failed to save: ' + (e.message || 'Unknown error'), 'error');
+    }
 }
 
 function renderTrackList(): void {
@@ -89,6 +188,10 @@ function renderTrackList(): void {
             <td>
                 ${t.use_map_image ? '<span class="badge bg-info text-dark">Image Map</span>' : '<span class="badge bg-secondary">GeoJSON</span>'}
                 ${t.refresh_geojson ? '<i class="fa-solid fa-sync fa-spin ms-1 text-success small" title="Live Refresh On"></i>' : ''}
+            </td>
+            <td>
+                ${t.is_board_game ? '<span class="badge bg-success">Board Game</span>' : '<span class="badge bg-secondary">Custom</span>'}
+                ${t.module_id ? '<span class="badge bg-warning text-dark ms-1">Module</span>' : ''}
             </td>
             <td class="text-end pe-4">
                 <button class="btn btn-sm btn-outline-primary" onclick="editTrack('${t.id}')"><i class="fa-solid fa-pen"></i></button>
@@ -512,6 +615,8 @@ document.getElementById('track-form')?.addEventListener('submit', async (e: Even
     data.length_km = parseInt(data.length_km);
     data.use_map_image = (document.getElementById('use-map-image') as HTMLInputElement).checked;
     data.refresh_geojson = (document.getElementById('refresh-geojson') as HTMLInputElement).checked;
+    data.extension_id = parseInt(data.extension_id) || 1;
+    data.module_id = parseInt(data.module_id) || 0;
 
     const res = await fetch('/api/tracks', {
         method: 'POST',
@@ -521,6 +626,7 @@ document.getElementById('track-form')?.addEventListener('submit', async (e: Even
     if (res.ok) {
         getModal('trackModal').hide();
         loadTracks();
+        loadTrackMeta();
     }
 });
 
@@ -810,6 +916,7 @@ function openTrackModal(): void {
     (document.getElementById('track-form') as HTMLFormElement).reset();
     (document.getElementById('track-id') as HTMLInputElement).value = '';
     document.getElementById('trackModalLabel')!.textContent = 'Add New Track';
+    populateTrackMetaSelects();
     getModal('trackModal').show();
 }
 
@@ -828,6 +935,9 @@ function editTrack(id: string): void {
     (document.getElementById('map-image-url') as HTMLInputElement).value = t.map_image_url || '';
     document.getElementById('map-image-settings')!.style.display = t.use_map_image ? 'block' : 'none';
     document.getElementById('trackModalLabel')!.innerText = 'Edit Track';
+    populateTrackMetaSelects();
+    (form.elements.namedItem('extension_id') as HTMLInputElement).value = String(t.extension_id || 1);
+    (form.elements.namedItem('module_id') as HTMLInputElement).value = String(t.module_id || 0);
     getModal('trackModal').show();
 }
 
@@ -1755,6 +1865,7 @@ async function loadSeasonRounds(seasonId: string): Promise<void> {
 (window as any).copyShareLink = copyShareLink;
 (window as any).editTrack = editTrack;
 (window as any).deleteTrack = deleteTrack;
+(window as any).saveBoardGameTracks = saveBoardGameTracks;
 (window as any).extractTrackFromAI = extractTrackFromAI;
 (window as any).extractTrackFromAIStandalone = extractTrackFromAIStandalone;
 (window as any).editQuote = editQuote;

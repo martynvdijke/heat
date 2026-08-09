@@ -2860,6 +2860,9 @@ const docTemplate = `{
                 "laps": {
                     "type": "integer"
                 },
+                "next_race_date": {
+                    "type": "string"
+                },
                 "track": {
                     "type": "string"
                 },

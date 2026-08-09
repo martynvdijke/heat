@@ -21,5 +21,6 @@ func (Track) Fields() []ent.Field {
 		field.String("map_image_url").Default(""),
 		field.Int("refresh_geojson").Default(1),
 		field.Int("extension_id").Default(0),
+		field.Int("module_id").Default(0),
 	}
 }

@@ -155,8 +155,12 @@
                         extApi('/api/extensions/detail?id=' + id).then(function(d) {
                             var el = document.getElementById('extension-detail');
                             var moduleRows = (d.modules || []).map(function(m) {
+                                var trackBadges = (m.tracks || []).map(function(t) {
+                                    return '<span class="badge bg-light text-dark border me-1 mt-1">' + esc(t.name) + '</span>';
+                                }).join('');
+                                if (trackBadges) trackBadges = '<div class="mt-1">' + trackBadges + '</div>';
                                 return '<li class="list-group-item d-flex justify-content-between align-items-center">' +
-                                    '<div><span class="fw-bold">' + esc(m.name) + '</span><div class="small text-muted">' + esc(m.description) + '</div></div>' +
+                                    '<div><span class="fw-bold">' + esc(m.name) + '</span><div class="small text-muted">' + esc(m.description) + '</div>' + trackBadges + '</div>' +
                                     '<button class="btn btn-sm btn-outline-danger" onclick="deleteModule(' + m.id + ')"><i class="fa-solid fa-trash"></i></button></li>';
                             }).join('');
                             if (!moduleRows) moduleRows = '<li class="list-group-item text-muted small">No modules for this extension yet.</li>';

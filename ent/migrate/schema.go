@@ -466,6 +466,7 @@ var (
 		{Name: "map_image_url", Type: field.TypeString, Default: ""},
 		{Name: "refresh_geojson", Type: field.TypeInt, Default: 1},
 		{Name: "extension_id", Type: field.TypeInt, Default: 0},
+		{Name: "module_id", Type: field.TypeInt, Default: 0},
 	}
 	// TracksTable holds the schema information for the "tracks" table.
 	TracksTable = &schema.Table{

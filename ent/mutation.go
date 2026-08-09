@@ -19208,6 +19208,8 @@ type TrackMutation struct {
 	addrefresh_geojson *int
 	extension_id       *int
 	addextension_id    *int
+	module_id          *int
+	addmodule_id       *int
 	clearedFields      map[string]struct{}
 	done               bool
 	oldValue           func(context.Context) (*Track, error)
@@ -19722,6 +19724,62 @@ func (m *TrackMutation) ResetExtensionID() {
 	m.addextension_id = nil
 }
 
+// SetModuleID sets the "module_id" field.
+func (m *TrackMutation) SetModuleID(i int) {
+	m.module_id = &i
+	m.addmodule_id = nil
+}
+
+// ModuleID returns the value of the "module_id" field in the mutation.
+func (m *TrackMutation) ModuleID() (r int, exists bool) {
+	v := m.module_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModuleID returns the old "module_id" field's value of the Track entity.
+// If the Track object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TrackMutation) OldModuleID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModuleID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModuleID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModuleID: %w", err)
+	}
+	return oldValue.ModuleID, nil
+}
+
+// AddModuleID adds i to the "module_id" field.
+func (m *TrackMutation) AddModuleID(i int) {
+	if m.addmodule_id != nil {
+		*m.addmodule_id += i
+	} else {
+		m.addmodule_id = &i
+	}
+}
+
+// AddedModuleID returns the value that was added to the "module_id" field in this mutation.
+func (m *TrackMutation) AddedModuleID() (r int, exists bool) {
+	v := m.addmodule_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetModuleID resets all changes to the "module_id" field.
+func (m *TrackMutation) ResetModuleID() {
+	m.module_id = nil
+	m.addmodule_id = nil
+}
+
 // Where appends a list predicates to the TrackMutation builder.
 func (m *TrackMutation) Where(ps ...predicate.Track) {
 	m.predicates = append(m.predicates, ps...)
@@ -19756,7 +19814,7 @@ func (m *TrackMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TrackMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.name != nil {
 		fields = append(fields, track.FieldName)
 	}
@@ -19784,6 +19842,9 @@ func (m *TrackMutation) Fields() []string {
 	if m.extension_id != nil {
 		fields = append(fields, track.FieldExtensionID)
 	}
+	if m.module_id != nil {
+		fields = append(fields, track.FieldModuleID)
+	}
 	return fields
 }
 
@@ -19810,6 +19871,8 @@ func (m *TrackMutation) Field(name string) (ent.Value, bool) {
 		return m.RefreshGeojson()
 	case track.FieldExtensionID:
 		return m.ExtensionID()
+	case track.FieldModuleID:
+		return m.ModuleID()
 	}
 	return nil, false
 }
@@ -19837,6 +19900,8 @@ func (m *TrackMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldRefreshGeojson(ctx)
 	case track.FieldExtensionID:
 		return m.OldExtensionID(ctx)
+	case track.FieldModuleID:
+		return m.OldModuleID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Track field %s", name)
 }
@@ -19909,6 +19974,13 @@ func (m *TrackMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetExtensionID(v)
 		return nil
+	case track.FieldModuleID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModuleID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Track field %s", name)
 }
@@ -19929,6 +20001,9 @@ func (m *TrackMutation) AddedFields() []string {
 	if m.addextension_id != nil {
 		fields = append(fields, track.FieldExtensionID)
 	}
+	if m.addmodule_id != nil {
+		fields = append(fields, track.FieldModuleID)
+	}
 	return fields
 }
 
@@ -19945,6 +20020,8 @@ func (m *TrackMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedRefreshGeojson()
 	case track.FieldExtensionID:
 		return m.AddedExtensionID()
+	case track.FieldModuleID:
+		return m.AddedModuleID()
 	}
 	return nil, false
 }
@@ -19981,6 +20058,13 @@ func (m *TrackMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddExtensionID(v)
+		return nil
+	case track.FieldModuleID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddModuleID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Track numeric field %s", name)
@@ -20035,6 +20119,9 @@ func (m *TrackMutation) ResetField(name string) error {
 		return nil
 	case track.FieldExtensionID:
 		m.ResetExtensionID()
+		return nil
+	case track.FieldModuleID:
+		m.ResetModuleID()
 		return nil
 	}
 	return fmt.Errorf("unknown Track field %s", name)

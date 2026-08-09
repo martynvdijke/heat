@@ -243,11 +243,12 @@ var tracksTableTmpl = template.Must(template.New("tracks_table").Parse(`<tbody i
 {{end}}
 </tbody>`))
 
-// trackFormData carries the track being edited plus the extension options
-// for the extension selector.
+// trackFormData carries the track being edited plus the extension and module
+// options for the selectors.
 type trackFormData struct {
 	Track      models.Track
 	Extensions []ExtensionSummary
+	Modules    []ModuleSummary
 }
 
 var trackEditFormTmpl = template.Must(template.New("track_form").Parse(`<form id="track-form" hx-post="/api/html/tracks" hx-target="#track-list" hx-swap="outerHTML" hx-trigger="submit">
@@ -279,6 +280,16 @@ var trackEditFormTmpl = template.Must(template.New("track_form").Parse(`<form id
         <select class="form-select" name="extension_id">
         {{range .Extensions}}
             <option value="{{.ID}}" {{if eq $.Track.ExtensionID .ID}}selected{{end}}>{{.Name}}{{if .IsBase}} (Base){{end}}</option>
+        {{end}}
+        </select>
+        <div class="form-text">Module selection overrides the extension automatically.</div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label small fw-bold">Module</label>
+        <select class="form-select" name="module_id">
+            <option value="0" {{if eq .Track.ModuleID 0}}selected{{end}}>None (not module-specific)</option>
+        {{range .Modules}}
+            <option value="{{.ID}}" {{if eq $.Track.ModuleID .ID}}selected{{end}}>{{.Name}}{{if .Extension}} ({{.Extension}}){{end}}</option>
         {{end}}
         </select>
     </div>
@@ -314,8 +325,8 @@ func (h *Handler) HtmxTracksEditForm(c *gin.Context) {
 
 	var t models.Track
 	var useMapImage, refreshGeoJSON int
-	err := h.S.DB.QueryRow("SELECT id, name, country, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1), extension_id FROM tracks WHERE id=?", id).
-		Scan(&t.ID, &t.Name, &t.Country, &t.Length, &t.LapRecord, &useMapImage, &t.MapImageURL, &refreshGeoJSON, &t.ExtensionID)
+	err := h.S.DB.QueryRow("SELECT id, name, country, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1), extension_id, module_id FROM tracks WHERE id=?", id).
+		Scan(&t.ID, &t.Name, &t.Country, &t.Length, &t.LapRecord, &useMapImage, &t.MapImageURL, &refreshGeoJSON, &t.ExtensionID, &t.ModuleID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "track not found"})
 		return
@@ -324,9 +335,10 @@ func (h *Handler) HtmxTracksEditForm(c *gin.Context) {
 	t.RefreshGeoJSON = refreshGeoJSON == 1
 
 	extensions := h.queryExtensions()
+	modules, _ := h.queryModules()
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	trackEditFormTmpl.Execute(c.Writer, trackFormData{Track: t, Extensions: extensions})
+	trackEditFormTmpl.Execute(c.Writer, trackFormData{Track: t, Extensions: extensions, Modules: modules})
 }
 
 func (h *Handler) HtmxTracksSave(c *gin.Context) {
@@ -339,6 +351,14 @@ func (h *Handler) HtmxTracksSave(c *gin.Context) {
 	extensionID, _ := strconv.Atoi(strings.TrimSpace(c.PostForm("extension_id")))
 	if extensionID <= 0 {
 		extensionID = 1 // default to Base Game
+	}
+	moduleID, _ := strconv.Atoi(strings.TrimSpace(c.PostForm("module_id")))
+	// Derive the extension from the module's owning extension when set
+	if moduleID > 0 {
+		var extID int
+		if err := h.S.DB.QueryRow("SELECT extension_id FROM modules WHERE id = ?", moduleID).Scan(&extID); err == nil && extID > 0 {
+			extensionID = extID
+		}
 	}
 
 	if name == "" || country == "" {
@@ -355,8 +375,8 @@ func (h *Handler) HtmxTracksSave(c *gin.Context) {
 		id = idVisible
 	}
 
-	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson, extension_id) VALUES (?, ?, ?, ?, ?, ?, 0, '', 1, ?)`,
-		id, name, country, id, length, lapRecord, extensionID)
+	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson, extension_id, module_id) VALUES (?, ?, ?, ?, ?, ?, 0, '', 1, ?, ?)`,
+		id, name, country, id, length, lapRecord, extensionID, moduleID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

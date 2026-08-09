@@ -108,6 +108,11 @@ func ExtensionID(v int) predicate.Track {
 	return predicate.Track(sql.FieldEQ(FieldExtensionID, v))
 }
 
+// ModuleID applies equality check predicate on the "module_id" field. It's identical to ModuleIDEQ.
+func ModuleID(v int) predicate.Track {
+	return predicate.Track(sql.FieldEQ(FieldModuleID, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Track {
 	return predicate.Track(sql.FieldEQ(FieldName, v))
@@ -591,6 +596,46 @@ func ExtensionIDLT(v int) predicate.Track {
 // ExtensionIDLTE applies the LTE predicate on the "extension_id" field.
 func ExtensionIDLTE(v int) predicate.Track {
 	return predicate.Track(sql.FieldLTE(FieldExtensionID, v))
+}
+
+// ModuleIDEQ applies the EQ predicate on the "module_id" field.
+func ModuleIDEQ(v int) predicate.Track {
+	return predicate.Track(sql.FieldEQ(FieldModuleID, v))
+}
+
+// ModuleIDNEQ applies the NEQ predicate on the "module_id" field.
+func ModuleIDNEQ(v int) predicate.Track {
+	return predicate.Track(sql.FieldNEQ(FieldModuleID, v))
+}
+
+// ModuleIDIn applies the In predicate on the "module_id" field.
+func ModuleIDIn(vs ...int) predicate.Track {
+	return predicate.Track(sql.FieldIn(FieldModuleID, vs...))
+}
+
+// ModuleIDNotIn applies the NotIn predicate on the "module_id" field.
+func ModuleIDNotIn(vs ...int) predicate.Track {
+	return predicate.Track(sql.FieldNotIn(FieldModuleID, vs...))
+}
+
+// ModuleIDGT applies the GT predicate on the "module_id" field.
+func ModuleIDGT(v int) predicate.Track {
+	return predicate.Track(sql.FieldGT(FieldModuleID, v))
+}
+
+// ModuleIDGTE applies the GTE predicate on the "module_id" field.
+func ModuleIDGTE(v int) predicate.Track {
+	return predicate.Track(sql.FieldGTE(FieldModuleID, v))
+}
+
+// ModuleIDLT applies the LT predicate on the "module_id" field.
+func ModuleIDLT(v int) predicate.Track {
+	return predicate.Track(sql.FieldLT(FieldModuleID, v))
+}
+
+// ModuleIDLTE applies the LTE predicate on the "module_id" field.
+func ModuleIDLTE(v int) predicate.Track {
+	return predicate.Track(sql.FieldLTE(FieldModuleID, v))
 }
 
 // And groups predicates with the AND operator between them.

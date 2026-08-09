@@ -129,6 +129,20 @@ func (_c *TrackCreate) SetNillableExtensionID(v *int) *TrackCreate {
 	return _c
 }
 
+// SetModuleID sets the "module_id" field.
+func (_c *TrackCreate) SetModuleID(v int) *TrackCreate {
+	_c.mutation.SetModuleID(v)
+	return _c
+}
+
+// SetNillableModuleID sets the "module_id" field if the given value is not nil.
+func (_c *TrackCreate) SetNillableModuleID(v *int) *TrackCreate {
+	if v != nil {
+		_c.SetModuleID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *TrackCreate) SetID(v string) *TrackCreate {
 	_c.mutation.SetID(v)
@@ -198,6 +212,10 @@ func (_c *TrackCreate) defaults() {
 		v := track.DefaultExtensionID
 		_c.mutation.SetExtensionID(v)
 	}
+	if _, ok := _c.mutation.ModuleID(); !ok {
+		v := track.DefaultModuleID
+		_c.mutation.SetModuleID(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -228,6 +246,9 @@ func (_c *TrackCreate) check() error {
 	}
 	if _, ok := _c.mutation.ExtensionID(); !ok {
 		return &ValidationError{Name: "extension_id", err: errors.New(`ent: missing required field "Track.extension_id"`)}
+	}
+	if _, ok := _c.mutation.ModuleID(); !ok {
+		return &ValidationError{Name: "module_id", err: errors.New(`ent: missing required field "Track.module_id"`)}
 	}
 	return nil
 }
@@ -299,6 +320,10 @@ func (_c *TrackCreate) createSpec() (*Track, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ExtensionID(); ok {
 		_spec.SetField(track.FieldExtensionID, field.TypeInt, value)
 		_node.ExtensionID = value
+	}
+	if value, ok := _c.mutation.ModuleID(); ok {
+		_spec.SetField(track.FieldModuleID, field.TypeInt, value)
+		_node.ModuleID = value
 	}
 	return _node, _spec
 }

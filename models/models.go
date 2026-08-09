@@ -47,6 +47,8 @@ type Track struct {
 	MapImageURL    string `json:"map_image_url"`
 	RefreshGeoJSON bool   `json:"refresh_geojson"`
 	ExtensionID    int    `json:"extension_id"`
+	ModuleID       int    `json:"module_id"`
+	IsBoardGame    bool   `json:"is_board_game"`
 }
 
 type RaceResult struct {

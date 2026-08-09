@@ -39,6 +39,25 @@ func (h *Handler) queryExtensions() []ExtensionSummary {
 	return extensions
 }
 
+// queryModuleTracks returns the tracks attributed to a module (id, name, country).
+func (h *Handler) queryModuleTracks(moduleID int) []map[string]string {
+	tracks := make([]map[string]string, 0)
+	rows, err := h.S.DB.Query("SELECT id, name, country FROM tracks WHERE module_id = ? ORDER BY name", moduleID)
+	if err != nil {
+		return tracks
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var t struct {
+			ID, Name, Country string
+		}
+		if rows.Scan(&t.ID, &t.Name, &t.Country) == nil {
+			tracks = append(tracks, map[string]string{"id": t.ID, "name": t.Name, "country": t.Country})
+		}
+	}
+	return tracks
+}
+
 // @Summary List extensions
 // @Description List all extensions with content counts (tracks, upgrades, legends, modules)
 // @Tags Extensions
@@ -150,6 +169,8 @@ func (h *Handler) DeleteExtension(c *gin.Context) {
 	h.S.DB.Exec("UPDATE tracks SET extension_id = 1 WHERE extension_id = ?", id)
 	h.S.DB.Exec("UPDATE upgrade_cards SET extension_id = 1 WHERE extension_id = ?", id)
 	h.S.DB.Exec("UPDATE legend_abilities SET extension_id = 1 WHERE extension_id = ?", id)
+	// Reset tracks owned by this extension's modules
+	h.S.DB.Exec("UPDATE tracks SET module_id = 0, extension_id = 1 WHERE module_id IN (SELECT id FROM modules WHERE extension_id = ?)", id)
 	// Remove season module links for the extension's modules, then the modules
 	h.S.DB.Exec("DELETE FROM season_modules WHERE module_id IN (SELECT id FROM modules WHERE extension_id = ?)", id)
 	h.S.DB.Exec("DELETE FROM modules WHERE extension_id = ?", id)
@@ -199,18 +220,27 @@ func (h *Handler) GetExtensionDetail(c *gin.Context) {
 	d.Modules = make([]map[string]any, 0)
 	rows, err := h.S.DB.Query("SELECT id, name, description, sort_order FROM modules WHERE extension_id = ? ORDER BY sort_order", id)
 	if err == nil {
+		type moduleRow struct {
+			ID          int
+			Name        string
+			Description string
+			SortOrder   int
+		}
+		var mods []moduleRow
 		for rows.Next() {
-			var m struct {
-				ID          int
-				Name        string
-				Description string
-				SortOrder   int
-			}
+			var m moduleRow
 			if rows.Scan(&m.ID, &m.Name, &m.Description, &m.SortOrder) == nil {
-				d.Modules = append(d.Modules, map[string]any{"id": m.ID, "name": m.Name, "description": m.Description, "sort_order": m.SortOrder})
+				mods = append(mods, m)
 			}
 		}
 		rows.Close()
+		// Collect rows before querying per-module tracks: the test DB runs with
+		// a single connection, so nested queries would deadlock on open rows.
+		for _, m := range mods {
+			mod := map[string]any{"id": m.ID, "name": m.Name, "description": m.Description, "sort_order": m.SortOrder}
+			mod["tracks"] = h.queryModuleTracks(m.ID)
+			d.Modules = append(d.Modules, mod)
+		}
 	}
 
 	d.Tracks = make([]map[string]string, 0)
@@ -384,6 +414,8 @@ func (h *Handler) DeleteModule(c *gin.Context) {
 		return
 	}
 	h.S.DB.Exec("DELETE FROM season_modules WHERE module_id = ?", id)
+	// Reset tracks owned by this module to the Base Game extension
+	h.S.DB.Exec("UPDATE tracks SET module_id = 0, extension_id = 1 WHERE module_id = ?", id)
 	if _, err := h.S.DB.Exec("DELETE FROM modules WHERE id = ?", id); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

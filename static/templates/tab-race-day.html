@@ -129,7 +129,7 @@
                         </div>
                     </div>
                     <div class="tab-pane fade" id="tracks-pane">
-                        <div class="card">
+                        <div class="card mb-3">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <span><i class="fa-solid fa-road me-2 text-danger"></i>Race Tracks</span>
                                 <button class="btn btn-sm btn-success" onclick="openTrackModal()">
@@ -146,14 +146,29 @@
                                                 <th>Country</th>
                                                 <th>Length (km)</th>
                                                 <th>Lap Record</th>
+                                                <th>Type</th>
                                                 <th class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody id="track-list">
-                                            <tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading tracks...</td></tr>
+                                            <tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading tracks...</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <span><i class="fa-solid fa-chess-board me-2 text-primary"></i>Board Game Tracks</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="small text-muted mb-3">The curated set of tracks used for board game races. These appear in a "Board Game" group in the track selector.</p>
+                                <div id="board-game-track-list" class="mb-3">
+                                    <span class="text-muted small"><i class="fa-solid fa-spinner fa-spin me-1"></i>Loading tracks...</span>
+                                </div>
+                                <button class="btn btn-sm btn-primary" onclick="saveBoardGameTracks()">
+                                    <i class="fa-solid fa-save me-1"></i> Save Board Game Tracks
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -190,6 +205,17 @@
                                             <label class="form-label small fw-bold">Lap Record</label>
                                             <input type="text" class="form-control" name="lap_record" placeholder="e.g. 1:09.000">
                                         </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Extension</label>
+                                        <select class="form-select" name="extension_id" id="track-extension"></select>
+                                        <div class="form-text">Module selection overrides the extension automatically.</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Module</label>
+                                        <select class="form-select" name="module_id" id="track-module">
+                                            <option value="0">None (not module-specific)</option>
+                                        </select>
                                     </div>
                                     <div class="mb-3">
                                         <div class="form-check form-switch">

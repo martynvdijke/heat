@@ -77,6 +77,23 @@ func boolToInt(b bool) int {
 	return 0
 }
 
+// boardGameTrackSet returns the set of track ids currently in the board game list.
+func (h *Handler) boardGameTrackSet() map[string]bool {
+	set := make(map[string]bool)
+	rows, err := h.S.DB.Query("SELECT track_id FROM board_game_tracks")
+	if err != nil {
+		return set
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id string
+		if rows.Scan(&id) == nil {
+			set[id] = true
+		}
+	}
+	return set
+}
+
 func (h *Handler) GetTracks(c *gin.Context) {
 	tracks, err := h.S.Ent.Track.Query().Order(track.ByName()).All(c.Request.Context())
 	if err != nil {
@@ -84,6 +101,7 @@ func (h *Handler) GetTracks(c *gin.Context) {
 		return
 	}
 
+	boardGame := h.boardGameTrackSet()
 	result := make([]models.Track, len(tracks))
 	for i, t := range tracks {
 		result[i] = models.Track{
@@ -97,6 +115,8 @@ func (h *Handler) GetTracks(c *gin.Context) {
 			MapImageURL:    t.MapImageURL,
 			RefreshGeoJSON: t.RefreshGeojson == 1,
 			ExtensionID:    t.ExtensionID,
+			ModuleID:       t.ModuleID,
+			IsBoardGame:    boardGame[t.ID],
 		}
 	}
 	c.JSON(http.StatusOK, result)
@@ -110,6 +130,14 @@ func (h *Handler) SaveTrack(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
+	// When a module is set, derive the extension from the module's owning extension
+	// so the extension catalog stays consistent.
+	if t.ModuleID > 0 {
+		var extID int
+		if err := h.S.DB.QueryRow("SELECT extension_id FROM modules WHERE id = ?", t.ModuleID).Scan(&extID); err == nil && extID > 0 {
+			t.ExtensionID = extID
+		}
+	}
 	_, err := h.S.Ent.Track.Get(ctx, t.ID)
 	if ent.IsNotFound(err) {
 		_, err = h.S.Ent.Track.Create().
@@ -123,6 +151,7 @@ func (h *Handler) SaveTrack(c *gin.Context) {
 			SetMapImageURL(t.MapImageURL).
 			SetRefreshGeojson(boolToInt(t.RefreshGeoJSON)).
 			SetExtensionID(t.ExtensionID).
+			SetModuleID(t.ModuleID).
 			Save(ctx)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -142,6 +171,7 @@ func (h *Handler) SaveTrack(c *gin.Context) {
 			SetMapImageURL(t.MapImageURL).
 			SetRefreshGeojson(boolToInt(t.RefreshGeoJSON)).
 			SetExtensionID(t.ExtensionID).
+			SetModuleID(t.ModuleID).
 			Save(ctx)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -150,6 +180,66 @@ func (h *Handler) SaveTrack(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, t)
+}
+
+// GetBoardGameTracks returns the ids of tracks currently in the board game list.
+func (h *Handler) GetBoardGameTracks(c *gin.Context) {
+	rows, err := h.S.DB.Query("SELECT track_id FROM board_game_tracks")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id string
+		if rows.Scan(&id) == nil {
+			ids = append(ids, id)
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"track_ids": ids})
+}
+
+// SetBoardGameTracks replaces the entire board game track list with the
+// submitted track ids. Unknown ids are ignored so a stale editor can't
+// reference deleted tracks.
+func (h *Handler) SetBoardGameTracks(c *gin.Context) {
+	var input struct {
+		TrackIDs []string `json:"track_ids"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+	tx, err := h.S.DB.Begin()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec("DELETE FROM board_game_tracks"); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	for _, id := range input.TrackIDs {
+		if id == "" {
+			continue
+		}
+		// Ignore unknown ids so a stale editor can't reference deleted tracks.
+		var exists int
+		if err := tx.QueryRow("SELECT COUNT(*) FROM tracks WHERE id = ?", id).Scan(&exists); err != nil || exists == 0 {
+			continue
+		}
+		if _, err := tx.Exec("INSERT OR IGNORE INTO board_game_tracks (track_id) VALUES (?)", id); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
 func (h *Handler) DeleteTrack(c *gin.Context) {
@@ -164,6 +254,7 @@ func (h *Handler) DeleteTrack(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.S.DB.Exec("DELETE FROM board_game_tracks WHERE track_id = ?", id)
 
 	c.Status(http.StatusOK)
 }

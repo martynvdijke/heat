@@ -38,12 +38,22 @@ async function loadControllerData(): Promise<void> {
     renderStandings();
     populateDriverSelect();
     const trackSelect = document.getElementById('track-select') as HTMLSelectElement;
-    tracks.forEach((t: any) => {
-        const opt = document.createElement('option');
-        opt.value = t.id;
-        opt.textContent = `${t.country} - ${t.name}`;
-        trackSelect.appendChild(opt);
-    });
+    const boardGame = tracks.filter((t: any) => t.is_board_game);
+    const custom = tracks.filter((t: any) => !t.is_board_game);
+    const appendGroup = (label: string, list: any[]) => {
+        if (!list.length) return;
+        const group = document.createElement('optgroup');
+        group.label = label;
+        list.forEach((t: any) => {
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.textContent = `${t.country} - ${t.name}`;
+            group.appendChild(opt);
+        });
+        trackSelect.appendChild(group);
+    };
+    appendGroup('Board Game', boardGame);
+    appendGroup('Custom', custom);
 }
 
 function renderStandings(): void {

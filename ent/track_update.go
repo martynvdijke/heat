@@ -181,6 +181,27 @@ func (_u *TrackUpdate) AddExtensionID(v int) *TrackUpdate {
 	return _u
 }
 
+// SetModuleID sets the "module_id" field.
+func (_u *TrackUpdate) SetModuleID(v int) *TrackUpdate {
+	_u.mutation.ResetModuleID()
+	_u.mutation.SetModuleID(v)
+	return _u
+}
+
+// SetNillableModuleID sets the "module_id" field if the given value is not nil.
+func (_u *TrackUpdate) SetNillableModuleID(v *int) *TrackUpdate {
+	if v != nil {
+		_u.SetModuleID(*v)
+	}
+	return _u
+}
+
+// AddModuleID adds value to the "module_id" field.
+func (_u *TrackUpdate) AddModuleID(v int) *TrackUpdate {
+	_u.mutation.AddModuleID(v)
+	return _u
+}
+
 // Mutation returns the TrackMutation object of the builder.
 func (_u *TrackUpdate) Mutation() *TrackMutation {
 	return _u.mutation
@@ -260,6 +281,12 @@ func (_u *TrackUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedExtensionID(); ok {
 		_spec.AddField(track.FieldExtensionID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ModuleID(); ok {
+		_spec.SetField(track.FieldModuleID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedModuleID(); ok {
+		_spec.AddField(track.FieldModuleID, field.TypeInt, value)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -435,6 +462,27 @@ func (_u *TrackUpdateOne) AddExtensionID(v int) *TrackUpdateOne {
 	return _u
 }
 
+// SetModuleID sets the "module_id" field.
+func (_u *TrackUpdateOne) SetModuleID(v int) *TrackUpdateOne {
+	_u.mutation.ResetModuleID()
+	_u.mutation.SetModuleID(v)
+	return _u
+}
+
+// SetNillableModuleID sets the "module_id" field if the given value is not nil.
+func (_u *TrackUpdateOne) SetNillableModuleID(v *int) *TrackUpdateOne {
+	if v != nil {
+		_u.SetModuleID(*v)
+	}
+	return _u
+}
+
+// AddModuleID adds value to the "module_id" field.
+func (_u *TrackUpdateOne) AddModuleID(v int) *TrackUpdateOne {
+	_u.mutation.AddModuleID(v)
+	return _u
+}
+
 // Mutation returns the TrackMutation object of the builder.
 func (_u *TrackUpdateOne) Mutation() *TrackMutation {
 	return _u.mutation
@@ -544,6 +592,12 @@ func (_u *TrackUpdateOne) sqlSave(ctx context.Context) (_node *Track, err error)
 	}
 	if value, ok := _u.mutation.AddedExtensionID(); ok {
 		_spec.AddField(track.FieldExtensionID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ModuleID(); ok {
+		_spec.SetField(track.FieldModuleID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedModuleID(); ok {
+		_spec.AddField(track.FieldModuleID, field.TypeInt, value)
 	}
 	_node = &Track{config: _u.config}
 	_spec.Assign = _node.assignValues
