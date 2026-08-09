@@ -1,3 +1,10 @@
+## [1.50.1](https://github.com/martynvdijke/heat/compare/v1.50.0...v1.50.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* show team colors on frontpage leaderboard ([7e813bc](https://github.com/martynvdijke/heat/commit/7e813bc7d3000c63e906514bfd242ddf0fe5aa09))
+
 # [1.50.0](https://github.com/martynvdijke/heat/compare/v1.49.0...v1.50.0) (2026-08-09)
 
 
