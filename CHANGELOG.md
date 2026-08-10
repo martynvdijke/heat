@@ -1,3 +1,10 @@
+## [1.50.2](https://github.com/martynvdijke/heat/compare/v1.50.1...v1.50.2) (2026-08-10)
+
+
+### Bug Fixes
+
+* remove gap column from front page leaderboard, show car/team color instead ([2ebb3f0](https://github.com/martynvdijke/heat/commit/2ebb3f09ec91c7de09dacb10fd380ab30f37aea5))
+
 ## [1.50.1](https://github.com/martynvdijke/heat/compare/v1.50.0...v1.50.1) (2026-08-09)
 
 
