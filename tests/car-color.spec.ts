@@ -191,6 +191,21 @@ test.describe('Team Color Rendering', () => {
   });
 });
 
+test.describe('Leaderboard GAP column removal', () => {
+  test('front page has no GAP column and CAR cell shows car/team color', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#leaderboard-body tr');
+
+    const headers = page.locator('#leaderboard-table thead th');
+    await expect(headers).toHaveCount(5);
+    await expect(page.locator('#leaderboard-table thead')).not.toContainText('GAP');
+
+    // CAR column (4th cell) should show a color indicator instead of the gap
+    const carCell = page.locator('#leaderboard-body tr').first().locator('td').nth(3);
+    await expect(carCell.locator('.color-indicator').first()).toBeVisible();
+  });
+});
+
 // Reuse helpers from admin.spec.ts (same pattern)
 async function loginAsAdmin(page: Page) {
   await page.goto('/admin.html');

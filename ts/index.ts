@@ -195,7 +195,6 @@ function sortRacers(a: Racer, b: Racer): number {
         case 'name': aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase(); break;
         case 'team': aVal = (a.team_name || '').toLowerCase(); bVal = (b.team_name || '').toLowerCase(); break;
         case 'car_name': aVal = a.car_name.toLowerCase(); bVal = b.car_name.toLowerCase(); break;
-        case 'gap': aVal = a.position; bVal = b.position; break;
         case 'points': aVal = a.points; bVal = b.points; break;
         default: aVal = a.rank; bVal = b.rank;
     }
@@ -224,13 +223,7 @@ function renderRacers(): void {
     updateMapMarkers(racers);
     const lbBody = document.getElementById('leaderboard-body')!;
     const sorted = [...racers].sort(sortRacers);
-    const leaderPosition = sorted.length > 0 ? sorted[0].position : 0;
     lbBody.innerHTML = sorted.map((r, i) => {
-        let gapText = "-";
-        if (i > 0) {
-            const gap = leaderPosition - r.position;
-            gapText = gap > 0 ? `+${gap}` : "0";
-        }
         return `
             <tr class="${i === 0 ? 'winner-row' : ''} clickable-row" style="cursor:pointer" onclick="showDriverStats(${r.id})">
                 <td class="ps-4">${r.rank}</td>
@@ -241,8 +234,7 @@ function renderRacers(): void {
                     </div>
                 </td>
                 <td>${r.team_name ? `<span class="color-indicator me-2" style="background:${normalizeHex(r.team_color || '')}"></span>${r.team_name}` : '-'}</td>
-                <td>${r.car_name}</td>
-                <td class="gap-cell">${gapText}</td>
+                <td><span class="color-indicator me-2" style="background:${normalizeHex(r.team_color || r.car_color)}"></span>${r.car_name}</td>
                 <td class="pe-4 text-end ${i === 0 ? 'fw-bold' : ''}">${r.points}</td>
             </tr>
         `;
