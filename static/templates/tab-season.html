@@ -32,6 +32,8 @@
                                                 <th>Fastest Laps</th>
                                                 <th>DNF</th>
                                                 <th>DNS</th>
+                                                <th>Spins</th>
+                                                <th>Overheated</th>
                                                 <th class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
@@ -183,6 +185,16 @@
                                         <div class="col-4">
                                             <label class="form-label small fw-bold">DNS</label>
                                             <input type="number" class="form-control" name="dns" id="stats-dns" min="0" required>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-4">
+                                            <label class="form-label small fw-bold">Spins</label>
+                                            <input type="number" class="form-control" name="spins" id="stats-spins" min="0" required>
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label small fw-bold">Overheated</label>
+                                            <input type="number" class="form-control" name="overheated" id="stats-overheated" min="0" required>
                                         </div>
                                     </div>
                                     <button type="submit" class="btn btn-primary w-100">Save Stats</button>

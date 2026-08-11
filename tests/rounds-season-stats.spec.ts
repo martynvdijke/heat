@@ -64,6 +64,110 @@ test.describe.serial('Admin Season CRUD', () => {
   });
 });
 
+test.describe.serial('Admin Season Stats Spins/Overheated', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
+  // Opens the Season tab (hx-get loaded) and activates the Stats subtab. The
+  // tab click can be lost if it races htmx booting, so retry until mounted, and
+  // wait for the stats list row so the data fetch has completed.
+  async function openSeasonStats(page: Page) {
+    const seasonTab = page.locator('button[data-tab-id="season"]');
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await seasonTab.click();
+      try {
+        await expect(seasonTab).toHaveClass(/active/, { timeout: 5000 });
+        await expect(page.locator('#stats-subtab')).toBeAttached({ timeout: 5000 });
+        await page.click('#stats-subtab');
+        await expect(page.locator('#stats-list tr').first()).toBeAttached({ timeout: 5000 });
+        return;
+      } catch (err) {
+        if (attempt === 2) throw err;
+        await page.waitForTimeout(500);
+      }
+    }
+  }
+
+  test('should show Spins and Overheated columns in the stats table', async ({ page }) => {
+    await openSeasonStats(page);
+
+    // Scope to the stats table (the one that owns #stats-list) and assert the
+    // new columns exist; Playwright's multi-step relative XPath is unreliable.
+    const table = page.locator('table', { has: page.locator('#stats-list') });
+    await expect(table.locator('thead th', { hasText: /^Spins$/ })).toHaveCount(1);
+    await expect(table.locator('thead th', { hasText: /^Overheated$/ })).toHaveCount(1);
+  });
+
+  test('should create stats with spins and overheated and display them', async ({ page }) => {
+    await openSeasonStats(page);
+
+    await page.click('.card-header button:has-text("Add Stats")');
+    await page.waitForSelector('#statsModal.show', { timeout: 5000 });
+
+    // Choose a racer that does not already have a stats row, so the test stays
+    // idempotent if it is retried (the stats table is not wiped between runs).
+    const options = page.locator('#stats-racer-select option');
+    const count = await options.count();
+    expect(count).toBeGreaterThanOrEqual(2);
+    let racerName = '';
+    for (let i = 1; i < count; i++) {
+      const name = (await options.nth(i).textContent())!.trim();
+      if ((await page.locator('#stats-list tr', { hasText: name }).count()) === 0) {
+        racerName = name;
+        await page.selectOption('#stats-racer-select', { index: i });
+        break;
+      }
+    }
+    expect(racerName).not.toBe('');
+
+    await page.fill('#stats-races', '4');
+    await page.fill('#stats-gold', '1');
+    await page.fill('#stats-silver', '0');
+    await page.fill('#stats-bronze', '0');
+    await page.fill('#stats-fastest-laps', '1');
+    await page.fill('#stats-dnf', '0');
+    await page.fill('#stats-dns', '0');
+    await page.fill('#stats-spins', '3');
+    await page.fill('#stats-overheated', '2');
+
+    await page.click('#stats-form button[type="submit"]');
+    await page.waitForTimeout(1000);
+
+    // The racer's row shows spins and overheated. Body cells are: name, races,
+    // gold/silver/bronze (merged), fastest laps, dnf, dns, spins, overheated, actions.
+    const row = page.locator('#stats-list tr', { hasText: racerName }).first();
+    await expect(row).toBeVisible({ timeout: 10000 });
+    const cells = row.locator('td');
+    expect(await cells.nth(6).textContent()).toContain('3');
+    expect(await cells.nth(7).textContent()).toContain('2');
+  });
+
+  test('should edit stats via modal and re-render spins and overheated', async ({ page }) => {
+    await openSeasonStats(page);
+
+    const editBtn = page.locator('#stats-list .btn-outline-primary').first();
+    await expect(editBtn).toBeVisible({ timeout: 10000 });
+    await editBtn.click();
+    await page.waitForSelector('#statsModal.show', { timeout: 5000 });
+
+    // Modal should prefill spins/overheated from the selected driver
+    await expect(page.locator('#stats-spins')).toHaveValue(/^\d+$/);
+    await expect(page.locator('#stats-overheated')).toHaveValue(/^\d+$/);
+
+    await page.fill('#stats-spins', '8');
+    await page.fill('#stats-overheated', '4');
+    await page.click('#stats-form button[type="submit"]');
+    await page.waitForTimeout(1000);
+
+    // The edited row reflects the new values (spins=td6, overheated=td7).
+    const row = page.locator('#stats-list tr').first();
+    const cells = row.locator('td');
+    expect(await cells.nth(6).textContent()).toContain('8');
+    expect(await cells.nth(7).textContent()).toContain('4');
+  });
+});
+
 test.describe.skip('Admin Stats CRUD', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
