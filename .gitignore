@@ -18,3 +18,5 @@ tools/
 media/backups/
 backups/
 docs/*.md
+openspec/
+.opencode/
