@@ -115,7 +115,6 @@
                                 <th>Track</th>
                                 <th>Races</th>
                                 <th>Winner</th>
-                                <th>Avg Lap Time</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -127,17 +126,7 @@
 </div>
 
 <div class="row g-4 mb-5">
-    <div class="col-lg-6">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0">
-                <h5 class="mb-0"><i class="fa-solid fa-chart-bar me-2"></i>Lap Time Trends</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="laptime-chart" height="250"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6">
+    <div class="col-lg-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent border-0">
                 <h5 class="mb-0"><i class="fa-solid fa-building-columns me-2"></i>Championship Battle</h5>
@@ -185,65 +174,8 @@
     </div>
 </div>
 
-<div class="row g-4 mb-5">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-medal me-2"></i>Most Golds</h5></div>
-            <div class="card-body p-0" id="most-golds-body">
-                <p class="text-center text-muted py-3">No data yet</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-star me-2"></i>Most Silvers</h5></div>
-            <div class="card-body p-0" id="most-silvers-body">
-                <p class="text-center text-muted py-3">No data yet</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4 mb-5">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-stopwatch me-2"></i>Fastest Laps</h5></div>
-            <div class="card-body p-0" id="fastest-laps-body">
-                <p class="text-center text-muted py-3">No data yet</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-bolt me-2"></i>Most Poles</h5></div>
-            <div class="card-body p-0" id="most-poles-body">
-                <p class="text-center text-muted py-3">No data yet</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4 mb-5">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-road me-2"></i>Track Performance</h5></div>
-            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="track-performance-body">
-                <p class="text-center text-muted py-3">No data yet</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-arrow-trend-up me-2"></i>Points Progression</h5></div>
-            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="points-progression-body">
-                <p class="text-center text-muted py-3">No data yet</p>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="row g-4 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="card">
             <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-gauge-high me-2"></i>Qualifying vs Race</h5></div>
             <div class="card-body" style="max-height:300px;overflow-y:auto;" id="qualifying-delta-body">
@@ -251,18 +183,10 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="card">
             <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-chart-line me-2"></i>Consistency</h5></div>
             <div class="card-body" style="max-height:300px;overflow-y:auto;" id="consistency-body">
-                <p class="text-center text-muted py-3">No data yet</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-fire me-2"></i>Streaks</h5></div>
-            <div class="card-body" style="max-height:300px;overflow-y:auto;" id="streaks-body">
                 <p class="text-center text-muted py-3">No data yet</p>
             </div>
         </div>

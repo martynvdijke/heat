@@ -1,6 +1,6 @@
 import './theme';
 declare const Chart: any;
-let pointsChart: any, winsChart: any, lapTimeChart: any, battleChart: any;
+let pointsChart: any, winsChart: any, battleChart: any;
 
 function getCanvas(id: string): CanvasRenderingContext2D | null {
     const el = document.getElementById(id) as HTMLCanvasElement | null;
@@ -59,7 +59,7 @@ async function loadSeasonStats(seasonId?: string): Promise<void> {
             renderTrackStatsTable(allScores);
         } else {
             document.getElementById('championships')!.textContent = '0';
-            document.querySelector('#track-stats-table tbody')!.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No round snapshots yet</td></tr>';
+            document.querySelector('#track-stats-table tbody')!.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No round snapshots yet</td></tr>';
         }
 
         if (hasDrivers) {
@@ -67,7 +67,7 @@ async function loadSeasonStats(seasonId?: string): Promise<void> {
             renderWinsChart(driverData, racers);
             renderPointsLeaderboard(allStats, racers, allScores);
         } else {
-            document.querySelector('#driver-stats-table tbody')!.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No driver stats yet</td></tr>';
+            document.querySelector('#driver-stats-table tbody')!.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No driver stats yet</td></tr>';
             document.querySelector('#points-body')!.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No points data yet</td></tr>';
         }
     } catch (err) {
@@ -244,7 +244,6 @@ function renderTrackStatsTable(allScores: any[]): void {
             <td>${t.track}</td>
             <td>${t.races}</td>
             <td>${t.winner || '-'}</td>
-            <td>--:--</td>
         </tr>
     `).join('');
 }

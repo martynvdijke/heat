@@ -313,12 +313,39 @@ test.describe('Public Stats Page', () => {
     const charts = [
       page.locator('#points-chart'),
       page.locator('#wins-chart'),
-      page.locator('#laptime-chart'),
       page.locator('#battle-chart'),
     ];
     for (const chart of charts) {
       await expect(chart).toBeAttached();
     }
+  });
+
+  test('should not render dead or unused sections', async ({ page }) => {
+    await page.goto('/stats.html');
+    await page.waitForTimeout(1500);
+
+    // Removed deeper-stats cards
+    const deadBodies = [
+      '#most-golds-body',
+      '#most-silvers-body',
+      '#fastest-laps-body',
+      '#most-poles-body',
+      '#track-performance-body',
+      '#points-progression-body',
+      '#streaks-body',
+    ];
+    for (const sel of deadBodies) {
+      await expect(page.locator(sel)).toHaveCount(0);
+    }
+
+    // Removed Lap Time Trends chart
+    await expect(page.locator('#laptime-chart')).toHaveCount(0);
+
+    // Track Statistics has no Avg Lap Time column (Track, Races, Winner only)
+    const trackHeaders = page.locator('#track-stats-table thead th');
+    await expect(trackHeaders).toHaveCount(3);
+    const trackHeaderTexts = await trackHeaders.allTextContents();
+    expect(trackHeaderTexts.join(' ').toLowerCase()).not.toContain('avg lap time');
   });
 
   test('should display track statistics table', async ({ page }) => {
