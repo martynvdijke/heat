@@ -201,6 +201,7 @@ func (h *Handler) HtmxRacersDelete(c *gin.Context) {
 		return
 	}
 	h.S.DB.Exec("DELETE FROM racers WHERE id=?", id)
+	h.S.DB.Exec("DELETE FROM racer_stats WHERE racer_id=?", id)
 	h.S.BroadcastRacers()
 	h.HtmxRacersTable(c)
 }

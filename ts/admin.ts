@@ -485,6 +485,15 @@ function openStatsModal(stat?: AdminStats): void {
             `<option value="${r.id}" ${r.id === currentRacerId ? 'selected' : ''}>${escapeHtml(r.name)}</option>`
         ).join('');
 
+    // If the stats row references a racer that no longer exists (e.g. deleted
+    // after a round finalize upserted its stats), keep the modal editable by
+    // re-adding that racer as a selected option. Without this the submit guard
+    // below would silently drop the save because no option matches.
+    if (currentRacerId && !adminRacers.some(r => r.id === currentRacerId)) {
+        select.insertAdjacentHTML('beforeend',
+            `<option value="${currentRacerId}" selected>${escapeHtml(racerNameById(currentRacerId))}</option>`);
+    }
+
     if (stat) {
         (document.getElementById('stats-id') as HTMLInputElement).value = String(stat.id);
         (document.getElementById('stats-racer-id') as HTMLInputElement).value = String(stat.racer_id);

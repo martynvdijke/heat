@@ -7,11 +7,28 @@ test.describe.serial('Admin Season CRUD', () => {
 
   const seasonName = `E2E-Season-${Date.now()}`;
 
+  // Opens the Season tab and activates the Seasons subtab. The tab click can
+  // be lost if it races htmx booting, so retry until the subtab is mounted
+  // (same pattern as openSeasonStats below).
+  async function openSeasonsSubtab(page: Page) {
+    const seasonTab = page.locator('button[data-tab-id="season"]');
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await seasonTab.click();
+      try {
+        await expect(seasonTab).toHaveClass(/active/, { timeout: 5000 });
+        await expect(page.locator('#seasons-subtab')).toBeAttached({ timeout: 5000 });
+        await page.click('#seasons-subtab');
+        return;
+      } catch (err) {
+        if (attempt === 2) throw err;
+        await page.waitForTimeout(500);
+      }
+    }
+  }
+
   test('should create a season', async ({ page }) => {
     // Navigate to Season tab, then click Seasons subtab
-    await page.click('button[data-tab-id="season"]');
-    await page.waitForTimeout(500);
-    await page.click('#seasons-subtab');
+    await openSeasonsSubtab(page);
     await page.waitForTimeout(500);
 
     // Click "New Season" button (HTMX loads form into modal)
@@ -27,9 +44,7 @@ test.describe.serial('Admin Season CRUD', () => {
   });
 
   test('should show season in dropdown', async ({ page }) => {
-    await page.click('button[data-tab-id="season"]');
-    await page.waitForTimeout(500);
-    await page.click('#seasons-subtab');
+    await openSeasonsSubtab(page);
     await page.waitForTimeout(500);
 
     const select = page.locator('#season-rounds-select');
@@ -37,9 +52,7 @@ test.describe.serial('Admin Season CRUD', () => {
   });
 
   test('should archive the season', async ({ page }) => {
-    await page.click('button[data-tab-id="season"]');
-    await page.waitForTimeout(500);
-    await page.click('#seasons-subtab');
+    await openSeasonsSubtab(page);
     await page.waitForTimeout(500);
 
     const archiveBtn = page.locator('#seasons-list tr', { hasText: seasonName }).locator('button.btn-outline-warning');
@@ -51,9 +64,7 @@ test.describe.serial('Admin Season CRUD', () => {
   });
 
   test('should delete the season', async ({ page }) => {
-    await page.click('button[data-tab-id="season"]');
-    await page.waitForTimeout(500);
-    await page.click('#seasons-subtab');
+    await openSeasonsSubtab(page);
     await page.waitForTimeout(500);
 
     const deleteBtn = page.locator('#seasons-list tr', { hasText: seasonName }).locator('button.btn-outline-danger');
@@ -68,6 +79,11 @@ test.describe.serial('Admin Season Stats Spins/Overheated', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
+
+  // Racer picked by the create test; the edit test reuses it so it always
+  // edits the row this describe just created instead of blindly taking the
+  // first row (which may be an orphaned stats row from another spec).
+  let racerName = '';
 
   // Opens the Season tab (hx-get loaded) and activates the Stats subtab. The
   // tab click can be lost if it races htmx booting, so retry until mounted, and
@@ -110,7 +126,7 @@ test.describe.serial('Admin Season Stats Spins/Overheated', () => {
     const options = page.locator('#stats-racer-select option');
     const count = await options.count();
     expect(count).toBeGreaterThanOrEqual(2);
-    let racerName = '';
+    racerName = '';
     for (let i = 1; i < count; i++) {
       const name = (await options.nth(i).textContent())!.trim();
       if ((await page.locator('#stats-list tr', { hasText: name }).count()) === 0) {
@@ -146,9 +162,11 @@ test.describe.serial('Admin Season Stats Spins/Overheated', () => {
   test('should edit stats via modal and re-render spins and overheated', async ({ page }) => {
     await openSeasonStats(page);
 
-    const editBtn = page.locator('#stats-list .btn-outline-primary').first();
-    await expect(editBtn).toBeVisible({ timeout: 10000 });
-    await editBtn.click();
+    // Edit the row created by the previous test (identified by racer name).
+    expect(racerName).not.toBe('');
+    const row = page.locator('#stats-list tr', { hasText: racerName }).first();
+    await expect(row).toBeVisible({ timeout: 10000 });
+    await row.locator('.btn-outline-primary').click();
     await page.waitForSelector('#statsModal.show', { timeout: 5000 });
 
     // Modal should prefill spins/overheated from the selected driver
@@ -161,8 +179,9 @@ test.describe.serial('Admin Season Stats Spins/Overheated', () => {
     await page.waitForTimeout(1000);
 
     // The edited row reflects the new values (spins=td6, overheated=td7).
-    const row = page.locator('#stats-list tr').first();
-    const cells = row.locator('td');
+    const editedRow = page.locator('#stats-list tr', { hasText: racerName }).first();
+    await expect(editedRow).toBeVisible({ timeout: 10000 });
+    const cells = editedRow.locator('td');
     expect(await cells.nth(6).textContent()).toContain('8');
     expect(await cells.nth(7).textContent()).toContain('4');
   });
