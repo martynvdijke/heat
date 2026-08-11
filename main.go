@@ -381,6 +381,8 @@ func main() {
 		admin.PUT("/extensions", h.UpdateExtension)
 		admin.DELETE("/extensions", h.DeleteExtension)
 		admin.GET("/extensions/detail", h.GetExtensionDetail)
+		admin.GET("/extensions/owned", h.GetOwnedExtensions)
+		admin.PUT("/extensions/owned", h.SetOwnedExtensions)
 		admin.GET("/modules", h.GetModules)
 		admin.POST("/modules", h.CreateModule)
 		admin.PUT("/modules", h.UpdateModule)

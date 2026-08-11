@@ -119,27 +119,37 @@ function populateTrackMetaSelects(): void {
 
 async function loadTracks(): Promise<void> {
     try {
-        const res = await fetch('/api/tracks');
-        const tracks: AdminTrack[] = await res.json();
+        // Full catalog for management (track list, board game editor); the race-day
+        // selector only offers tracks the group owns.
+        const [fullRes, ownedRes] = await Promise.all([
+            fetch('/api/tracks'),
+            fetch('/api/tracks?owned=1'),
+        ]);
+        const tracks: AdminTrack[] = await fullRes.json();
+        const owned: AdminTrack[] = await ownedRes.json();
         adminTracks = tracks;
         allTracks = tracks;
-        const selector = document.getElementById('track-select') as HTMLSelectElement;
-        const boardGame = tracks.filter(t => t.is_board_game);
-        const custom = tracks.filter(t => !t.is_board_game);
-        selector.innerHTML = '<option value="">Choose a circuit...</option>';
-        if (boardGame.length) {
-            selector.innerHTML += '<optgroup label="Board Game">' +
-                boardGame.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('') +
-                '</optgroup>';
-        }
-        if (custom.length) {
-            selector.innerHTML += '<optgroup label="Custom">' +
-                custom.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('') +
-                '</optgroup>';
-        }
+        populateRaceTrackSelect(owned);
         renderTrackList();
         renderBoardGameEditor();
     } catch (e) { console.error('Failed to load tracks', e); }
+}
+
+function populateRaceTrackSelect(tracks: AdminTrack[]): void {
+    const selector = document.getElementById('track-select') as HTMLSelectElement;
+    const boardGame = tracks.filter(t => t.is_board_game);
+    const custom = tracks.filter(t => !t.is_board_game);
+    selector.innerHTML = '<option value="">Choose a circuit...</option>';
+    if (boardGame.length) {
+        selector.innerHTML += '<optgroup label="Board Game">' +
+            boardGame.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('') +
+            '</optgroup>';
+    }
+    if (custom.length) {
+        selector.innerHTML += '<optgroup label="Custom">' +
+            custom.map(t => `<option value="${t.id}">${t.country} - ${t.name}</option>`).join('') +
+            '</optgroup>';
+    }
 }
 
 function renderBoardGameEditor(): void {

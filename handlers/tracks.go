@@ -94,8 +94,32 @@ func (h *Handler) boardGameTrackSet() map[string]bool {
 	return set
 }
 
+// trackToModel maps an Ent track row to the shared models.Track shape.
+func trackToModel(t *ent.Track, boardGame map[string]bool) models.Track {
+	return models.Track{
+		ID:             t.ID,
+		Name:           t.Name,
+		Country:        t.Country,
+		GeoJSON:        t.Geojson,
+		Length:         t.LengthKm,
+		LapRecord:      t.LapRecord,
+		UseMapImage:    t.UseMapImage == 1,
+		MapImageURL:    t.MapImageURL,
+		RefreshGeoJSON: t.RefreshGeojson == 1,
+		ExtensionID:    t.ExtensionID,
+		ModuleID:       t.ModuleID,
+		IsBoardGame:    boardGame[t.ID],
+	}
+}
+
 func (h *Handler) GetTracks(c *gin.Context) {
-	tracks, err := h.S.Ent.Track.Query().Order(track.ByName()).All(c.Request.Context())
+	query := h.S.Ent.Track.Query().Order(track.ByName())
+	// owned=1 restricts the list to content the group owns (selection UIs).
+	// Without the param the full catalog is returned (management/catalog use).
+	if c.Query("owned") == "1" {
+		query = query.Where(track.ExtensionIDIn(h.ownedExtensionIDs()...))
+	}
+	tracks, err := query.All(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -104,20 +128,7 @@ func (h *Handler) GetTracks(c *gin.Context) {
 	boardGame := h.boardGameTrackSet()
 	result := make([]models.Track, len(tracks))
 	for i, t := range tracks {
-		result[i] = models.Track{
-			ID:             t.ID,
-			Name:           t.Name,
-			Country:        t.Country,
-			GeoJSON:        t.Geojson,
-			Length:         t.LengthKm,
-			LapRecord:      t.LapRecord,
-			UseMapImage:    t.UseMapImage == 1,
-			MapImageURL:    t.MapImageURL,
-			RefreshGeoJSON: t.RefreshGeojson == 1,
-			ExtensionID:    t.ExtensionID,
-			ModuleID:       t.ModuleID,
-			IsBoardGame:    boardGame[t.ID],
-		}
+		result[i] = trackToModel(t, boardGame)
 	}
 	c.JSON(http.StatusOK, result)
 }

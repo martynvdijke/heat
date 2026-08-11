@@ -611,6 +611,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/extensions/owned": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Return the ids of the extensions the group owns; the Base Game is always included",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "List owned extensions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Full-replace the owned extension set; the Base Game is always re-added and unknown ids are ignored",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Set owned extensions",
+                "responses": {}
+            }
+        },
         "/api/flags": {
             "post": {
                 "description": "Send a flag command (safety car, red, blue, black/white)",
@@ -2541,10 +2588,7 @@ const docTemplate = `{
                 "legends": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        }
+                        "$ref": "#/definitions/models.LegendAbility"
                     }
                 },
                 "modules": {
@@ -2560,19 +2604,13 @@ const docTemplate = `{
                 "tracks": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        }
+                        "$ref": "#/definitions/models.Track"
                     }
                 },
                 "upgrades": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        }
+                        "$ref": "#/definitions/models.UpgradeCard"
                     }
                 }
             }
@@ -2597,6 +2635,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "owned": {
+                    "type": "boolean"
                 },
                 "sort_order": {
                     "type": "integer"
@@ -2750,6 +2791,29 @@ const docTemplate = `{
                 },
                 "races": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.LegendAbility": {
+            "type": "object",
+            "properties": {
+                "ability_type": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "extension_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "racer_name": {
+                    "type": "string"
                 }
             }
         },
@@ -3103,6 +3167,47 @@ const docTemplate = `{
                 }
             }
         },
+        "models.Track": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "type": "string"
+                },
+                "extension_id": {
+                    "type": "integer"
+                },
+                "geojson": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_board_game": {
+                    "type": "boolean"
+                },
+                "lap_record": {
+                    "type": "string"
+                },
+                "length_km": {
+                    "type": "integer"
+                },
+                "map_image_url": {
+                    "type": "string"
+                },
+                "module_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "refresh_geojson": {
+                    "type": "boolean"
+                },
+                "use_map_image": {
+                    "type": "boolean"
+                }
+            }
+        },
         "models.TrackStats": {
             "type": "object",
             "properties": {
@@ -3139,6 +3244,34 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "website_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UpgradeCard": {
+            "type": "object",
+            "properties": {
+                "card_type": {
+                    "description": "upgrade, legendary, sponsorship",
+                    "type": "string"
+                },
+                "cost": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "effects": {
+                    "description": "JSON string of effects",
+                    "type": "string"
+                },
+                "extension_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }

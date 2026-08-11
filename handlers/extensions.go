@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
+	"heat/ent/track"
+	"heat/models"
 )
 
 // ExtensionSummary is a compact extension row with content counts for the tracker UI.
@@ -18,11 +22,15 @@ type ExtensionSummary struct {
 	UpgradeCount int    `json:"upgrade_count"`
 	LegendCount  int    `json:"legend_count"`
 	ModuleCount  int    `json:"module_count"`
+	Owned        bool   `json:"owned"`
 }
 
 // queryExtensions returns all extensions ordered for dropdowns (sort_order, name).
 func (h *Handler) queryExtensions() []ExtensionSummary {
-	rows, err := h.S.DB.Query("SELECT id, name, description, is_base, sort_order FROM extensions ORDER BY sort_order, name")
+	rows, err := h.S.DB.Query(`SELECT e.id, e.name, e.description, e.is_base, e.sort_order,
+		(oe.extension_id IS NOT NULL) AS owned
+		FROM extensions e LEFT JOIN owned_extensions oe ON oe.extension_id = e.id
+		ORDER BY e.sort_order, e.name`)
 	if err != nil {
 		return []ExtensionSummary{}
 	}
@@ -31,7 +39,7 @@ func (h *Handler) queryExtensions() []ExtensionSummary {
 	extensions := make([]ExtensionSummary, 0)
 	for rows.Next() {
 		var e ExtensionSummary
-		if err := rows.Scan(&e.ID, &e.Name, &e.Description, &e.IsBase, &e.SortOrder); err != nil {
+		if err := rows.Scan(&e.ID, &e.Name, &e.Description, &e.IsBase, &e.SortOrder, &e.Owned); err != nil {
 			continue
 		}
 		extensions = append(extensions, e)
@@ -39,21 +47,16 @@ func (h *Handler) queryExtensions() []ExtensionSummary {
 	return extensions
 }
 
-// queryModuleTracks returns the tracks attributed to a module (id, name, country).
-func (h *Handler) queryModuleTracks(moduleID int) []map[string]string {
-	tracks := make([]map[string]string, 0)
-	rows, err := h.S.DB.Query("SELECT id, name, country FROM tracks WHERE module_id = ? ORDER BY name", moduleID)
+// queryModuleTracks returns the full track shape for the tracks attributed to a module.
+func (h *Handler) queryModuleTracks(moduleID int) []models.Track {
+	tracks := make([]models.Track, 0)
+	entTracks, err := h.S.Ent.Track.Query().Where(track.ModuleID(moduleID)).Order(track.ByName()).All(context.Background())
 	if err != nil {
 		return tracks
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var t struct {
-			ID, Name, Country string
-		}
-		if rows.Scan(&t.ID, &t.Name, &t.Country) == nil {
-			tracks = append(tracks, map[string]string{"id": t.ID, "name": t.Name, "country": t.Country})
-		}
+	boardGame := h.boardGameTrackSet()
+	for _, t := range entTracks {
+		tracks = append(tracks, trackToModel(t, boardGame))
 	}
 	return tracks
 }
@@ -70,8 +73,10 @@ func (h *Handler) GetExtensions(c *gin.Context) {
 		(SELECT COUNT(*) FROM tracks t WHERE t.extension_id = e.id) AS track_count,
 		(SELECT COUNT(*) FROM upgrade_cards u WHERE u.extension_id = e.id) AS upgrade_count,
 		(SELECT COUNT(*) FROM legend_abilities l WHERE l.extension_id = e.id) AS legend_count,
-		(SELECT COUNT(*) FROM modules m WHERE m.extension_id = e.id) AS module_count
-		FROM extensions e ORDER BY e.sort_order, e.name`)
+		(SELECT COUNT(*) FROM modules m WHERE m.extension_id = e.id) AS module_count,
+		(oe.extension_id IS NOT NULL) AS owned
+		FROM extensions e LEFT JOIN owned_extensions oe ON oe.extension_id = e.id
+		ORDER BY e.sort_order, e.name`)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -82,7 +87,7 @@ func (h *Handler) GetExtensions(c *gin.Context) {
 	for rows.Next() {
 		var e ExtensionSummary
 		if err := rows.Scan(&e.ID, &e.Name, &e.Description, &e.IsBase, &e.SortOrder,
-			&e.TrackCount, &e.UpgradeCount, &e.LegendCount, &e.ModuleCount); err != nil {
+			&e.TrackCount, &e.UpgradeCount, &e.LegendCount, &e.ModuleCount, &e.Owned); err != nil {
 			continue
 		}
 		extensions = append(extensions, e)
@@ -182,16 +187,18 @@ func (h *Handler) DeleteExtension(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// ExtensionDetail is the full content breakdown for one extension.
+// ExtensionDetail is the full content breakdown for one extension. Content uses
+// the same shapes as the rest of the site (models.Track, models.UpgradeCard,
+// models.LegendAbility) so the catalog can drive selection lists directly.
 type ExtensionDetail struct {
-	ID          int                 `json:"id"`
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	IsBase      int                 `json:"is_base"`
-	Modules     []map[string]any    `json:"modules"`
-	Tracks      []map[string]string `json:"tracks"`
-	Upgrades    []map[string]string `json:"upgrades"`
-	Legends     []map[string]string `json:"legends"`
+	ID          int                    `json:"id"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	IsBase      int                    `json:"is_base"`
+	Modules     []map[string]any       `json:"modules"`
+	Tracks      []models.Track         `json:"tracks"`
+	Upgrades    []models.UpgradeCard   `json:"upgrades"`
+	Legends     []models.LegendAbility `json:"legends"`
 }
 
 // @Summary Extension detail
@@ -243,49 +250,36 @@ func (h *Handler) GetExtensionDetail(c *gin.Context) {
 		}
 	}
 
-	d.Tracks = make([]map[string]string, 0)
-	rows, err = h.S.DB.Query("SELECT id, name, country FROM tracks WHERE extension_id = ? ORDER BY name", id)
+	// Full content shapes (models.Track / UpgradeCard / LegendAbility) so the
+	// catalog can drive selection lists with the same data the rest of the site uses.
+	boardGame := h.boardGameTrackSet()
+	entTracks, err := h.S.Ent.Track.Query().Where(track.ExtensionID(id)).Order(track.ByName()).All(c.Request.Context())
+	if err == nil {
+		d.Tracks = make([]models.Track, 0, len(entTracks))
+		for _, t := range entTracks {
+			d.Tracks = append(d.Tracks, trackToModel(t, boardGame))
+		}
+	}
+
+	d.Upgrades = make([]models.UpgradeCard, 0)
+	rows, err = h.S.DB.Query("SELECT id, name, description, card_type, cost, effects, extension_id FROM upgrade_cards WHERE extension_id = ? ORDER BY name", id)
 	if err == nil {
 		for rows.Next() {
-			var t struct {
-				ID, Name, Country string
-			}
-			if rows.Scan(&t.ID, &t.Name, &t.Country) == nil {
-				d.Tracks = append(d.Tracks, map[string]string{"id": t.ID, "name": t.Name, "country": t.Country})
+			var u models.UpgradeCard
+			if rows.Scan(&u.ID, &u.Name, &u.Description, &u.CardType, &u.Cost, &u.Effects, &u.ExtensionID) == nil {
+				d.Upgrades = append(d.Upgrades, u)
 			}
 		}
 		rows.Close()
 	}
 
-	d.Upgrades = make([]map[string]string, 0)
-	rows, err = h.S.DB.Query("SELECT id, name, card_type, cost FROM upgrade_cards WHERE extension_id = ? ORDER BY name", id)
+	d.Legends = make([]models.LegendAbility, 0)
+	rows, err = h.S.DB.Query("SELECT id, name, description, ability_type, racer_name, extension_id FROM legend_abilities WHERE extension_id = ? ORDER BY name", id)
 	if err == nil {
 		for rows.Next() {
-			var u struct {
-				ID       int
-				Name     string
-				CardType string
-				Cost     int
-			}
-			if rows.Scan(&u.ID, &u.Name, &u.CardType, &u.Cost) == nil {
-				d.Upgrades = append(d.Upgrades, map[string]string{"id": strconv.Itoa(u.ID), "name": u.Name, "card_type": u.CardType, "cost": strconv.Itoa(u.Cost)})
-			}
-		}
-		rows.Close()
-	}
-
-	d.Legends = make([]map[string]string, 0)
-	rows, err = h.S.DB.Query("SELECT id, name, ability_type, racer_name FROM legend_abilities WHERE extension_id = ? ORDER BY name", id)
-	if err == nil {
-		for rows.Next() {
-			var l struct {
-				ID          int
-				Name        string
-				AbilityType string
-				RacerName   string
-			}
-			if rows.Scan(&l.ID, &l.Name, &l.AbilityType, &l.RacerName) == nil {
-				d.Legends = append(d.Legends, map[string]string{"id": strconv.Itoa(l.ID), "name": l.Name, "ability_type": l.AbilityType, "racer_name": l.RacerName})
+			var l models.LegendAbility
+			if rows.Scan(&l.ID, &l.Name, &l.Description, &l.AbilityType, &l.RacerName, &l.ExtensionID) == nil {
+				d.Legends = append(d.Legends, l)
 			}
 		}
 		rows.Close()
@@ -469,4 +463,122 @@ func (h *Handler) AssignContentExtension(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+}
+
+// baseExtensionID returns the id of the Base Game extension (is_base = 1),
+// defaulting to 1 when no extension is flagged as base.
+func (h *Handler) baseExtensionID() int {
+	var id int
+	if err := h.S.DB.QueryRow("SELECT id FROM extensions WHERE is_base = 1 ORDER BY id LIMIT 1").Scan(&id); err != nil || id <= 0 {
+		return 1
+	}
+	return id
+}
+
+// ownedExtensionIDs returns the owned extension ids plus 0. Content with
+// extension_id = 0 is normalized to the Base Game and always selectable.
+func (h *Handler) ownedExtensionIDs() []int {
+	ids := []int{0}
+	seen := map[int]bool{0: true}
+	rows, err := h.S.DB.Query("SELECT extension_id FROM owned_extensions")
+	if err != nil {
+		return ids
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		if rows.Scan(&id) == nil && !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+// @Summary List owned extensions
+// @Description Return the ids of the extensions the group owns; the Base Game is always included
+// @Tags Extensions
+// @Produce json
+// @Success 200 {object} map[string][]int
+// @Security cookieAuth
+// @Router /api/extensions/owned [get]
+func (h *Handler) GetOwnedExtensions(c *gin.Context) {
+	ids := make([]int, 0)
+	seen := map[int]bool{}
+	rows, err := h.S.DB.Query("SELECT extension_id FROM owned_extensions")
+	if err == nil {
+		for rows.Next() {
+			var id int
+			if rows.Scan(&id) == nil && !seen[id] {
+				seen[id] = true
+				ids = append(ids, id)
+			}
+		}
+		rows.Close()
+	}
+	base := h.baseExtensionID()
+	if !seen[base] {
+		ids = append(ids, base)
+	}
+	c.JSON(http.StatusOK, gin.H{"owned_ids": ids})
+}
+
+// @Summary Set owned extensions
+// @Description Full-replace the owned extension set; the Base Game is always re-added and unknown ids are ignored
+// @Tags Extensions
+// @Accept json
+// @Security cookieAuth
+// @Router /api/extensions/owned [put]
+func (h *Handler) SetOwnedExtensions(c *gin.Context) {
+	var input struct {
+		OwnedIDs []int `json:"owned_ids"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+	tx, err := h.S.DB.Begin()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec("DELETE FROM owned_extensions"); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	seen := map[int]bool{}
+	for _, id := range input.OwnedIDs {
+		if id <= 0 || seen[id] {
+			continue
+		}
+		// Ignore unknown ids so a stale editor can't reference deleted extensions.
+		var exists int
+		if err := tx.QueryRow("SELECT COUNT(*) FROM extensions WHERE id = ?", id).Scan(&exists); err != nil || exists == 0 {
+			continue
+		}
+		if _, err := tx.Exec("INSERT OR IGNORE INTO owned_extensions (extension_id) VALUES (?)", id); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		seen[id] = true
+	}
+	// The Base Game is always owned, regardless of what was submitted.
+	// Resolve it on the tx so we don't grab a second connection (the test DB
+	// runs with a single connection and would deadlock on the tx below).
+	var base int
+	if err := tx.QueryRow("SELECT id FROM extensions WHERE is_base = 1 ORDER BY id LIMIT 1").Scan(&base); err != nil || base <= 0 {
+		base = 1
+	}
+	if !seen[base] {
+		if _, err := tx.Exec("INSERT OR IGNORE INTO owned_extensions (extension_id) VALUES (?)", base); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }

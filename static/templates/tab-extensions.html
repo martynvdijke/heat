@@ -18,11 +18,12 @@
                                         <th class="text-center">Upgrades</th>
                                         <th class="text-center">Legends</th>
                                         <th class="text-center">Modules</th>
+                                        <th class="text-center">Owned</th>
                                         <th class="text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="extensions-list">
-                                    <tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading extensions...</td></tr>
+                                    <tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading extensions...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -93,7 +94,7 @@
                             var el = document.getElementById('extensions-list');
                             if (!el) return;
                             if (!_exts.length) {
-                                el.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No extensions yet. Create one to get started.</td></tr>';
+                                el.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No extensions yet. Create one to get started.</td></tr>';
                                 return;
                             }
                             el.innerHTML = _exts.map(function(e) {
@@ -104,6 +105,9 @@
                                     '<td class="text-center">' + e.upgrade_count + '</td>' +
                                     '<td class="text-center">' + e.legend_count + '</td>' +
                                     '<td class="text-center">' + e.module_count + '</td>' +
+                                    '<td class="text-center">' +
+                                        '<input type="checkbox" class="form-check-input owned-ext" data-id="' + e.id + '"' + (e.owned ? ' checked' : '') + (e.is_base ? ' disabled' : '') + '>' +
+                                    '</td>' +
                                     '<td class="text-end pe-4">' +
                                         '<button class="btn btn-sm btn-outline-secondary" onclick="loadExtensionDetail(' + e.id + ')" title="Manage content"><i class="fa-solid fa-layer-group"></i></button> ' +
                                         '<button class="btn btn-sm btn-outline-primary" onclick="openExtensionModal(' + e.id + ')" title="Edit"><i class="fa-solid fa-pen"></i></button> ' +
@@ -112,8 +116,20 @@
                             }).join('');
                         }).catch(function(err) {
                             var el = document.getElementById('extensions-list');
-                            if (el) el.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Failed to load: ' + esc(err.message) + '</td></tr>';
+                            if (el) el.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Failed to load: ' + esc(err.message) + '</td></tr>';
                         });
+                    }
+
+                    // Send the full current owned set when a checkbox toggles; the
+                    // server force-adds the Base Game regardless.
+                    function saveOwned() {
+                        var checks = document.querySelectorAll('#extensions-list input.owned-ext');
+                        var ownedIds = [];
+                        checks.forEach(function(c) { if (c.checked) ownedIds.push(parseInt(c.dataset.id)); });
+                        _exts.forEach(function(e) { if (e.is_base && ownedIds.indexOf(e.id) === -1) ownedIds.push(e.id); });
+                        extApi('/api/extensions/owned', 'PUT', { owned_ids: ownedIds }).then(function() {
+                            loadExtensions();
+                        }).catch(function(err) { alert('Failed: ' + err.message); loadExtensions(); });
                     }
 
                     function openExtensionModal(id) {
@@ -171,9 +187,21 @@
 
                             var contentTable = function(title, rows, type) {
                                 var body = (rows || []).map(function(r) {
-                                    return '<tr><td class="ps-4">' + esc(r.name) + (r.country ? ' <span class="text-muted small">(' + esc(r.country) + ')</span>' : '') +
-                                        (r.card_type ? ' <span class="badge bg-secondary">' + esc(r.card_type) + '</span>' : '') +
-                                        (r.racer_name ? ' <span class="text-muted small">' + esc(r.racer_name) + '</span>' : '') + '</td>' +
+                                    var meta = '';
+                                    if (r.country) meta += ' <span class="text-muted small">(' + esc(r.country) + ')</span>';
+                                    if (r.length_km) meta += ' <span class="text-muted small">' + r.length_km + ' km</span>';
+                                    if (r.is_board_game) meta += ' <span class="badge bg-success">Board Game</span>';
+                                    if (r.card_type) meta += ' <span class="badge bg-secondary">' + esc(r.card_type) + '</span>';
+                                    if (r.cost != null) meta += ' <span class="badge bg-info text-dark">cost ' + r.cost + '</span>';
+                                    if (r.ability_type) meta += ' <span class="badge bg-secondary">' + esc(r.ability_type) + '</span>';
+                                    if (r.racer_name) meta += ' <span class="text-muted small">' + esc(r.racer_name) + '</span>';
+                                    var effects = '';
+                                    if (r.effects) {
+                                        var ef = String(r.effects);
+                                        if (ef.length > 80) ef = ef.slice(0, 80) + '\u2026';
+                                        effects = '<div class="small text-muted mt-1">' + esc(ef) + '</div>';
+                                    }
+                                    return '<tr><td class="ps-4">' + esc(r.name) + meta + effects + '</td>' +
                                         '<td class="text-end pe-4"><div class="input-group input-group-sm" style="max-width:260px;margin-left:auto">' +
                                         '<select class="form-select" id="assign-' + type + '-' + esc(r.id) + '">' + extOptions + '</select>' +
                                         '<button class="btn btn-outline-primary" onclick="assignContent(\'' + type + '\', \'' + esc(r.id) + '\', ' + d.id + ')">Move</button>' +
@@ -241,6 +269,15 @@
                             loadExtensionDetail(currentExtId);
                             loadExtensions();
                         }).catch(function(err) { alert('Failed: ' + err.message); });
+                    }
+
+                    // Delegated listener so owned toggles work after every re-render.
+                    var extTable = document.getElementById('extensions-list');
+                    if (extTable && !extTable._ownedBound) {
+                        extTable._ownedBound = true;
+                        extTable.addEventListener('change', function(ev) {
+                            if (ev.target.classList && ev.target.classList.contains('owned-ext')) saveOwned();
+                        });
                     }
 
                     if (document.getElementById('extensions-list')) loadExtensions();

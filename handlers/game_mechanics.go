@@ -346,7 +346,9 @@ func (h *Handler) DeletePlayerUpgrade(c *gin.Context) {
 // Legend Abilities
 
 func (h *Handler) GetLegendAbilities(c *gin.Context) {
-	rows, err := h.S.DB.Query("SELECT id, name, description, ability_type, racer_name, extension_id FROM legend_abilities")
+	// The assignment catalog is restricted to content the group owns.
+	rows, err := h.S.DB.Query(`SELECT id, name, description, ability_type, racer_name, extension_id FROM legend_abilities
+		WHERE extension_id = 0 OR extension_id IN (SELECT extension_id FROM owned_extensions)`)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -446,6 +448,7 @@ func (h *Handler) GetAvailableUpgradesForRacer(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(`SELECT uc.id, uc.name, uc.description, uc.card_type, uc.cost, uc.effects
 		FROM upgrade_cards uc WHERE uc.card_type = 'upgrade'
+		AND (uc.extension_id = 0 OR uc.extension_id IN (SELECT extension_id FROM owned_extensions))
 		AND uc.id NOT IN (
 			SELECT upgrade_id FROM player_upgrades WHERE racer_id = ?
 		) ORDER BY uc.cost`, racerID)

@@ -9,9 +9,7 @@ definitions:
         type: integer
       legends:
         items:
-          additionalProperties:
-            type: string
-          type: object
+          $ref: '#/definitions/models.LegendAbility'
         type: array
       modules:
         items:
@@ -22,15 +20,11 @@ definitions:
         type: string
       tracks:
         items:
-          additionalProperties:
-            type: string
-          type: object
+          $ref: '#/definitions/models.Track'
         type: array
       upgrades:
         items:
-          additionalProperties:
-            type: string
-          type: object
+          $ref: '#/definitions/models.UpgradeCard'
         type: array
     type: object
   handlers.ExtensionSummary:
@@ -47,6 +41,8 @@ definitions:
         type: integer
       name:
         type: string
+      owned:
+        type: boolean
       sort_order:
         type: integer
       track_count:
@@ -147,6 +143,21 @@ definitions:
         type: integer
       races:
         type: integer
+    type: object
+  models.LegendAbility:
+    properties:
+      ability_type:
+        type: string
+      description:
+        type: string
+      extension_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      racer_name:
+        type: string
     type: object
   models.NotificationSettings:
     properties:
@@ -377,6 +388,33 @@ definitions:
       status:
         type: string
     type: object
+  models.Track:
+    properties:
+      country:
+        type: string
+      extension_id:
+        type: integer
+      geojson:
+        type: string
+      id:
+        type: string
+      is_board_game:
+        type: boolean
+      lap_record:
+        type: string
+      length_km:
+        type: integer
+      map_image_url:
+        type: string
+      module_id:
+        type: integer
+      name:
+        type: string
+      refresh_geojson:
+        type: boolean
+      use_map_image:
+        type: boolean
+    type: object
   models.TrackStats:
     properties:
       country:
@@ -401,6 +439,25 @@ definitions:
       url:
         type: string
       website_id:
+        type: string
+    type: object
+  models.UpgradeCard:
+    properties:
+      card_type:
+        description: upgrade, legendary, sponsorship
+        type: string
+      cost:
+        type: integer
+      description:
+        type: string
+      effects:
+        description: JSON string of effects
+        type: string
+      extension_id:
+        type: integer
+      id:
+        type: integer
+      name:
         type: string
     type: object
   models.Upload:
@@ -797,6 +854,37 @@ paths:
       security:
       - cookieAuth: []
       summary: Extension detail
+      tags:
+      - Extensions
+  /api/extensions/owned:
+    get:
+      description: Return the ids of the extensions the group owns; the Base Game
+        is always included
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: integer
+              type: array
+            type: object
+      security:
+      - cookieAuth: []
+      summary: List owned extensions
+      tags:
+      - Extensions
+    put:
+      consumes:
+      - application/json
+      description: Full-replace the owned extension set; the Base Game is always re-added
+        and unknown ids are ignored
+      responses: {}
+      security:
+      - cookieAuth: []
+      summary: Set owned extensions
       tags:
       - Extensions
   /api/flags:

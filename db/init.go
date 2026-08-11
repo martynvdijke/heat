@@ -103,6 +103,12 @@ func Init(s *app.Server) {
 		track_id TEXT PRIMARY KEY
 	)`)
 
+	// Owned extensions: the set of extension packs the group owns. The Base
+	// Game is always owned (seeded below and enforced by the APIs).
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS owned_extensions (
+		extension_id INTEGER PRIMARY KEY
+	)`)
+
 	// Performance indexes for common query patterns
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_id ON race_results(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_race_id ON race_results(race_id)")
@@ -143,6 +149,8 @@ func Init(s *app.Server) {
 	SeedUpgrades()
 	SeedLegendAbilities()
 	SeedExtensions()
+	// Owned extensions: the Base Game is always owned (idempotent)
+	srv.DB.Exec("INSERT OR IGNORE INTO owned_extensions (extension_id) SELECT id FROM extensions WHERE is_base = 1")
 	backfillBaseGameContent()
 	SeedModules()
 	SeedBoardGameTracks()

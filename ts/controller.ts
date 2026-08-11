@@ -31,7 +31,7 @@ function startRaceTimer(): void {
 async function loadControllerData(): Promise<void> {
     const [racersRes, tracksRes] = await Promise.all([
         fetch('/api/racers'),
-        fetch('/api/tracks')
+        fetch('/api/tracks?owned=1')
     ]);
     controllerRacers = await racersRes.json();
     const tracks = await tracksRes.json();
