@@ -1,3 +1,16 @@
+# [1.51.0](https://github.com/martynvdijke/heat/compare/v1.50.2...v1.51.0) (2026-08-11)
+
+
+### Bug Fixes
+
+* make admin season stats e2e tests reliable in release CI ([192511f](https://github.com/martynvdijke/heat/commit/192511fd3da56698dc7276dca1363544e199853d))
+
+
+### Features
+
+* enumerate extension content and filter selections by owned extensions ([c5d6f2c](https://github.com/martynvdijke/heat/commit/c5d6f2c7e504ec08994ad411daf425d827ce7447))
+* show spins and overheated in admin season stats ([f51f83b](https://github.com/martynvdijke/heat/commit/f51f83ba88c02e9608ddf662d379b16a28864649))
+
 ## [1.50.2](https://github.com/martynvdijke/heat/compare/v1.50.1...v1.50.2) (2026-08-10)
 
 
