@@ -617,7 +617,18 @@ func main() {
 		}
 	}
 
-	r.Group("/static", cacheControl("public, max-age=31536000, immutable")).Static("", filepath.Join(server.BasePath, "static"))
+	// Content-hashed vendor assets (see build.mjs) are immutable-safe; everything
+	// else under /static uses stable URLs and must be revalidated — otherwise
+	// returning visitors keep stale bundles (e.g. missing car colors) for a year.
+	cacheControlStatic := func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/static/vendor/") {
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			c.Header("Cache-Control", "no-cache")
+		}
+		c.Next()
+	}
+	r.Group("/static", cacheControlStatic).Static("", filepath.Join(server.BasePath, "static"))
 	r.Group("/media", cacheControl("public, max-age=86400")).Static("", server.MediaPath)
 	r.GET("/sw.js", func(c *gin.Context) {
 		c.Header("Cache-Control", "no-cache")

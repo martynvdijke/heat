@@ -18,6 +18,26 @@ test.describe('Car Color Rendering', () => {
     expect(bg).not.toBe('transparent');
   });
 
+  test('home page standings show the racer\'s exact car color (regression: stale bundle)', async ({ page }) => {
+    // Ground truth from the API: the standings are sorted by points desc, so the
+    // first .standing-item must render the car color of the top-points racer.
+    await page.goto('/');
+    await page.waitForSelector('#standings-container .standing-item');
+
+    const racers = await (await page.request.get('/api/racers')).json();
+    expect(racers.length).toBeGreaterThan(0);
+
+    const firstItem = page.locator('#standings-container .standing-item').first();
+    const shownName = (await firstItem.locator('.driver').innerText()).trim().toUpperCase();
+    const racer = racers.find((r: any) => r.name.toUpperCase() === shownName);
+    expect(racer, `standings racer "${shownName}" should exist in /api/racers`).toBeTruthy();
+
+    const bg = await firstItem.locator('.color-indicator').first().evaluate(el => getComputedStyle(el).backgroundColor);
+    // The rendered color must be exactly the racer's car color (normalized), not
+    // transparent, not the #cccccc fallback, not a stale bundle without the dot.
+    expect(bg).toBe(hexToRgb(normalizeColor(racer.car_color)));
+  });
+
   test('should display custom hex car color in standings container', async ({ page }) => {
     // Create a racer with a distinct hex color directly via API
     await loginAsAdmin(page);
@@ -205,6 +225,35 @@ test.describe('Leaderboard GAP column removal', () => {
     await expect(carCell.locator('.color-indicator').first()).toBeVisible();
   });
 });
+
+// Mirrors ts/color.ts normalizeHex so the regression test asserts the exact
+// color the frontend is expected to render.
+const NAMED_COLORS: Record<string, string> = {
+  red: '#ff4444',
+  blue: '#4444ff',
+  green: '#44ff44',
+  yellow: '#ffff44',
+  grey: '#aaaaaa',
+  silver: '#aaaaaa',
+  black: '#333333',
+  purple: '#9b59b6',
+  orange: '#e67e22',
+};
+
+function normalizeColor(color: string): string {
+  if (!color) return '#cccccc';
+  const trimmed = color.trim();
+  const named = NAMED_COLORS[trimmed.toLowerCase()];
+  if (named) return named;
+  const hex = trimmed.startsWith('#') ? trimmed : '#' + trimmed;
+  return /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : '#cccccc';
+}
+
+function hexToRgb(hex: string): string {
+  const m = /^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/.exec(hex);
+  if (!m) return '';
+  return `rgb(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)})`;
+}
 
 // Reuse helpers from admin.spec.ts (same pattern)
 async function loginAsAdmin(page: Page) {

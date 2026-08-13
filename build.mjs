@@ -94,9 +94,21 @@ async function buildVendor() {
       manifest.adminNavCss,
     ].filter(Boolean);
     swTemplate = swTemplate.replace('__PRECACHE_URLS__', JSON.stringify(precacheUrls, null, 2));
-    swTemplate = swTemplate.replaceAll('__CACHE_VERSION__', 'heat-cache-v4');
+    // Content-derived cache version: changes whenever any page bundle or vendor asset
+    // changes, so sw.js bytes change on every frontend update. Browsers then install
+    // the new service worker, which purges the old cache (see activate handler) —
+    // stale bundles can no longer be served cache-first forever.
+    const bundleHashes = fs.readdirSync('static/js')
+      .filter(f => f.endsWith('.js') && !f.endsWith('.map'))
+      .sort()
+      .map(f => crypto.createHash('sha256').update(fs.readFileSync(path.join('static/js', f))).digest('hex').slice(0, 8))
+      .join('');
+    const cacheVersion = 'heat-cache-' + crypto.createHash('sha256')
+      .update(bundleHashes + JSON.stringify(precacheUrls))
+      .digest('hex').slice(0, 12);
+    swTemplate = swTemplate.replaceAll('__CACHE_VERSION__', cacheVersion);
     fs.writeFileSync(swOutPath, swTemplate);
-    console.log(`Generated ${swOutPath} with ${precacheUrls.length} precache URLs`);
+    console.log(`Generated ${swOutPath} (cache ${cacheVersion}) with ${precacheUrls.length} precache URLs`);
   } catch (err) {
     console.error('Error generating sw.js from template:', err.message);
   }

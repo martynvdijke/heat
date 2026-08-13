@@ -23,11 +23,28 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
-  if (requestUrl.origin === location.origin) {
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        return cachedResponse || fetch(event.request);
-      })
-    );
+  if (requestUrl.origin !== location.origin) return;
+  if (event.request.method !== "GET") return;
+
+  // Precached vendor assets are content-hashed and immutable — cache-first is safe.
+  if (PRECACHE_URLS.some((u) => requestUrl.pathname === u)) {
+    event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
+    return;
   }
+
+  // Everything else (page bundles, CSS, HTML, media): network-first so updates are
+  // never hidden by a stale cache. Static assets are cached on the fly for offline
+  // use; navigation and API requests fall back to cache only when offline.
+  const isStatic = requestUrl.pathname.startsWith("/static/");
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok && isStatic) {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
+  );
 });
