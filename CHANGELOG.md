@@ -1,3 +1,10 @@
+## [1.51.1](https://github.com/martynvdijke/heat/compare/v1.51.0...v1.51.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* rotate SW cache and revalidate static assets so car colors always render ([3180901](https://github.com/martynvdijke/heat/commit/3180901ecfc5497399cb2edc2ffe3b158cd177b1))
+
 # [1.51.0](https://github.com/martynvdijke/heat/compare/v1.50.2...v1.51.0) (2026-08-11)
 
 
