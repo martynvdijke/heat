@@ -1,3 +1,15 @@
+# [1.52.0](https://github.com/martynvdijke/heat/compare/v1.51.1...v1.52.0) (2026-08-14)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([3a430c1](https://github.com/martynvdijke/heat/commit/3a430c16db2cd3eb1c1a5736c791a61281c8f87a))
+
+
+### Features
+
+* show spins and overheated over time on stats page ([f70191f](https://github.com/martynvdijke/heat/commit/f70191fd72d5af12fec9e56964aeb76695ef448b))
+
 ## [1.51.1](https://github.com/martynvdijke/heat/compare/v1.51.0...v1.51.1) (2026-08-13)
 
 
