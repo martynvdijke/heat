@@ -490,6 +490,37 @@ test.describe.serial('Stats Page Round-Trip', () => {
     expect(overheated).toBeGreaterThan(0);
   });
 
+  test('should display spins and overheated over time chart and per-round table', async ({ page }) => {
+    expect(seasonId).toBeGreaterThan(0);
+
+    await page.goto('/stats.html');
+    await page.waitForTimeout(1500);
+
+    // Select the season we created
+    const select = page.locator('#stats-season-select');
+    await select.selectOption(String(seasonId));
+    await page.waitForTimeout(1500);
+
+    // Over-time chart canvas is rendered
+    await expect(page.locator('#incidents-chart')).toBeAttached();
+
+    // Per-round table has a row for the finalized round
+    const table = page.locator('#incidents-over-time-table');
+    const rows = table.locator('tbody tr');
+    const rowCount = await rows.count();
+    expect(rowCount).toBeGreaterThan(0);
+
+    // Header has a driver column in addition to "Round"
+    const headerCells = table.locator('thead th');
+    expect(await headerCells.count()).toBeGreaterThanOrEqual(2);
+
+    // Cells hold "spins/overheated" pairs (e.g. "2/1") from the round data
+    const firstRowCells = rows.first().locator('td');
+    const texts = await firstRowCells.allTextContents();
+    const pair = texts.find(t => /^\d+\/\d+$/.test(t.trim()));
+    expect(pair).toBeDefined();
+  });
+
   test('should verify points leaderboard shows season data from rounds', async ({ page }) => {
     expect(seasonId).toBeGreaterThan(0);
 

@@ -129,6 +129,32 @@
     <div class="col-lg-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="fa-solid fa-rotate me-2"></i>Spins &amp; Overheated Over Time</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="incidents-chart" height="250"></canvas>
+                <p class="small text-muted mt-3 mb-2">Each cell shows spins / overheated for that driver in that round.</p>
+                <div class="table-responsive">
+                    <table class="table" id="incidents-over-time-table">
+                        <thead>
+                            <tr>
+                                <th>Round</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="2" class="text-center text-muted py-4">No round snapshots yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
                 <h5 class="mb-0"><i class="fa-solid fa-building-columns me-2"></i>Championship Battle</h5>
             </div>
             <div class="card-body">

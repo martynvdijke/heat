@@ -1,6 +1,7 @@
 import './theme';
+import { escapeHtml } from './toast';
 declare const Chart: any;
-let pointsChart: any, winsChart: any, battleChart: any;
+let pointsChart: any, winsChart: any, battleChart: any, incidentsChart: any;
 
 function getCanvas(id: string): CanvasRenderingContext2D | null {
     const el = document.getElementById(id) as HTMLCanvasElement | null;
@@ -57,9 +58,11 @@ async function loadSeasonStats(seasonId?: string): Promise<void> {
             renderPointsChart(snapshots, allScores);
             renderBattleChart(allScores);
             renderTrackStatsTable(allScores);
+            renderIncidentsOverTime(snapshots, allScores);
         } else {
             document.getElementById('championships')!.textContent = '0';
             document.querySelector('#track-stats-table tbody')!.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No round snapshots yet</td></tr>';
+            document.querySelector('#incidents-over-time-table tbody')!.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">No round snapshots yet</td></tr>';
         }
 
         if (hasDrivers) {
@@ -246,6 +249,80 @@ function renderTrackStatsTable(allScores: any[]): void {
             <td>${t.winner || '-'}</td>
         </tr>
     `).join('');
+}
+
+function renderIncidentsOverTime(snapshots: any[], allScores: any[]): void {
+    // Chart: season-wide spins and overheated totals per round
+    const ctx = getCanvas('incidents-chart');
+    if (ctx) {
+        const labels = snapshots.map((s: any) => s.race_name || `R${s.round}`);
+        const roundTotals = allScores.map((snap: any) => {
+            let spins = 0, overheated = 0;
+            (snap.scores || []).forEach((sc: any) => {
+                spins += sc.spins || 0;
+                overheated += sc.overheated || 0;
+            });
+            return { spins, overheated };
+        });
+
+        if (incidentsChart) incidentsChart.destroy();
+        incidentsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Spins', data: roundTotals.map((t: any) => t.spins), borderColor: '#4ecdc4', backgroundColor: '#4ecdc420', fill: true, tension: 0.4 },
+                    { label: 'Overheated', data: roundTotals.map((t: any) => t.overheated), borderColor: '#e74c3c', backgroundColor: '#e74c3c20', fill: true, tension: 0.4 },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } } },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Incidents' } },
+                    x: { title: { display: true, text: 'Round' } },
+                },
+            },
+        });
+    }
+
+    // Table: per driver per round, cell shows "spins/overheated"
+    const tbody = document.querySelector('#incidents-over-time-table tbody')!;
+    const thead = document.querySelector('#incidents-over-time-table thead tr')!;
+
+    const driverOrder: { id: number; name: string; pts: number }[] = [];
+    allScores.forEach((snap: any) => {
+        (snap.scores || []).forEach((sc: any) => {
+            if (!sc.racer_id) return;
+            const existing = driverOrder.find((d) => d.id === sc.racer_id);
+            if (existing) {
+                existing.pts += sc.points || 0;
+            } else {
+                driverOrder.push({ id: sc.racer_id, name: sc.racer_name || `Racer #${sc.racer_id}`, pts: sc.points || 0 });
+            }
+        });
+    });
+    driverOrder.sort((a, b) => b.pts - a.pts);
+
+    thead.innerHTML = '<th>Round</th>' + driverOrder.map((d) => `<th>${escapeHtml(d.name)}</th>`).join('');
+
+    if (driverOrder.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">No round snapshots yet</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = allScores.map((snap: any, i: number) => {
+        const label = snap.race_name || `Round ${i + 1}`;
+        const byRacer: Record<number, any> = {};
+        (snap.scores || []).forEach((sc: any) => { byRacer[sc.racer_id] = sc; });
+        const cells = driverOrder.map((d) => {
+            const sc = byRacer[d.id];
+            if (!sc) return '<td class="text-muted">–</td>';
+            return `<td title="${escapeHtml(d.name)}: ${sc.spins || 0} spins, ${sc.overheated || 0} overheated">${sc.spins || 0}/${sc.overheated || 0}</td>`;
+        }).join('');
+        return `<tr><td class="fw-bold">${escapeHtml(label)}</td>${cells}</tr>`;
+    }).join('');
 }
 
 function renderBattleChart(allScores: any[]): void {
