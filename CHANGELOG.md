@@ -1,3 +1,10 @@
+## [1.52.4](https://github.com/martynvdijke/heat/compare/v1.52.3...v1.52.4) (2026-08-15)
+
+
+### Bug Fixes
+
+* make TRMNL plugin layouts compact and readable on 800x480 ([8c267dd](https://github.com/martynvdijke/heat/commit/8c267dd269ca5b7c91771671329293cb69322be3))
+
 ## [1.52.3](https://github.com/martynvdijke/heat/compare/v1.52.2...v1.52.3) (2026-08-15)
 
 
