@@ -1,3 +1,10 @@
+## [1.54.1](https://github.com/martynvdijke/heat/compare/v1.54.0...v1.54.1) (2026-08-15)
+
+
+### Bug Fixes
+
+* **trmnl:** pin plugin id 443886 ([2efbc6b](https://github.com/martynvdijke/heat/commit/2efbc6bd36814b3868fab63f0898175525370a27))
+
 # [1.54.0](https://github.com/martynvdijke/heat/compare/v1.53.0...v1.54.0) (2026-08-15)
 
 
