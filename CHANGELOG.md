@@ -1,3 +1,16 @@
+# [1.54.0](https://github.com/martynvdijke/heat/compare/v1.53.0...v1.54.0) (2026-08-15)
+
+
+### Bug Fixes
+
+* **trmnl:** pin plugin ID and gate trmnlp push on release ([bb03d07](https://github.com/martynvdijke/heat/commit/bb03d07dd9935c1471ef9795ff420ab8da60b796))
+* **trmnl:** use native framework classes and recreate deleted plugin ([72162a9](https://github.com/martynvdijke/heat/commit/72162a969624d3688818e022af1896d3e0666b04))
+
+
+### Features
+
+* show driver profile picture in TRMNL plugin ([47b0fc1](https://github.com/martynvdijke/heat/commit/47b0fc1717e078fcc32fd0da811c8c90d226eac5))
+
 # [1.53.0](https://github.com/martynvdijke/heat/compare/v1.52.4...v1.53.0) (2026-08-15)
 
 
