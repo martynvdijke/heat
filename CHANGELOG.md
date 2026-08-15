@@ -1,3 +1,10 @@
+## [1.52.3](https://github.com/martynvdijke/heat/compare/v1.52.2...v1.52.3) (2026-08-15)
+
+
+### Bug Fixes
+
+* always pick up newest release via service worker registration ([f740242](https://github.com/martynvdijke/heat/commit/f740242562cb851f85b16543942413157c26f9b0))
+
 ## [1.52.2](https://github.com/martynvdijke/heat/compare/v1.52.1...v1.52.2) (2026-08-15)
 
 ## [1.52.1](https://github.com/martynvdijke/heat/compare/v1.52.0...v1.52.1) (2026-08-14)
