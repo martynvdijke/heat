@@ -1,3 +1,15 @@
+# [1.53.0](https://github.com/martynvdijke/heat/compare/v1.52.4...v1.53.0) (2026-08-15)
+
+
+### Bug Fixes
+
+* Update settings.yml with new placeholder and bio ([333e0ae](https://github.com/martynvdijke/heat/commit/333e0aeecdc5d104204e741c3ceec363c0dc7542))
+
+
+### Features
+
+* show team under driver in TRMNL plugin ([817fa9e](https://github.com/martynvdijke/heat/commit/817fa9ee63b0c8aaba7760be5858919584e9829f))
+
 ## [1.52.4](https://github.com/martynvdijke/heat/compare/v1.52.3...v1.52.4) (2026-08-15)
 
 
