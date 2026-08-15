@@ -37,5 +37,5 @@ custom_fields:
   placeholder: https://heat.example.com
   help_text: Please include http:// or https://
 name: Heat Championship Stats
-description: "Latest race results and season championship standings for Heat: Pedal to the Metal."
+description: "Latest race results and standings"
 refresh_interval: 60
