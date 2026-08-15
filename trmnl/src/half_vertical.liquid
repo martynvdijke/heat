@@ -1,81 +1,64 @@
-<div class="layout layout--col gap">
+<div class="layout layout--col gap--xsmall">
   {% if latest_race %}
-    <div class="grid grid--cols-1">
-      <div class="item">
-        <div class="meta">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% endif %}</div>
-        <div class="content">
-          <span class="value value--medium">{{ latest_race.name }}</span>
-        </div>
-        <div class="meta">{{ latest_race.race_date }}</div>
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% endif %}</span>
+        <span class="value value--xsmall">{{ latest_race.name }}</span>
+        <span class="label label--small">{{ latest_race.race_date }}</span>
       </div>
     </div>
-    <div class="hr"></div>
+    <div class="divider--h"></div>
     {% for result in latest_race.results %}
       {% if forloop.index <= 3 %}
-        <div class="grid grid--cols-2">
-          <div class="item">
-            <div class="meta">P{{ result.position }}</div>
-            <div class="content">
-              <span class="value value--small">{{ result.racer_name }}</span>
-            </div>
+        <div class="item">
+          <div class="content">
+            <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }}</span>
           </div>
-          <div class="item">
-            <div class="content">
-              <span class="label">{{ result.points }} pts</span>
-            </div>
+          <div class="content">
+            <span class="label label--small">{{ result.points }} pts</span>
           </div>
         </div>
       {% endif %}
     {% endfor %}
   {% else %}
-    <div class="grid grid--cols-1">
-      <div class="item">
-        <div class="content">
-          <span class="value value--medium">No race data yet</span>
-        </div>
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">No race data yet</span>
       </div>
     </div>
   {% endif %}
 
-  <div class="hr"></div>
-
   {% if standings.size > 0 %}
-    <div class="grid grid--cols-1">
-      <div class="item">
-        <div class="content">
-          <span class="value value--medium">Standings</span>
-        </div>
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Standings</span>
       </div>
     </div>
     {% for standing in standings %}
       {% if forloop.index <= 3 %}
-        <div class="grid grid--cols-3">
-          <div class="item">
-            <div class="content"><span class="value value--small">{{ forloop.index }}</span></div>
+        <div class="item">
+          <div class="content">
+            <span class="value value--xxsmall">{{ forloop.index }}. {{ standing.racer_name }}</span>
           </div>
-          <div class="item">
-            <div class="content"><span class="value value--small">{{ standing.racer_name }}</span></div>
-          </div>
-          <div class="item">
-            <div class="content"><span class="label">{{ standing.points }} pts</span></div>
+          <div class="content">
+            <span class="label label--small">{{ standing.points }} pts</span>
           </div>
         </div>
       {% endif %}
     {% endfor %}
   {% elsif latest_race == nil %}
-    <div class="grid grid--cols-1">
-      <div class="item">
-        <div class="content">
-          <span class="value value--medium">No race data yet</span>
-        </div>
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">No race data yet</span>
       </div>
     </div>
   {% else %}
-    <div class="grid grid--cols-1">
-      <div class="item">
-        <div class="content">
-          <span class="value value--small">No standings yet</span>
-        </div>
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">No standings yet</span>
       </div>
     </div>
   {% endif %}

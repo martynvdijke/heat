@@ -1,60 +1,66 @@
 <div class="columns">
   <div class="column">
-    {% if latest_race %}
-      <div class="item">
-        <div class="meta">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% endif %}</div>
-        <div class="content">
-          <span class="value value--medium">{{ latest_race.name }}</span>
-        </div>
-        <div class="meta">{{ latest_race.race_date }}</div>
-      </div>
-      <div class="hr"></div>
-      {% for result in latest_race.results %}
-        {% if forloop.index <= 3 %}
-          <div class="item">
-            <div class="meta">P{{ result.position }}</div>
-            <div class="content">
-              <span class="value value--small">{{ result.racer_name }}</span>
-              <span class="label">{{ result.points }} pts</span>
-            </div>
+    <div class="layout layout--col gap--xsmall">
+      {% if latest_race %}
+        <div class="item">
+          <div class="content">
+            <span class="label label--small">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% endif %}</span>
+            <span class="value value--xsmall">{{ latest_race.name }}</span>
+            <span class="label label--small">{{ latest_race.race_date }}</span>
           </div>
-        {% endif %}
-      {% endfor %}
-    {% else %}
-      <div class="item">
-        <div class="content">
-          <span class="value value--medium">No race data yet</span>
         </div>
-      </div>
-    {% endif %}
+        <div class="divider--h"></div>
+        {% for result in latest_race.results %}
+          {% if forloop.index <= 3 %}
+            <div class="item">
+              <div class="content">
+                <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }}</span>
+              </div>
+              <div class="content">
+                <span class="label label--small">{{ result.points }} pts</span>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <div class="item">
+          <div class="content">
+            <span class="value value--xsmall">No race data yet</span>
+          </div>
+        </div>
+      {% endif %}
+    </div>
   </div>
 
   <div class="column">
-    {% if standings.size > 0 %}
-      <div class="item">
-        <div class="content">
-          <span class="value value--medium">Standings</span>
-        </div>
-      </div>
-      <div class="hr"></div>
-      {% for standing in standings %}
-        {% if forloop.index <= 3 %}
-          <div class="item">
-            <div class="meta">{{ forloop.index }}</div>
-            <div class="content">
-              <span class="value value--small">{{ standing.racer_name }}</span>
-              <span class="label">{{ standing.wins }} wins - {{ standing.points }} pts</span>
-            </div>
+    <div class="layout layout--col gap--xsmall">
+      {% if standings.size > 0 %}
+        <div class="item">
+          <div class="content">
+            <span class="label label--small">Standings</span>
           </div>
-        {% endif %}
-      {% endfor %}
-    {% else %}
-      <div class="item">
-        <div class="content">
-          <span class="value value--small">No standings yet</span>
         </div>
-      </div>
-    {% endif %}
+        <div class="divider--h"></div>
+        {% for standing in standings %}
+          {% if forloop.index <= 3 %}
+            <div class="item">
+              <div class="content">
+                <span class="value value--xxsmall">{{ forloop.index }}. {{ standing.racer_name }}</span>
+              </div>
+              <div class="content">
+                <span class="label label--small">{{ standing.wins }} wins - {{ standing.points }} pts</span>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <div class="item">
+          <div class="content">
+            <span class="value value--xsmall">No standings yet</span>
+          </div>
+        </div>
+      {% endif %}
+    </div>
   </div>
 </div>
 

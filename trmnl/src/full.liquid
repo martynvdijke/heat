@@ -1,94 +1,69 @@
-<div class="layout layout--col gap">
+<div class="layout layout--col gap--xsmall">
   {% if latest_race %}
-    <div class="grid grid--cols-1">
-      <div class="item">
-        <div class="meta">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% if latest_race.country %}, {{ latest_race.country }}{% endif %}{% endif %}</div>
-        <div class="content">
-          <span class="value value--large">{{ latest_race.name }}</span>
-        </div>
-        <div class="meta">{{ latest_race.race_date }}{% if latest_race.total_laps %} - {{ latest_race.total_laps }} laps{% endif %}</div>
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% if latest_race.country %}, {{ latest_race.country }}{% endif %}{% endif %}</span>
+        <span class="value value--small">{{ latest_race.name }}</span>
+        <span class="label label--small">{{ latest_race.race_date }}{% if latest_race.total_laps %} - {{ latest_race.total_laps }} laps{% endif %}</span>
       </div>
     </div>
-    <div class="hr"></div>
-
-    <div class="grid grid--cols-1">
-      {% for result in latest_race.results %}
-        {% if forloop.index <= 3 %}
-          <div class="item">
-            <div class="meta">P{{ result.position }}</div>
-            <div class="content">
-              <span class="value value--medium">{{ result.racer_name }}</span>
-              <span class="label">{{ result.points }} pts</span>
-            </div>
-          </div>
-        {% endif %}
-      {% endfor %}
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Results</span>
+      </div>
     </div>
-
-    <div class="grid grid--cols-1">
+    <div class="grid grid--cols-2 gap--xsmall">
       {% for result in latest_race.results %}
-        {% if forloop.index > 3 %}
-          <div class="item">
-            <div class="meta">P{{ result.position }}</div>
-            <div class="content">
-              <span class="value value--small">{{ result.racer_name }}</span>
-              <span class="label">{{ result.points }} pts</span>
-            </div>
+        <div class="item">
+          <div class="content">
+            <span class="value value--xsmall">P{{ result.position }} {{ result.racer_name }}</span>
           </div>
-        {% endif %}
+          <div class="content">
+            <span class="label label--small">{{ result.points }} pts</span>
+          </div>
+        </div>
       {% endfor %}
     </div>
   {% else %}
-    <div class="grid grid--cols-1">
-      <div class="item">
-        <div class="content">
-          <span class="value value--medium">No race data yet</span>
-        </div>
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">No race data yet</span>
       </div>
     </div>
   {% endif %}
 
-  <div class="hr"></div>
-
   {% if standings.size > 0 %}
-    <div class="grid grid--cols-3">
-      <div class="item">
-        <div class="content"><span class="label">Pos</span></div>
-      </div>
-      <div class="item">
-        <div class="content"><span class="label">Racer</span></div>
-      </div>
-      <div class="item">
-        <div class="content"><span class="label">Pts</span></div>
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Standings</span>
       </div>
     </div>
-    {% for standing in standings %}
-      <div class="grid grid--cols-3">
+    <div class="grid grid--cols-2 gap--xsmall">
+      {% for standing in standings %}
         <div class="item">
-          <div class="content"><span class="value value--small">{{ forloop.index }}</span></div>
+          <div class="content">
+            <span class="value value--xxsmall">{{ forloop.index }}. {{ standing.racer_name }}</span>
+          </div>
+          <div class="content">
+            <span class="label label--small">{{ standing.points }}</span>
+          </div>
         </div>
-        <div class="item">
-          <div class="content"><span class="value value--small">{{ standing.racer_name }}</span></div>
-        </div>
-        <div class="item">
-          <div class="content"><span class="value value--small">{{ standing.points }}</span></div>
-        </div>
-      </div>
-    {% endfor %}
+      {% endfor %}
+    </div>
   {% elsif latest_race == nil %}
-    <div class="grid grid--cols-1">
-      <div class="item">
-        <div class="content">
-          <span class="value value--medium">No race data yet</span>
-        </div>
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">No race data yet</span>
       </div>
     </div>
   {% else %}
-    <div class="grid grid--cols-1">
-      <div class="item">
-        <div class="content">
-          <span class="value value--small">No standings yet</span>
-        </div>
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">No standings yet</span>
       </div>
     </div>
   {% endif %}
