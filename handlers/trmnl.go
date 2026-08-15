@@ -13,6 +13,7 @@ import (
 // trmnlResult is a single finishing position inside the latest race payload.
 type trmnlResult struct {
 	RacerName string `json:"racer_name"`
+	Team      string `json:"team"`
 	Position  int    `json:"position"`
 	Points    int    `json:"points"`
 }
@@ -79,10 +80,12 @@ func (h *Handler) GetTRMNLSummary(c *gin.Context) {
 		}
 
 		rows, err := h.S.DB.Query(`
-			SELECT racer_name, position, points
-			FROM round_snapshot_scores
-			WHERE snapshot_id = ?
-			ORDER BY position ASC
+			SELECT rss.racer_name, COALESCE(t.name, ''), rss.position, rss.points
+			FROM round_snapshot_scores rss
+			LEFT JOIN racers r ON r.id = rss.racer_id
+			LEFT JOIN teams t ON t.id = r.team_id
+			WHERE rss.snapshot_id = ?
+			ORDER BY rss.position ASC
 			LIMIT 10`, raceID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -91,7 +94,7 @@ func (h *Handler) GetTRMNLSummary(c *gin.Context) {
 		defer rows.Close()
 		for rows.Next() {
 			var r trmnlResult
-			if err := rows.Scan(&r.RacerName, &r.Position, &r.Points); err != nil {
+			if err := rows.Scan(&r.RacerName, &r.Team, &r.Position, &r.Points); err != nil {
 				continue
 			}
 			latestRace.Results = append(latestRace.Results, r)
