@@ -34,8 +34,16 @@ custom_fields:
   field_type: url
   name: Address of heat instance
   description: URL
-  placeholder: https://heat.example.com
+  placeholder: https://heat.vandijke.xyz
   help_text: Please include http:// or https://
+- keyname: bio
+  name: About This Plugin
+  category: entertainment
+  field_type: author_bio
+  description: I am running a heat board game tournament with friends, this pulls the stats into my trmnl.
+  github_url: https://github.com/martynvdijke/heat
+  learn_more_url: https://heat.vandijke.xyz/
+  email_address: martyn@vandijke.xyz
 name: Heat Championship Stats
 description: "Latest race results and standings"
 refresh_interval: 60
