@@ -141,11 +141,5 @@
 
 {{define "scripts"}}
 <script src="/static/js/index.js"></script>
-<script>
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(function(err) {
-        console.log('SW registration failed:', err);
-    });
-}
-</script>
+<script src="/static/js/sw-register.js"></script>
 {{end}}
