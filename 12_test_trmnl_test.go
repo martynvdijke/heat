@@ -277,13 +277,22 @@ func TestTRMNLSummaryLimits(t *testing.T) {
 	_, body := trmnlGet(t, r)
 
 	var race struct {
-		Results []json.RawMessage `json:"results"`
+		Results []struct {
+			ProfilePicture string `json:"profile_picture"`
+		} `json:"results"`
 	}
 	if err := json.Unmarshal(body["latest_race"], &race); err != nil {
 		t.Fatalf("unmarshal latest_race: %v", err)
 	}
 	if len(race.Results) != 10 {
 		t.Errorf("expected results capped at 10, got %d", len(race.Results))
+	}
+	// These racer ids have no row in the racers table, so no profile picture
+	// may be resolved and the field must be omitted/empty.
+	for i, r := range race.Results {
+		if r.ProfilePicture != "" {
+			t.Errorf("result[%d]: expected empty profile_picture for unknown racer, got %q", i, r.ProfilePicture)
+		}
 	}
 
 	var standings []json.RawMessage
@@ -292,6 +301,87 @@ func TestTRMNLSummaryLimits(t *testing.T) {
 	}
 	if len(standings) != 8 {
 		t.Errorf("expected standings capped at 8, got %d", len(standings))
+	}
+}
+
+// TestTRMNLSummaryProfilePictures verifies the driver profile picture flows
+// into the TRMNL payload as an absolute URL (the TRMNL servers fetch images
+// server-side, so relative paths would break). Uses an isolated server so the
+// seeded racers are in a known state.
+func TestTRMNLSummaryProfilePictures(t *testing.T) {
+	r, dbc := newTRMNLIsolated(t)
+
+	// The isolated DB seeds racers 1-3 with /static/images/helmet.svg.
+	if _, err := dbc.Exec("INSERT INTO seasons (id, name, start_date, status) VALUES (8899, 'Pic Season', '2025-01-01', 'active')"); err != nil {
+		t.Fatalf("insert season: %v", err)
+	}
+	if _, err := dbc.Exec("INSERT INTO round_snapshots (id, season_id, race_name, race_date, round, status) VALUES (88991, 8899, 'Pic Round', '2025-05-10', 1, 'final')"); err != nil {
+		t.Fatalf("insert round: %v", err)
+	}
+	// racer 999 has no row in the racers table: its picture must be empty.
+	if _, err := dbc.Exec(`INSERT INTO round_snapshot_scores (id, snapshot_id, racer_id, racer_name, points, position, dnf, dns, spins, overheated) VALUES
+		(889911, 88991, 1, 'A. PROST', 25, 1, 0, 0, 0, 0),
+		(889912, 88991, 2, 'M. SCHUMACHER', 18, 2, 0, 0, 0, 0),
+		(889913, 88991, 999, 'GHOST', 15, 3, 0, 0, 0, 0)`); err != nil {
+		t.Fatalf("insert scores: %v", err)
+	}
+
+	req, _ := http.NewRequest("GET", "/api/trmnl/summary", nil)
+	req.Host = "example.com"
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %v: %s", rr.Code, rr.Body.String())
+	}
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("failed to unmarshal body: %v", err)
+	}
+
+	var race struct {
+		Results []struct {
+			RacerName      string `json:"racer_name"`
+			ProfilePicture string `json:"profile_picture"`
+		} `json:"results"`
+	}
+	if err := json.Unmarshal(body["latest_race"], &race); err != nil {
+		t.Fatalf("unmarshal latest_race: %v", err)
+	}
+	if len(race.Results) != 3 {
+		t.Fatalf("expected 3 results, got %d", len(race.Results))
+	}
+	const wantPic = "http://example.com/static/images/helmet.svg"
+	if race.Results[0].ProfilePicture != wantPic {
+		t.Errorf("result[0] (A. PROST): expected profile_picture %q, got %q", wantPic, race.Results[0].ProfilePicture)
+	}
+	if race.Results[1].ProfilePicture != wantPic {
+		t.Errorf("result[1] (M. SCHUMACHER): expected profile_picture %q, got %q", wantPic, race.Results[1].ProfilePicture)
+	}
+	if race.Results[2].RacerName != "GHOST" || race.Results[2].ProfilePicture != "" {
+		t.Errorf("result[2]: expected GHOST with empty profile_picture, got %s / %q", race.Results[2].RacerName, race.Results[2].ProfilePicture)
+	}
+
+	var standings []struct {
+		RacerName      string `json:"racer_name"`
+		ProfilePicture string `json:"profile_picture"`
+	}
+	if err := json.Unmarshal(body["standings"], &standings); err != nil {
+		t.Fatalf("unmarshal standings: %v", err)
+	}
+	if len(standings) != 3 {
+		t.Fatalf("expected 3 standings entries, got %d", len(standings))
+	}
+	for _, s := range standings {
+		switch s.RacerName {
+		case "GHOST":
+			if s.ProfilePicture != "" {
+				t.Errorf("standing GHOST: expected empty profile_picture (no racer row), got %q", s.ProfilePicture)
+			}
+		default:
+			if s.ProfilePicture != wantPic {
+				t.Errorf("standing %s: expected profile_picture %q, got %q", s.RacerName, wantPic, s.ProfilePicture)
+			}
+		}
 	}
 }
 

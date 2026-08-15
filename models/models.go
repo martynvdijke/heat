@@ -82,11 +82,12 @@ type RacerStats struct {
 // SeasonStanding is a single row of a season championship standings table,
 // aggregated from finalized round snapshot scores.
 type SeasonStanding struct {
-	RacerID   int    `json:"-"`
-	RacerName string `json:"racer_name"`
-	Races     int    `json:"races"`
-	Wins      int    `json:"wins"`
-	Points    int    `json:"points"`
+	RacerID        int    `json:"-"`
+	RacerName      string `json:"racer_name"`
+	ProfilePicture string `json:"profile_picture,omitempty"`
+	Races          int    `json:"races"`
+	Wins           int    `json:"wins"`
+	Points         int    `json:"points"`
 }
 
 type Quote struct {

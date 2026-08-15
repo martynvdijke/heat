@@ -44,16 +44,19 @@ func RacerStatsBySeason(db *sql.DB, seasonID int) []models.RacerStats {
 
 // SeasonStandings computes the championship standings for a season,
 // aggregated from finalized round snapshot scores and limited to the top N
-// racers. Each entry carries the racer name as stored on the snapshot scores.
+// racers. Each entry carries the racer name as stored on the snapshot scores
+// and the racer's current profile picture from the racers table.
 func SeasonStandings(db *sql.DB, seasonID int, limit int) []models.SeasonStanding {
 	query := `
 		SELECT rss.racer_id,
 			MAX(rss.racer_name) as racer_name,
 			COUNT(*) as races,
 			SUM(CASE WHEN rss.position = 1 THEN 1 ELSE 0 END) as wins,
-			SUM(rss.points) as points
+			SUM(rss.points) as points,
+			COALESCE(r.profile_picture, '')
 		FROM round_snapshot_scores rss
 		JOIN round_snapshots rs ON rs.id = rss.snapshot_id
+		LEFT JOIN racers r ON r.id = rss.racer_id
 		WHERE rs.season_id = ? AND rs.status = 'final'
 		GROUP BY rss.racer_id
 		ORDER BY points DESC`
@@ -71,7 +74,7 @@ func SeasonStandings(db *sql.DB, seasonID int, limit int) []models.SeasonStandin
 	standings := make([]models.SeasonStanding, 0)
 	for rows.Next() {
 		var s models.SeasonStanding
-		if err := rows.Scan(&s.RacerID, &s.RacerName, &s.Races, &s.Wins, &s.Points); err != nil {
+		if err := rows.Scan(&s.RacerID, &s.RacerName, &s.Races, &s.Wins, &s.Points, &s.ProfilePicture); err != nil {
 			continue
 		}
 		standings = append(standings, s)

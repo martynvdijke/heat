@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -12,10 +13,11 @@ import (
 
 // trmnlResult is a single finishing position inside the latest race payload.
 type trmnlResult struct {
-	RacerName string `json:"racer_name"`
-	Team      string `json:"team"`
-	Position  int    `json:"position"`
-	Points    int    `json:"points"`
+	RacerName      string `json:"racer_name"`
+	Team           string `json:"team"`
+	Position       int    `json:"position"`
+	Points         int    `json:"points"`
+	ProfilePicture string `json:"profile_picture,omitempty"`
 }
 
 // trmnlRace is the latest race section of the TRMNL summary payload.
@@ -80,7 +82,8 @@ func (h *Handler) GetTRMNLSummary(c *gin.Context) {
 		}
 
 		rows, err := h.S.DB.Query(`
-			SELECT rss.racer_name, COALESCE(t.name, ''), rss.position, rss.points
+			SELECT rss.racer_name, COALESCE(t.name, ''), rss.position, rss.points,
+				COALESCE(r.profile_picture, '')
 			FROM round_snapshot_scores rss
 			LEFT JOIN racers r ON r.id = rss.racer_id
 			LEFT JOIN teams t ON t.id = r.team_id
@@ -94,9 +97,10 @@ func (h *Handler) GetTRMNLSummary(c *gin.Context) {
 		defer rows.Close()
 		for rows.Next() {
 			var r trmnlResult
-			if err := rows.Scan(&r.RacerName, &r.Team, &r.Position, &r.Points); err != nil {
+			if err := rows.Scan(&r.RacerName, &r.Team, &r.Position, &r.Points, &r.ProfilePicture); err != nil {
 				continue
 			}
+			r.ProfilePicture = trmnlAbsoluteURL(c, r.ProfilePicture)
 			latestRace.Results = append(latestRace.Results, r)
 		}
 	}
@@ -129,6 +133,9 @@ func (h *Handler) GetTRMNLSummary(c *gin.Context) {
 	standings := make([]models.SeasonStanding, 0)
 	if season != nil {
 		standings = racing.SeasonStandings(h.S.DB, seasonID, 8)
+		for i := range standings {
+			standings[i].ProfilePicture = trmnlAbsoluteURL(c, standings[i].ProfilePicture)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -136,4 +143,30 @@ func (h *Handler) GetTRMNLSummary(c *gin.Context) {
 		"standings":   standings,
 		"season":      season,
 	})
+}
+
+// trmnlAbsoluteURL resolves a stored profile picture (usually a relative path
+// like /media/.. or /static/..) into an absolute URL the TRMNL servers can
+// fetch when rendering the plugin. Already-absolute URLs pass through
+// unchanged.
+func trmnlAbsoluteURL(c *gin.Context, path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" || strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "//") {
+		return path
+	}
+
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = strings.TrimSpace(strings.Split(proto, ",")[0])
+	}
+
+	host := c.Request.Host
+	if fwdHost := c.GetHeader("X-Forwarded-Host"); fwdHost != "" {
+		host = strings.TrimSpace(strings.Split(fwdHost, ",")[0])
+	}
+
+	return scheme + "://" + host + path
 }
