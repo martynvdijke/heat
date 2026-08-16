@@ -1,3 +1,11 @@
+## [1.54.2](https://github.com/martynvdijke/heat/compare/v1.54.1...v1.54.2) (2026-08-16)
+
+
+### Bug Fixes
+
+* **trmnl:** restore driver overview layout ([a7da55c](https://github.com/martynvdijke/heat/commit/a7da55ccb6dd6447a79410f31cc3f6193c4bfff3))
+* **trmnl:** use native image classes to pass lint ([7786190](https://github.com/martynvdijke/heat/commit/778619010c3a9e3820930c6e48d661643722b730))
+
 ## [1.54.1](https://github.com/martynvdijke/heat/compare/v1.54.0...v1.54.1) (2026-08-15)
 
 
