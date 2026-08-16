@@ -85,6 +85,7 @@ type SeasonStanding struct {
 	RacerID        int    `json:"-"`
 	RacerName      string `json:"racer_name"`
 	ProfilePicture string `json:"profile_picture,omitempty"`
+	TeamName       string `json:"team_name,omitempty"`
 	Races          int    `json:"races"`
 	Wins           int    `json:"wins"`
 	Points         int    `json:"points"`

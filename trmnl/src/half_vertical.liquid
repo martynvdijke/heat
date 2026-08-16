@@ -12,12 +12,14 @@
       {% if forloop.index <= 3 %}
         <div class="item">
           <div class="content">
-            <div class="layout layout--row align--center gap--xsmall">
+            <div style="display:flex;align-items:center;gap:6px;width:100%;">
               {% if result.profile_picture %}
-                <img src="{{ result.profile_picture }}" width="24" height="24" />
+                <img src="{{ result.profile_picture }}" width="24" height="24" style="border-radius:50%;object-fit:cover;flex-shrink:0;" />
               {% endif %}
-                  <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }}</span>
-                  {% if result.team %}<span class="label label--small">{{ result.team }}</span>{% endif %}
+              <div style="min-width:0;">
+                <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }}</span>
+                {% if result.team %}<span class="label label--small">{{ result.team }}</span>{% endif %}
+              </div>
             </div>
           </div>
           <div class="content">
@@ -45,11 +47,14 @@
       {% if forloop.index <= 3 %}
         <div class="item">
           <div class="content">
-            <div class="layout layout--row align--center gap--xsmall">
+            <div style="display:flex;align-items:center;gap:6px;width:100%;">
               {% if standing.profile_picture %}
-                <img src="{{ standing.profile_picture }}" width="24" height="24" />
+                <img src="{{ standing.profile_picture }}" width="24" height="24" style="border-radius:50%;object-fit:cover;flex-shrink:0;" />
               {% endif %}
-              <span class="value value--xxsmall">{{ forloop.index }}. {{ standing.racer_name }}</span>
+              <div style="min-width:0;">
+                <span class="value value--xxsmall">{{ forloop.index }}. {{ standing.racer_name }}</span>
+                {% if standing.team_name %}<span class="label label--small">{{ standing.team_name }}</span>{% endif %}
+              </div>
             </div>
           </div>
           <div class="content">

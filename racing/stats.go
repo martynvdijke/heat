@@ -53,10 +53,12 @@ func SeasonStandings(db *sql.DB, seasonID int, limit int) []models.SeasonStandin
 			COUNT(*) as races,
 			SUM(CASE WHEN rss.position = 1 THEN 1 ELSE 0 END) as wins,
 			SUM(rss.points) as points,
-			COALESCE(r.profile_picture, '')
+			COALESCE(r.profile_picture, ''),
+			COALESCE(t.name, '')
 		FROM round_snapshot_scores rss
 		JOIN round_snapshots rs ON rs.id = rss.snapshot_id
 		LEFT JOIN racers r ON r.id = rss.racer_id
+		LEFT JOIN teams t ON t.id = r.team_id
 		WHERE rs.season_id = ? AND rs.status = 'final'
 		GROUP BY rss.racer_id
 		ORDER BY points DESC`
@@ -74,7 +76,7 @@ func SeasonStandings(db *sql.DB, seasonID int, limit int) []models.SeasonStandin
 	standings := make([]models.SeasonStanding, 0)
 	for rows.Next() {
 		var s models.SeasonStanding
-		if err := rows.Scan(&s.RacerID, &s.RacerName, &s.Races, &s.Wins, &s.Points, &s.ProfilePicture); err != nil {
+		if err := rows.Scan(&s.RacerID, &s.RacerName, &s.Races, &s.Wins, &s.Points, &s.ProfilePicture, &s.TeamName); err != nil {
 			continue
 		}
 		standings = append(standings, s)
