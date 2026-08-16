@@ -14,7 +14,7 @@
           <div class="content">
             <div style="display:flex;align-items:center;gap:6px;width:100%;">
               {% if result.profile_picture %}
-                <img src="{{ result.profile_picture }}" width="28" height="28" style="border-radius:50%;object-fit:cover;flex-shrink:0;" />
+                <img src="{{ result.profile_picture }}" width="28" height="28" class="image image--cover rounded--full" style="flex-shrink:0" />
               {% endif %}
               <div style="min-width:0;">
                 <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }}</span>
@@ -49,7 +49,7 @@
           <div class="content">
             <div style="display:flex;align-items:center;gap:6px;width:100%;">
               {% if standing.profile_picture %}
-                <img src="{{ standing.profile_picture }}" width="28" height="28" style="border-radius:50%;object-fit:cover;flex-shrink:0;" />
+                <img src="{{ standing.profile_picture }}" width="28" height="28" class="image image--cover rounded--full" style="flex-shrink:0" />
               {% endif %}
               <div style="min-width:0;">
                 <span class="value value--xxsmall">{{ forloop.index }}. {{ standing.racer_name }}</span>
