@@ -43,6 +43,7 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 		Username string `json:"username"`
 		Password string `json:"password"`
 		Setup    bool   `json:"setup"`
+		Email    string `json:"email"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		log.Printf("[LOGIN] Failed to decode JSON: %v", err)
@@ -64,7 +65,7 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 			return
 		}
 		hashed := hashPassword(input.Password)
-		_, err := h.S.DB.Exec("INSERT INTO admin_users (username, password) VALUES (?, ?)", input.Username, hashed)
+		_, err := h.S.DB.Exec("INSERT INTO admin_users (username, password, email) VALUES (?, ?, ?)", input.Username, hashed, input.Email)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

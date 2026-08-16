@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"heat/ent/adminuser"
 	"heat/ent/aisetting"
 	"heat/ent/backupsetting"
 	"heat/ent/drivershare"
@@ -65,6 +66,12 @@ func init() {
 	aisettingDescConsistency := aisettingFields[7].Descriptor()
 	// aisetting.DefaultConsistency holds the default value on creation for the consistency field.
 	aisetting.DefaultConsistency = aisettingDescConsistency.Default.(int)
+	adminuserFields := schema.AdminUser{}.Fields()
+	_ = adminuserFields
+	// adminuserDescEmail is the schema descriptor for email field.
+	adminuserDescEmail := adminuserFields[3].Descriptor()
+	// adminuser.DefaultEmail holds the default value on creation for the email field.
+	adminuser.DefaultEmail = adminuserDescEmail.Default.(string)
 	backupsettingFields := schema.BackupSetting{}.Fields()
 	_ = backupsettingFields
 	// backupsettingDescEnabled is the schema descriptor for enabled field.

@@ -130,6 +130,16 @@ type AdminUser struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
 	Password string `json:"-"`
+	Email    string `json:"email"`
+}
+
+type PasswordResetToken struct {
+	ID          int    `json:"id"`
+	AdminUserID int    `json:"admin_user_id"`
+	Token       string `json:"token"`
+	CreatedAt   string `json:"created_at"`
+	ExpiresAt   string `json:"expires_at"`
+	Used        bool   `json:"used"`
 }
 
 type OTelSettings struct {

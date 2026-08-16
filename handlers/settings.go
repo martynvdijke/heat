@@ -148,8 +148,12 @@ func (h *Handler) GetEmailSettings(c *gin.Context) {
 		return
 	}
 	s.Enabled = enabled == 1
+
+	var adminEmail string
+	h.S.DB.QueryRow("SELECT COALESCE(email, '') FROM admin_users ORDER BY id LIMIT 1").Scan(&adminEmail)
+
 	h.S.Log.Debugf("email", "GetEmailSettings: host=%q from=%q enabled=%v", s.SMTPHost, s.FromAddr, s.Enabled)
-	c.JSON(http.StatusOK, gin.H{"id": s.ID, "smtp_host": s.SMTPHost, "smtp_port": s.SMTPPort, "username": s.Username, "has_password": password != "", "from_addr": s.FromAddr, "enabled": s.Enabled})
+	c.JSON(http.StatusOK, gin.H{"id": s.ID, "smtp_host": s.SMTPHost, "smtp_port": s.SMTPPort, "username": s.Username, "has_password": password != "", "from_addr": s.FromAddr, "enabled": s.Enabled, "admin_email": adminEmail})
 }
 
 // @Summary Save email settings
@@ -162,12 +166,16 @@ func (h *Handler) GetEmailSettings(c *gin.Context) {
 // @Security cookieAuth
 // @Router /api/email-settings [post]
 func (h *Handler) SaveEmailSettings(c *gin.Context) {
-	var s models.EmailSettings
-	if err := c.ShouldBindJSON(&s); err != nil {
+	var input struct {
+		models.EmailSettings
+		AdminEmail string `json:"admin_email"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
 		h.S.Log.Errorf("email", "SaveEmailSettings: invalid JSON: %v", err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	s := input.EmailSettings
 
 	if s.Password == "" {
 		var existingPw string
@@ -182,6 +190,12 @@ func (h *Handler) SaveEmailSettings(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Persist the admin recovery email on the first admin user (used for password resets).
+	if input.AdminEmail != "" {
+		h.S.DB.Exec("UPDATE admin_users SET email = ? WHERE id = (SELECT MIN(id) FROM admin_users)", input.AdminEmail)
+	}
+
 	h.S.Log.Infof("email", "Email settings saved: host=%q from=%q enabled=%v", s.SMTPHost, s.FromAddr, s.Enabled)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

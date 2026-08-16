@@ -37,6 +37,11 @@
                 <label class="form-label text-white">Confirm Password</label>
                 <input type="password" class="form-control" name="confirm_password" autocomplete="new-password" required>
             </div>
+            <div class="mb-3">
+                <label class="form-label text-white">Recovery Email <span class="text-muted small">(optional)</span></label>
+                <input type="email" class="form-control" name="email" autocomplete="email" placeholder="admin@example.com">
+                <div class="form-text text-muted">Used to receive password reset links.</div>
+            </div>
             <div id="setup-error" class="alert alert-danger mt-3 d-none" role="alert"></div>
             <button type="submit" class="btn btn-primary w-100">Create Admin Account</button>
         </form>
@@ -61,7 +66,8 @@
                 body: JSON.stringify({
                     username: fd.get('username'),
                     password: password,
-                    setup: true
+                    setup: true,
+                    email: fd.get('email') || ''
                 })
             });
             

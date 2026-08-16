@@ -14,5 +14,6 @@ func (AdminUser) Fields() []ent.Field {
 		field.Int("id"),
 		field.String("username").Unique(),
 		field.String("password"),
+		field.String("email").Optional().Default(""),
 	}
 }

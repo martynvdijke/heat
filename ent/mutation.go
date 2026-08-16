@@ -934,6 +934,7 @@ type AdminUserMutation struct {
 	id            *int
 	username      *string
 	password      *string
+	email         *string
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*AdminUser, error)
@@ -1116,6 +1117,55 @@ func (m *AdminUserMutation) ResetPassword() {
 	m.password = nil
 }
 
+// SetEmail sets the "email" field.
+func (m *AdminUserMutation) SetEmail(s string) {
+	m.email = &s
+}
+
+// Email returns the value of the "email" field in the mutation.
+func (m *AdminUserMutation) Email() (r string, exists bool) {
+	v := m.email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmail returns the old "email" field's value of the AdminUser entity.
+// If the AdminUser object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AdminUserMutation) OldEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmail: %w", err)
+	}
+	return oldValue.Email, nil
+}
+
+// ClearEmail clears the value of the "email" field.
+func (m *AdminUserMutation) ClearEmail() {
+	m.email = nil
+	m.clearedFields[adminuser.FieldEmail] = struct{}{}
+}
+
+// EmailCleared returns if the "email" field was cleared in this mutation.
+func (m *AdminUserMutation) EmailCleared() bool {
+	_, ok := m.clearedFields[adminuser.FieldEmail]
+	return ok
+}
+
+// ResetEmail resets all changes to the "email" field.
+func (m *AdminUserMutation) ResetEmail() {
+	m.email = nil
+	delete(m.clearedFields, adminuser.FieldEmail)
+}
+
 // Where appends a list predicates to the AdminUserMutation builder.
 func (m *AdminUserMutation) Where(ps ...predicate.AdminUser) {
 	m.predicates = append(m.predicates, ps...)
@@ -1150,12 +1200,15 @@ func (m *AdminUserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AdminUserMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.username != nil {
 		fields = append(fields, adminuser.FieldUsername)
 	}
 	if m.password != nil {
 		fields = append(fields, adminuser.FieldPassword)
+	}
+	if m.email != nil {
+		fields = append(fields, adminuser.FieldEmail)
 	}
 	return fields
 }
@@ -1169,6 +1222,8 @@ func (m *AdminUserMutation) Field(name string) (ent.Value, bool) {
 		return m.Username()
 	case adminuser.FieldPassword:
 		return m.Password()
+	case adminuser.FieldEmail:
+		return m.Email()
 	}
 	return nil, false
 }
@@ -1182,6 +1237,8 @@ func (m *AdminUserMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldUsername(ctx)
 	case adminuser.FieldPassword:
 		return m.OldPassword(ctx)
+	case adminuser.FieldEmail:
+		return m.OldEmail(ctx)
 	}
 	return nil, fmt.Errorf("unknown AdminUser field %s", name)
 }
@@ -1204,6 +1261,13 @@ func (m *AdminUserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPassword(v)
+		return nil
+	case adminuser.FieldEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmail(v)
 		return nil
 	}
 	return fmt.Errorf("unknown AdminUser field %s", name)
@@ -1234,7 +1298,11 @@ func (m *AdminUserMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *AdminUserMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(adminuser.FieldEmail) {
+		fields = append(fields, adminuser.FieldEmail)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1247,6 +1315,11 @@ func (m *AdminUserMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *AdminUserMutation) ClearField(name string) error {
+	switch name {
+	case adminuser.FieldEmail:
+		m.ClearEmail()
+		return nil
+	}
 	return fmt.Errorf("unknown AdminUser nullable field %s", name)
 }
 
@@ -1259,6 +1332,9 @@ func (m *AdminUserMutation) ResetField(name string) error {
 		return nil
 	case adminuser.FieldPassword:
 		m.ResetPassword()
+		return nil
+	case adminuser.FieldEmail:
+		m.ResetEmail()
 		return nil
 	}
 	return fmt.Errorf("unknown AdminUser field %s", name)

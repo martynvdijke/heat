@@ -31,6 +31,20 @@ func (_c *AdminUserCreate) SetPassword(v string) *AdminUserCreate {
 	return _c
 }
 
+// SetEmail sets the "email" field.
+func (_c *AdminUserCreate) SetEmail(v string) *AdminUserCreate {
+	_c.mutation.SetEmail(v)
+	return _c
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (_c *AdminUserCreate) SetNillableEmail(v *string) *AdminUserCreate {
+	if v != nil {
+		_c.SetEmail(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *AdminUserCreate) SetID(v int) *AdminUserCreate {
 	_c.mutation.SetID(v)
@@ -44,6 +58,7 @@ func (_c *AdminUserCreate) Mutation() *AdminUserMutation {
 
 // Save creates the AdminUser in the database.
 func (_c *AdminUserCreate) Save(ctx context.Context) (*AdminUser, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -66,6 +81,14 @@ func (_c *AdminUserCreate) Exec(ctx context.Context) error {
 func (_c *AdminUserCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (_c *AdminUserCreate) defaults() {
+	if _, ok := _c.mutation.Email(); !ok {
+		v := adminuser.DefaultEmail
+		_c.mutation.SetEmail(v)
 	}
 }
 
@@ -117,6 +140,10 @@ func (_c *AdminUserCreate) createSpec() (*AdminUser, *sqlgraph.CreateSpec) {
 		_spec.SetField(adminuser.FieldPassword, field.TypeString, value)
 		_node.Password = value
 	}
+	if value, ok := _c.mutation.Email(); ok {
+		_spec.SetField(adminuser.FieldEmail, field.TypeString, value)
+		_node.Email = value
+	}
 	return _node, _spec
 }
 
@@ -138,6 +165,7 @@ func (_c *AdminUserCreateBulk) Save(ctx context.Context) ([]*AdminUser, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*AdminUserMutation)
 				if !ok {

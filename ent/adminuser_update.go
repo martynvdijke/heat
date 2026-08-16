@@ -55,6 +55,26 @@ func (_u *AdminUserUpdate) SetNillablePassword(v *string) *AdminUserUpdate {
 	return _u
 }
 
+// SetEmail sets the "email" field.
+func (_u *AdminUserUpdate) SetEmail(v string) *AdminUserUpdate {
+	_u.mutation.SetEmail(v)
+	return _u
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (_u *AdminUserUpdate) SetNillableEmail(v *string) *AdminUserUpdate {
+	if v != nil {
+		_u.SetEmail(*v)
+	}
+	return _u
+}
+
+// ClearEmail clears the value of the "email" field.
+func (_u *AdminUserUpdate) ClearEmail() *AdminUserUpdate {
+	_u.mutation.ClearEmail()
+	return _u
+}
+
 // Mutation returns the AdminUserMutation object of the builder.
 func (_u *AdminUserUpdate) Mutation() *AdminUserMutation {
 	return _u.mutation
@@ -102,6 +122,12 @@ func (_u *AdminUserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Password(); ok {
 		_spec.SetField(adminuser.FieldPassword, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Email(); ok {
+		_spec.SetField(adminuser.FieldEmail, field.TypeString, value)
+	}
+	if _u.mutation.EmailCleared() {
+		_spec.ClearField(adminuser.FieldEmail, field.TypeString)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{adminuser.Label}
@@ -147,6 +173,26 @@ func (_u *AdminUserUpdateOne) SetNillablePassword(v *string) *AdminUserUpdateOne
 	if v != nil {
 		_u.SetPassword(*v)
 	}
+	return _u
+}
+
+// SetEmail sets the "email" field.
+func (_u *AdminUserUpdateOne) SetEmail(v string) *AdminUserUpdateOne {
+	_u.mutation.SetEmail(v)
+	return _u
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (_u *AdminUserUpdateOne) SetNillableEmail(v *string) *AdminUserUpdateOne {
+	if v != nil {
+		_u.SetEmail(*v)
+	}
+	return _u
+}
+
+// ClearEmail clears the value of the "email" field.
+func (_u *AdminUserUpdateOne) ClearEmail() *AdminUserUpdateOne {
+	_u.mutation.ClearEmail()
 	return _u
 }
 
@@ -226,6 +272,12 @@ func (_u *AdminUserUpdateOne) sqlSave(ctx context.Context) (_node *AdminUser, er
 	}
 	if value, ok := _u.mutation.Password(); ok {
 		_spec.SetField(adminuser.FieldPassword, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Email(); ok {
+		_spec.SetField(adminuser.FieldEmail, field.TypeString, value)
+	}
+	if _u.mutation.EmailCleared() {
+		_spec.ClearField(adminuser.FieldEmail, field.TypeString)
 	}
 	_node = &AdminUser{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -913,6 +913,31 @@ paths:
       summary: Send race flag command
       tags:
       - Flags
+  /api/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Request a password reset link for an admin account. Always returns
+        200 to avoid user enumeration.
+      parameters:
+      - description: Email address
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request a password reset
+      tags:
+      - Auth
   /api/login:
     post:
       consumes:
@@ -1498,6 +1523,63 @@ paths:
       summary: Batch update racer ranks
       tags:
       - Racers
+  /api/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Set a new password using a valid reset token, then log in automatically
+      parameters:
+      - description: Reset token and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Reset password with a token
+      tags:
+      - Auth
+  /api/reset-password/validate:
+    get:
+      description: Check whether a password reset token is valid and unexpired
+      parameters:
+      - description: Reset token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      summary: Validate a password reset token
+      tags:
+      - Auth
   /api/rounds:
     delete:
       description: Delete a round snapshot by ID

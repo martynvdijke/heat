@@ -98,6 +98,20 @@ func Init(s *app.Server) {
 	// Migrate tracks table: module attribution (0 = not module-specific)
 	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN module_id INTEGER NOT NULL DEFAULT 0")
 
+	// Migrate admin_users: recovery email used for the forgot-password flow
+	srv.DB.Exec("ALTER TABLE admin_users ADD COLUMN email TEXT NOT NULL DEFAULT ''")
+
+	// Password reset tokens for the forgot-password flow
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		admin_user_id INTEGER NOT NULL,
+		token TEXT UNIQUE NOT NULL,
+		created_at TEXT NOT NULL DEFAULT (datetime('now')),
+		expires_at TEXT NOT NULL,
+		used INTEGER NOT NULL DEFAULT 0
+	)`)
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_admin_user ON password_reset_tokens(admin_user_id)")
+
 	// Board game track list: the curated set of tracks the group plays with
 	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS board_game_tracks (
 		track_id TEXT PRIMARY KEY

@@ -333,6 +333,11 @@ func main() {
 	r.POST("/api/logout", middleware.CSRFMiddleware(), h.HandleLogout)
 	r.GET("/api/check-setup", h.HandleCheckSetup)
 
+	// Forgot-password flow (public)
+	r.POST("/api/forgot-password", middleware.RateLimitMiddleware(server), h.RequestPasswordReset)
+	r.GET("/api/reset-password/validate", h.ValidateResetToken)
+	r.POST("/api/reset-password", h.ResetPassword)
+
 	r.GET("/api/racers", h.GetRacers)
 	admin := r.Group("/api")
 	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(server))
@@ -700,6 +705,14 @@ func main() {
 				return
 			}
 			c.File(filepath.Join(server.BasePath, "static/setup.html"))
+		})
+
+		pages.GET("/forgot-password.html", func(c *gin.Context) {
+			c.File(filepath.Join(server.BasePath, "static/forgot-password.html"))
+		})
+
+		pages.GET("/reset-password.html", func(c *gin.Context) {
+			c.File(filepath.Join(server.BasePath, "static/reset-password.html"))
 		})
 
 		pages.GET("/controller.html", func(c *gin.Context) {

@@ -1198,6 +1198,7 @@ async function loadEmailSettings(): Promise<void> {
         (document.getElementById('smtp-username') as HTMLInputElement).value = data.username || '';
         (document.getElementById('smtp-password') as HTMLInputElement).value = data.password || '';
         (document.getElementById('smtp-from') as HTMLInputElement).value = data.from_addr || '';
+        (document.getElementById('admin-email') as HTMLInputElement).value = data.admin_email || '';
         (document.getElementById('email-enabled') as HTMLInputElement).checked = data.enabled;
     } catch (e) { console.error('Failed to load email settings', e); }
 }
@@ -1210,7 +1211,8 @@ document.getElementById('email-settings-form')?.addEventListener('submit', async
         username: (document.getElementById('smtp-username') as HTMLInputElement).value,
         password: (document.getElementById('smtp-password') as HTMLInputElement).value,
         from_addr: (document.getElementById('smtp-from') as HTMLInputElement).value,
-        enabled: (document.getElementById('email-enabled') as HTMLInputElement).checked
+        enabled: (document.getElementById('email-enabled') as HTMLInputElement).checked,
+        admin_email: (document.getElementById('admin-email') as HTMLInputElement).value
     };
     const res = await fetch('/api/email-settings', {
         method: 'POST',
@@ -1475,7 +1477,8 @@ document.body.addEventListener('submit', async (e: SubmitEvent) => {
             username: (document.getElementById('smtp-username') as HTMLInputElement).value,
             password: (document.getElementById('smtp-password') as HTMLInputElement).value,
             from_addr: (document.getElementById('smtp-from') as HTMLInputElement).value,
-            enabled: (document.getElementById('email-enabled') as HTMLInputElement).checked
+            enabled: (document.getElementById('email-enabled') as HTMLInputElement).checked,
+            admin_email: (document.getElementById('admin-email') as HTMLInputElement).value
         };
         const res = await fetch('/api/email-settings', {
             method: 'POST',

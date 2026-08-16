@@ -15,6 +15,8 @@ const (
 	FieldUsername = "username"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
+	// FieldEmail holds the string denoting the email field in the database.
+	FieldEmail = "email"
 	// Table holds the table name of the adminuser in the database.
 	Table = "admin_users"
 )
@@ -24,6 +26,7 @@ var Columns = []string{
 	FieldID,
 	FieldUsername,
 	FieldPassword,
+	FieldEmail,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -35,6 +38,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultEmail holds the default value on creation for the "email" field.
+	DefaultEmail string
+)
 
 // OrderOption defines the ordering options for the AdminUser queries.
 type OrderOption func(*sql.Selector)
@@ -52,4 +60,9 @@ func ByUsername(opts ...sql.OrderTermOption) OrderOption {
 // ByPassword orders the results by the password field.
 func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPassword, opts...).ToFunc()
+}
+
+// ByEmail orders the results by the email field.
+func ByEmail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEmail, opts...).ToFunc()
 }
