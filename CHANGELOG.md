@@ -1,3 +1,10 @@
+# [1.55.0](https://github.com/martynvdijke/heat/compare/v1.54.2...v1.55.0) (2026-08-16)
+
+
+### Features
+
+* add forgot-password email reset flow ([078d8b7](https://github.com/martynvdijke/heat/commit/078d8b74f0d7ea02b3116ee38f6a868da03a6b2f))
+
 ## [1.54.2](https://github.com/martynvdijke/heat/compare/v1.54.1...v1.54.2) (2026-08-16)
 
 
