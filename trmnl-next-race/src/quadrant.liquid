@@ -1,0 +1,53 @@
+<div class="layout layout--col gap--xsmall">
+  {% if next_race %}
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Next Race{% if next_race.country %} - {{ next_race.country }}{% endif %}</span>
+        <span class="value value--xsmall">{{ next_race.track }}</span>
+        <span class="label label--small">{{ next_race.race_date }}</span>
+      </div>
+      <div class="content">
+        {% if next_race.days_remaining == 0 %}
+          <span class="value value--xsmall">TODAY</span>
+        {% else %}
+          <span class="value value--xsmall">in {{ next_race.days_remaining }} days</span>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">Next race not scheduled</span>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if latest_race %}
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Last Race - {{ latest_race.name }}</span>
+      </div>
+    </div>
+    {% for result in latest_race.results %}
+      {% if forloop.index <= 2 %}
+        <div class="item">
+          <div class="content">
+            <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }} - {{ result.points }} pts</span>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% elsif next_race == nil %}
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">No race data yet</span>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<div class="title_bar">
+  <span class="title">Heat Next Race{% if season %} - {{ season.name }}{% endif %}</span>
+</div>

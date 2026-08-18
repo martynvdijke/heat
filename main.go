@@ -532,6 +532,7 @@ func main() {
 	r.DELETE("/api/rounds", h.DeleteRoundSnapshot)
 	r.GET("/api/seasons", h.GetSeasons)
 	r.GET("/api/trmnl/summary", h.GetTRMNLSummary)
+	r.GET("/api/trmnl/next-race", h.GetTRMNLNextRace)
 
 	// Game Mechanics routes
 	r.GET("/api/heat-cards", h.GetHeatCards)

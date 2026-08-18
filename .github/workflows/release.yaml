@@ -137,6 +137,10 @@ jobs:
     permissions:
       contents: read
 
+    strategy:
+      matrix:
+        plugin: [trmnl, trmnl-next-race]
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
@@ -150,11 +154,11 @@ jobs:
         run: gem install trmnl_preview
 
       - name: Lint TRMNL plugin
-        working-directory: trmnl
+        working-directory: ${{ matrix.plugin }}
         run: trmnlp lint
 
       - name: Bootstrap or require TRMNL plugin ID
-        working-directory: trmnl
+        working-directory: ${{ matrix.plugin }}
         run: |
           plugin_id=$(ruby -e 'require "yaml"; puts YAML.load_file("src/settings.yml")["id"].to_s.strip')
           if [ -n "$plugin_id" ]; then
@@ -176,7 +180,7 @@ jobs:
           TRMNL_API_KEY: ${{ secrets.TRML_TOKEN }}
 
       - name: Push TRMNL plugin
-        working-directory: trmnl
+        working-directory: ${{ matrix.plugin }}
         run: trmnlp push --force
         env:
           TRMNL_API_KEY: ${{ secrets.TRML_TOKEN }}

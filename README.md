@@ -145,6 +145,7 @@ xcode-select --install
 | `GET` | `/api/stats/export` | No | Export all racer stats as CSV |
 | `GET` | `/api/stats/track-performance` | No | Per-track performance breakdown by racer |
 | `GET` | `/api/trmnl/summary` | No | Compact TRMNL e-ink payload: latest race + season standings |
+| `GET` | `/api/trmnl/next-race` | No | TRMNL e-ink payload: next race countdown + latest results + standings |
 
 ### Settings & Admin
 
@@ -240,11 +241,23 @@ With racer_id: returns wins, podiums, races, and average finishing position per 
 
 ## 🖥️ TRMNL E-Ink Display
 
-Heat ships a TRMNL e-ink device plugin (`trmnl/`) that shows the latest race results and the current season championship standings on a [TRMNL](https://usetrmnl.com) display.
+Heat ships two TRMNL e-ink device plugins for a [TRMNL](https://usetrmnl.com) display.
+
+### Heat Championship Stats (`trmnl/`)
+
+Shows the latest race results and the current season championship standings.
 
 - **Endpoint**: `GET /api/trmnl/summary` — public, unauthenticated, read-only. Returns the most recent **finalized** round (finishing order with points, top 10) and the top 8 of the season standings (active season, falling back to the most recent season).
 - **Plugin directory**: `trmnl/` contains `settings.yml` and the four layout templates (`full.liquid`, `half_horizontal.liquid`, `half_vertical.liquid`, `quadrant.liquid`) required by the TRMNL plugin framework (v2.x).
 - **Install**: point the plugin's `url` custom field at your Heat instance (e.g. `https://heat.example.com`); the plugin polls `<instance>/api/trmnl/summary` every 60 minutes. The `trmnl/` directory is the publishable artifact for an official TRMNL recipe.
+
+### Heat Next Race (`trmnl-next-race/`)
+
+Geared towards the next race: a countdown to the upcoming race, the latest results (top 3) and the championship standings (top 5).
+
+- **Endpoint**: `GET /api/trmnl/next-race` — public, unauthenticated, read-only. Returns the next scheduled race (`race_date`, track, country, laps, `days_remaining` computed server-side — `next_race` is `null` when no race is scheduled, and the plugin shows a "Next race not scheduled" state), the most recent **finalized** round (top 3 results), and the top 5 of the season standings.
+- **Plugin directory**: `trmnl-next-race/` contains `settings.yml` and the four layout templates required by the TRMNL plugin framework (v2.x).
+- **Install**: point the plugin's `url` custom field at your Heat instance (e.g. `https://heat.example.com`); the plugin polls `<instance>/api/trmnl/next-race` every 60 minutes. Configure the upcoming race date under the admin race info page (field `next race date`, format `YYYY-MM-DD`).
 - **Note**: the display reflects the championship — finalized round snapshots — not the manual race history archive, so the two views may diverge.
 
 ## 🐳 Docker Deployment

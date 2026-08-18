@@ -100,6 +100,10 @@ jobs:
     permissions:
       contents: read
 
+    strategy:
+      matrix:
+        plugin: [trmnl, trmnl-next-race]
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
@@ -113,7 +117,7 @@ jobs:
         run: gem install trmnl_preview
 
       - name: Lint TRMNL plugin
-        working-directory: trmnl
+        working-directory: ${{ matrix.plugin }}
         run: trmnlp lint
 
   otel:

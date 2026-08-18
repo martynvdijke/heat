@@ -1,0 +1,49 @@
+---
+strategy: polling
+no_screen_padding: 'no'
+dark_mode: 'no'
+static_data: ''
+polling_verb: get
+framework_version: 2.3.7
+serverless_language:
+polling_url: "{{url}}/api/trmnl/next-race"
+polling_headers: ''
+polling_body: ''
+oauth_enabled: 'false'
+oauth_pkce_enabled: 'no'
+oauth_authorize_url: ''
+oauth_token_url: ''
+oauth_scopes: ''
+oauth_scope_separator: ''
+oauth_refresh_url: ''
+oauth_auth_params: ''
+oauth_token_headers: ''
+oauth_token_site: ''
+oauth_token_params: ''
+oauth_token_request_auth_method: ''
+oauth_body_format: ''
+oauth_token_response_metadata: ''
+oauth_authorization_method: ''
+oauth_refresh_params: ''
+oauth_token_field_name: ''
+oauth_expiry_field_name: ''
+oauth_expiry_strategy: ''
+oauth_fixed_expiry_ms: ''
+custom_fields:
+- keyname: url
+  field_type: url
+  name: Address of heat instance
+  description: URL
+  placeholder: https://heat.vandijke.xyz
+  help_text: Please include http:// or https://
+- keyname: bio
+  name: About This Plugin
+  category: entertainment
+  field_type: author_bio
+  description: I am running a heat board game tournament with friends, this shows the countdown to the next race, the latest results and the championship standings on my trmnl.
+  github_url: https://github.com/martynvdijke/heat
+  learn_more_url: https://heat.vandijke.xyz/
+  email_address: martyn@vandijke.xyz
+name: Heat Next Race
+description: "Countdown to the next race, latest results and standings"
+refresh_interval: 60

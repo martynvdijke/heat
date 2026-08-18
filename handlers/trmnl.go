@@ -31,20 +31,16 @@ type trmnlRace struct {
 	Results   []trmnlResult `json:"results"`
 }
 
-// trmnlSeason is the season metadata section of the TRMNL summary payload.
+// trmnlSeason is the season metadata section of the TRMNL payloads.
 type trmnlSeason struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
-// GetTRMNLSummary returns a compact payload for TRMNL e-ink device polling:
-// the latest finalized round (finishing order with points) and the current
-// season championship standings. When no finalized rounds or no seasons
-// exist, it still responds 200 with latest_race: null and an empty
-// standings array.
-func (h *Handler) GetTRMNLSummary(c *gin.Context) {
-	// Latest race: most recent finalized round snapshot, tie-broken by round.
-	var latestRace *trmnlRace
+// trmnlLatestRace loads the most recent finalized round snapshot (tie-broken
+// by round) with up to limit finishing positions, enriched with track
+// metadata from the race archive. Returns nil when no finalized rounds exist.
+func (h *Handler) trmnlLatestRace(c *gin.Context, limit int) *trmnlRace {
 	var raceID int
 	var raceName, raceDate string
 	var raceRound int
@@ -54,62 +50,60 @@ func (h *Handler) GetTRMNLSummary(c *gin.Context) {
 		WHERE status = 'final'
 		ORDER BY race_date DESC, round DESC
 		LIMIT 1`).Scan(&raceID, &raceName, &raceDate, &raceRound)
-	switch {
-	case err == sql.ErrNoRows:
-		// No finalized rounds: latest_race stays null.
-	case err != nil:
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	default:
-		latestRace = &trmnlRace{
-			Name:     raceName,
-			RaceDate: raceDate,
-			Round:    raceRound,
-			Results:  make([]trmnlResult, 0),
-		}
-
-		// Best-effort enrichment with track metadata from the race archive.
-		var country, track string
-		var totalLaps int
-		if err := h.S.DB.QueryRow(`
-			SELECT COALESCE(country, ''), COALESCE(track, ''), COALESCE(total_laps, 0)
-			FROM race_history
-			WHERE name = ? AND race_date = ?
-			LIMIT 1`, raceName, raceDate).Scan(&country, &track, &totalLaps); err == nil {
-			latestRace.Country = country
-			latestRace.Track = track
-			latestRace.TotalLaps = totalLaps
-		}
-
-		rows, err := h.S.DB.Query(`
-			SELECT rss.racer_name, COALESCE(t.name, ''), rss.position, rss.points,
-				COALESCE(r.profile_picture, '')
-			FROM round_snapshot_scores rss
-			LEFT JOIN racers r ON r.id = rss.racer_id
-			LEFT JOIN teams t ON t.id = r.team_id
-			WHERE rss.snapshot_id = ?
-			ORDER BY rss.position ASC
-			LIMIT 10`, raceID)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var r trmnlResult
-			if err := rows.Scan(&r.RacerName, &r.Team, &r.Position, &r.Points, &r.ProfilePicture); err != nil {
-				continue
-			}
-			r.ProfilePicture = trmnlAbsoluteURL(c, r.ProfilePicture)
-			latestRace.Results = append(latestRace.Results, r)
-		}
+	if err != nil {
+		return nil
 	}
 
-	// Season: the active season, falling back to the most recently created.
-	var season *trmnlSeason
+	race := &trmnlRace{
+		Name:     raceName,
+		RaceDate: raceDate,
+		Round:    raceRound,
+		Results:  make([]trmnlResult, 0),
+	}
+
+	// Best-effort enrichment with track metadata from the race archive.
+	var country, track string
+	var totalLaps int
+	if err := h.S.DB.QueryRow(`
+		SELECT COALESCE(country, ''), COALESCE(track, ''), COALESCE(total_laps, 0)
+		FROM race_history
+		WHERE name = ? AND race_date = ?
+		LIMIT 1`, raceName, raceDate).Scan(&country, &track, &totalLaps); err == nil {
+		race.Country = country
+		race.Track = track
+		race.TotalLaps = totalLaps
+	}
+
+	rows, err := h.S.DB.Query(`
+		SELECT rss.racer_name, COALESCE(t.name, ''), rss.position, rss.points,
+			COALESCE(r.profile_picture, '')
+		FROM round_snapshot_scores rss
+		LEFT JOIN racers r ON r.id = rss.racer_id
+		LEFT JOIN teams t ON t.id = r.team_id
+		WHERE rss.snapshot_id = ?
+		ORDER BY rss.position ASC
+		LIMIT ?`, raceID, limit)
+	if err != nil {
+		return race
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var r trmnlResult
+		if err := rows.Scan(&r.RacerName, &r.Team, &r.Position, &r.Points, &r.ProfilePicture); err != nil {
+			continue
+		}
+		r.ProfilePicture = trmnlAbsoluteURL(c, r.ProfilePicture)
+		race.Results = append(race.Results, r)
+	}
+	return race
+}
+
+// trmnlSeason returns the active season, falling back to the most recently
+// created season, along with its ID. Returns (nil, 0) when no seasons exist.
+func (h *Handler) trmnlSeason() (*trmnlSeason, int) {
 	var seasonID int
 	var seasonName string
-	err = h.S.DB.QueryRow(`
+	err := h.S.DB.QueryRow(`
 		SELECT id, name FROM seasons
 		WHERE status = 'active'
 		ORDER BY id DESC
@@ -120,22 +114,34 @@ func (h *Handler) GetTRMNLSummary(c *gin.Context) {
 			ORDER BY id DESC
 			LIMIT 1`).Scan(&seasonID, &seasonName)
 	}
-	switch {
-	case err == sql.ErrNoRows:
-		// No seasons: season stays null.
-	case err != nil:
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	default:
-		season = &trmnlSeason{ID: seasonID, Name: seasonName}
+	if err != nil {
+		return nil, 0
 	}
+	return &trmnlSeason{ID: seasonID, Name: seasonName}, seasonID
+}
+
+// trmnlStandings resolves the season championship standings with the racer
+// profile pictures rewritten to absolute URLs for the TRMNL servers.
+func (h *Handler) trmnlStandings(c *gin.Context, seasonID, limit int) []models.SeasonStanding {
+	standings := racing.SeasonStandings(h.S.DB, seasonID, limit)
+	for i := range standings {
+		standings[i].ProfilePicture = trmnlAbsoluteURL(c, standings[i].ProfilePicture)
+	}
+	return standings
+}
+
+// GetTRMNLSummary returns a compact payload for TRMNL e-ink device polling:
+// the latest finalized round (finishing order with points) and the current
+// season championship standings. When no finalized rounds or no seasons
+// exist, it still responds 200 with latest_race: null and an empty
+// standings array.
+func (h *Handler) GetTRMNLSummary(c *gin.Context) {
+	latestRace := h.trmnlLatestRace(c, 10)
+	season, seasonID := h.trmnlSeason()
 
 	standings := make([]models.SeasonStanding, 0)
 	if season != nil {
-		standings = racing.SeasonStandings(h.S.DB, seasonID, 8)
-		for i := range standings {
-			standings[i].ProfilePicture = trmnlAbsoluteURL(c, standings[i].ProfilePicture)
-		}
+		standings = h.trmnlStandings(c, seasonID, 8)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

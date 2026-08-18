@@ -1,0 +1,101 @@
+<div class="layout layout--col gap--xsmall">
+  {% if next_race %}
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Next Race{% if next_race.country %} - {{ next_race.country }}{% endif %}</span>
+        <span class="value value--small">{{ next_race.track }}</span>
+        <span class="label label--small">{{ next_race.race_date }}{% if next_race.total_laps %} - {{ next_race.total_laps }} laps{% endif %}</span>
+      </div>
+      <div class="content">
+        {% if next_race.days_remaining == 0 %}
+          <span class="value value--small">TODAY</span>
+        {% else %}
+          <span class="value value--small">in {{ next_race.days_remaining }} days</span>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">Next race not scheduled</span>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if latest_race %}
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Last Race{% if latest_race.track %} - {{ latest_race.track }}{% endif %}</span>
+        <span class="value value--xsmall">{{ latest_race.name }}</span>
+      </div>
+    </div>
+    <div class="grid grid--cols-2 gap--xsmall">
+      {% for result in latest_race.results %}
+        <div class="item">
+          <div class="content">
+            <div style="display:flex;align-items:center;gap:6px;width:100%;">
+              {% if result.profile_picture %}
+                <img src="{{ result.profile_picture }}" width="24" height="24" class="image image--cover rounded--full" style="flex-shrink:0" />
+              {% endif %}
+              <div style="min-width:0;">
+                <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }}</span>
+                {% if result.team %}<span class="label label--small">{{ result.team }}</span>{% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="content">
+            <span class="label label--small">{{ result.points }} pts</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% elsif next_race == nil %}
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">No race data yet</span>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if standings.size > 0 %}
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="label label--small">Standings</span>
+      </div>
+    </div>
+    <div class="grid grid--cols-2 gap--xsmall">
+      {% for standing in standings %}
+        <div class="item">
+          <div class="content">
+            <div style="display:flex;align-items:center;gap:6px;width:100%;">
+              {% if standing.profile_picture %}
+                <img src="{{ standing.profile_picture }}" width="24" height="24" class="image image--cover rounded--full" style="flex-shrink:0" />
+              {% endif %}
+              <div style="min-width:0;">
+                <span class="value value--xxsmall">{{ forloop.index }}. {{ standing.racer_name }}</span>
+                {% if standing.team_name %}<span class="label label--small">{{ standing.team_name }}</span>{% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="content">
+            <span class="label label--small">{{ standing.points }}</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% elsif next_race == nil and latest_race == nil %}
+    <div class="divider--h"></div>
+    <div class="item">
+      <div class="content">
+        <span class="value value--xsmall">No standings yet</span>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<div class="title_bar">
+  <span class="title">Heat Next Race{% if season %} - {{ season.name }}{% endif %}</span>
+</div>
