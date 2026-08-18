@@ -2,8 +2,8 @@
   {% if next_race %}
     <div class="item">
       <div class="content">
-        <span class="label label--small">Next Race{% if next_race.country %} - {{ next_race.country }}{% endif %}</span>
-        <span class="value value--xsmall">{{ next_race.track }}</span>
+        <span class="label label--small lg:label--base">Next Race{% if next_race.country %} - {{ next_race.country }}{% endif %}</span>
+        <span class="value value--xsmall lg:value--small">{{ next_race.track }}</span>
         <span class="label label--small">{{ next_race.race_date }}</span>
       </div>
       <div class="content">
@@ -26,14 +26,14 @@
     <div class="divider--h"></div>
     <div class="item">
       <div class="content">
-        <span class="label label--small">Last Race - {{ latest_race.name }}</span>
+        <span class="label label--small lg:label--base">Last Race - {{ latest_race.name }}</span>
       </div>
     </div>
     {% for result in latest_race.results %}
       {% if forloop.index <= 2 %}
         <div class="item">
           <div class="content">
-            <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }} - {{ result.points }} pts</span>
+            <span class="value value--xxsmall lg:value--small">P{{ result.position }} {{ result.racer_name }} - {{ result.points }} pts</span>
           </div>
         </div>
       {% endif %}

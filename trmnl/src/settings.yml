@@ -36,7 +36,7 @@ custom_fields:
   name: Address of heat instance
   description: URL
   placeholder: https://heat.vandijke.xyz
-  help_text: Please include http:// or https://
+  help_text: 'Enter the full URL of your Heat instance, e.g. <a href="https://heat.vandijke.xyz">https://heat.vandijke.xyz</a>'
 - keyname: bio
   name: About This Plugin
   category: entertainment

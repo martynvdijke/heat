@@ -4,7 +4,7 @@ no_screen_padding: 'no'
 dark_mode: 'no'
 static_data: ''
 polling_verb: get
-framework_version: 2.3.7
+framework_version: latest
 serverless_language:
 polling_url: "{{url}}/api/trmnl/next-race"
 polling_headers: ''
@@ -35,7 +35,7 @@ custom_fields:
   name: Address of heat instance
   description: URL
   placeholder: https://heat.vandijke.xyz
-  help_text: Please include http:// or https://
+  help_text: 'Enter the full URL of your Heat instance, e.g. <a href="https://heat.vandijke.xyz">https://heat.vandijke.xyz</a>'
 - keyname: bio
   name: About This Plugin
   category: entertainment
@@ -45,5 +45,5 @@ custom_fields:
   learn_more_url: https://heat.vandijke.xyz/
   email_address: martyn@vandijke.xyz
 name: Heat Next Race
-description: "Countdown to the next race, latest results and standings"
+description: "Countdown, results and standings"
 refresh_interval: 60
