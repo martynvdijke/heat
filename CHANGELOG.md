@@ -1,3 +1,15 @@
+# [1.56.0](https://github.com/martynvdijke/heat/compare/v1.55.1...v1.56.0) (2026-08-18)
+
+
+### Bug Fixes
+
+* pass trmnlp lint and migrate plugins to latest framework ([7b223de](https://github.com/martynvdijke/heat/commit/7b223de9d4c549e322d381bc6f4de92077a32c07))
+
+
+### Features
+
+* add TRMNL next-race plugin with countdown endpoint ([14cfd3b](https://github.com/martynvdijke/heat/commit/14cfd3b6fa96c2d6ed0d0bb09580b818b04b45a9))
+
 ## [1.55.1](https://github.com/martynvdijke/heat/compare/v1.55.0...v1.55.1) (2026-08-18)
 
 
