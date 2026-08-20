@@ -129,7 +129,15 @@ func (m *Manager) BroadcastGameMechanics() {
 func (m *Manager) BroadcastWeather() {
 	for {
 		wc := <-m.S.WeatherBroadcast
-		m.broadcastToClients(wc)
+		m.broadcastToClients(map[string]any{
+			"type":          "weather_update",
+			"id":            wc.ID,
+			"race_id":       wc.RaceID,
+			"condition":     wc.Condition,
+			"lap_start":     wc.LapStart,
+			"lap_end":       wc.LapEnd,
+			"grip_modifier": wc.GripModifier,
+		})
 	}
 }
 
@@ -157,6 +165,23 @@ func (m *Manager) BroadcastRaceRadio() {
 			"racer_name": msg.RacerName,
 			"message":    msg.Message,
 			"timestamp":  msg.Timestamp,
+		})
+	}
+}
+
+func (m *Manager) BroadcastCommentary() {
+	for {
+		entry := <-m.S.CommentaryBroadcast
+		m.broadcastToClients(map[string]any{
+			"type":         "commentary",
+			"id":           entry.ID,
+			"race_id":      entry.RaceID,
+			"lap":          entry.Lap,
+			"racer_id":     entry.RacerID,
+			"racer_name":   entry.RacerName,
+			"message":      entry.Message,
+			"template_key": entry.TemplateKey,
+			"created_at":   entry.CreatedAt,
 		})
 	}
 }

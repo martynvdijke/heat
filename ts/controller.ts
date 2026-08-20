@@ -1,5 +1,7 @@
 import './theme';
 import { showToast } from './toast';
+import { StartLightsEngine } from './startlights-core';
+import { CommentaryTicker } from './commentary';
 
 interface ControllerRacer {
     id: number;
@@ -17,6 +19,74 @@ let raceTimer: ReturnType<typeof setInterval> | null = null;
 let raceSeconds = 0;
 let controllerRacers: ControllerRacer[] = [];
 let currentLap = 0;
+let lapRecords: any[] = [];
+let hasLapData = false;
+
+// --- Inline Start Lights Widget ---
+function widgetSetLightState(lightNum: number, state: 'off' | 'red' | 'green'): void {
+    const bulb = document.querySelector(`#controller-start-lights #start-light-${lightNum} .start-light-bulb`);
+    if (!bulb) return;
+    bulb.className = 'start-light-bulb';
+    if (state === 'red') {
+        bulb.classList.add('red');
+    } else if (state === 'green') {
+        bulb.classList.add('green');
+    }
+}
+
+function widgetShowMessage(_text: string, _subtext = ''): void {
+    // The inline widget only shows a status line; message text is not rendered.
+}
+
+function widgetShowStatusBar(text: string): void {
+    const bar = document.getElementById('start-status-bar');
+    if (bar) bar.textContent = text;
+}
+
+const startLightsEngine = new StartLightsEngine({
+    setLightState: widgetSetLightState,
+    showMessage: widgetShowMessage,
+    showStatusBar: widgetShowStatusBar
+});
+
+function updateAbortButton(): void {
+    const btn = document.getElementById('abort-start-lights') as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.disabled = !startLightsEngine.isRunning;
+}
+
+let controllerWs: WebSocket | null = null;
+let controllerWsReconnect: ReturnType<typeof setTimeout> | null = null;
+let controllerCommentary: CommentaryTicker | null = null;
+
+function connectControllerWebSocket(): void {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    controllerWs = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    controllerCommentary?.connect(controllerWs);
+    controllerWs.onopen = () => {
+        (window as any).__controllerWsConnected = true;
+    };
+    controllerWs.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'flag' && data.flag === 'startlights') {
+                startLightsEngine.handleCommand(data);
+                updateAbortButton();
+            }
+        } catch {
+            // ignore parse errors
+        }
+    };
+    controllerWs.onclose = () => {
+        (window as any).__controllerWsConnected = false;
+        controllerWs = null;
+        if (controllerWsReconnect) clearTimeout(controllerWsReconnect);
+        controllerWsReconnect = setTimeout(connectControllerWebSocket, 5000);
+    };
+}
+
+// Keep the Abort button state in sync with the engine phase.
+setInterval(updateAbortButton, 500);
 
 function startRaceTimer(): void {
     raceTimer = setInterval(() => {
@@ -54,11 +124,62 @@ async function loadControllerData(): Promise<void> {
     };
     appendGroup('Board Game', boardGame);
     appendGroup('Custom', custom);
+
+    loadWeatherChip();
+    loadLapRecords();
+    loadNextRace();
+    renderWeatherSchedule();
+}
+
+async function loadLapRecords(): Promise<void> {
+    try {
+        const res = await fetch('/api/lap-records?race_id=0');
+        lapRecords = await res.json();
+        hasLapData = Array.isArray(lapRecords) && lapRecords.length > 0;
+    } catch {
+        hasLapData = false;
+    }
+    renderStandings();
+}
+
+// Gap to leader per driver: completed laps = max lap_number for the driver;
+// leader laps = max lap_number where position == 1. LEAD for the leader,
+// +N for gap >= 1, empty when on the same lap as the leader.
+function computeGaps(): Map<number, string> {
+    const gaps = new Map<number, string>();
+    if (!hasLapData) return gaps;
+    const completed = new Map<number, number>();
+    let leaderLaps = 0;
+    let leaderRacerId = -1;
+    for (const rec of lapRecords) {
+        const cur = completed.get(rec.racer_id) ?? 0;
+        if (rec.lap_number > cur) completed.set(rec.racer_id, rec.lap_number);
+        if (rec.position === 1 && rec.lap_number > leaderLaps) {
+            leaderLaps = rec.lap_number;
+            leaderRacerId = rec.racer_id;
+        }
+    }
+    if (leaderRacerId === -1) {
+        for (const [rid, laps] of completed) {
+            if (laps > leaderLaps) { leaderLaps = laps; leaderRacerId = rid; }
+        }
+    }
+    for (const r of controllerRacers) {
+        const done = completed.get(r.id) ?? 0;
+        const gap = leaderLaps - done;
+        if (r.id === leaderRacerId) gaps.set(r.id, 'LEAD');
+        else if (gap >= 1) gaps.set(r.id, `+${gap}`);
+        else gaps.set(r.id, '');
+    }
+    return gaps;
 }
 
 function renderStandings(): void {
     const sorted = [...controllerRacers].sort((a, b) => a.position - b.position);
-    document.getElementById('standings-list')!.innerHTML = sorted.map((r, i) => `
+    const gaps = computeGaps();
+    document.getElementById('standings-list')!.innerHTML = sorted.map((r, i) => {
+        const gap = gaps.get(r.id) ?? '';
+        return `
         <div class="driver-row ${i === 0 ? 'active' : ''}">
             <div class="position-btn btn ${r.position === 1 ? 'btn-warning' : r.position <= 3 ? 'btn-secondary' : 'btn-outline-light'} me-2">
                 ${r.position}
@@ -68,6 +189,7 @@ function renderStandings(): void {
                 <div class="fw-bold small">${r.name}</div>
                 <small class="opacity-50">${r.car_name}</small>
             </div>
+            ${hasLapData ? `<span class="gap-cell ${gap === 'LEAD' ? 'gap-lead' : ''}" title="Gap to leader">${gap}</span>` : ''}
             <button class="btn btn-sm btn-outline-info ms-1" onclick="triggerBlueFlag(${r.id}, '${r.name}')" title="Blue Flag">
                 <i class="fa-solid fa-flag"></i>
             </button>
@@ -81,7 +203,8 @@ function renderStandings(): void {
                 <i class="fa-solid fa-chevron-down"></i>
             </button>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function startRace(): void {
@@ -218,9 +341,39 @@ function triggerChequeredFlag(): void {
 
 function populateDriverSelect(): void {
     const select = document.getElementById('flag-driver-select') as HTMLSelectElement;
-    if (!select) return;
-    select.innerHTML = '<option value="">Select driver...</option>' +
-        controllerRacers.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+    if (select) {
+        select.innerHTML = '<option value="">Select driver...</option>' +
+            controllerRacers.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+    }
+    const commentarySelect = document.getElementById('commentary-racer-select') as HTMLSelectElement;
+    if (commentarySelect) {
+        commentarySelect.innerHTML = '<option value="">Driver...</option>' +
+            controllerRacers.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+    }
+}
+
+function sendCommentary(): void {
+    const messageInput = document.getElementById('commentary-message') as HTMLInputElement;
+    const message = (messageInput?.value || '').trim();
+    if (!message) {
+        showToast('Enter a commentary message', 'warning');
+        return;
+    }
+    const select = document.getElementById('commentary-racer-select') as HTMLSelectElement;
+    const racerId = select ? parseInt(select.value) : 0;
+    const lap = parseInt((document.getElementById('record-lap-number') as HTMLInputElement)?.value || '0') || 0;
+    fetch('/api/commentary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ race_id: 0, lap, racer_id: racerId || undefined, message })
+    })
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to send commentary');
+            if (messageInput) messageInput.value = '';
+            if (select) select.value = '';
+            showToast('Commentary sent', 'success');
+        })
+        .catch(() => showToast('Failed to send commentary', 'error'));
 }
 
 function sendBlueFlag(): void {
@@ -260,7 +413,36 @@ function saveRaceSettings(): void {
             name: name,
             is_oneoff: (document.getElementById('race-type') as HTMLSelectElement).value === 'oneoff'
         })
-    });
+    }).then(() => loadNextRace());
+}
+
+// Next-race countdown
+function renderNextRace(nextRaceDate: string): void {
+    const line = document.getElementById('next-race-line');
+    if (!line) return;
+    if (!nextRaceDate) { line.hidden = true; line.textContent = ''; return; }
+    const date = new Date(`${nextRaceDate}T00:00:00`);
+    if (isNaN(date.getTime())) { line.hidden = true; line.textContent = ''; return; }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((date.getTime() - today.getTime()) / 86400000);
+    let when: string;
+    if (diffDays === 0) when = 'today';
+    else if (diffDays === 1) when = 'tomorrow';
+    else if (diffDays > 1) when = `in ${diffDays} days`;
+    else when = `${Math.abs(diffDays)} days ago`;
+    line.textContent = `Next race: ${nextRaceDate} · ${when}`;
+    line.hidden = false;
+}
+
+async function loadNextRace(): Promise<void> {
+    try {
+        const res = await fetch('/api/race-info');
+        const info = await res.json();
+        renderNextRace(info.next_race_date || '');
+    } catch {
+        // ignore fetch errors; countdown stays hidden
+    }
 }
 
 function saveRaceResult(): void {
@@ -353,10 +535,31 @@ function broadcastMessage(msg: Record<string, unknown>): void {
 }
 
 // Weather
+const weatherNames: Record<string, string> = { dry: '☀️ Dry', damp: '🌧️ Damp', wet: '🌧️ Wet', torrential: '⛈️ Torrential' };
+
+function renderWeatherChip(condition: string): void {
+    const chip = document.getElementById('weather-chip-text');
+    if (chip) chip.textContent = weatherNames[condition] || condition;
+}
+
+async function loadWeatherChip(): Promise<void> {
+    try {
+        const res = await fetch('/api/weather?race_id=0');
+        const weather = await res.json();
+        if (Array.isArray(weather) && weather.length) {
+            renderWeatherChip(weather[weather.length - 1].condition);
+        }
+    } catch {
+        // ignore fetch errors; chip keeps its default
+    }
+}
+
 async function setWeather(): Promise<void> {
     const condition = (document.getElementById('weather-condition') as HTMLSelectElement).value;
     const lapStart = parseInt((document.getElementById('weather-lap-start') as HTMLInputElement).value) || 1;
-    const lapEnd = 999;
+    const lapEndInput = document.getElementById('weather-lap-end') as HTMLInputElement | null;
+    let lapEnd = lapEndInput ? parseInt(lapEndInput.value) || 999 : 999;
+    if (lapEnd < lapStart) lapEnd = lapStart;
     const gripMap: Record<string, number> = { dry: 1.0, damp: 0.85, wet: 0.7, torrential: 0.5 };
 
     await fetch('/api/weather', {
@@ -364,8 +567,27 @@ async function setWeather(): Promise<void> {
         body: JSON.stringify({ race_id: 0, condition, lap_start: lapStart, lap_end: lapEnd, grip_modifier: gripMap[condition] || 1.0 })
     });
 
-    const weatherNames: Record<string, string> = { dry: '☀️ Dry', damp: '🌧️ Damp', wet: '🌧️ Wet', torrential: '⛈️ Torrential' };
     document.getElementById('current-weather')!.textContent = `Current: ${weatherNames[condition] || condition}`;
+    renderWeatherChip(condition);
+    renderWeatherSchedule();
+}
+
+async function renderWeatherSchedule(): Promise<void> {
+    const el = document.getElementById('weather-schedule');
+    if (!el) return;
+    try {
+        const res = await fetch('/api/weather?race_id=0');
+        const entries: any[] = await res.json();
+        if (!Array.isArray(entries) || entries.length === 0) { el.textContent = ''; return; }
+        const sorted = [...entries].sort((a: any, b: any) => a.lap_start - b.lap_start);
+        const currentLapVal = parseInt((document.getElementById('record-lap-number') as HTMLInputElement)?.value || '1') || 1;
+        const active = sorted.filter((e: any) => e.lap_start <= currentLapVal && (e.lap_end === 999 || currentLapVal < e.lap_end));
+        const upcoming = sorted.filter((e: any) => e.lap_start > currentLapVal);
+        const parts: string[] = [];
+        if (active.length) parts.push(`Active: ${active.map((e: any) => `${weatherNames[e.condition] || e.condition} (${e.lap_start}–${e.lap_end === 999 ? '∞' : e.lap_end})`).join(', ')}`);
+        if (upcoming.length) parts.push(`Upcoming: ${upcoming.map((e: any) => `${weatherNames[e.condition] || e.condition} at lap ${e.lap_start}`).join(', ')}`);
+        el.textContent = parts.join(' · ') || sorted.map((e: any) => `${weatherNames[e.condition] || e.condition} ${e.lap_start}–${e.lap_end === 999 ? '∞' : e.lap_end}`).join(' · ');
+    } catch { /* ignore */ }
 }
 
 // Turbo tracking
@@ -423,6 +645,7 @@ async function recordCurrentLap(): Promise<void> {
 
     (document.getElementById('record-lap-number') as HTMLInputElement).value = (lapNum + 1).toString();
     document.getElementById('current-lap')!.textContent = lapNum.toString();
+    loadLapRecords();
 }
 
 // Race events
@@ -499,9 +722,15 @@ const actionHandlers: Record<string, () => void> = {
     takeRoundSnapshot, sendBlueFlag, sendBlackWhiteFlag,
     addRaceEvent, recordCurrentLap, setWeather,
     saveRaceSettings, saveRaceResult, archiveCurrentSeason, discardRace,
+    sendCommentary,
     triggerStartLights: () => {
         const fn = (window as any).triggerStartLights;
         if (fn) fn();
+    },
+    abortStartLights: () => {
+        broadcastMessage({ type: 'flag', flag: 'startlights', state: 'abort' });
+        startLightsEngine.abortSequence();
+        updateAbortButton();
     },
 };
 
@@ -532,4 +761,12 @@ document.addEventListener('click', (e: Event) => {
 });
 
 loadControllerData();
+connectControllerWebSocket();
+
+// Live commentary feed in the Tracking card.
+const commentaryFeedEl = document.getElementById('commentary-feed');
+if (commentaryFeedEl) {
+    controllerCommentary = new CommentaryTicker(commentaryFeedEl);
+    controllerCommentary.start();
+}
 

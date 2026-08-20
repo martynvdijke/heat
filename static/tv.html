@@ -16,6 +16,28 @@
     <button class="fullscreen-btn" onclick="tvToggleFullscreen()">
         <i aria-hidden="true" class="fa-solid fa-expand me-1"></i>Fullscreen
     </button>
+    <button class="fullscreen-btn" id="sound-settings-trigger" aria-haspopup="dialog" aria-controls="sound-settings-modal">
+        <i aria-hidden="true" class="fa-solid fa-volume-high me-1"></i>Sound
+    </button>
+
+    <!-- Sound Settings Modal -->
+    <div id="sound-settings-modal" role="dialog" aria-modal="true" aria-labelledby="sound-settings-title" hidden>
+        <div class="sound-settings-overlay">
+            <div class="sound-settings-panel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 id="sound-settings-title" class="h5 mb-0">Sound Settings</h2>
+                    <button type="button" class="btn-close btn-close-white sound-settings-close" aria-label="Close sound settings"></button>
+                </div>
+                <div id="sound-settings-rows"></div>
+                <div class="d-flex justify-content-between mt-3">
+                    <button type="button" class="btn btn-outline-danger btn-sm sound-settings-reset">
+                        <i aria-hidden="true" class="fa-solid fa-rotate-left me-1"></i>Reset all
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm sound-settings-close">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="tv-header">
         <div class="logo">HEAT</div>
@@ -29,7 +51,9 @@
         <div class="d-flex align-items-center">
             <span class="weather-icon" id="tv-weather-icon">☀️</span>
             <span class="weather-text" id="tv-weather-text">Dry</span>
+            <span class="weather-grip" id="tv-weather-grip"></span>
         </div>
+        <div class="weather-forecast" id="tv-weather-forecast" hidden></div>
     </div>
 
     <div class="tv-center">
@@ -40,6 +64,8 @@
     <div class="tv-leaderboard" id="tv-leaderboard">
         <div class="text-center opacity-50 py-5">Waiting for race data...</div>
     </div>
+
+    <div class="tv-commentary" id="tv-commentary"></div>
 
     <div class="tv-events" id="tv-events">
         <div class="text-center opacity-50 small">No recent events</div>

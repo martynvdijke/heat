@@ -138,9 +138,11 @@ func (h *Handler) GetConsistencyRatings(c *gin.Context) {
 func (h *Handler) GetPaceHeatmap(c *gin.Context) {
 	racerIDStr := c.Query("racer_id")
 
-	query := `SELECT lr.racer_id, COALESCE(r.name, ''), lr.lap_number, lr.position, lr.gear_used, lr.heat_generated, lr.turbo_used
+	query := `SELECT lr.racer_id, COALESCE(r.name, ''), lr.lap_number, lr.position, lr.gear_used, lr.heat_generated, lr.turbo_used,
+		COALESCE(wc.condition, 'dry'), COALESCE(wc.grip_modifier, 1.0)
 		FROM lap_records lr
 		LEFT JOIN racers r ON r.id = lr.racer_id
+		LEFT JOIN weather_conditions wc ON wc.race_id = lr.race_id AND lr.lap_number BETWEEN wc.lap_start AND wc.lap_end
 		WHERE 1=1`
 
 	var args []any
@@ -158,20 +160,22 @@ func (h *Handler) GetPaceHeatmap(c *gin.Context) {
 	defer rows.Close()
 
 	type PacePoint struct {
-		RacerID       int    `json:"racer_id"`
-		RacerName     string `json:"racer_name"`
-		Lap           int    `json:"lap"`
-		Position      int    `json:"position"`
-		GearUsed      int    `json:"gear_used"`
-		HeatGenerated int    `json:"heat_generated"`
-		TurboUsed     bool   `json:"turbo_used"`
+		RacerID       int     `json:"racer_id"`
+		RacerName     string  `json:"racer_name"`
+		Lap           int     `json:"lap"`
+		Position      int     `json:"position"`
+		GearUsed      int     `json:"gear_used"`
+		HeatGenerated int     `json:"heat_generated"`
+		TurboUsed     bool    `json:"turbo_used"`
+		Condition     string  `json:"condition"`
+		GripModifier  float64 `json:"grip_modifier"`
 	}
 
 	points := make([]PacePoint, 0)
 	for rows.Next() {
 		var pp PacePoint
 		var turbo int
-		if err := rows.Scan(&pp.RacerID, &pp.RacerName, &pp.Lap, &pp.Position, &pp.GearUsed, &pp.HeatGenerated, &turbo); err != nil {
+		if err := rows.Scan(&pp.RacerID, &pp.RacerName, &pp.Lap, &pp.Position, &pp.GearUsed, &pp.HeatGenerated, &turbo, &pp.Condition, &pp.GripModifier); err != nil {
 			continue
 		}
 		pp.TurboUsed = turbo == 1

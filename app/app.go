@@ -36,6 +36,7 @@ type Server struct {
 	LapReplayBroadcast     chan models.LapReplayFrame
 	SoundBroadcast         chan models.SoundCommand
 	RaceRadioBroadcast     chan models.RaceRadioMessage
+	CommentaryBroadcast    chan models.Commentary
 
 	BasePath       string
 	DBPath         string
@@ -65,6 +66,7 @@ func NewServer() *Server {
 		LapReplayBroadcast:     make(chan models.LapReplayFrame),
 		SoundBroadcast:         make(chan models.SoundCommand),
 		RaceRadioBroadcast:     make(chan models.RaceRadioMessage),
+		CommentaryBroadcast:    make(chan models.Commentary),
 		LoginLimiter:           rate.NewLimiter(rate.Limit(5), 10),
 		LoginLimiters:          make(map[string]*rate.Limiter),
 		CurrentVersion:         "1.56.1",

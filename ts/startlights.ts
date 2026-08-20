@@ -1,64 +1,7 @@
 import './theme';
+import { StartLightsEngine } from './startlights-core';
 // Start Light System - F1-style 5-light countdown
-interface StartLightsState {
-    phase: 'idle' | 'counting' | 'green' | 'done';
-    currentLight: number; // 0-5 (5 = all lit, ready for green)
-}
-
-let lightsState: StartLightsState = { phase: 'idle', currentLight: 0 };
-let lightsTimer: ReturnType<typeof setTimeout> | null = null;
-let audioCtx: AudioContext | null = null;
-
-// Sequence timing (ms)
-const LIGHT_INTERVAL = 1000;
-const HOLD_ON_LIGHTS = 1000;
-const GREEN_DURATION = 3000;
-
-function getAudioContext(): AudioContext {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    return audioCtx;
-}
-
-function playBeep(frequency: number, duration: number, volume = 0.3): void {
-    try {
-        const ctx = getAudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-        gain.gain.setValueAtTime(volume, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + duration);
-    } catch {
-        // Audio not available
-    }
-}
-
-function playHorn(): void {
-    try {
-        const ctx = getAudioContext();
-        // Layered frequencies for a rich horn sound
-        [220, 330, 440].forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.05);
-            gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5 + i * 0.05);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(ctx.currentTime + i * 0.05);
-            osc.stop(ctx.currentTime + 1.5 + i * 0.05);
-        });
-    } catch {
-        // Audio not available
-    }
-}
+// Thin wrapper: wires the shared StartLightsEngine to the standalone page DOM.
 
 function renderStartLights(): void {
     const container = document.getElementById('start-lights');
@@ -106,95 +49,7 @@ function showStatusBar(text: string): void {
     if (bar) bar.textContent = text;
 }
 
-function resetAllLights(): void {
-    for (let i = 1; i <= 5; i++) {
-        setLightState(i, 'off');
-    }
-}
-
-function runSequence(): void {
-    if (lightsState.phase !== 'idle') return;
-
-    lightsState = { phase: 'counting', currentLight: 0 };
-    resetAllLights();
-    showMessage('');
-    showStatusBar('Sequence started');
-    showMessage('', '5 lights');
-    showStatusBar('START LIGHTS • SEQUENCE');
-
-    let lightIndex = 0;
-
-    function lightNext(): void {
-        if (lightsState.phase !== 'counting') return;
-
-        lightIndex++;
-        if (lightIndex > 5) {
-            // All lights on - hold then green
-            lightsState.currentLight = 5;
-            showMessage('', 'All lights on');
-            playBeep(880, 0.3, 0.5);
-
-            lightsTimer = setTimeout(() => {
-                if (lightsState.phase !== 'counting') return;
-                // ALL GREEN!
-                lightsState.phase = 'green';
-                for (let i = 1; i <= 5; i++) {
-                    setLightState(i, 'green');
-                }
-                showMessage('GO! GO! GO!', '');
-                showStatusBar('🟢 GREEN FLAG • RACE START!');
-                playHorn();
-
-                lightsTimer = setTimeout(() => {
-                    lightsState.phase = 'done';
-                    showMessage('Race Started', '');
-                    showStatusBar('RACE IS ON');
-                    lightsTimer = setTimeout(() => {
-                        lightsState.phase = 'idle';
-                        lightsState.currentLight = 0;
-                        resetAllLights();
-                        showMessage('Start Lights', 'Ready');
-                        showStatusBar('START LIGHTS • READY');
-                    }, 2000);
-                }, GREEN_DURATION);
-            }, HOLD_ON_LIGHTS);
-            return;
-        }
-
-        lightsState.currentLight = lightIndex;
-        setLightState(lightIndex, 'red');
-        showMessage('', `${lightIndex}/5 lights`);
-        playBeep(440 + lightIndex * 60, 0.2, 0.4);
-
-        lightsTimer = setTimeout(lightNext, LIGHT_INTERVAL);
-    }
-
-    // Start the sequence
-    lightsTimer = setTimeout(lightNext, LIGHT_INTERVAL);
-}
-
-function abortSequence(): void {
-    if (lightsTimer) {
-        clearTimeout(lightsTimer);
-        lightsTimer = null;
-    }
-    lightsState = { phase: 'idle', currentLight: 0 };
-    resetAllLights();
-    showMessage('Aborted', '');
-    showStatusBar('START LIGHTS • ABORTED');
-}
-
-function handleStartLightsCommand(cmd: any): void {
-    if (cmd.state === 'sequence') {
-        runSequence();
-    } else if (cmd.state === 'abort') {
-        abortSequence();
-    } else if (cmd.state === 'reset') {
-        abortSequence();
-        showMessage('Start Lights', 'Ready');
-        showStatusBar('START LIGHTS • READY');
-    }
-}
+const engine = new StartLightsEngine({ setLightState, showMessage, showStatusBar });
 
 // Export for use in controller.ts
 (window as any).triggerStartLights = function (): void {
@@ -236,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'flag' && data.flag === 'startlights') {
-                    handleStartLightsCommand(data);
+                    engine.handleCommand(data);
                 }
             } catch {
                 // ignore parse errors
@@ -250,7 +105,3 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
-
-// WebSocket integration for controller.ts (reuses existing WS connection)
-// The controller.ts will need to handle startlights flag messages
-// This is done via the existing WebSocket message handler in controller.ts

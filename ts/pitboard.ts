@@ -1,4 +1,5 @@
 import './theme';
+import { WeatherEntry, getActiveWeather, getForecast, weatherIcon, weatherLabel, formatGrip } from './weather';
 interface PitRacer {
     id: number; name: string; car_color: string; car_name: string;
     position: number; points: number; rank: number;
@@ -7,6 +8,8 @@ interface PitRacer {
 let pitRacers: PitRacer[] = [];
 let pitWs: WebSocket | null = null;
 let pitSeconds = 0;
+let pitWeather: WeatherEntry[] = [];
+let pitLap = 0;
 
 async function loadPitBoard(): Promise<void> {
     const [racersRes, raceRes, weatherRes] = await Promise.all([
@@ -17,16 +20,35 @@ async function loadPitBoard(): Promise<void> {
     document.getElementById('pit-race-name')!.textContent = `${race.country} - ${race.track}`;
     renderPitBoard();
 
-    const weather = await weatherRes.json();
-    if (weather.length > 0) {
-        const w = weather[weather.length - 1];
-        const icons: Record<string, string> = { dry: '☀️', damp: '🌦️', wet: '🌧️', torrential: '⛈️' };
-        document.getElementById('pit-weather-icon')!.textContent = icons[w.condition] || '☀️';
-        document.getElementById('pit-weather-text')!.textContent = w.condition.charAt(0).toUpperCase() + w.condition.slice(1);
-    }
+    pitWeather = await weatherRes.json();
+    renderPitWeather();
 
     connectPitWebSocket();
     setInterval(refreshPitStatus, 5000);
+}
+
+function renderPitWeather(): void {
+    const active = getActiveWeather(pitWeather, pitLap);
+    const forecast = getForecast(pitWeather, pitLap);
+    if (active) {
+        document.getElementById('pit-weather-icon')!.textContent = weatherIcon(active.condition);
+        document.getElementById('pit-weather-text')!.textContent = `${weatherLabel(active.condition)} · ${formatGrip(active.grip_modifier)}`;
+    }
+    const fc = document.getElementById('pit-weather-forecast')!;
+    if (fc) {
+        if (forecast) {
+            fc.textContent = `${weatherIcon(forecast.condition)} ${weatherLabel(forecast.condition)} from lap ${forecast.lap_start}`;
+            fc.hidden = false;
+        } else fc.hidden = true;
+    }
+}
+
+function upsertPitWeather(entry: WeatherEntry): void {
+    const idx = pitWeather.findIndex(e => e.lap_start === entry.lap_start && e.race_id === entry.race_id);
+    if (idx >= 0) pitWeather[idx] = entry;
+    else pitWeather.push(entry);
+    pitWeather.sort((a, b) => a.lap_start - b.lap_start);
+    renderPitWeather();
 }
 
 function renderPitBoard(): void {
@@ -70,10 +92,14 @@ function connectPitWebSocket(): void {
         if (Array.isArray(data)) {
             pitRacers = data;
             renderPitBoard();
-            document.getElementById('pit-lap')!.textContent = `Lap ${Math.max(...data.map((r: PitRacer) => r.position), 0)}`;
+            pitLap = Math.max(...data.map((r: PitRacer) => r.position), pitLap || 0);
+            document.getElementById('pit-lap')!.textContent = `Lap ${pitLap}`;
+            renderPitWeather();
         } else if (data.type === 'flag') {
             const flagNames: Record<string, string> = { green: '🏁 Green Flag', yellow: '💛 Yellow Flag', red: '🛑 Red Flag', chequered: '🏁 Chequered Flag', safety: '🚗 Safety Car', blue: '🔵 Blue Flag', blackwhite: '🏳️ Black & White Flag' };
             document.getElementById('pit-flag-status')!.textContent = flagNames[data.flag] || data.flag;
+        } else if (data.type === 'weather_update') {
+            upsertPitWeather(data as WeatherEntry);
         }
     };
 }

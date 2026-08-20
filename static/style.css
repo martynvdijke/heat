@@ -617,6 +617,143 @@ footer {
     color: #fff;
 }
 
+/* === Inline Start Lights Widget (controller) === */
+#controller-start-lights {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.start-lights-inline {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.start-light--inline {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.start-light--inline .start-light-bulb {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    transition: background 0.3s, box-shadow 0.3s, border-color 0.3s;
+    position: relative;
+}
+
+.start-light--inline .start-light-bulb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.start-light--inline .start-light-bulb.red {
+    background: radial-gradient(circle, #ff4444, #cc0000 60%, #880000);
+    border-color: #ff4444;
+    box-shadow: 0 0 18px rgba(255, 0, 0, 0.6), 0 0 36px rgba(255, 0, 0, 0.3);
+}
+
+.start-light--inline .start-light-bulb.red::after {
+    opacity: 1;
+}
+
+.start-light--inline .start-light-bulb.green {
+    background: radial-gradient(circle, #44ff44, #00cc00 60%, #008800);
+    border-color: #44ff44;
+    box-shadow: 0 0 18px rgba(0, 255, 0, 0.6), 0 0 36px rgba(0, 255, 0, 0.3);
+}
+
+.start-light--inline .start-light-bulb.green::after {
+    opacity: 1;
+}
+
+.start-light--inline .start-light-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.start-lights-status {
+    text-align: center;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.7);
+    min-height: 1.2em;
+}
+
+#controller-start-lights .btn {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .start-light--inline .start-light-bulb {
+        transition: none;
+    }
+    .start-light--inline .start-light-bulb::after {
+        transition: none;
+    }
+}
+
+/* === Sound Settings Modal (TV) === */
+#sound-settings-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+#sound-settings-modal[hidden] {
+    display: none;
+}
+
+.sound-settings-overlay {
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.sound-settings-panel {
+    background: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.sound-setting-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 0.75rem;
+}
+
+.sound-vol-readout {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
 .btn-dark-blue:active {
     background: #071d40 !important;
     border-color: #071d40 !important;
@@ -719,6 +856,27 @@ footer {
     font-weight: bold;
     font-size: 1.5rem;
     flex-shrink: 0;
+}
+.weather-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.driver-row .gap-cell {
+    min-width: 3.5rem;
+    text-align: right;
+    margin-left: 0.5rem;
+    font-size: 1.05rem;
+}
+.driver-row .gap-cell.gap-lead {
+    color: #4caf50;
 }
 .action-btn {
     width: 100%;
@@ -901,9 +1059,22 @@ body[data-page="tv"] { margin:0; padding:0; background:#000; color:#fff; overflo
 .tv-events { position:fixed; bottom:80px; right:30px; width:400px; max-height:200px; overflow-y:auto; }
 .tv-event { padding:6px 12px; margin-bottom:2px; background:rgba(255,255,255,0.03); border-radius:4px; font-size:0.9rem; }
 .tv-event .event-time { font-size:0.7rem; opacity:0.5; }
+
+/* === Commentary Ticker (shared) === */
+.tv-commentary { position:fixed; right:30px; bottom:290px; width:420px; max-height:150px; overflow-y:auto; }
+.spec-commentary { max-height:200px; overflow-y:auto; }
+.commentary-item { padding:4px 10px; margin-bottom:2px; background:rgba(255,255,255,0.04); border-left:3px solid var(--primary); border-radius:4px; font-size:0.85rem; opacity:1; transition:opacity 1s ease; }
+.commentary-item.commentary-fade { opacity:0; }
+.commentary-item .commentary-lap { font-family:'Bebas Neue',sans-serif; color:var(--warning); margin-right:6px; }
+.commentary-item .commentary-driver { font-weight:700; color:#fff; margin-right:6px; }
+.commentary-item .commentary-message { opacity:0.9; }
 .tv-quote { position:fixed; bottom:70px; left:50%; transform:translateX(-50%); font-style:italic; opacity:0.6; font-size:0.9rem; text-align:center; max-width:60%; }
 .fullscreen-btn { position:fixed; top:10px; left:10px; z-index:200; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:0.8rem; }
 .fullscreen-btn:hover { background:rgba(255,255,255,0.1); }
+
+#sound-settings-trigger {
+    left: 140px;
+}
 @keyframes slideIn { from { transform:translateX(50px); opacity:0; } to { transform:translateX(0); opacity:1; } }
 .tv-driver-row { animation:slideIn 0.3s ease-out; }
 @keyframes flash { 0%,100%{opacity:1;} 50%{opacity:0.3;} }

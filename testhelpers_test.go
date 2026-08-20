@@ -67,6 +67,7 @@ func TestMain(m *testing.M) {
 	go wsManager.BroadcastLapReplay()
 	go wsManager.BroadcastSound()
 	go wsManager.BroadcastRaceRadio()
+	go wsManager.BroadcastCommentary()
 
 	if err := os.MkdirAll(testServer.MediaPath, 0755); err != nil {
 		log.Fatalf("failed to create media directory: %v", err)

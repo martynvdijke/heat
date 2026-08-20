@@ -59,6 +59,8 @@ func (h *Handler) SetWeather(c *gin.Context) {
 	case h.S.WeatherBroadcast <- w:
 	default:
 	}
+	// Auto-narrate the condition change on the commentary feed.
+	h.generateWeatherCommentary(w.RaceID, w.LapStart, w.Condition)
 	c.Status(http.StatusOK)
 }
 
@@ -373,6 +375,8 @@ func (h *Handler) AddRaceEvent(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	// Auto-narrate the event on the commentary feed.
+	h.generateCommentary(e.RaceID, e.Lap, e.EventType, e.RacerID, e.RacerID2)
 	c.Status(http.StatusOK)
 }
 

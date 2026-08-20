@@ -1,5 +1,6 @@
 import './theme';
 import { escapeHtml } from './toast';
+import { weatherIcon, weatherLabel, formatGrip } from './weather';
 declare const Chart: any;
 let pointsChart: any, winsChart: any, battleChart: any, incidentsChart: any;
 
@@ -469,19 +470,23 @@ async function loadDeeperStats(): Promise<void> {
         const paceBody = document.getElementById('pace-heatmap-body')!;
         if (Array.isArray(pace) && pace.length > 0) {
             const grouped: Record<string, any[]> = {};
+            const hasWeather = pace.some((p: any) => p.condition && p.condition !== 'dry');
             pace.forEach((p: any) => {
                 if (!grouped[p.racer_name]) grouped[p.racer_name] = [];
                 grouped[p.racer_name].push(p);
             });
-            paceBody.innerHTML = Object.entries(grouped).map(([name, laps]: [string, any[]]) => `
+            const legend = hasWeather ? `<div class="small text-muted mb-2">Weather: ☀️ Dry · 🌦️ Damp · 🌧️ Wet · ⛈️ Torrential</div>` : '';
+            paceBody.innerHTML = legend + Object.entries(grouped).map(([name, laps]: [string, any[]]) => `
                 <div class="mb-2">
-                    <strong>${name}</strong>
+                    <strong>${escapeHtml(name)}</strong>
                     <div class="d-flex flex-wrap gap-1 mt-1">
-                        ${laps.slice(-10).map((l: any) => `
-                            <div class="small px-2 py-1 rounded" style="background:${l.turbo_used ? '#2ecc71' : l.heat_generated > 2 ? '#e74c3c' : '#444'};">
-                                L${l.lap} P${l.position}${l.turbo_used ? ' ⚡' : ''}${l.heat_generated ? ' 🔥' + l.heat_generated : ''}
-                            </div>
-                        `).join('')}
+                        ${laps.slice(-10).map((l: any) => {
+                            const cond = l.condition || 'dry';
+                            const badge = cond !== 'dry' ? `<span title="${escapeHtml(weatherLabel(cond))} · ${formatGrip(l.grip_modifier || 1)}">${weatherIcon(cond)}</span> ` : '';
+                            return `<div class="small px-2 py-1 rounded" style="background:${l.turbo_used ? '#2ecc71' : l.heat_generated > 2 ? '#e74c3c' : '#444'};" title="${escapeHtml(weatherLabel(cond))} · ${formatGrip(l.grip_modifier || 1)}">
+                                ${badge}L${l.lap} P${l.position}${l.turbo_used ? ' ⚡' : ''}${l.heat_generated ? ' 🔥' + l.heat_generated : ''}
+                            </div>`;
+                        }).join('')}
                     </div>
                 </div>
             `).join('');

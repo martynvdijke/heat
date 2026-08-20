@@ -37,6 +37,7 @@
             </div>
             <div class="col-md-4 text-end">
                 <span id="spec-weather">☀️ Dry</span>
+                <span id="spec-weather-forecast" class="ms-2 small opacity-75" hidden></span>
                 <span class="ms-3" id="spec-timer">00:00</span>
             </div>
         </div>
@@ -49,6 +50,12 @@
     <div class="row g-3 px-3 mt-2">
         <div class="col-md-6">
             <div class="spec-race-info">
+                <h5 class="mb-3"><i aria-hidden="true" class="fa-solid fa-comment-dots me-2"></i>Commentary</h5>
+                <div class="spec-commentary" id="spec-commentary">
+                    <p class="text-center opacity-50">No commentary yet</p>
+                </div>
+            </div>
+            <div class="spec-race-info mt-3">
                 <h5 class="mb-3"><i aria-hidden="true" class="fa-solid fa-list me-2"></i>Recent Events</h5>
                 <div class="spec-events" id="spec-events" aria-live="polite">
                     <p class="text-center opacity-50">No events yet</p>

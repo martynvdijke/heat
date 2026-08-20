@@ -67,6 +67,18 @@ func Init(s *app.Server) {
 	// Migrate race_info table: next race event date ('' = unset)
 	srv.DB.Exec("ALTER TABLE race_info ADD COLUMN next_race_date TEXT NOT NULL DEFAULT ''")
 
+	// Commentary feed: manual + auto-generated race commentary entries
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS commentary (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		race_id INTEGER NOT NULL DEFAULT 0,
+		lap INTEGER NOT NULL DEFAULT 0,
+		racer_id INTEGER NULL,
+		message TEXT NOT NULL,
+		template_key TEXT NULL,
+		created_at TEXT NOT NULL DEFAULT (datetime('now'))
+	)`)
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_commentary_race_id ON commentary(race_id)")
+
 	// Extension/module catalog tables (module-extension-tracker)
 	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS extensions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

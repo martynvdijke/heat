@@ -5,7 +5,8 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 1,
-  workers: process.env.CI ? 1 : undefined,
+  // Shared heat.db + global WS broadcasts mean tests must run serially.
+  workers: 1,
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:6270',

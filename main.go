@@ -278,6 +278,7 @@ func main() {
 	go wsManager.BroadcastLapReplay()
 	go wsManager.BroadcastSound()
 	go wsManager.BroadcastRaceRadio()
+	go wsManager.BroadcastCommentary()
 	go func() {
 		for {
 			time.Sleep(15 * time.Minute)
@@ -568,6 +569,8 @@ func main() {
 	r.POST("/api/sound", h.PlaySound)
 	r.GET("/api/race-radio", h.GetRaceRadio)
 	r.POST("/api/race-radio", h.AddRaceRadio)
+	r.GET("/api/commentary", h.GetCommentary)
+	r.POST("/api/commentary", h.AddCommentary)
 
 	// i18n
 	r.GET("/api/translations", h.GetTranslations)

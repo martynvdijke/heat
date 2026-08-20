@@ -428,6 +428,17 @@ type RaceRadioMessage struct {
 	Timestamp string `json:"timestamp,omitempty"`
 }
 
+type Commentary struct {
+	ID          int    `json:"id"`
+	RaceID      int    `json:"race_id"`
+	Lap         int    `json:"lap"`
+	RacerID     int    `json:"racer_id,omitempty"`
+	RacerName   string `json:"racer_name,omitempty"`
+	Message     string `json:"message"`
+	TemplateKey string `json:"template_key,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
+}
+
 // WebSocket message wrappers
 
 type GameMechanicsUpdate struct {
