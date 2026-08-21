@@ -76,12 +76,25 @@ test.describe('Controller Polish', () => {
     }));
     const recordsLapped = [{ racer_id: leader.id, position: 1, gear_used: 0, heat_generated: 0, turbo_used: false }];
 
-    // Unique high lap numbers so these outrank every earlier record (the gap
-    // computation picks the latest position-1 record as the race leader) and
-    // prior projects' runs of this same test can never collide.
-    const lapBase = 10000 + (Date.now() % 100000);
-    await page.request.post('/api/lap-records/batch', { data: { race_id: 0, lap: lapBase, records: recordsAll } });
-    await page.request.post('/api/lap-records/batch', { data: { race_id: 0, lap: lapBase + 1, records: recordsLapped } });
+    // Unix seconds are strictly increasing, so these laps always outrank every
+    // earlier record (the gap computation picks the latest position-1 record
+    // as the race leader) regardless of which project ran before us.
+    const lapBase = Math.floor(Date.now() / 1000);
+
+    // The batch endpoint silently skips rows on transient SQLite busy errors,
+    // so post, verify via GET, and re-post until both records are durable.
+    const expectedLaps: Array<[number, number]> = [
+      [leader.id, lapBase + 1],
+      [lapped.id, lapBase]
+    ];
+    await expect(async () => {
+      await page.request.post('/api/lap-records/batch', { data: { race_id: 0, lap: lapBase, records: recordsAll } });
+      await page.request.post('/api/lap-records/batch', { data: { race_id: 0, lap: lapBase + 1, records: recordsLapped } });
+      const records = await (await page.request.get('/api/lap-records?race_id=0')).json();
+      for (const [racerId, lap] of expectedLaps) {
+        expect(records).toContainEqual(expect.objectContaining({ racer_id: racerId, lap_number: lap }));
+      }
+    }).toPass({ timeout: 15000 });
 
     await page.reload();
     await expect(page.locator('.driver-row').first()).toBeVisible();
