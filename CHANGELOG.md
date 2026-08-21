@@ -1,3 +1,15 @@
+# [1.57.0](https://github.com/martynvdijke/heat/compare/v1.56.1...v1.57.0) (2026-08-21)
+
+
+### Bug Fixes
+
+* use monotonic lap numbers in gaps e2e test ([d1dd693](https://github.com/martynvdijke/heat/commit/d1dd69309a584cc0b8abab6f791b6462707093d0))
+
+
+### Features
+
+* add live weather effects, race commentary, controller polish, sound customization and start lights widget ([c298748](https://github.com/martynvdijke/heat/commit/c29874842af1bdb6a4ee75e31618c896a5ced277))
+
 ## [1.56.1](https://github.com/martynvdijke/heat/compare/v1.56.0...v1.56.1) (2026-08-20)
 
 # [1.56.0](https://github.com/martynvdijke/heat/compare/v1.55.1...v1.56.0) (2026-08-18)
