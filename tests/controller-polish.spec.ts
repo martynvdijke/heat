@@ -43,31 +43,57 @@ test.describe('Controller Polish', () => {
     await page.goto('/controller.html');
     await expect(page.locator('.driver-row').first()).toBeVisible();
 
+    // Create uniquely-named racers so other specs' data can never collide
+    // (duplicate names across specs caused strict-mode violations in CI).
+    const suffix = Date.now();
+    const leaderName = `Gap Leader ${suffix}`;
+    const lappedName = `Gap Lapped ${suffix}`;
+    const created = await page.evaluate(async ([leader, lapped]) => {
+      for (const name of [leader, lapped]) {
+        const res = await fetch('/api/racers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: 0, name, profile_picture: '', car_color: '#ff0000',
+            car_name: 'Gap Test Car', points: 0, rank: 0, position: 0
+          })
+        });
+        if (!res.ok) return false;
+      }
+      return true;
+    }, [leaderName, lappedName] as const);
+    expect(created).toBeTruthy();
+
     const racers = await (await page.request.get('/api/racers')).json();
-    expect(racers.length).toBeGreaterThanOrEqual(2);
+    const leader = racers.find((r: any) => r.name === leaderName);
+    const lapped = racers.find((r: any) => r.name === lappedName);
+    expect(leader).toBeTruthy();
+    expect(lapped).toBeTruthy();
 
-    const ids = racers.map((r: any) => r.id);
-    const recordsAll = ids.map((id: number, i: number) => ({
+    // Lap the lapped driver: only the leader is recorded on the later lap.
+    const recordsAll = [leader.id, lapped.id].map((id: number, i: number) => ({
       racer_id: id, position: i + 1, gear_used: 0, heat_generated: 0, turbo_used: false
     }));
-    // Lap the last driver: everyone except the last is recorded on lap 9001.
-    const recordsLapped = ids.slice(0, -1).map((id: number, i: number) => ({
-      racer_id: id, position: i + 1, gear_used: 0, heat_generated: 0, turbo_used: false
-    }));
+    const recordsLapped = [{ racer_id: leader.id, position: 1, gear_used: 0, heat_generated: 0, turbo_used: false }];
 
-    // High lap numbers so these are the latest records regardless of prior tests.
-    await page.request.post('/api/lap-records/batch', { data: { race_id: 0, lap: 9000, records: recordsAll } });
-    await page.request.post('/api/lap-records/batch', { data: { race_id: 0, lap: 9001, records: recordsLapped } });
+    // Unique high lap numbers so these outrank every earlier record (the gap
+    // computation picks the latest position-1 record as the race leader) and
+    // prior projects' runs of this same test can never collide.
+    const lapBase = 10000 + (Date.now() % 100000);
+    await page.request.post('/api/lap-records/batch', { data: { race_id: 0, lap: lapBase, records: recordsAll } });
+    await page.request.post('/api/lap-records/batch', { data: { race_id: 0, lap: lapBase + 1, records: recordsLapped } });
 
     await page.reload();
     await expect(page.locator('.driver-row').first()).toBeVisible();
 
     // Leader (position 1 at the latest lap) shows LEAD.
-    const leaderRow = page.locator('.driver-row', { hasText: racers[0].name });
+    const leaderRow = page.locator('.driver-row', { hasText: leaderName });
+    await expect(leaderRow).toHaveCount(1);
     await expect(leaderRow.locator('.gap-cell')).toHaveText('LEAD');
 
     // Lapped driver shows +1.
-    const lappedRow = page.locator('.driver-row', { hasText: racers[racers.length - 1].name });
+    const lappedRow = page.locator('.driver-row', { hasText: lappedName });
+    await expect(lappedRow).toHaveCount(1);
     await expect(lappedRow.locator('.gap-cell')).toHaveText('+1');
   });
 

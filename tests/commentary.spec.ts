@@ -43,17 +43,38 @@ test.describe('Commentary Feed', () => {
     });
 
     test('commentary item renders lap, driver and message', async ({ page }) => {
+        await loginAsAdmin(page);
         await page.goto('/static/tv.html');
+
+        // Create a dedicated racer so the driver name is guaranteed to resolve
+        // (a hardcoded racer_id may not exist in a fresh database).
+        const racerName = `Commentary Driver ${Date.now()}`;
+        const created = await page.evaluate(async (name) => {
+            const res = await fetch('/api/racers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: 0, name, profile_picture: '', car_color: '#00ff00',
+                    car_name: 'Commentary Car', points: 0, rank: 0, position: 0
+                })
+            });
+            return res.ok;
+        }, racerName);
+        expect(created).toBeTruthy();
+        const racers = await (await page.request.get('/api/racers')).json();
+        const racer = racers.find((r: any) => r.name === racerName);
+        expect(racer).toBeTruthy();
+
         const message = `Structured entry ${Date.now()}`;
         const res = await page.request.post('/api/commentary', {
-            data: { race_id: 0, lap: 7, racer_id: 1, message }
+            data: { race_id: 0, lap: 7, racer_id: racer.id, message }
         });
         expect(res.ok()).toBeTruthy();
 
         const item = page.locator('#tv-commentary .commentary-item').filter({ hasText: message });
         await expect(item).toBeVisible({ timeout: 15000 });
         await expect(item.locator('.commentary-lap')).toHaveText('L7');
-        await expect(item.locator('.commentary-driver')).not.toHaveText('');
+        await expect(item.locator('.commentary-driver')).toHaveText(racerName);
         await expect(item.locator('.commentary-message')).toHaveText(message);
     });
 
