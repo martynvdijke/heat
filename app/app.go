@@ -69,7 +69,7 @@ func NewServer() *Server {
 		CommentaryBroadcast:    make(chan models.Commentary),
 		LoginLimiter:           rate.NewLimiter(rate.Limit(5), 10),
 		LoginLimiters:          make(map[string]*rate.Limiter),
-		CurrentVersion:         "1.57.0",
+		CurrentVersion:         "1.58.0",
 		BasePath:               "/app",
 		DBPath:                 "/db/heat.db",
 		MediaPath:              "/app/media",

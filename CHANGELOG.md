@@ -1,3 +1,11 @@
+# [1.58.0](https://github.com/martynvdijke/heat/compare/v1.57.0...v1.58.0) (2026-08-22)
+
+
+### Features
+
+* add multi-season scoping to stats and link race history to seasons ([f7c780d](https://github.com/martynvdijke/heat/commit/f7c780dc89d8e42d4c436b3a23aa6153736cff77))
+* complete multi-season stats frontend ([7268db4](https://github.com/martynvdijke/heat/commit/7268db48f341b0e9ccd09494378c11392a1ad358))
+
 # [1.57.0](https://github.com/martynvdijke/heat/compare/v1.56.1...v1.57.0) (2026-08-21)
 
 
