@@ -20,5 +20,5 @@
 
 ## 5. Tests
 
-- [ ] 5.1 Playwright e2e: set wet weather → TV banner shows Wet + grip %; scheduled future entry → forecast line on TV; controller saves `lap_end` and lists active/upcoming
-- [ ] 5.2 Run `task pre-push` (gofmt, go test, vet+govulncheck, tsc, build) and fix failures
+- [x] 5.1 Playwright e2e: set wet weather → TV banner shows Wet + grip %; scheduled future entry → forecast line on TV; controller saves `lap_end` and lists active/upcoming
+- [x] 5.2 Run `task pre-push` (gofmt, go test, vet+govulncheck, tsc, build) and fix failures

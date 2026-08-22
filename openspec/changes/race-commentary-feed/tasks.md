@@ -21,4 +21,4 @@
 
 - [x] 4.1 Go tests: manual POST/GET round-trip; `since`/`limit`/`race_id` filters; auto-generation from race event (driver substitution) and weather change
 - [x] 4.2 Playwright e2e: manual entry from controller appears on TV ticker; old entries fade
-- [ ] 4.3 Run `task pre-push` (gofmt, go test, vet+govulncheck, tsc, build) and fix failures
+- [x] 4.3 Run `task pre-push` (gofmt, go test, vet+govulncheck, tsc, build) and fix failures

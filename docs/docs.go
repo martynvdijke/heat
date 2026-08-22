@@ -1447,9 +1447,21 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "legacy = raw racer_stats rows (admin view)",
+                        "name": "source",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
-                        "description": "Season ID",
+                        "description": "Season ID (alias for season_ids)",
                         "name": "season_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
                         "in": "query"
                     }
                 ],
@@ -2211,6 +2223,14 @@ const docTemplate = `{
                     "Stats"
                 ],
                 "summary": "Get consistency ratings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2235,6 +2255,14 @@ const docTemplate = `{
                     "Stats"
                 ],
                 "summary": "Get ELO ratings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2290,6 +2318,12 @@ const docTemplate = `{
                         "name": "racer2",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2328,6 +2362,12 @@ const docTemplate = `{
                         "name": "racer_id",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2394,6 +2434,12 @@ const docTemplate = `{
                         "name": "racer_id",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2427,6 +2473,12 @@ const docTemplate = `{
                         "name": "race_id",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2457,6 +2509,12 @@ const docTemplate = `{
                         "name": "racer_id",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2524,6 +2582,12 @@ const docTemplate = `{
                         "name": "racer_id",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2550,6 +2614,14 @@ const docTemplate = `{
                     "Stats"
                 ],
                 "summary": "Get track stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma-separated season IDs; absent = all seasons",
+                        "name": "season_ids",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

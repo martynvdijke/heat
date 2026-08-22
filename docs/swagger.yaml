@@ -1384,10 +1384,18 @@ paths:
         in: query
         name: id
         type: integer
-      - description: Season ID
+      - description: legacy = raw racer_stats rows (admin view)
+        in: query
+        name: source
+        type: string
+      - description: Season ID (alias for season_ids)
         in: query
         name: season_id
         type: integer
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
@@ -1877,6 +1885,11 @@ paths:
   /api/stats/consistency:
     get:
       description: Get consistency ratings for all racers
+      parameters:
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
@@ -1893,6 +1906,11 @@ paths:
   /api/stats/elo:
     get:
       description: Get ELO-style ratings for all racers
+      parameters:
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
@@ -1931,6 +1949,10 @@ paths:
         name: racer2
         required: true
         type: integer
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
@@ -1956,6 +1978,10 @@ paths:
         name: racer_id
         required: true
         type: integer
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
@@ -2000,6 +2026,10 @@ paths:
         name: racer_id
         required: true
         type: integer
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
@@ -2022,6 +2052,10 @@ paths:
         name: race_id
         required: true
         type: integer
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
@@ -2042,6 +2076,10 @@ paths:
         name: racer_id
         required: true
         type: integer
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
@@ -2085,6 +2123,10 @@ paths:
         name: racer_id
         required: true
         type: integer
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
@@ -2101,6 +2143,11 @@ paths:
   /api/track-stats:
     get:
       description: Get performance statistics grouped by track
+      parameters:
+      - description: Comma-separated season IDs; absent = all seasons
+        in: query
+        name: season_ids
+        type: string
       produces:
       - application/json
       responses:
