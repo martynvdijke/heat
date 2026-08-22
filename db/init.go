@@ -30,6 +30,15 @@ func Init(s *app.Server) {
 	// Add UNIQUE constraint on (season_id, round) for round-season enforcement
 	srv.DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_round_snapshots_season_round ON round_snapshots(season_id, round)")
 
+	// Link race_history to seasons: ensure the column exists, then backfill
+	// from round_snapshots matched on (race_name, race_date).
+	if err := EnsureRaceHistorySeasonColumn(srv.DB); err != nil {
+		log.Printf("[DB] race_history season_id migration failed: %v", err)
+	}
+	if err := BackfillRaceHistorySeasons(srv.DB); err != nil {
+		log.Printf("[DB] race_history season backfill failed: %v", err)
+	}
+
 	srv.DB.Exec("PRAGMA foreign_keys=OFF")
 	defer func() {
 		srv.DB.Exec("PRAGMA foreign_keys=ON")

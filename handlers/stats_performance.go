@@ -14,9 +14,15 @@ import (
 // @Tags Stats
 // @Produce json
 // @Param racer_id query int true "Racer ID"
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {array} map[string]interface{}
 // @Router /api/track-performance [get]
 func (h *Handler) GetTrackPerformance(c *gin.Context) {
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	racerIDStr := c.Query("racer_id")
 	if racerIDStr != "" {
 		racerID, err := strconv.Atoi(racerIDStr)
@@ -24,12 +30,12 @@ func (h *Handler) GetTrackPerformance(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid racer_id"})
 			return
 		}
-		cacheKey := "stats:track-perf:" + racerIDStr
+		cacheKey := seasonScopeCacheKey("stats:track-perf:"+racerIDStr, seasonIDs)
 		if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
 			c.JSON(http.StatusOK, cached)
 			return
 		}
-		results, err := racing.TrackPerformance(h.S.DB, racerID)
+		results, err := racing.TrackPerformance(h.S.DB, racerID, seasonIDs)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -50,16 +56,17 @@ func (h *Handler) GetTrackPerformance(c *gin.Context) {
 		UniqueDrivers int    `json:"unique_drivers"`
 		TotalEntries  int    `json:"total_entries"`
 	}
+	filter, args := racing.SeasonFilter("rh", seasonIDs)
 	rows, err := h.S.DB.Query(`
 		SELECT rh.track_id, rh.track, rh.country,
 			COUNT(DISTINCT rr.racer_id) as unique_drivers,
 			COUNT(*) as total_entries
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
-		WHERE rh.race_type = 'season'
+		WHERE rh.race_type = 'season'`+filter+`
 		GROUP BY rh.track_id
 		ORDER BY rh.track
-	`)
+	`, args...)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -83,9 +90,15 @@ func (h *Handler) GetTrackPerformance(c *gin.Context) {
 // @Tags Stats
 // @Produce json
 // @Param racer_id query int true "Racer ID"
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {array} map[string]interface{}
 // @Router /api/stats/qualifying-delta [get]
 func (h *Handler) GetQualifyingRaceDelta(c *gin.Context) {
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	racerIDStr := c.Query("racer_id")
 	if racerIDStr == "" {
 		c.JSON(http.StatusOK, []racing.QualifyingRaceDeltaData{})
@@ -97,7 +110,7 @@ func (h *Handler) GetQualifyingRaceDelta(c *gin.Context) {
 		return
 	}
 
-	deltas, err := racing.QualifyingRaceDelta(h.S.DB, racerID)
+	deltas, err := racing.QualifyingRaceDelta(h.S.DB, racerID, seasonIDs)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -112,19 +125,26 @@ func (h *Handler) GetQualifyingRaceDelta(c *gin.Context) {
 // @Description Get consistency ratings for all racers
 // @Tags Stats
 // @Produce json
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {array} map[string]interface{}
 // @Router /api/stats/consistency [get]
 func (h *Handler) GetConsistencyRatings(c *gin.Context) {
-	if cached, ok := h.S.StatsCache.Get("stats:consistency"); ok {
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	cacheKey := seasonScopeCacheKey("stats:consistency", seasonIDs)
+	if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
 		c.JSON(http.StatusOK, cached)
 		return
 	}
-	ratings, err := racing.ConsistencyRatings(h.S.DB)
+	ratings, err := racing.ConsistencyRatings(h.S.DB, seasonIDs)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	h.S.StatsCache.Set("stats:consistency", ratings)
+	h.S.StatsCache.Set(cacheKey, ratings)
 	c.JSON(http.StatusOK, ratings)
 }
 
@@ -133,9 +153,15 @@ func (h *Handler) GetConsistencyRatings(c *gin.Context) {
 // @Tags Stats
 // @Produce json
 // @Param racer_id query int true "Racer ID"
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {array} map[string]interface{}
 // @Router /api/stats/pace-heatmap [get]
 func (h *Handler) GetPaceHeatmap(c *gin.Context) {
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	racerIDStr := c.Query("racer_id")
 
 	query := `SELECT lr.racer_id, COALESCE(r.name, ''), lr.lap_number, lr.position, lr.gear_used, lr.heat_generated, lr.turbo_used,
@@ -149,6 +175,19 @@ func (h *Handler) GetPaceHeatmap(c *gin.Context) {
 	if racerIDStr != "" {
 		query += " AND lr.racer_id = ?"
 		args = append(args, racerIDStr)
+	}
+	// Season scoping goes through race_history; only applied when a scope is
+	// requested so live sessions (race_id = 0) stay visible otherwise.
+	if len(seasonIDs) > 0 {
+		query += " AND lr.race_id IN (SELECT rh.id FROM race_history rh WHERE rh.season_id IN ("
+		for i := range seasonIDs {
+			if i > 0 {
+				query += ","
+			}
+			query += "?"
+			args = append(args, seasonIDs[i])
+		}
+		query += "))"
 	}
 	query += " ORDER BY lr.racer_id, lr.lap_number LIMIT 1000"
 

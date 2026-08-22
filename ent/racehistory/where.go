@@ -88,6 +88,11 @@ func RaceType(v string) predicate.RaceHistory {
 	return predicate.RaceHistory(sql.FieldEQ(FieldRaceType, v))
 }
 
+// SeasonID applies equality check predicate on the "season_id" field. It's identical to SeasonIDEQ.
+func SeasonID(v int) predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldEQ(FieldSeasonID, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.RaceHistory {
 	return predicate.RaceHistory(sql.FieldEQ(FieldName, v))
@@ -516,6 +521,56 @@ func RaceTypeEqualFold(v string) predicate.RaceHistory {
 // RaceTypeContainsFold applies the ContainsFold predicate on the "race_type" field.
 func RaceTypeContainsFold(v string) predicate.RaceHistory {
 	return predicate.RaceHistory(sql.FieldContainsFold(FieldRaceType, v))
+}
+
+// SeasonIDEQ applies the EQ predicate on the "season_id" field.
+func SeasonIDEQ(v int) predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldEQ(FieldSeasonID, v))
+}
+
+// SeasonIDNEQ applies the NEQ predicate on the "season_id" field.
+func SeasonIDNEQ(v int) predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldNEQ(FieldSeasonID, v))
+}
+
+// SeasonIDIn applies the In predicate on the "season_id" field.
+func SeasonIDIn(vs ...int) predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldIn(FieldSeasonID, vs...))
+}
+
+// SeasonIDNotIn applies the NotIn predicate on the "season_id" field.
+func SeasonIDNotIn(vs ...int) predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldNotIn(FieldSeasonID, vs...))
+}
+
+// SeasonIDGT applies the GT predicate on the "season_id" field.
+func SeasonIDGT(v int) predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldGT(FieldSeasonID, v))
+}
+
+// SeasonIDGTE applies the GTE predicate on the "season_id" field.
+func SeasonIDGTE(v int) predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldGTE(FieldSeasonID, v))
+}
+
+// SeasonIDLT applies the LT predicate on the "season_id" field.
+func SeasonIDLT(v int) predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldLT(FieldSeasonID, v))
+}
+
+// SeasonIDLTE applies the LTE predicate on the "season_id" field.
+func SeasonIDLTE(v int) predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldLTE(FieldSeasonID, v))
+}
+
+// SeasonIDIsNil applies the IsNil predicate on the "season_id" field.
+func SeasonIDIsNil() predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldIsNull(FieldSeasonID))
+}
+
+// SeasonIDNotNil applies the NotNil predicate on the "season_id" field.
+func SeasonIDNotNil() predicate.RaceHistory {
+	return predicate.RaceHistory(sql.FieldNotNull(FieldSeasonID))
 }
 
 // And groups predicates with the AND operator between them.

@@ -55,17 +55,19 @@ func calcStreak(positions []positionEntry) (current int, best int) {
 }
 
 // Streaks computes streak data for a racer based on their race history.
-func Streaks(db *sql.DB, racerID int) (*StreakData, error) {
+// An empty season list means "all seasons".
+func Streaks(db *sql.DB, racerID int, seasonIDs []int) (*StreakData, error) {
 	var name string
 	db.QueryRow("SELECT name FROM racers WHERE id = ?", racerID).Scan(&name)
 
+	filter, args := SeasonFilter("rh", seasonIDs)
 	rows, err := db.Query(`
 		SELECT rh.id, rr.position
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
-		WHERE rr.racer_id = ? AND rh.race_type = 'season'
+		WHERE rr.racer_id = ? AND rh.race_type = 'season'`+filter+`
 		ORDER BY rh.id
-	`, racerID)
+	`, append([]any{racerID}, args...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +93,8 @@ func Streaks(db *sql.DB, racerID int) (*StreakData, error) {
 			AVG(CAST(position AS REAL))
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
-		WHERE rr.racer_id = ? AND rh.race_type = 'season'
-	`, racerID).Scan(&wins, &podiums, &totalRaces, &avgPosition)
+		WHERE rr.racer_id = ? AND rh.race_type = 'season'`+filter+`
+	`, append([]any{racerID}, args...)...).Scan(&wins, &podiums, &totalRaces, &avgPosition)
 
 	result := &StreakData{
 		CurrentStreak: current,
@@ -108,16 +110,18 @@ func Streaks(db *sql.DB, racerID int) (*StreakData, error) {
 	return result, nil
 }
 
-// AllStreaks computes streak data for all racers.
-func AllStreaks(db *sql.DB) []StreakData {
+// AllStreaks computes streak data for all racers. An empty season list means
+// "all seasons".
+func AllStreaks(db *sql.DB, seasonIDs []int) []StreakData {
 	// Single batched query: get all race results ordered by race_id
+	filter, args := SeasonFilter("rh", seasonIDs)
 	rows, err := db.Query(`
 		SELECT rr.racer_id, rh.id, rr.position
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
-		WHERE rh.race_type = 'season'
+		WHERE rh.race_type = 'season'`+filter+`
 		ORDER BY rr.racer_id, rh.id
-	`)
+	`, args...)
 	if err != nil {
 		return []StreakData{}
 	}

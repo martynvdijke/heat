@@ -132,6 +132,33 @@ func (_u *RaceHistoryUpdate) SetNillableRaceType(v *string) *RaceHistoryUpdate {
 	return _u
 }
 
+// SetSeasonID sets the "season_id" field.
+func (_u *RaceHistoryUpdate) SetSeasonID(v int) *RaceHistoryUpdate {
+	_u.mutation.ResetSeasonID()
+	_u.mutation.SetSeasonID(v)
+	return _u
+}
+
+// SetNillableSeasonID sets the "season_id" field if the given value is not nil.
+func (_u *RaceHistoryUpdate) SetNillableSeasonID(v *int) *RaceHistoryUpdate {
+	if v != nil {
+		_u.SetSeasonID(*v)
+	}
+	return _u
+}
+
+// AddSeasonID adds value to the "season_id" field.
+func (_u *RaceHistoryUpdate) AddSeasonID(v int) *RaceHistoryUpdate {
+	_u.mutation.AddSeasonID(v)
+	return _u
+}
+
+// ClearSeasonID clears the value of the "season_id" field.
+func (_u *RaceHistoryUpdate) ClearSeasonID() *RaceHistoryUpdate {
+	_u.mutation.ClearSeasonID()
+	return _u
+}
+
 // Mutation returns the RaceHistoryMutation object of the builder.
 func (_u *RaceHistoryUpdate) Mutation() *RaceHistoryMutation {
 	return _u.mutation
@@ -196,6 +223,15 @@ func (_u *RaceHistoryUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if value, ok := _u.mutation.RaceType(); ok {
 		_spec.SetField(racehistory.FieldRaceType, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SeasonID(); ok {
+		_spec.SetField(racehistory.FieldSeasonID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSeasonID(); ok {
+		_spec.AddField(racehistory.FieldSeasonID, field.TypeInt, value)
+	}
+	if _u.mutation.SeasonIDCleared() {
+		_spec.ClearField(racehistory.FieldSeasonID, field.TypeInt)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -322,6 +358,33 @@ func (_u *RaceHistoryUpdateOne) SetNillableRaceType(v *string) *RaceHistoryUpdat
 	return _u
 }
 
+// SetSeasonID sets the "season_id" field.
+func (_u *RaceHistoryUpdateOne) SetSeasonID(v int) *RaceHistoryUpdateOne {
+	_u.mutation.ResetSeasonID()
+	_u.mutation.SetSeasonID(v)
+	return _u
+}
+
+// SetNillableSeasonID sets the "season_id" field if the given value is not nil.
+func (_u *RaceHistoryUpdateOne) SetNillableSeasonID(v *int) *RaceHistoryUpdateOne {
+	if v != nil {
+		_u.SetSeasonID(*v)
+	}
+	return _u
+}
+
+// AddSeasonID adds value to the "season_id" field.
+func (_u *RaceHistoryUpdateOne) AddSeasonID(v int) *RaceHistoryUpdateOne {
+	_u.mutation.AddSeasonID(v)
+	return _u
+}
+
+// ClearSeasonID clears the value of the "season_id" field.
+func (_u *RaceHistoryUpdateOne) ClearSeasonID() *RaceHistoryUpdateOne {
+	_u.mutation.ClearSeasonID()
+	return _u
+}
+
 // Mutation returns the RaceHistoryMutation object of the builder.
 func (_u *RaceHistoryUpdateOne) Mutation() *RaceHistoryMutation {
 	return _u.mutation
@@ -416,6 +479,15 @@ func (_u *RaceHistoryUpdateOne) sqlSave(ctx context.Context) (_node *RaceHistory
 	}
 	if value, ok := _u.mutation.RaceType(); ok {
 		_spec.SetField(racehistory.FieldRaceType, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SeasonID(); ok {
+		_spec.SetField(racehistory.FieldSeasonID, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSeasonID(); ok {
+		_spec.AddField(racehistory.FieldSeasonID, field.TypeInt, value)
+	}
+	if _u.mutation.SeasonIDCleared() {
+		_spec.ClearField(racehistory.FieldSeasonID, field.TypeInt)
 	}
 	_node = &RaceHistory{config: _u.config}
 	_spec.Assign = _node.assignValues

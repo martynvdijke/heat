@@ -9,6 +9,14 @@ import (
 // RacerStatsBySeason computes statistics for all racers within a season,
 // aggregated from finalized round snapshot scores.
 func RacerStatsBySeason(db *sql.DB, seasonID int) []models.RacerStats {
+	return RacerStatsBySeasons(db, []int{seasonID})
+}
+
+// RacerStatsBySeasons computes statistics for all racers across the given
+// seasons, aggregated from finalized round snapshot scores. An empty season
+// list means "all seasons" (every finalized snapshot).
+func RacerStatsBySeasons(db *sql.DB, seasonIDs []int) []models.RacerStats {
+	filter, args := SeasonFilter("rs", seasonIDs)
 	rows, err := db.Query(`
 		SELECT rss.racer_id,
 			COUNT(*) as races,
@@ -24,10 +32,10 @@ func RacerStatsBySeason(db *sql.DB, seasonID int) []models.RacerStats {
 			SUM(rss.overheated) as overheated
 		FROM round_snapshot_scores rss
 		JOIN round_snapshots rs ON rs.id = rss.snapshot_id
-		WHERE rs.season_id = ? AND rs.status = 'final'
+		WHERE rs.status = 'final'`+filter+`
 		GROUP BY rss.racer_id
 		ORDER BY points DESC
-	`, seasonID)
+	`, args...)
 	if err != nil {
 		return nil
 	}
@@ -88,6 +96,14 @@ func SeasonStandings(db *sql.DB, seasonID int, limit int) []models.SeasonStandin
 // aggregated from finalized round snapshot scores.
 // Returns the stats and whether the racer was found.
 func SingleRacerStatsBySeason(db *sql.DB, racerID int, seasonID int) (models.RacerStats, bool) {
+	return SingleRacerStatsBySeasons(db, racerID, []int{seasonID})
+}
+
+// SingleRacerStatsBySeasons computes statistics for a single racer across the
+// given seasons (empty = all seasons), aggregated from finalized round
+// snapshot scores. Returns the stats and whether the racer was found.
+func SingleRacerStatsBySeasons(db *sql.DB, racerID int, seasonIDs []int) (models.RacerStats, bool) {
+	filter, args := SeasonFilter("rs", seasonIDs)
 	var s models.RacerStats
 	err := db.QueryRow(`
 		SELECT rss.racer_id,
@@ -104,9 +120,9 @@ func SingleRacerStatsBySeason(db *sql.DB, racerID int, seasonID int) (models.Rac
 			SUM(rss.overheated) as overheated
 		FROM round_snapshot_scores rss
 		JOIN round_snapshots rs ON rs.id = rss.snapshot_id
-		WHERE rss.racer_id = ? AND rs.season_id = ? AND rs.status = 'final'
+		WHERE rss.racer_id = ? AND rs.status = 'final'`+filter+`
 		GROUP BY rss.racer_id
-	`, racerID, seasonID).Scan(&s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS, &s.Spins, &s.Overheated)
+	`, append([]any{racerID}, args...)...).Scan(&s.RacerID, &s.Races, &s.Wins, &s.Gold, &s.Silver, &s.Bronze, &s.FastestLaps, &s.Points, &s.DNF, &s.DNS, &s.Spins, &s.Overheated)
 	if err != nil {
 		return s, false
 	}

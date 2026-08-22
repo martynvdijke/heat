@@ -15,17 +15,20 @@ type ELORatingData struct {
 }
 
 // ELORatings computes ELO-style ratings for all racers based on race results.
-func ELORatings(db *sql.DB) ([]ELORatingData, error) {
+// An empty season list means "all seasons"; a scoped rating is computed over
+// only those seasons' races (order-dependent by race ID).
+func ELORatings(db *sql.DB, seasonIDs []int) ([]ELORatingData, error) {
 	ratings := make(map[int]float64)
 	raceCount := make(map[int]int)
 
+	filter, args := SeasonFilter("rh", seasonIDs)
 	rows, err := db.Query(`
 		SELECT rh.id as race_id, rr.racer_id, rr.position
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
-		WHERE rh.race_type = 'season'
+		WHERE rh.race_type = 'season'`+filter+`
 		ORDER BY rh.id
-	`)
+	`, args...)
 	if err != nil {
 		return nil, err
 	}

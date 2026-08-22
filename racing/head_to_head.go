@@ -16,19 +16,21 @@ type HeadToHeadData struct {
 	Racer2Avg  float64
 }
 
-// HeadToHead compares two racers across all season races.
-func HeadToHead(db *sql.DB, racer1, racer2 int) (*HeadToHeadData, error) {
+// HeadToHead compares two racers across all season races. An empty season
+// list means "all seasons".
+func HeadToHead(db *sql.DB, racer1, racer2 int, seasonIDs []int) (*HeadToHeadData, error) {
 	var name1, name2 string
 	db.QueryRow("SELECT (SELECT name FROM racers WHERE id = ?), (SELECT name FROM racers WHERE id = ?)", racer1, racer2).Scan(&name1, &name2)
 
+	filter, args := SeasonFilter("rh", seasonIDs)
 	rows, err := db.Query(`
 		SELECT rr1.race_id, rr1.position as pos1, rr2.position as pos2
 		FROM race_results rr1
 		JOIN race_results rr2 ON rr1.race_id = rr2.race_id
 		JOIN race_history rh ON rh.id = rr1.race_id AND rh.race_type = 'season'
-		WHERE rr1.racer_id = ? AND rr2.racer_id = ?
+		WHERE rr1.racer_id = ? AND rr2.racer_id = ?`+filter+`
 		ORDER BY rr1.race_id
-	`, racer1, racer2)
+	`, append([]any{racer1, racer2}, args...)...)
 	if err != nil {
 		return nil, err
 	}

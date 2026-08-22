@@ -9840,6 +9840,8 @@ type RaceHistoryMutation struct {
 	total_laps    *int
 	addtotal_laps *int
 	race_type     *string
+	season_id     *int
+	addseason_id  *int
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*RaceHistory, error)
@@ -10222,6 +10224,76 @@ func (m *RaceHistoryMutation) ResetRaceType() {
 	m.race_type = nil
 }
 
+// SetSeasonID sets the "season_id" field.
+func (m *RaceHistoryMutation) SetSeasonID(i int) {
+	m.season_id = &i
+	m.addseason_id = nil
+}
+
+// SeasonID returns the value of the "season_id" field in the mutation.
+func (m *RaceHistoryMutation) SeasonID() (r int, exists bool) {
+	v := m.season_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSeasonID returns the old "season_id" field's value of the RaceHistory entity.
+// If the RaceHistory object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RaceHistoryMutation) OldSeasonID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSeasonID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSeasonID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSeasonID: %w", err)
+	}
+	return oldValue.SeasonID, nil
+}
+
+// AddSeasonID adds i to the "season_id" field.
+func (m *RaceHistoryMutation) AddSeasonID(i int) {
+	if m.addseason_id != nil {
+		*m.addseason_id += i
+	} else {
+		m.addseason_id = &i
+	}
+}
+
+// AddedSeasonID returns the value that was added to the "season_id" field in this mutation.
+func (m *RaceHistoryMutation) AddedSeasonID() (r int, exists bool) {
+	v := m.addseason_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearSeasonID clears the value of the "season_id" field.
+func (m *RaceHistoryMutation) ClearSeasonID() {
+	m.season_id = nil
+	m.addseason_id = nil
+	m.clearedFields[racehistory.FieldSeasonID] = struct{}{}
+}
+
+// SeasonIDCleared returns if the "season_id" field was cleared in this mutation.
+func (m *RaceHistoryMutation) SeasonIDCleared() bool {
+	_, ok := m.clearedFields[racehistory.FieldSeasonID]
+	return ok
+}
+
+// ResetSeasonID resets all changes to the "season_id" field.
+func (m *RaceHistoryMutation) ResetSeasonID() {
+	m.season_id = nil
+	m.addseason_id = nil
+	delete(m.clearedFields, racehistory.FieldSeasonID)
+}
+
 // Where appends a list predicates to the RaceHistoryMutation builder.
 func (m *RaceHistoryMutation) Where(ps ...predicate.RaceHistory) {
 	m.predicates = append(m.predicates, ps...)
@@ -10256,7 +10328,7 @@ func (m *RaceHistoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RaceHistoryMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.name != nil {
 		fields = append(fields, racehistory.FieldName)
 	}
@@ -10277,6 +10349,9 @@ func (m *RaceHistoryMutation) Fields() []string {
 	}
 	if m.race_type != nil {
 		fields = append(fields, racehistory.FieldRaceType)
+	}
+	if m.season_id != nil {
+		fields = append(fields, racehistory.FieldSeasonID)
 	}
 	return fields
 }
@@ -10300,6 +10375,8 @@ func (m *RaceHistoryMutation) Field(name string) (ent.Value, bool) {
 		return m.TotalLaps()
 	case racehistory.FieldRaceType:
 		return m.RaceType()
+	case racehistory.FieldSeasonID:
+		return m.SeasonID()
 	}
 	return nil, false
 }
@@ -10323,6 +10400,8 @@ func (m *RaceHistoryMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldTotalLaps(ctx)
 	case racehistory.FieldRaceType:
 		return m.OldRaceType(ctx)
+	case racehistory.FieldSeasonID:
+		return m.OldSeasonID(ctx)
 	}
 	return nil, fmt.Errorf("unknown RaceHistory field %s", name)
 }
@@ -10381,6 +10460,13 @@ func (m *RaceHistoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRaceType(v)
 		return nil
+	case racehistory.FieldSeasonID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSeasonID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown RaceHistory field %s", name)
 }
@@ -10392,6 +10478,9 @@ func (m *RaceHistoryMutation) AddedFields() []string {
 	if m.addtotal_laps != nil {
 		fields = append(fields, racehistory.FieldTotalLaps)
 	}
+	if m.addseason_id != nil {
+		fields = append(fields, racehistory.FieldSeasonID)
+	}
 	return fields
 }
 
@@ -10402,6 +10491,8 @@ func (m *RaceHistoryMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case racehistory.FieldTotalLaps:
 		return m.AddedTotalLaps()
+	case racehistory.FieldSeasonID:
+		return m.AddedSeasonID()
 	}
 	return nil, false
 }
@@ -10418,6 +10509,13 @@ func (m *RaceHistoryMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddTotalLaps(v)
 		return nil
+	case racehistory.FieldSeasonID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSeasonID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown RaceHistory numeric field %s", name)
 }
@@ -10425,7 +10523,11 @@ func (m *RaceHistoryMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *RaceHistoryMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(racehistory.FieldSeasonID) {
+		fields = append(fields, racehistory.FieldSeasonID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -10438,6 +10540,11 @@ func (m *RaceHistoryMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *RaceHistoryMutation) ClearField(name string) error {
+	switch name {
+	case racehistory.FieldSeasonID:
+		m.ClearSeasonID()
+		return nil
+	}
 	return fmt.Errorf("unknown RaceHistory nullable field %s", name)
 }
 
@@ -10465,6 +10572,9 @@ func (m *RaceHistoryMutation) ResetField(name string) error {
 		return nil
 	case racehistory.FieldRaceType:
 		m.ResetRaceType()
+		return nil
+	case racehistory.FieldSeasonID:
+		m.ResetSeasonID()
 		return nil
 	}
 	return fmt.Errorf("unknown RaceHistory field %s", name)

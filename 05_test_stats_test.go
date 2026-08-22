@@ -17,12 +17,19 @@ func TestGetRacerStatsSeasonFallback(t *testing.T) {
 	testServer.DB.Exec("INSERT OR REPLACE INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns, spins, overheated) VALUES (1, 5, 3, 3, 1, 0, 2, 0, 0, 8, 3)")
 	testServer.DB.Exec("INSERT OR REPLACE INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns, spins, overheated) VALUES (2, 5, 1, 1, 2, 1, 0, 1, 0, 4, 1)")
 	defer testServer.DB.Exec("DELETE FROM racer_stats WHERE racer_id IN (1, 2)")
+	// Explicit scopes are snapshot-derived only: use a dedicated season with
+	// no snapshots so shared state cannot leak into the assertion.
+	testServer.DB.Exec("INSERT INTO seasons (name, start_date, end_date, status) VALUES ('NoSnapshot Season', '2026-01-01', '', 'archived')")
+	var emptySeasonID int
+	testServer.DB.QueryRow("SELECT id FROM seasons WHERE name = 'NoSnapshot Season'").Scan(&emptySeasonID)
+	defer testServer.DB.Exec("DELETE FROM seasons WHERE name = 'NoSnapshot Season'")
+	testServer.StatsCache.InvalidatePrefix("stats:")
 
 	r := gin.New()
 	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
-	t.Run("SeasonFilterFallsBackToRacerStats", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/api/racer-stats?season_id=1", nil)
+	t.Run("ExplicitScopeWithoutSnapshotsReturnsEmpty", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/api/racer-stats?season_id=%d", emptySeasonID), nil)
 		rr := httptest.NewRecorder()
 		r.ServeHTTP(rr, req)
 
@@ -35,27 +42,8 @@ func TestGetRacerStatsSeasonFallback(t *testing.T) {
 			t.Fatalf("failed to unmarshal: %v", err)
 		}
 
-		if len(stats) == 0 {
-			t.Fatal("expected non-empty stats from season fallback")
-		}
-
-		var found bool
-		for _, s := range stats {
-			if s.RacerID == 1 {
-				found = true
-				if s.Wins != 3 || s.Gold != 3 || s.Races != 5 {
-					t.Errorf("racer 1: expected wins=3, gold=3, races=5, got wins=%d, gold=%d, races=%d", s.Wins, s.Gold, s.Races)
-				}
-				if s.Spins != 8 {
-					t.Errorf("racer 1: expected spins=8, got %d", s.Spins)
-				}
-				if s.Overheated != 3 {
-					t.Errorf("racer 1: expected overheated=3, got %d", s.Overheated)
-				}
-			}
-		}
-		if !found {
-			t.Error("expected racer 1 in stats")
+		if len(stats) != 0 {
+			t.Errorf("expected empty stats for scope without snapshots (no silent all-time fallback), got %d entries", len(stats))
 		}
 	})
 
@@ -304,7 +292,24 @@ func TestGetRacerStatsAll(t *testing.T) {
 	r := gin.New()
 	r.GET("/api/racer-stats", testHandler.GetRacerStats)
 
-	testServer.DB.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns, spins, overheated) VALUES (1, 5, 3, 3, 1, 0, 2, 0, 0, 8, 3)")
+	// All-time stats are snapshot-derived (aggregated across every finalized
+	// snapshot); legacy racer_stats rows are no longer part of the list view.
+	// Seed a dedicated season + finalized snapshot and clean up only those rows.
+	testServer.DB.Exec("INSERT INTO seasons (name, start_date, end_date, status) VALUES ('All Scope Season', '2026-01-01', '', 'archived')")
+	var seasonID int
+	testServer.DB.QueryRow("SELECT id FROM seasons WHERE name = 'All Scope Season'").Scan(&seasonID)
+	res, err := testServer.DB.Exec("INSERT INTO round_snapshots (race_name, race_date, round, created_at, season_id, status) VALUES ('All Scope Race', '2026-06-01', 1, '', ?, 'final')", seasonID)
+	if err != nil {
+		t.Fatalf("failed to seed snapshot: %v", err)
+	}
+	snapID, _ := res.LastInsertId()
+	testServer.DB.Exec("INSERT INTO round_snapshot_scores (snapshot_id, racer_id, racer_name, position, points, dnf, dns, spins, overheated) VALUES (?, 7, 'Racer 7', 1, 25, 0, 0, 0, 0)", snapID)
+	defer func() {
+		testServer.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id = ?", snapID)
+		testServer.DB.Exec("DELETE FROM round_snapshots WHERE id = ?", snapID)
+		testServer.DB.Exec("DELETE FROM seasons WHERE id = ?", seasonID)
+	}()
+	testServer.StatsCache.InvalidatePrefix("stats:")
 
 	req, _ := http.NewRequest("GET", "/api/racer-stats", nil)
 	rr := httptest.NewRecorder()
@@ -315,23 +320,18 @@ func TestGetRacerStatsAll(t *testing.T) {
 
 	var stats []models.RacerStats
 	json.Unmarshal(rr.Body.Bytes(), &stats)
-	if len(stats) < 1 {
-		t.Error("expected at least 1 stat entry")
-	}
 	found := false
 	for _, s := range stats {
-		if s.RacerID == 1 {
+		if s.RacerID == 7 {
 			found = true
-			if s.Gold != 3 || s.Silver != 1 || s.Bronze != 0 || s.Wins != 3 {
-				t.Errorf("racer 1 stats mismatch: gold=%d silver=%d bronze=%d wins=%d", s.Gold, s.Silver, s.Bronze, s.Wins)
+			if s.Points != 25 || s.Wins != 1 || s.Races != 1 {
+				t.Errorf("racer 7 stats mismatch: points=%d wins=%d races=%d", s.Points, s.Wins, s.Races)
 			}
 		}
 	}
 	if !found {
-		t.Error("expected racer 1 stats to be returned")
+		t.Error("expected racer 7 snapshot-derived stats to be returned")
 	}
-
-	testServer.DB.Exec("DELETE FROM racer_stats WHERE racer_id = 1")
 }
 
 func TestDeeperStats(t *testing.T) {

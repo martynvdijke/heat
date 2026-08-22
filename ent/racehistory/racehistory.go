@@ -25,6 +25,8 @@ const (
 	FieldTotalLaps = "total_laps"
 	// FieldRaceType holds the string denoting the race_type field in the database.
 	FieldRaceType = "race_type"
+	// FieldSeasonID holds the string denoting the season_id field in the database.
+	FieldSeasonID = "season_id"
 	// Table holds the table name of the racehistory in the database.
 	Table = "race_history"
 )
@@ -39,6 +41,7 @@ var Columns = []string{
 	FieldTrackID,
 	FieldTotalLaps,
 	FieldRaceType,
+	FieldSeasonID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -97,4 +100,9 @@ func ByTotalLaps(opts ...sql.OrderTermOption) OrderOption {
 // ByRaceType orders the results by the race_type field.
 func ByRaceType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRaceType, opts...).ToFunc()
+}
+
+// BySeasonID orders the results by the season_id field.
+func BySeasonID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSeasonID, opts...).ToFunc()
 }

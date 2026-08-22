@@ -69,6 +69,20 @@ func (_c *RaceHistoryCreate) SetNillableRaceType(v *string) *RaceHistoryCreate {
 	return _c
 }
 
+// SetSeasonID sets the "season_id" field.
+func (_c *RaceHistoryCreate) SetSeasonID(v int) *RaceHistoryCreate {
+	_c.mutation.SetSeasonID(v)
+	return _c
+}
+
+// SetNillableSeasonID sets the "season_id" field if the given value is not nil.
+func (_c *RaceHistoryCreate) SetNillableSeasonID(v *int) *RaceHistoryCreate {
+	if v != nil {
+		_c.SetSeasonID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *RaceHistoryCreate) SetID(v int) *RaceHistoryCreate {
 	_c.mutation.SetID(v)
@@ -198,6 +212,10 @@ func (_c *RaceHistoryCreate) createSpec() (*RaceHistory, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.RaceType(); ok {
 		_spec.SetField(racehistory.FieldRaceType, field.TypeString, value)
 		_node.RaceType = value
+	}
+	if value, ok := _c.mutation.SeasonID(); ok {
+		_spec.SetField(racehistory.FieldSeasonID, field.TypeInt, value)
+		_node.SeasonID = &value
 	}
 	return _node, _spec
 }

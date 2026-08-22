@@ -13,11 +13,18 @@ import (
 // @Tags Stats
 // @Produce json
 // @Param race_id query int true "Race ID"
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/stats/race-incidents [get]
 func (h *Handler) GetRaceIncidentsReport(c *gin.Context) {
 	raceIDStr := c.Query("race_id")
 	racerIDStr := c.Query("racer_id")
+
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	query := `SELECT re.id, re.race_id, re.lap, re.event_type, re.racer_id, re.racer_id2, re.note, re.timestamp,
 		COALESCE(r1.name, ''), COALESCE(r2.name, '')
@@ -34,6 +41,19 @@ func (h *Handler) GetRaceIncidentsReport(c *gin.Context) {
 	if racerIDStr != "" {
 		query += " AND (re.racer_id = ? OR re.racer_id2 = ?)"
 		args = append(args, racerIDStr, racerIDStr)
+	}
+	// Season scoping goes through race_history; only applied when a scope is
+	// requested so live sessions (race_id = 0) stay visible otherwise.
+	if len(seasonIDs) > 0 {
+		query += " AND re.race_id IN (SELECT rh.id FROM race_history rh WHERE rh.season_id IN ("
+		for i := range seasonIDs {
+			if i > 0 {
+				query += ","
+			}
+			query += "?"
+			args = append(args, seasonIDs[i])
+		}
+		query += "))"
 	}
 	query += " ORDER BY re.lap, re.id"
 

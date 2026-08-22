@@ -242,6 +242,7 @@ var (
 		{Name: "track_id", Type: field.TypeString},
 		{Name: "total_laps", Type: field.TypeInt},
 		{Name: "race_type", Type: field.TypeString, Default: "season"},
+		{Name: "season_id", Type: field.TypeInt, Nullable: true},
 	}
 	// RaceHistoryTable holds the schema information for the "race_history" table.
 	RaceHistoryTable = &schema.Table{

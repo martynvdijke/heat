@@ -88,6 +88,7 @@ func (h *Handler) SaveRaceToHistory(c *gin.Context) {
 		TrackID   string `json:"track_id"`
 		TotalLaps int    `json:"total_laps"`
 		RaceType  string `json:"race_type"`
+		SeasonID  *int   `json:"season_id"`
 		Results   []struct {
 			RacerID     int    `json:"racer_id"`
 			RacerName   string `json:"racer_name"`
@@ -115,8 +116,23 @@ func (h *Handler) SaveRaceToHistory(c *gin.Context) {
 
 	isOneOff := input.RaceType == "oneoff"
 
-	result, err := h.S.DB.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps, race_type) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		input.Name, input.RaceDate, input.Country, input.Track, input.TrackID, input.TotalLaps, input.RaceType)
+	// Season linkage: explicit season_id wins; otherwise a season race is
+	// linked to the active season (latest active, falling back to the latest
+	// of any status); oneoffs stay unlinked.
+	var seasonID any
+	if input.SeasonID != nil && *input.SeasonID > 0 {
+		seasonID = *input.SeasonID
+	} else if !isOneOff {
+		var sid int
+		if err := h.S.DB.QueryRow("SELECT id FROM seasons WHERE status = 'active' ORDER BY id DESC LIMIT 1").Scan(&sid); err == nil && sid > 0 {
+			seasonID = sid
+		} else if err := h.S.DB.QueryRow("SELECT id FROM seasons ORDER BY id DESC LIMIT 1").Scan(&sid); err == nil && sid > 0 {
+			seasonID = sid
+		}
+	}
+
+	result, err := h.S.DB.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps, race_type, season_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		input.Name, input.RaceDate, input.Country, input.Track, input.TrackID, input.TotalLaps, input.RaceType, seasonID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

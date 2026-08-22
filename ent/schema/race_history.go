@@ -27,5 +27,6 @@ func (RaceHistory) Fields() []ent.Field {
 		field.String("track_id"),
 		field.Int("total_laps"),
 		field.String("race_type").Default("season"),
+		field.Int("season_id").Optional().Nillable(),
 	}
 }

@@ -17,12 +17,19 @@ import (
 // @Produce json
 // @Param racer1 query int true "First racer ID"
 // @Param racer2 query int true "Second racer ID"
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {object} models.HeadToHead
 // @Failure 400 {object} map[string]string
 // @Router /api/stats/head-to-head [get]
 func (h *Handler) GetHeadToHead(c *gin.Context) {
 	racer1Str := c.Query("racer1")
 	racer2Str := c.Query("racer2")
+
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	racer1, err1 := strconv.Atoi(racer1Str)
 	racer2, err2 := strconv.Atoi(racer2Str)
@@ -31,7 +38,7 @@ func (h *Handler) GetHeadToHead(c *gin.Context) {
 		return
 	}
 
-	result, err := racing.HeadToHead(h.S.DB, racer1, racer2)
+	result, err := racing.HeadToHead(h.S.DB, racer1, racer2, seasonIDs)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -78,9 +85,15 @@ func (h *Handler) GetPointsProgression(c *gin.Context) {
 // @Tags Stats
 // @Produce json
 // @Param racer_id query int true "Racer ID"
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/stats/streaks [get]
 func (h *Handler) GetStreaks(c *gin.Context) {
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	racerIDStr := c.Query("racer_id")
 	if racerIDStr != "" {
 		racerID, err := strconv.Atoi(racerIDStr)
@@ -88,7 +101,7 @@ func (h *Handler) GetStreaks(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid racer_id"})
 			return
 		}
-		result, err := racing.Streaks(h.S.DB, racerID)
+		result, err := racing.Streaks(h.S.DB, racerID, seasonIDs)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -107,12 +120,12 @@ func (h *Handler) GetStreaks(c *gin.Context) {
 	}
 
 	// All racers mode
-	cacheKey := "stats:streaks:all"
+	cacheKey := seasonScopeCacheKey("stats:streaks", seasonIDs)
 	if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
 		c.JSON(http.StatusOK, cached)
 		return
 	}
-	allData := racing.AllStreaks(h.S.DB)
+	allData := racing.AllStreaks(h.S.DB, seasonIDs)
 	streaks := make([]models.StreakInfo, 0, len(allData))
 	for _, s := range allData {
 		streaks = append(streaks, models.StreakInfo{
@@ -130,19 +143,26 @@ func (h *Handler) GetStreaks(c *gin.Context) {
 // @Description Get ELO-style ratings for all racers
 // @Tags Stats
 // @Produce json
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {array} map[string]interface{}
 // @Router /api/stats/elo [get]
 func (h *Handler) GetELORatings(c *gin.Context) {
-	if cached, ok := h.S.StatsCache.Get("stats:elo"); ok {
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	cacheKey := seasonScopeCacheKey("stats:elo", seasonIDs)
+	if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
 		c.JSON(http.StatusOK, cached)
 		return
 	}
-	ratings, err := racing.ELORatings(h.S.DB)
+	ratings, err := racing.ELORatings(h.S.DB, seasonIDs)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	h.S.StatsCache.Set("stats:elo", ratings)
+	h.S.StatsCache.Set(cacheKey, ratings)
 	c.JSON(http.StatusOK, ratings)
 }
 

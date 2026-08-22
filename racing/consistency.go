@@ -16,11 +16,13 @@ type ConsistencyRatingData struct {
 	Consistency  float64 `json:"consistency"`
 }
 
-// ConsistencyRatings computes consistency ratings for all racers.
-func ConsistencyRatings(db *sql.DB) ([]ConsistencyRatingData, error) {
+// ConsistencyRatings computes consistency ratings for all racers. An empty
+// season list means "all seasons".
+func ConsistencyRatings(db *sql.DB, seasonIDs []int) ([]ConsistencyRatingData, error) {
 	// Single batched query: compute avg and variance per racer
+	filter, args := SeasonFilter("rh", seasonIDs)
 	rows, err := db.Query(`
-		SELECT 
+		SELECT
 			rr.racer_id,
 			COALESCE(r.name, ''),
 			COUNT(*) as races,
@@ -29,10 +31,10 @@ func ConsistencyRatings(db *sql.DB) ([]ConsistencyRatingData, error) {
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
 		LEFT JOIN racers r ON r.id = rr.racer_id
-		WHERE rh.race_type = 'season'
+		WHERE rh.race_type = 'season'`+filter+`
 		GROUP BY rr.racer_id
 		HAVING COUNT(*) >= 3
-	`)
+	`, args...)
 	if err != nil {
 		return nil, err
 	}

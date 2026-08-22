@@ -19,8 +19,10 @@ type TrackPerformanceData struct {
 	DNFRate      float64 `json:"dnf_rate"`
 }
 
-// TrackPerformance computes per-track statistics for a racer.
-func TrackPerformance(db *sql.DB, racerID int) ([]TrackPerformanceData, error) {
+// TrackPerformance computes per-track statistics for a racer. An empty
+// season list means "all seasons".
+func TrackPerformance(db *sql.DB, racerID int, seasonIDs []int) ([]TrackPerformanceData, error) {
+	filter, args := SeasonFilter("rh", seasonIDs)
 	rows, err := db.Query(`
 		SELECT rh.track_id, rh.track, rh.country,
 			COUNT(*) as races,
@@ -32,10 +34,10 @@ func TrackPerformance(db *sql.DB, racerID int) ([]TrackPerformanceData, error) {
 			AVG(CASE WHEN rr.position >= 900 THEN 1.0 ELSE 0.0 END) as dnf_rate
 		FROM race_results rr
 		JOIN race_history rh ON rh.id = rr.race_id
-		WHERE rr.racer_id = ? AND rh.race_type = 'season'
+		WHERE rr.racer_id = ? AND rh.race_type = 'season'`+filter+`
 		GROUP BY rh.track_id
 		ORDER BY races DESC
-	`, racerID)
+	`, append([]any{racerID}, args...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,17 +66,19 @@ type TrackStatsResult struct {
 	FastestLap string
 }
 
-// TrackStats computes performance statistics grouped by track.
-func TrackStats(db *sql.DB) ([]TrackStatsResult, error) {
+// TrackStats computes performance statistics grouped by track. An empty
+// season list means "all seasons".
+func TrackStats(db *sql.DB, seasonIDs []int) ([]TrackStatsResult, error) {
+	filter, args := SeasonFilter("rh", seasonIDs)
 	rows, err := db.Query(`
 		SELECT rh.track_id, rh.track, rh.country, COUNT(*) as races_count,
 			COALESCE((SELECT rr.racer_name FROM race_results rr WHERE rr.race_id = rh.id AND rr.position = 1 LIMIT 1), '') as winner,
 			COALESCE((SELECT rr.racer_name FROM race_results rr WHERE rr.race_id = rh.id AND rr.fastest_lap = 1 LIMIT 1), '') as fastest_lap
 		FROM race_history rh
-		WHERE rh.race_type = 'season'
+		WHERE rh.race_type = 'season'`+filter+`
 		GROUP BY rh.track_id
 		ORDER BY races_count DESC
-	`)
+	`, args...)
 	if err != nil {
 		return nil, err
 	}

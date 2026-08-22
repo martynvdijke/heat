@@ -15,60 +15,37 @@ import (
 // @Tags Stats
 // @Produce json
 // @Param id query int false "Racer ID"
-// @Param season_id query int false "Season ID"
+// @Param season_id query int false "Season ID (alias for season_ids)"
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/racer-stats [get]
 func (h *Handler) GetRacerStats(c *gin.Context) {
 	id := c.Query("id")
-	seasonID := c.Query("season_id")
 
-	if seasonID != "" {
-		sid, err := strconv.Atoi(seasonID)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid season_id"})
-			return
-		}
-
-		if id == "" {
-			cacheKey := "stats:racer-stats:season:" + seasonID
-			if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
-				c.JSON(http.StatusOK, cached)
-				return
-			}
-			stats := racing.RacerStatsBySeason(h.S.DB, sid)
-			if len(stats) == 0 {
-				stats = racing.AllRacerStats(h.S.DB)
-			}
-			h.S.StatsCache.Set(cacheKey, stats)
-			c.JSON(http.StatusOK, stats)
-			return
-		}
-
-		racerID, _ := strconv.Atoi(id)
-		s, found := racing.SingleRacerStatsBySeason(h.S.DB, racerID, sid)
-		if !found {
-			s, _ = racing.SingleRacerStatsFallback(h.S.DB, racerID)
-		}
-		rInfo := racing.RacerInfo(h.S.DB, racerID)
-		c.JSON(http.StatusOK, gin.H{"stats": s, "racer": rInfo})
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	if id == "" {
-		if cached, ok := h.S.StatsCache.Get("stats:racer-stats:all"); ok {
+		cacheKey := seasonScopeCacheKey("stats:racer-stats", seasonIDs)
+		if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
 			c.JSON(http.StatusOK, cached)
 			return
 		}
-		stats := racing.AllRacerStats(h.S.DB)
-		h.S.StatsCache.Set("stats:racer-stats:all", stats)
+		// Snapshot-derived stats only: an explicit scope with no data returns
+		// an empty list (no silent fallback to legacy racer_stats).
+		stats := racing.RacerStatsBySeasons(h.S.DB, seasonIDs)
+		h.S.StatsCache.Set(cacheKey, stats)
 		c.JSON(http.StatusOK, stats)
 		return
 	}
 
 	racerID, _ := strconv.Atoi(id)
-	s, found := racing.SingleRacerStatsFallback(h.S.DB, racerID)
+	s, found := racing.SingleRacerStatsBySeasons(h.S.DB, racerID, seasonIDs)
 	if !found {
-		s = models.RacerStats{RacerID: 0}
+		s, _ = racing.SingleRacerStatsFallback(h.S.DB, racerID)
 	}
 	rInfo := racing.RacerInfo(h.S.DB, racerID)
 	c.JSON(http.StatusOK, gin.H{"stats": s, "racer": rInfo})
@@ -103,14 +80,21 @@ func (h *Handler) UpdateRacerStats(c *gin.Context) {
 // @Description Get performance statistics grouped by track
 // @Tags Stats
 // @Produce json
+// @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {array} models.TrackStats
 // @Router /api/track-stats [get]
 func (h *Handler) GetTrackStats(c *gin.Context) {
-	if cached, ok := h.S.StatsCache.Get("stats:track-stats"); ok {
+	seasonIDs, err := parseSeasonScope(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	cacheKey := seasonScopeCacheKey("stats:track-stats", seasonIDs)
+	if cached, ok := h.S.StatsCache.Get(cacheKey); ok {
 		c.JSON(http.StatusOK, cached)
 		return
 	}
-	stats, err := racing.TrackStats(h.S.DB)
+	stats, err := racing.TrackStats(h.S.DB, seasonIDs)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -126,6 +110,6 @@ func (h *Handler) GetTrackStats(c *gin.Context) {
 			FastestLap: s.FastestLap,
 		}
 	}
-	h.S.StatsCache.Set("stats:track-stats", result)
+	h.S.StatsCache.Set(cacheKey, result)
 	c.JSON(http.StatusOK, result)
 }

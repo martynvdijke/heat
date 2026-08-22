@@ -29,7 +29,9 @@ type RaceHistory struct {
 	// TotalLaps holds the value of the "total_laps" field.
 	TotalLaps int `json:"total_laps,omitempty"`
 	// RaceType holds the value of the "race_type" field.
-	RaceType     string `json:"race_type,omitempty"`
+	RaceType string `json:"race_type,omitempty"`
+	// SeasonID holds the value of the "season_id" field.
+	SeasonID     *int `json:"season_id,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -38,7 +40,7 @@ func (*RaceHistory) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case racehistory.FieldID, racehistory.FieldTotalLaps:
+		case racehistory.FieldID, racehistory.FieldTotalLaps, racehistory.FieldSeasonID:
 			values[i] = new(sql.NullInt64)
 		case racehistory.FieldName, racehistory.FieldRaceDate, racehistory.FieldCountry, racehistory.FieldTrack, racehistory.FieldTrackID, racehistory.FieldRaceType:
 			values[i] = new(sql.NullString)
@@ -105,6 +107,13 @@ func (_m *RaceHistory) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.RaceType = value.String
 			}
+		case racehistory.FieldSeasonID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field season_id", values[i])
+			} else if value.Valid {
+				_m.SeasonID = new(int)
+				*_m.SeasonID = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -161,6 +170,11 @@ func (_m *RaceHistory) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("race_type=")
 	builder.WriteString(_m.RaceType)
+	builder.WriteString(", ")
+	if v := _m.SeasonID; v != nil {
+		builder.WriteString("season_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }
