@@ -404,13 +404,10 @@ test.describe.serial('Stats Page Round-Trip', () => {
   let seasonId = 0;
   let roundId = 0;
 
-  test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
-  });
-
-  test('should create and finalize a round with spins and overheated', async ({ page }) => {
-    const setup = await page.evaluate(async () => {
-      // Create a season
+  // Creates a season + finalized round with spins/overheated scores so each
+  // test is self-sufficient regardless of execution order or retries.
+  async function setupSeasonWithScores(page: Page): Promise<{ seasonId: number; roundId: number }> {
+    return await page.evaluate(async () => {
       const sRes = await fetch('/api/seasons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -419,7 +416,6 @@ test.describe.serial('Stats Page Round-Trip', () => {
       if (!sRes.ok) throw new Error('Failed to create season');
       const s = await sRes.json();
 
-      // Create a round snapshot
       const rRes = await fetch('/api/rounds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -428,13 +424,11 @@ test.describe.serial('Stats Page Round-Trip', () => {
       if (!rRes.ok) throw new Error('Failed to create round');
       const r = await rRes.json();
 
-      // Fetch the snapshot scores
       const batchRes = await fetch(`/api/rounds/batch?ids=${r.id}`);
       const snaps = await batchRes.json();
       const snap = snaps[0];
 
       if (snap?.scores?.length) {
-        // Update scores with spins and overheated
         const updated = snap.scores.map((sc: any, i: number) => ({
           ...sc,
           spins: (i + 1) * 2,
@@ -447,13 +441,20 @@ test.describe.serial('Stats Page Round-Trip', () => {
         });
         if (!patchRes.ok) throw new Error('Failed to update scores');
 
-        // Finalize round
         const finalRes = await fetch(`/api/rounds/finalize?id=${r.id}`, { method: 'PATCH' });
         if (!finalRes.ok) throw new Error('Failed to finalize round');
       }
 
       return { seasonId: s.id, roundId: r.id };
     });
+  }
+
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
+  test('should create and finalize a round with spins and overheated', async ({ page }) => {
+    const setup = await setupSeasonWithScores(page);
 
     seasonId = setup.seasonId;
     roundId = setup.roundId;
@@ -462,14 +463,13 @@ test.describe.serial('Stats Page Round-Trip', () => {
   });
 
   test('should display spins and overheated values on stats page', async ({ page }) => {
-    expect(seasonId).toBeGreaterThan(0);
+    ({ seasonId } = await setupSeasonWithScores(page));
 
     await page.goto('/stats.html');
     await page.waitForTimeout(1500);
 
     // Select the season we created
-    const select = page.locator('#stats-season-select');
-    await select.selectOption(String(seasonId));
+    await page.check(`#season-${seasonId}`);
     await page.waitForTimeout(1500);
 
     // Verify driver table has data rows
@@ -491,14 +491,13 @@ test.describe.serial('Stats Page Round-Trip', () => {
   });
 
   test('should display spins and overheated over time chart and per-round table', async ({ page }) => {
-    expect(seasonId).toBeGreaterThan(0);
+    ({ seasonId } = await setupSeasonWithScores(page));
 
     await page.goto('/stats.html');
     await page.waitForTimeout(1500);
 
     // Select the season we created
-    const select = page.locator('#stats-season-select');
-    await select.selectOption(String(seasonId));
+    await page.check(`#season-${seasonId}`);
     await page.waitForTimeout(1500);
 
     // Over-time chart canvas is rendered
@@ -522,14 +521,13 @@ test.describe.serial('Stats Page Round-Trip', () => {
   });
 
   test('should verify points leaderboard shows season data from rounds', async ({ page }) => {
-    expect(seasonId).toBeGreaterThan(0);
+    ({ seasonId } = await setupSeasonWithScores(page));
 
     await page.goto('/stats.html');
     await page.waitForTimeout(1500);
 
     // Select our season
-    const select = page.locator('#stats-season-select');
-    await select.selectOption(String(seasonId));
+    await page.check(`#season-${seasonId}`);
     await page.waitForTimeout(1500);
 
     // Points leaderboard should have data rows (not the empty placeholder)
@@ -677,9 +675,8 @@ test.describe.skip('Admin Round Editing Flow', () => {
   test('should load stats page with season data', async ({ page }) => {
     await page.goto('/stats.html');
     await expect(page).toHaveTitle(/HEAT: Season Statistics/);
-    const select = page.locator('#stats-season-select');
-    const optionCount = await select.locator('option').count();
-    expect(optionCount).toBeGreaterThan(1);
+    const seasonChecks = page.locator('#stats-season-select .season-check');
+    await expect(seasonChecks).toHaveCount(1);
   });
 
   test('should cleanup round and season', async ({ page }) => {
@@ -723,3 +720,75 @@ async function loginAsAdmin(page: Page) {
   await page.waitForURL(/admin/, { timeout: 20000 });
   await expect(page.locator('#admin-nav')).toBeVisible({ timeout: 10000 });
 }
+
+test.describe('Season Scope Control', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
+  // Creates a season with one finalized round (snapshot-derived stats).
+  async function createSeasonWithFinalRound(page: Page, name: string): Promise<number> {
+    return await page.evaluate(async (seasonName) => {
+      const sRes = await fetch('/api/seasons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: seasonName })
+      });
+      if (!sRes.ok) throw new Error('Failed to create season');
+      const s = await sRes.json();
+      const rRes = await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ race_name: `ScopeRound-${Date.now()}`, season_id: s.id })
+      });
+      if (!rRes.ok) throw new Error('Failed to create round');
+      const r = await rRes.json();
+      const finalRes = await fetch(`/api/rounds/finalize?id=${r.id}`, { method: 'PATCH' });
+      if (!finalRes.ok) throw new Error('Failed to finalize round');
+      return s.id;
+    }, name);
+  }
+
+  test('defaults to All Seasons with no season checked', async ({ page }) => {
+    await page.goto('/stats.html');
+    await expect(page.locator('#season-all')).toBeChecked();
+    await expect(page.locator('#stats-season-select .season-check:checked')).toHaveCount(0);
+  });
+
+  test('checking a single season unchecks All Seasons', async ({ page }) => {
+    const seasonId = await createSeasonWithFinalRound(page, `ScopeSingle-${Date.now()}`);
+    await page.goto('/stats.html');
+    await page.waitForSelector(`#season-${seasonId}`, { timeout: 10000 });
+
+    await page.check(`#season-${seasonId}`);
+    await expect(page.locator('#season-all')).not.toBeChecked();
+    await expect(page.locator(`#season-${seasonId}`)).toBeChecked();
+
+    // URL reflects the explicit scope without a reload.
+    await expect(page).toHaveURL(new RegExp(`seasons=${seasonId}`));
+  });
+
+  test('multi-season selection shows the comparison card', async ({ page }) => {
+    const id1 = await createSeasonWithFinalRound(page, `ScopeMultiA-${Date.now()}`);
+    const id2 = await createSeasonWithFinalRound(page, `ScopeMultiB-${Date.now()}`);
+
+    await page.goto(`/stats.html?seasons=${id1},${id2}`);
+    await page.waitForSelector(`#season-${id2}`, { timeout: 10000 });
+
+    // Deep link pre-checks both seasons.
+    await expect(page.locator(`#season-${id1}`)).toBeChecked();
+    await expect(page.locator(`#season-${id2}`)).toBeChecked();
+    await expect(page.locator('#season-all')).not.toBeChecked();
+
+    const card = page.locator('#comparison-card');
+    await expect(card).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#comparison-head th')).toHaveCount(4); // Driver + 2 seasons + Total
+    await expect(page.locator('#comparison-body tr').first()).toBeVisible();
+  });
+
+  test('empty scope shows the warning banner', async ({ page }) => {
+    await page.goto('/stats.html?seasons=999999');
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#scope-empty-banner')).toBeVisible();
+  });
+});

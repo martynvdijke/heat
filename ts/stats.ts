@@ -3,36 +3,91 @@ import { escapeHtml } from './toast';
 import { weatherIcon, weatherLabel, formatGrip } from './weather';
 declare const Chart: any;
 let pointsChart: any, winsChart: any, battleChart: any, incidentsChart: any;
+let seasonScope: number[] = [];
+let seasonsCache: any[] = [];
+let comparisonChart: any;
+
+function scopeQueryString(): string {
+    return seasonScope.length ? `?season_ids=${seasonScope.join(',')}` : '';
+}
+
+function parseScopeFromUrl(): void {
+    const raw = new URLSearchParams(window.location.search).get('seasons');
+    if (!raw || raw === 'all') {
+        seasonScope = [];
+        return;
+    }
+    seasonScope = raw.split(',').map(v => parseInt(v, 10)).filter(v => Number.isFinite(v) && v > 0);
+}
+
+function syncSeasonControl(): void {
+    const container = document.getElementById('stats-season-select');
+    if (!container) return;
+    container.querySelectorAll('.season-check').forEach((cb) => {
+        const input = cb as HTMLInputElement;
+        input.checked = seasonScope.includes(parseInt(input.value, 10));
+    });
+    const allBox = document.getElementById('season-all') as HTMLInputElement | null;
+    if (allBox) allBox.checked = seasonScope.length === 0;
+}
+
+function applyScope(): void {
+    const params = new URLSearchParams(window.location.search);
+    params.set('seasons', seasonScope.length ? seasonScope.join(',') : 'all');
+    history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+    loadSeasonStats().then(() => loadDeeperStats(scopeQueryString()));
+}
+
+function buildSeasonControl(seasons: any[]): void {
+    const container = document.getElementById('stats-season-select');
+    if (!container) return;
+    if (container.querySelector('.season-check')) {
+        syncSeasonControl();
+        return;
+    }
+    seasons.forEach((s: any) => {
+        const row = document.createElement('div');
+        row.className = 'form-check';
+        row.innerHTML = `<input class="form-check-input season-check" type="checkbox" value="${s.id}" id="season-${s.id}"><label class="form-check-label" for="season-${s.id}">${escapeHtml(String(s.name))} (${escapeHtml(String(s.status))})</label>`;
+        container.appendChild(row);
+    });
+    const allBox = document.getElementById('season-all') as HTMLInputElement | null;
+    allBox?.addEventListener('change', () => {
+        if (allBox.checked) {
+            seasonScope = [];
+            syncSeasonControl();
+            applyScope();
+        }
+    });
+    container.querySelectorAll('.season-check').forEach((cb) => {
+        cb.addEventListener('change', () => {
+            seasonScope = Array.from(container.querySelectorAll('.season-check:checked'))
+                .map((el) => parseInt((el as HTMLInputElement).value, 10))
+                .filter(v => Number.isFinite(v) && v > 0);
+            syncSeasonControl();
+            applyScope();
+        });
+    });
+    syncSeasonControl();
+}
 
 function getCanvas(id: string): CanvasRenderingContext2D | null {
     const el = document.getElementById(id) as HTMLCanvasElement | null;
     return el?.getContext('2d') || null;
 }
 
-async function loadSeasonStats(seasonId?: string): Promise<void> {
+async function loadSeasonStats(): Promise<void> {
     try {
         const seasonsRes = await fetch('/api/seasons');
         const seasons = await seasonsRes.json();
-        const select = document.getElementById('stats-season-select') as HTMLSelectElement;
-        if (select.options.length <= 1) {
-            (Array.isArray(seasons) ? seasons : []).forEach((s: any) => {
-                const opt = document.createElement('option');
-                opt.value = String(s.id);
-                opt.textContent = `${s.name} (${s.status})`;
-                select.appendChild(opt);
-            });
-        }
-        const active = Array.isArray(seasons) ? seasons.find((s: any) => s.status === 'active') : null;
-        const sid = seasonId || (active ? String(active.id) : '');
-        if (sid && select) select.value = sid;
-        const roundsUrl = sid ? `/api/rounds?season_id=${sid}` : '/api/rounds';
-
-        const statsUrl = sid ? `/api/racer-stats?season_id=${sid}` : '/api/racer-stats';
+        seasonsCache = Array.isArray(seasons) ? seasons : [];
+        buildSeasonControl(seasonsCache);
+        const scopeQS = scopeQueryString();
 
         const [racersRes, statsRes, snapshotsRes] = await Promise.all([
             fetch('/api/racers'),
-            fetch(statsUrl),
-            fetch(roundsUrl)
+            fetch(`/api/racer-stats${scopeQS}`),
+            fetch(`/api/rounds${scopeQS}`)
         ]);
 
         const racers = await racersRes.json();
@@ -74,6 +129,19 @@ async function loadSeasonStats(seasonId?: string): Promise<void> {
             document.querySelector('#driver-stats-table tbody')!.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No driver stats yet</td></tr>';
             document.querySelector('#points-body')!.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No points data yet</td></tr>';
         }
+
+        // Comparison mode: 2+ seasons selected → per-racer × per-season card.
+        if (seasonScope.length >= 2) {
+            const perSeason = await Promise.all(seasonScope.map(id =>
+                fetch(`/api/racer-stats?season_id=${id}`).then(r => r.json())
+            ));
+            renderComparisonCard(perSeason);
+        } else {
+            document.getElementById('comparison-card')?.classList.add('d-none');
+        }
+
+        const banner = document.getElementById('scope-empty-banner');
+        if (banner) banner.classList.toggle('d-none', !(seasonScope.length > 0 && !hasStats && !hasSnapshots));
     } catch (err) {
         console.error('Failed to load stats:', err);
     }
@@ -403,21 +471,93 @@ function renderPointsLeaderboard(allStats: any[], racers: any[], allScores?: any
     }).join('');
 }
 
-function switchSeason(value: string): void {
-    loadSeasonStats(value || undefined);
+function seasonName(id: number): string {
+    const s = seasonsCache.find((x: any) => x.id === id);
+    return s ? String(s.name) : `Season ${id}`;
 }
 
-loadSeasonStats().then(() => loadDeeperStats());
+function renderComparisonCard(perSeason: any[][]): void {
+    const card = document.getElementById('comparison-card');
+    if (!card) return;
+    card.classList.remove('d-none');
+
+    // Union of drivers across the selected seasons, sorted by total points.
+    const totals = new Map<number, { name: string; total: number }>();
+    perSeason.flat().forEach((s: any) => {
+        const cur = totals.get(s.racer_id) || { name: s.racer_name || `Racer ${s.racer_id}`, total: 0 };
+        cur.total += s.points || 0;
+        totals.set(s.racer_id, cur);
+    });
+    const order = Array.from(totals.entries()).sort((a, b) => b[1].total - a[1].total);
+
+    const head = document.getElementById('comparison-head');
+    if (head) {
+        head.innerHTML = '<th>Driver</th>' +
+            seasonScope.map(id => `<th>${escapeHtml(seasonName(id))}</th>`).join('') +
+            '<th>Total Points</th>';
+    }
+
+    const body = document.getElementById('comparison-body');
+    if (body) {
+        body.innerHTML = order.map(([racerId, info]) => {
+            let totalPts = 0;
+            const cells = perSeason.map((stats) => {
+                const s = stats.find((x: any) => x.racer_id === racerId);
+                const pts = s?.points || 0;
+                totalPts += pts;
+                const races = s?.races || 0;
+                const wins = s?.wins || 0;
+                const podiums = (s?.gold || 0) + (s?.silver || 0) + (s?.bronze || 0);
+                return `<td>${races} races · ${wins} wins · ${podiums} podiums · <strong>${pts}</strong> pts</td>`;
+            }).join('');
+            return `<tr><td>${escapeHtml(info.name)}</td>${cells}<td class="fw-bold">${totalPts}</td></tr>`;
+        }).join('');
+    }
+
+    // Grouped bar chart: points per racer per season.
+    comparisonChart?.destroy();
+    const ctx = getCanvas('comparison-chart');
+    if (!ctx) return;
+    const labels = order.slice(0, 8).map(([, info]) => info.name);
+    const palette = ['#fbbf24', '#3b82f6', '#ef4444', '#22c55e', '#a855f7', '#f97316', '#14b8a6', '#eab308'];
+    const datasets = seasonScope.map((id, i) => ({
+        label: seasonName(id),
+        data: order.slice(0, 8).map(([racerId]) => {
+            const s = (perSeason[i] || []).find((x: any) => x.racer_id === racerId);
+            return s?.points || 0;
+        }),
+        backgroundColor: palette[i % palette.length]
+    }));
+    comparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function switchSeason(value: string): void {
+    seasonScope = value ? [parseInt(value, 10)].filter(v => Number.isFinite(v) && v > 0) : [];
+    syncSeasonControl();
+    applyScope();
+}
 (window as any).switchSeason = switchSeason;
 
+parseScopeFromUrl();
+loadSeasonStats().then(() => loadDeeperStats(scopeQueryString()));
+
 // Deeper Stats
-async function loadDeeperStats(): Promise<void> {
+async function loadDeeperStats(scopeQS: string = ''): Promise<void> {
     try {
         const [deltaRes, consistencyRes, incidentsRes, paceRes] = await Promise.all([
-            fetch('/api/stats/qualifying-delta'),
-            fetch('/api/stats/consistency'),
-            fetch('/api/stats/incidents'),
-            fetch('/api/stats/pace-heatmap')
+            fetch(`/api/stats/qualifying-delta${scopeQS}`),
+            fetch(`/api/stats/consistency${scopeQS}`),
+            fetch(`/api/stats/incidents${scopeQS}`),
+            fetch(`/api/stats/pace-heatmap${scopeQS}`)
         ]);
 
         const delta = await deltaRes.json();

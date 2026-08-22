@@ -15,12 +15,20 @@ import (
 // @Tags Stats
 // @Produce json
 // @Param id query int false "Racer ID"
+// @Param source query string false "legacy = raw racer_stats rows (admin view)"
 // @Param season_id query int false "Season ID (alias for season_ids)"
 // @Param season_ids query string false "Comma-separated season IDs; absent = all seasons"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/racer-stats [get]
 func (h *Handler) GetRacerStats(c *gin.Context) {
 	id := c.Query("id")
+
+	// Admin management view: return the raw legacy racer_stats rows (the
+	// table the admin UI edits), independent of snapshot-derived scopes.
+	if c.Query("source") == "legacy" && id == "" {
+		c.JSON(http.StatusOK, racing.AllRacerStats(h.S.DB))
+		return
+	}
 
 	seasonIDs, err := parseSeasonScope(c)
 	if err != nil {

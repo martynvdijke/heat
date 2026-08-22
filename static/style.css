@@ -1377,3 +1377,25 @@ body[data-page="controller"] .navbar a {
 .form-control:focus { background: #333; border-color: var(--primary); color: white; }
 .btn-primary { background: var(--primary); border-color: var(--primary); }
 .btn-primary:hover { background: #b30000; border-color: #b30000; }
+
+/* Stats season scope panel */
+.season-scope-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    max-width: 640px;
+}
+
+.season-scope-panel .form-check {
+    margin-bottom: 0;
+}
+
+.season-scope-panel .form-check-label {
+    font-size: 0.9rem;
+    white-space: nowrap;
+}

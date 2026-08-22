@@ -262,6 +262,16 @@ func (h *Handler) GetRoundSnapshots(c *gin.Context) {
 	if seasonIDStr != "" {
 		query = "SELECT id, season_id, race_name, race_date, round, created_at, status FROM round_snapshots WHERE season_id = ? ORDER BY round ASC"
 		args = append(args, seasonIDStr)
+	} else if seasonIDs, err := parseSeasonScope(c); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	} else if len(seasonIDs) > 0 {
+		placeholders := make([]string, len(seasonIDs))
+		for i, sid := range seasonIDs {
+			placeholders[i] = "?"
+			args = append(args, sid)
+		}
+		query = "SELECT id, season_id, race_name, race_date, round, created_at, status FROM round_snapshots WHERE season_id IN (" + strings.Join(placeholders, ",") + ") ORDER BY round ASC"
 	}
 
 	rows, err := h.S.DB.Query(query, args...)

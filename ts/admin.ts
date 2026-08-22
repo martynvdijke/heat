@@ -360,7 +360,7 @@ async function loadTeams(): Promise<void> {
 
 async function loadRacerStats(): Promise<void> {
     try {
-        const res = await fetch('/api/racer-stats');
+        const res = await fetch('/api/racer-stats?source=legacy');
         const data: AdminStats[] = await res.json();
         racerStats = data;
         renderStatsList();

@@ -251,3 +251,62 @@ func TestSeasonScopedStatsAPI(t *testing.T) {
 		}
 	})
 }
+
+func TestRacerStatsLegacySource(t *testing.T) {
+	r := gin.New()
+	r.GET("/api/racer-stats", testHandler.GetRacerStats)
+	r.POST("/api/racer-stats", testHandler.UpdateRacerStats)
+
+	database := testServer.DB
+	database.Exec("DELETE FROM racer_stats WHERE racer_id = 9")
+	// AllRacerStats joins points from the racers table; seed the racer so the
+	// aggregate subquery resolves.
+	database.Exec("INSERT OR REPLACE INTO racers (id, name, profile_picture, car_color, car_name, points, rank, position) VALUES (9, 'Legacy Racer', '', '#ffffff', 'Legacy Car', 0, 0, 0)")
+	defer func() {
+		database.Exec("DELETE FROM racer_stats WHERE racer_id = 9")
+		database.Exec("DELETE FROM racers WHERE id = 9")
+	}()
+
+	body := `{"racer_id":9,"races":2,"wins":1,"gold":1,"silver":0,"bronze":0,"fastest_laps":0,"dnf":0,"dns":0,"spins":3,"overheated":2}`
+	req, _ := http.NewRequest("POST", "/api/racer-stats", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("legacy upsert failed: %d %s", rr.Code, rr.Body.String())
+	}
+
+	testServer.StatsCache.InvalidatePrefix("stats:")
+
+	// Legacy view (admin CRUD) still reads the racer_stats table.
+	req, _ = http.NewRequest("GET", "/api/racer-stats?source=legacy", nil)
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("legacy GET failed: %d", rr.Code)
+	}
+	var legacy []models.RacerStats
+	json.Unmarshal(rr.Body.Bytes(), &legacy)
+	found := false
+	for _, s := range legacy {
+		if s.RacerID == 9 && s.Spins == 3 && s.Overheated == 2 {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected racer 9 in legacy source view")
+	}
+
+	// Default list view is snapshot-derived and must not include the row.
+	testServer.StatsCache.InvalidatePrefix("stats:")
+	req, _ = http.NewRequest("GET", "/api/racer-stats", nil)
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	var snapshot []models.RacerStats
+	json.Unmarshal(rr.Body.Bytes(), &snapshot)
+	for _, s := range snapshot {
+		if s.RacerID == 9 {
+			t.Error("legacy racer_stats row leaked into snapshot-derived list")
+		}
+	}
+}
