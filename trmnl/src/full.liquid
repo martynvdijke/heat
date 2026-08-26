@@ -2,9 +2,9 @@
   {% if latest_race %}
     <div class="item">
       <div class="content">
-        <span class="label label--small">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% if latest_race.country %}, {{ latest_race.country }}{% endif %}{% endif %}</span>
-        <span class="value value--small">{{ latest_race.name }}</span>
-        <span class="label label--small">{{ latest_race.race_date }}{% if latest_race.total_laps %} - {{ latest_race.total_laps }} laps{% endif %}</span>
+        <span class="label label--small lg:label--base">Round {{ latest_race.round }}{% if latest_race.track %} - {{ latest_race.track }}{% if latest_race.country %}, {{ latest_race.country }}{% endif %}{% endif %}</span>
+        <span class="value value--small lg:value--large">{{ latest_race.name }}</span>
+        <span class="label label--small lg:label--base">{{ latest_race.race_date }}{% if latest_race.total_laps %} - {{ latest_race.total_laps }} laps{% endif %}</span>
       </div>
     </div>
     <div class="divider--h"></div>
@@ -17,13 +17,13 @@
                 <img src="{{ result.profile_picture }}" width="28" height="28" class="image image--cover rounded--full image-dither shrink-0" />
               {% endif %}
               <div class="w--min-0 grow">
-                <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }}</span>
-                {% if result.team %}<span class="label label--small">{{ result.team }}</span>{% endif %}
+                <span class="value value--xxsmall lg:value--small">P{{ result.position }} {{ result.racer_name }}</span>
+                {% if result.team %}<span class="label label--small lg:label--base">{{ result.team }}</span>{% endif %}
               </div>
             </div>
           </div>
           <div class="content">
-            <span class="label label--small">{{ result.points }} pts</span>
+            <span class="label label--small lg:label--base">{{ result.points }} pts</span>
           </div>
         </div>
       {% endfor %}
@@ -31,7 +31,7 @@
   {% else %}
     <div class="item">
       <div class="content">
-        <span class="value value--xsmall">No race data yet</span>
+        <span class="value value--xsmall lg:value--small">No race data yet</span>
       </div>
     </div>
   {% endif %}
@@ -40,7 +40,7 @@
     <div class="divider--h"></div>
     <div class="item">
       <div class="content">
-        <span class="label label--small">Standings</span>
+        <span class="label label--small lg:label--base">Standings</span>
       </div>
     </div>
     <div class="grid grid--cols-2 lg:grid--cols-4 lg:portrait:grid--cols-2 gap--xsmall">
@@ -52,13 +52,13 @@
                 <img src="{{ standing.profile_picture }}" width="28" height="28" class="image image--cover rounded--full image-dither shrink-0" />
               {% endif %}
               <div class="w--min-0 grow">
-                <span class="value value--xxsmall">{{ forloop.index }}. {{ standing.racer_name }}</span>
-                {% if standing.team_name %}<span class="label label--small">{{ standing.team_name }}</span>{% endif %}
+                <span class="value value--xxsmall lg:value--small">{{ forloop.index }}. {{ standing.racer_name }}</span>
+                {% if standing.team_name %}<span class="label label--small lg:label--base">{{ standing.team_name }}</span>{% endif %}
               </div>
             </div>
           </div>
           <div class="content">
-            <span class="label label--small">{{ standing.points }}</span>
+            <span class="label label--small lg:label--base">{{ standing.points }}</span>
           </div>
         </div>
       {% endfor %}
@@ -67,14 +67,14 @@
     <div class="divider--h"></div>
     <div class="item">
       <div class="content">
-        <span class="value value--xsmall">No race data yet</span>
+        <span class="value value--xsmall lg:value--small">No race data yet</span>
       </div>
     </div>
   {% else %}
     <div class="divider--h"></div>
     <div class="item">
       <div class="content">
-        <span class="value value--xsmall">No standings yet</span>
+        <span class="value value--xsmall lg:value--small">No standings yet</span>
       </div>
     </div>
   {% endif %}

@@ -2,22 +2,22 @@
   {% if next_race %}
     <div class="item">
       <div class="content">
-        <span class="label label--small">Next Race{% if next_race.country %} - {{ next_race.country }}{% endif %}</span>
-        <span class="value value--small">{{ next_race.track }}</span>
-        <span class="label label--small">{{ next_race.race_date }}{% if next_race.total_laps %} - {{ next_race.total_laps }} laps{% endif %}</span>
+        <span class="label label--small lg:label--base">Next Race{% if next_race.country %} - {{ next_race.country }}{% endif %}</span>
+        <span class="value value--small lg:value--large">{{ next_race.track }}</span>
+        <span class="label label--small lg:label--base">{{ next_race.race_date }}{% if next_race.total_laps %} - {{ next_race.total_laps }} laps{% endif %}</span>
       </div>
       <div class="content">
         {% if next_race.days_remaining == 0 %}
-          <span class="value value--small">TODAY</span>
+          <span class="value value--small lg:value--large">TODAY</span>
         {% else %}
-          <span class="value value--small">in {{ next_race.days_remaining }} days</span>
+          <span class="value value--small lg:value--large">in {{ next_race.days_remaining }} days</span>
         {% endif %}
       </div>
     </div>
   {% else %}
     <div class="item">
       <div class="content">
-        <span class="value value--xsmall">Next race not scheduled</span>
+        <span class="value value--xsmall lg:value--small">Next race not scheduled</span>
       </div>
     </div>
   {% endif %}
@@ -26,8 +26,8 @@
     <div class="divider--h"></div>
     <div class="item">
       <div class="content">
-        <span class="label label--small">Last Race{% if latest_race.track %} - {{ latest_race.track }}{% endif %}</span>
-        <span class="value value--xsmall">{{ latest_race.name }}</span>
+        <span class="label label--small lg:label--base">Last Race{% if latest_race.track %} - {{ latest_race.track }}{% endif %}</span>
+        <span class="value value--xsmall lg:value--small">{{ latest_race.name }}</span>
       </div>
     </div>
     <div class="grid grid--cols-2 lg:grid--cols-4 lg:portrait:grid--cols-2 gap--xsmall">
@@ -39,13 +39,13 @@
                 <img src="{{ result.profile_picture }}" width="24" height="24" class="image image--cover rounded--full image-dither shrink-0" />
               {% endif %}
               <div class="w--min-0 grow">
-                <span class="value value--xxsmall">P{{ result.position }} {{ result.racer_name }}</span>
-                {% if result.team %}<span class="label label--small">{{ result.team }}</span>{% endif %}
+                <span class="value value--xxsmall lg:value--small">P{{ result.position }} {{ result.racer_name }}</span>
+                {% if result.team %}<span class="label label--small lg:label--base">{{ result.team }}</span>{% endif %}
               </div>
             </div>
           </div>
           <div class="content">
-            <span class="label label--small">{{ result.points }} pts</span>
+            <span class="label label--small lg:label--base">{{ result.points }} pts</span>
           </div>
         </div>
       {% endfor %}
@@ -54,7 +54,7 @@
     <div class="divider--h"></div>
     <div class="item">
       <div class="content">
-        <span class="value value--xsmall">No race data yet</span>
+        <span class="value value--xsmall lg:value--small">No race data yet</span>
       </div>
     </div>
   {% endif %}
@@ -63,7 +63,7 @@
     <div class="divider--h"></div>
     <div class="item">
       <div class="content">
-        <span class="label label--small">Standings</span>
+        <span class="label label--small lg:label--base">Standings</span>
       </div>
     </div>
     <div class="grid grid--cols-2 lg:grid--cols-4 lg:portrait:grid--cols-2 gap--xsmall">
@@ -75,13 +75,13 @@
                 <img src="{{ standing.profile_picture }}" width="24" height="24" class="image image--cover rounded--full image-dither shrink-0" />
               {% endif %}
               <div class="w--min-0 grow">
-                <span class="value value--xxsmall">{{ forloop.index }}. {{ standing.racer_name }}</span>
-                {% if standing.team_name %}<span class="label label--small">{{ standing.team_name }}</span>{% endif %}
+                <span class="value value--xxsmall lg:value--small">{{ forloop.index }}. {{ standing.racer_name }}</span>
+                {% if standing.team_name %}<span class="label label--small lg:label--base">{{ standing.team_name }}</span>{% endif %}
               </div>
             </div>
           </div>
           <div class="content">
-            <span class="label label--small">{{ standing.points }}</span>
+            <span class="label label--small lg:label--base">{{ standing.points }}</span>
           </div>
         </div>
       {% endfor %}
@@ -90,7 +90,7 @@
     <div class="divider--h"></div>
     <div class="item">
       <div class="content">
-        <span class="value value--xsmall">No standings yet</span>
+        <span class="value value--xsmall lg:value--small">No standings yet</span>
       </div>
     </div>
   {% endif %}

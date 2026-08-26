@@ -4,20 +4,20 @@
       <div class="content">
         <span class="label label--small lg:label--base">Next Race{% if next_race.country %} - {{ next_race.country }}{% endif %}</span>
         <span class="value value--xsmall lg:value--small">{{ next_race.track }}</span>
-        <span class="label label--small">{{ next_race.race_date }}</span>
+        <span class="label label--small lg:label--base">{{ next_race.race_date }}</span>
       </div>
       <div class="content">
         {% if next_race.days_remaining == 0 %}
-          <span class="value value--xsmall">TODAY</span>
+          <span class="value value--xsmall lg:value--small">TODAY</span>
         {% else %}
-          <span class="value value--xsmall">in {{ next_race.days_remaining }} days</span>
+          <span class="value value--xsmall lg:value--small">in {{ next_race.days_remaining }} days</span>
         {% endif %}
       </div>
     </div>
   {% else %}
     <div class="item">
       <div class="content">
-        <span class="value value--xsmall">Next race not scheduled</span>
+        <span class="value value--xsmall lg:value--small">Next race not scheduled</span>
       </div>
     </div>
   {% endif %}
@@ -42,9 +42,32 @@
     <div class="divider--h"></div>
     <div class="item">
       <div class="content">
-        <span class="value value--xsmall">No race data yet</span>
+        <span class="value value--xsmall lg:value--small">No race data yet</span>
       </div>
     </div>
+  {% endif %}
+
+  {% if standings.size > 0 %}
+    <div class="divider--h"></div>
+    {% for standing in standings %}
+      {% if forloop.index <= 2 %}
+        <div class="item">
+          <div class="content">
+            <div class="flex flex--row flex--left gap--xsmall w--full">
+              {% if standing.profile_picture %}
+                <img src="{{ standing.profile_picture }}" width="20" height="20" class="image image--cover rounded--full image-dither shrink-0" />
+              {% endif %}
+              <div class="w--min-0 grow">
+                <span class="value value--xxsmall lg:value--small">{{ forloop.index }}. {{ standing.racer_name }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="content">
+            <span class="label label--small lg:label--base">{{ standing.points }} pts</span>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
   {% endif %}
 </div>
 

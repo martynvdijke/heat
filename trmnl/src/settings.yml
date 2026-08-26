@@ -43,7 +43,7 @@ custom_fields:
   field_type: author_bio
   description: I am running a heat board game tournament with friends, this pulls the stats into my trmnl.
   github_url: https://github.com/martynvdijke/heat
-  learn_more_url: https://heat.vandijke.xyz/
+  learn_more_url: https://github.com/martynvdijke/heat
   email_address: martyn@vandijke.xyz
 name: Heat Championship Stats
 description: "Latest race results and standings"
