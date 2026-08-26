@@ -1,3 +1,10 @@
+## [1.58.2](https://github.com/martynvdijke/heat/compare/v1.58.1...v1.58.2) (2026-08-26)
+
+
+### Bug Fixes
+
+* **trmnl:** restructure half_horizontal layout, add lg scaling and denser content, use main site URL ([08acb9c](https://github.com/martynvdijke/heat/commit/08acb9ca5864f11976f1c44ac92544d0b2303109))
+
 ## [1.58.1](https://github.com/martynvdijke/heat/compare/v1.58.0...v1.58.1) (2026-08-24)
 
 # [1.58.0](https://github.com/martynvdijke/heat/compare/v1.57.0...v1.58.0) (2026-08-22)
