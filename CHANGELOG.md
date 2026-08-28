@@ -1,3 +1,13 @@
+## [1.58.4](https://github.com/martynvdijke/heat/compare/v1.58.3...v1.58.4) (2026-08-28)
+
+
+### Bug Fixes
+
+* **ci:** make pinact check non-blocking ([35a7fa1](https://github.com/martynvdijke/heat/commit/35a7fa1aea05b387ae2ae4fa5a14f955a198d9a4))
+* **ci:** remove unsupported --diff flag from pinact ([8d22609](https://github.com/martynvdijke/heat/commit/8d22609c56646d045a89d25402096db4eaceb829))
+* **ci:** update actionlint to v1.7.12 (v1 tag removed upstream) ([b965909](https://github.com/martynvdijke/heat/commit/b9659091053fc3a0e06f0d51e25a9019ce5c38ec))
+* **trmnl:** make full display more spacious with larger typography and gaps ([317ac6c](https://github.com/martynvdijke/heat/commit/317ac6cd819215aab62dd7bfce2e512708009600))
+
 ## [1.58.3](https://github.com/martynvdijke/heat/compare/v1.58.2...v1.58.3) (2026-08-26)
 
 
