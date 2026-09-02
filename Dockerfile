@@ -9,7 +9,7 @@ COPY static/css static/css
 COPY static/sw.template.js static/
 RUN mkdir -p static/js && node build.mjs
 
-FROM golang:1.27.0-alpine AS builder
+FROM golang:1.27.1-alpine AS builder
 
 RUN apk add --no-cache gcc musl-dev sqlite-dev
 
