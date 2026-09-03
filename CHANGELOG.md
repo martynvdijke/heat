@@ -1,3 +1,10 @@
+## [1.58.7](https://github.com/martynvdijke/heat/compare/v1.58.6...v1.58.7) (2026-09-03)
+
+
+### Bug Fixes
+
+* **deps:** update module golang.org/x/crypto to v0.56.0 ([#85](https://github.com/martynvdijke/heat/issues/85)) ([5fe69ce](https://github.com/martynvdijke/heat/commit/5fe69ceea1beeacd2bef73f6fb5f4b2dd0282f8b))
+
 ## [1.58.6](https://github.com/martynvdijke/heat/compare/v1.58.5...v1.58.6) (2026-09-02)
 
 ## [1.58.5](https://github.com/martynvdijke/heat/compare/v1.58.4...v1.58.5) (2026-08-30)
