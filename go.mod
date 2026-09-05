@@ -2,11 +2,11 @@ module heat
 
 go 1.26.2
 
-require github.com/mattn/go-sqlite3 v1.14.50
+require github.com/mattn/go-sqlite3 v1.14.52
 
 require (
 	entgo.io/ent v0.14.6
-	github.com/gin-contrib/gzip v1.2.6
+	github.com/gin-contrib/gzip v1.2.7
 	github.com/gin-gonic/gin v1.12.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/prometheus/client_golang v1.24.1
