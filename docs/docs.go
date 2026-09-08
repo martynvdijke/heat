@@ -230,6 +230,80 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/auth/oidc/callback": {
+            "get": {
+                "description": "Verify state/nonce/PKCE + ID token, link/provision user, set session cookie",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "OIDC callback",
+                "responses": {
+                    "302": {
+                        "description": "Redirect to app",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/oidc/config": {
+            "get": {
+                "description": "Returns whether OIDC login is enabled",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "OIDC provider status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/oidc/login": {
+            "get": {
+                "description": "Redirect to Authelia authorize with PKCE S256 + state/nonce cookies",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Start OIDC login",
+                "responses": {
+                    "302": {
+                        "description": "Redirect to IdP",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/oidc/logout": {
+            "get": {
+                "description": "Clear local session and redirect to Authelia logout",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "OIDC logout",
+                "responses": {
+                    "302": {
+                        "description": "Redirect to IdP logout",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/backup-settings": {
             "get": {
                 "description": "Get the backup configuration settings",

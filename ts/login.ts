@@ -7,6 +7,14 @@ async function init(): Promise<void> {
     if (!data.setup) {
         window.location.href = '/setup';
     }
+    try {
+        const oidc = await (await fetch('/api/auth/oidc/config')).json();
+        if (oidc.enabled) {
+            document.getElementById('oidc-login-btn')!.style.display = '';
+        }
+    } catch {
+        // OIDC button stays hidden
+    }
 }
 
 document.getElementById('login-form')?.addEventListener('submit', async (e: Event) => {

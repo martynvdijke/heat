@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -19,6 +20,42 @@ import (
 type SessionInfo struct {
 	Expiry int64
 	IP     string
+}
+
+// OIDCConfig holds Authelia OIDC relying-party settings (see
+// openspec/changes/add-authelia-oidc). Secrets come from
+// OIDC_CLIENT_SECRET_FILE or OIDC_CLIENT_SECRET env, never git.
+type OIDCConfig struct {
+	Enabled      bool
+	IssuerURL    string
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+	Scopes       []string
+	LogoutURL    string
+}
+
+// LoadOIDCConfig reads OIDC_* env vars. Secret file takes precedence.
+func LoadOIDCConfig() OIDCConfig {
+	scopes := []string{"openid", "email", "profile", "groups"}
+	if s := os.Getenv("OIDC_SCOPES"); s != "" {
+		scopes = strings.Split(s, " ")
+	}
+	secret := os.Getenv("OIDC_CLIENT_SECRET")
+	if f := os.Getenv("OIDC_CLIENT_SECRET_FILE"); f != "" {
+		if b, err := os.ReadFile(f); err == nil {
+			secret = strings.TrimSpace(string(b))
+		}
+	}
+	return OIDCConfig{
+		Enabled:      os.Getenv("OIDC_ENABLED") == "true",
+		IssuerURL:    strings.TrimSuffix(os.Getenv("OIDC_ISSUER_URL"), "/"),
+		ClientID:     os.Getenv("OIDC_CLIENT_ID"),
+		ClientSecret: secret,
+		RedirectURL:  os.Getenv("OIDC_REDIRECT_URL"),
+		Scopes:       scopes,
+		LogoutURL:    os.Getenv("OIDC_LOGOUT_URL"),
+	}
 }
 
 type Server struct {
@@ -45,6 +82,7 @@ type Server struct {
 
 	LoginLimiter         *rate.Limiter
 	SecureCookies        bool
+	OIDC                 OIDCConfig
 	Upgrader             websocket.Upgrader
 	LoginLimiters        map[string]*rate.Limiter
 	LoginLimitersMu      sync.Mutex
@@ -74,6 +112,7 @@ func NewServer() *Server {
 		DBPath:                 "/db/heat.db",
 		MediaPath:              "/app/media",
 		SecureCookies:          os.Getenv("DOCKER") == "true",
+		OIDC:                   LoadOIDCConfig(),
 		Upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				origin := r.Header.Get("Origin")

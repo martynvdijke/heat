@@ -339,6 +339,12 @@ func main() {
 	r.GET("/api/reset-password/validate", h.ValidateResetToken)
 	r.POST("/api/reset-password", h.ResetPassword)
 
+	// OIDC login via Authelia (add-authelia-oidc); password login stays as fallback
+	r.GET("/api/auth/oidc/config", h.HandleOIDCConfig)
+	r.GET("/api/auth/oidc/login", middleware.RateLimitMiddleware(server), h.HandleOIDCLogin)
+	r.GET("/api/auth/oidc/callback", middleware.RateLimitMiddleware(server), h.HandleOIDCCallback)
+	r.GET("/api/auth/oidc/logout", h.HandleOIDCLogout)
+
 	r.GET("/api/racers", h.GetRacers)
 	admin := r.Group("/api")
 	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(server))

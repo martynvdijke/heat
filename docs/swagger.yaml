@@ -614,6 +614,55 @@ paths:
       summary: Save AI settings
       tags:
       - Settings
+  /api/auth/oidc/callback:
+    get:
+      description: Verify state/nonce/PKCE + ID token, link/provision user, set session
+        cookie
+      responses:
+        "302":
+          description: Redirect to app
+          schema:
+            type: string
+      summary: OIDC callback
+      tags:
+      - Auth
+  /api/auth/oidc/config:
+    get:
+      description: Returns whether OIDC login is enabled
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      summary: OIDC provider status
+      tags:
+      - Auth
+  /api/auth/oidc/login:
+    get:
+      description: Redirect to Authelia authorize with PKCE S256 + state/nonce cookies
+      responses:
+        "302":
+          description: Redirect to IdP
+          schema:
+            type: string
+      summary: Start OIDC login
+      tags:
+      - Auth
+  /api/auth/oidc/logout:
+    get:
+      description: Clear local session and redirect to Authelia logout
+      responses:
+        "302":
+          description: Redirect to IdP logout
+          schema:
+            type: string
+      summary: OIDC logout
+      tags:
+      - Auth
   /api/backup-settings:
     get:
       description: Get the backup configuration settings

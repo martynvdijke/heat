@@ -121,6 +121,11 @@ func Init(s *app.Server) {
 
 	// Migrate admin_users: recovery email used for the forgot-password flow
 	srv.DB.Exec("ALTER TABLE admin_users ADD COLUMN email TEXT NOT NULL DEFAULT ''")
+	// OIDC linking (add-authelia-oidc): issuer+sub link + auth method marker
+	srv.DB.Exec("ALTER TABLE admin_users ADD COLUMN oidc_sub TEXT NOT NULL DEFAULT ''")
+	srv.DB.Exec("ALTER TABLE admin_users ADD COLUMN auth_method TEXT NOT NULL DEFAULT 'password'")
+	srv.DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_users_oidc_sub ON admin_users(oidc_sub) WHERE oidc_sub <> ''")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(email)")
 
 	// Password reset tokens for the forgot-password flow
 	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS password_reset_tokens (

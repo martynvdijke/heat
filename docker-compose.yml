@@ -19,6 +19,16 @@ services:
       - OTEL_SERVICE_NAME=heat
       # Resource attributes in key=value,key2=value2 format
       - OTEL_RESOURCE_ATTRIBUTES=
+      # OIDC login via Authelia (see openspec/changes/add-authelia-oidc)
+      # Secret via file (preferred) or env; never commit values to git.
+      - OIDC_ENABLED=false
+      - OIDC_ISSUER_URL=https://authelia.vandijke.xyz
+      - OIDC_CLIENT_ID=heat
+      - OIDC_CLIENT_SECRET_FILE=/run/secrets/oidc_client_secret
+      - OIDC_CLIENT_SECRET=
+      - OIDC_REDIRECT_URL=https://heat.vandijke.xyz/api/auth/oidc/callback
+      - OIDC_SCOPES=openid email profile groups
+      - OIDC_LOGOUT_URL=
 
 volumes:
   heat-data:
