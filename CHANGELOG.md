@@ -1,3 +1,10 @@
+# [1.59.0](https://github.com/martynvdijke/heat/compare/v1.58.9...v1.59.0) (2026-09-08)
+
+
+### Features
+
+* add Authelia OIDC login with email link and password fallback ([f26c49c](https://github.com/martynvdijke/heat/commit/f26c49c39ed11d6147a788eebd30981aed54a6a3))
+
 ## [1.58.9](https://github.com/martynvdijke/heat/compare/v1.58.8...v1.58.9) (2026-09-07)
 
 ## [1.58.8](https://github.com/martynvdijke/heat/compare/v1.58.7...v1.58.8) (2026-09-05)
