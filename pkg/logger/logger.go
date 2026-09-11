@@ -9,9 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	otellog "go.opentelemetry.io/otel/log"
+	otellogglobal "go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -46,7 +47,6 @@ type Logger struct {
 	db     *sql.DB
 	mu     sync.RWMutex
 	levels map[string]string // module -> level
-	tracer trace.Tracer
 	logCh  chan LogEntry
 	done   chan struct{}
 	once   sync.Once
@@ -57,7 +57,6 @@ func New(db *sql.DB) *Logger {
 	l := &Logger{
 		db:     db,
 		levels: make(map[string]string),
-		tracer: otel.Tracer("heat-logger"),
 		logCh:  make(chan LogEntry, 1000),
 		done:   make(chan struct{}),
 	}
@@ -206,28 +205,42 @@ func (l *Logger) writeSQLite(entry LogEntry) {
 	l.db.Exec(`DELETE FROM app_logs WHERE id NOT IN (SELECT id FROM app_logs ORDER BY id DESC LIMIT 10000)`)
 }
 
-// writeOTel emits the log entry via OTel stdout exporter (through trace span on root tracer)
+// writeOTel emits the log entry as an OTel log record on the logs pipeline
+// (wired to the OTLP log exporter / otelslog bridge in telemetry.go).
+//
+// ponytail: trace/span correlation requires the request context, which the
+// Logger API does not thread through yet (entry.TraceID is always empty).
+// Thread ctx through log() if log-to-trace correlation becomes required.
 func (l *Logger) writeOTel(entry LogEntry) {
-	ctx := context.Background()
-	_, span := l.tracer.Start(ctx, "log/"+entry.Module,
-		trace.WithAttributes(
-			attribute.String("log.level", entry.Level),
-			attribute.String("log.module", entry.Module),
-			attribute.String("log.message", entry.Message),
-		),
-	)
+	r := otellog.Record{}
+	r.SetTimestamp(entry.Timestamp)
+	r.SetSeverity(otelSeverity(entry.Level))
+	r.SetSeverityText(entry.Level)
+	r.SetBody(attribute.StringValue(entry.Message))
+	r.AddAttributes(attribute.String("log.module", entry.Module))
 	if entry.TraceID != "" {
-		span.SetAttributes(attribute.String("log.trace_id", entry.TraceID))
+		r.AddAttributes(attribute.String("log.trace_id", entry.TraceID))
 	}
 	if entry.Data != nil {
 		if d, err := json.Marshal(entry.Data); err == nil {
-			span.SetAttributes(attribute.String("log.data", string(d)))
+			r.AddAttributes(attribute.String("log.data", string(d)))
 		}
 	}
-	if entry.Level == LevelError {
-		span.SetStatus(codes.Error, entry.Message)
+	otellogglobal.GetLoggerProvider().Logger("heat").Emit(context.Background(), r)
+}
+
+// otelSeverity maps the logger's level strings to OTel severities.
+func otelSeverity(level string) otellog.Severity {
+	switch level {
+	case LevelDebug:
+		return otellog.SeverityDebug
+	case LevelWarn:
+		return otellog.SeverityWarn
+	case LevelError:
+		return otellog.SeverityError
+	default:
+		return otellog.SeverityInfo
 	}
-	span.End()
 }
 
 // Debugf logs at DEBUG level

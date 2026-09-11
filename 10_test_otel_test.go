@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,7 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/trace"
+	apitrace "go.opentelemetry.io/otel/trace"
+
+	"heat/middleware"
 )
 
 // enableOTelSignals enables all OTel signals in the test database.
@@ -156,26 +161,49 @@ func TestInitOTelMetricsInstruments(t *testing.T) {
 	}
 }
 
-// TestTraceDBQueryHelper verifies the middleware/tracing.go helper doesn't panic.
+// TestTraceDBQueryHelper verifies the real middleware.TraceDBQuery helper
+// invokes the callback and propagates errors (without panicking).
 func TestTraceDBQueryHelper(t *testing.T) {
 	os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 
 	shutdown := initOTel(testServer)
 	defer shutdown()
 
-	// Import and call the actual middleware.TraceDBQuery
-	ctx := context.Background()
-	err := middlewareTracerFunc(ctx, "test-query", func(ctx context.Context) error {
-		return nil
+	wantErr := errors.New("boom")
+	called := false
+	err := middleware.TraceDBQuery(context.Background(), "test-query", func(ctx context.Context) error {
+		called = true
+		return wantErr
 	})
-	if err != nil {
-		t.Errorf("expected no error, got: %v", err)
+	if !called {
+		t.Fatal("expected callback to be invoked")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("expected error to propagate, got: %v", err)
 	}
 }
 
-// middlewareTracerFunc wraps middleware.TraceDBQuery at the package level for testing.
-var middlewareTracerFunc = func(ctx context.Context, op string, fn func(context.Context) error) error {
-	_, span := otel.Tracer("heat-db").Start(ctx, op)
+// TestTextMapPropagatorConfigured verifies initOTel installs a working global
+// propagator, so inbound traceparent headers are honoured and outbound requests
+// can carry trace context.
+func TestTextMapPropagatorConfigured(t *testing.T) {
+	os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+
+	shutdown := initOTel(testServer)
+	defer shutdown()
+
+	ctx, span := otel.Tracer("test").Start(context.Background(), "propagation-test")
 	defer span.End()
-	return fn(ctx)
+
+	carrier := propagation.HeaderCarrier{}
+	otel.GetTextMapPropagator().Inject(ctx, carrier)
+
+	if carrier.Get("traceparent") == "" {
+		t.Fatal("expected a traceparent header to be injected after initOTel")
+	}
+
+	extracted := otel.GetTextMapPropagator().Extract(context.Background(), carrier)
+	if got := apitrace.SpanContextFromContext(extracted); got.TraceID() != span.SpanContext().TraceID() {
+		t.Fatalf("injected and extracted trace IDs differ: %s != %s", got.TraceID(), span.SpanContext().TraceID())
+	}
 }

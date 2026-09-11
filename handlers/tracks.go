@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"heat/ent"
 	"heat/ent/aisetting"
@@ -330,8 +331,11 @@ func (h *Handler) HandleAIExtract(c *gin.Context) {
 	part.Write(imageData)
 	writer.Close()
 
-	client := &http.Client{Timeout: 60 * time.Second}
-	req, err := http.NewRequest("POST", aiURL, reqBody)
+	client := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+		Timeout:   60 * time.Second,
+	}
+	req, err := http.NewRequestWithContext(c.Request.Context(), "POST", aiURL, reqBody)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create AI request"})
 		return

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"heat/models"
 )
@@ -326,13 +328,16 @@ func sendGotifyNotification(title, message, gotifyURL, token string) error {
 		return nil
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+		Timeout:   10 * time.Second,
+	}
 	payload, _ := json.Marshal(map[string]any{
 		"title":    title,
 		"message":  message,
 		"priority": 5,
 	})
-	req, err := http.NewRequest("POST", gotifyURL+"/message", bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", gotifyURL+"/message", bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/log/global"
 	apiometrict "go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -111,6 +112,14 @@ func metricsMiddleware() gin.HandlerFunc {
 // It reads OTel settings from standard OTEL_* env vars, falling back to database settings.
 // Returns a shutdown function to flush and close all providers.
 func initOTel(server *app.Server) func() {
+	// Set the global propagator so inbound W3C traceparent headers are
+	// extracted (otelgin) and outbound requests can be correlated. Without
+	// this the global default is a no-op and distributed traces are dropped.
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
+
 	// Detect endpoint from env var first, then DB settings
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
@@ -134,7 +143,7 @@ func initOTel(server *app.Server) func() {
 
 	if endpoint == "" {
 		log.Printf("[OTEL] No OTLP endpoint configured, falling back to stdout exporter")
-		return initStdoutOTel()
+		return initStdoutOTel(server.CurrentVersion)
 	}
 
 	// Detect OTLP protocol (default: grpc)
@@ -146,16 +155,15 @@ func initOTel(server *app.Server) func() {
 	// Build resource from env (OTEL_RESOURCE_ATTRIBUTES, OTEL_SERVICE_NAME) and defaults
 	envRes, _ := resource.New(context.Background(),
 		resource.WithFromEnv(),
-		resource.WithAttributes(
-			semconv.ServiceNameKey.String("heat"),
-		),
 	)
 	res := resource.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String("heat"),
 		attribute.String("service.version", server.CurrentVersion),
 	)
-	mergedRes, _ := resource.Merge(envRes, res)
+	// Merge(a, b) lets b win, so env-derived values (OTEL_SERVICE_NAME,
+	// OTEL_RESOURCE_ATTRIBUTES) take precedence over the code defaults.
+	mergedRes, _ := resource.Merge(res, envRes)
 
 	var shutdownFuncs []func()
 
@@ -182,8 +190,9 @@ func initOTel(server *app.Server) func() {
 		if traceErr != nil {
 			log.Printf("[OTEL] Failed to create trace exporter: %v, traces disabled", traceErr)
 		} else {
-			// Configure sampler from env vars (OTEL_TRACES_SAMPLER, OTEL_TRACES_SAMPLER_ARG)
-			sampler := sdktrace.AlwaysSample()
+			// Configure sampler from env vars (OTEL_TRACES_SAMPLER, OTEL_TRACES_SAMPLER_ARG).
+			// Default follows the OTel spec: parentbased_always_on.
+			sampler := sdktrace.ParentBased(sdktrace.AlwaysSample())
 			switch os.Getenv("OTEL_TRACES_SAMPLER") {
 			case "always_on":
 				sampler = sdktrace.AlwaysSample()
@@ -359,7 +368,7 @@ func initOTel(server *app.Server) func() {
 }
 
 // initStdoutOTel initializes OTel with a stdout trace exporter (fallback when no OTLP endpoint).
-func initStdoutOTel() func() {
+func initStdoutOTel(version string) func() {
 	exporter, err := stdouttrace.New(
 		stdouttrace.WithPrettyPrint(),
 	)
@@ -371,7 +380,7 @@ func initStdoutOTel() func() {
 	res := resource.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String("heat"),
-		attribute.String("service.version", "1.29.3"),
+		attribute.String("service.version", version),
 	)
 
 	tp := sdktrace.NewTracerProvider(
