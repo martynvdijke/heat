@@ -1,3 +1,10 @@
+## [1.59.5](https://github.com/martynvdijke/heat/compare/v1.59.4...v1.59.5) (2026-09-11)
+
+
+### Bug Fixes
+
+* repair OpenTelemetry propagator, resources, logs, and client tracing ([4c8a8b5](https://github.com/martynvdijke/heat/commit/4c8a8b5e043849ea8519cac7ac2e4983497e7870))
+
 ## [1.59.4](https://github.com/martynvdijke/heat/compare/v1.59.3...v1.59.4) (2026-09-11)
 
 ## [1.59.3](https://github.com/martynvdijke/heat/compare/v1.59.2...v1.59.3) (2026-09-10)
