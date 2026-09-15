@@ -188,7 +188,7 @@ function connectWebSocket(): void {
 
     playerSocket = connectWithRetry(url, {
         protocols,
-        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay', 'telemetry'],
+        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'standings', 'game_mechanics', 'sound', 'lap_replay', 'telemetry'],
         onMessage: (msg) => {
             if (msg.type === 'racers') {
                 const me = (msg.payload as PlayerRacer[]).find((r) => r.id === playerRacerId);
@@ -202,6 +202,12 @@ function connectWebSocket(): void {
             } else if (msg.type === 'notify') {
                 showPlayerNotify(msg.payload.message);
                 try { playerSocket?.send({ type: 'notify_ack', id: msg.payload.id }); } catch { /* ignore */ }
+            } else if (msg.type === 'race_state') {
+                if (typeof msg.payload?.current_lap === 'number') playerCurrentLap = msg.payload.current_lap;
+            } else if (msg.type === 'race_radio') {
+                showPlayerNotify(`📻 ${msg.payload.racer_name}: ${msg.payload.message}`);
+            } else if (msg.type === 'hello' || msg.type === 'resync') {
+                if (msg.snapshot?.race_state && typeof msg.snapshot.race_state.current_lap === 'number') playerCurrentLap = msg.snapshot.race_state.current_lap;
             }
         },
     });

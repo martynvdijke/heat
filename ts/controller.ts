@@ -16,12 +16,13 @@ interface ControllerRacer {
 }
 
 let raceState = 'stopped';
-let raceTimer: ReturnType<typeof setInterval> | null = null;
-let raceSeconds = 0;
+let elapsedMs = 0;
+let totalLaps = 0;
 let controllerRacers: ControllerRacer[] = [];
 let currentLap = 0;
 let lapRecords: any[] = [];
 let hasLapData = false;
+let serverStandings: any[] = [];
 
 // --- Inline Start Lights Widget ---
 function widgetSetLightState(lightNum: number, state: 'off' | 'red' | 'green'): void {
@@ -79,7 +80,7 @@ function connectControllerWebSocket(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const url = `${protocol}//${window.location.host}/ws`;
     controllerSocket = connectWithRetry(url, {
-        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay', 'telemetry', 'presence', 'race_radio'],
+        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'standings', 'game_mechanics', 'sound', 'lap_replay', 'telemetry', 'presence', 'race_radio'],
         onOpen: () => { (window as any).__controllerWsConnected = true; },
         onStatusChange: (s) => { (window as any).__controllerWsConnected = (s === 'open'); },
         onMessage: (msg) => {
@@ -103,12 +104,21 @@ function connectControllerWebSocket(): void {
                 controllerRacers = msg.payload;
                 renderStandings();
                 populateDriverSelect();
+            } else if (msg.type === 'race_state') {
+                applyRaceState(msg.payload);
+            } else if (msg.type === 'standings') {
+                applyStandings(msg.payload);
+            } else if (msg.type === 'race_radio') {
+                const radio = msg.payload;
+                if (radio) showToast(`📻 ${radio.racer_name || 'Race control'}: ${radio.message}`, 'info');
             } else if (msg.type === 'hello' || msg.type === 'resync') {
                 if (msg.snapshot?.racers) {
                     controllerRacers = msg.snapshot.racers;
                     renderStandings();
                     populateDriverSelect();
                 }
+                applyRaceState(msg.snapshot?.race_state);
+                applyStandings(msg.snapshot?.standings);
                 if (msg.snapshot?.flags) {
                     for (const f of msg.snapshot.flags as any[]) {
                         const flag = f.flag ?? f.type ?? '';
@@ -138,14 +148,51 @@ function connectControllerWebSocket(): void {
 // Keep the Abort button state in sync with the engine phase.
 setInterval(updateAbortButton, 500);
 
-function startRaceTimer(): void {
-    raceTimer = setInterval(() => {
-        raceSeconds++;
-        const mins = Math.floor(raceSeconds / 60);
-        const secs = raceSeconds % 60;
-        document.getElementById('race-timer')!.textContent =
-            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }, 1000);
+function formatElapsed(ms: number): string {
+    const total = Math.floor((ms || 0) / 1000);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const mm = m.toString().padStart(2, '0');
+    const ss = s.toString().padStart(2, '0');
+    return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+// Server-authoritative race state: the controller no longer runs its own clock.
+function applyRaceState(s: { state: string; elapsed_ms: number; current_lap: number; total_laps: number } | undefined): void {
+    if (!s) return;
+    raceState = s.state;
+    currentLap = s.current_lap;
+    elapsedMs = s.elapsed_ms || 0;
+    totalLaps = s.total_laps || 0;
+    const timerEl = document.getElementById('race-timer');
+    if (timerEl) timerEl.textContent = formatElapsed(elapsedMs);
+    updateStatus();
+}
+
+function applyStandings(list: any[] | undefined): void {
+    if (!Array.isArray(list)) return;
+    serverStandings = list;
+    renderStandings();
+}
+
+async function postRaceAction(action: string): Promise<void> {
+    const body: Record<string, unknown> = { action };
+    if (action === 'start') {
+        const laps = parseInt((document.getElementById('race-laps') as HTMLInputElement | null)?.value || '');
+        if (laps > 0) body.total_laps = laps;
+    }
+    try {
+        const res = await fetch('/api/race/state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) { showToast('Race control action failed', 'error'); return; }
+        applyRaceState(await res.json());
+    } catch {
+        showToast('Race control action failed', 'error');
+    }
 }
 
 async function loadControllerData(): Promise<void> {
@@ -226,9 +273,12 @@ function computeGaps(): Map<number, string> {
 
 function renderStandings(): void {
     const sorted = [...controllerRacers].sort((a, b) => a.position - b.position);
-    const gaps = computeGaps();
+    const serverGaps = new Map<number, string>();
+    for (const s of serverStandings) serverGaps.set(s.racer_id, s.gap ?? '');
+    const localGaps = serverStandings.length ? null : computeGaps();
+    const showGaps = serverStandings.length > 0 || hasLapData;
     document.getElementById('standings-list')!.innerHTML = sorted.map((r, i) => {
-        const gap = gaps.get(r.id) ?? '';
+        const gap = serverGaps.size ? (serverGaps.get(r.id) ?? '') : (localGaps?.get(r.id) ?? '');
         return `
         <div class="driver-row ${i === 0 ? 'active' : ''}">
             <div class="position-btn btn ${r.position === 1 ? 'btn-warning' : r.position <= 3 ? 'btn-secondary' : 'btn-outline-light'} me-2">
@@ -239,7 +289,7 @@ function renderStandings(): void {
                 <div class="fw-bold small">${r.name}</div>
                 <small class="opacity-50">${r.car_name}</small>
             </div>
-            ${hasLapData ? `<span class="gap-cell ${gap === 'LEAD' ? 'gap-lead' : ''}" title="Gap to leader">${gap}</span>` : ''}
+            ${showGaps ? `<span class="gap-cell ${gap === 'LEAD' ? 'gap-lead' : ''}" title="Gap to leader">${gap}</span>` : ''}
             <button class="btn btn-sm btn-outline-info ms-1" onclick="triggerBlueFlag(${r.id}, '${r.name}')" title="Blue Flag">
                 <i class="fa-solid fa-flag"></i>
             </button>
@@ -258,33 +308,16 @@ function renderStandings(): void {
 }
 
 function startRace(): void {
-    if (raceState === 'stopped') {
-        raceState = 'racing';
-        raceSeconds = 0;
-        currentLap = 1;
-        updateStatus();
-        startRaceTimer();
-    }
+    postRaceAction('start');
 }
 
 function pauseRace(): void {
-    if (raceState === 'racing') {
-        raceState = 'paused';
-        clearInterval(raceTimer!);
-        updateStatus();
-    } else if (raceState === 'paused') {
-        raceState = 'racing';
-        startRaceTimer();
-        updateStatus();
-    }
+    // The Pause button toggles between pause and resume.
+    postRaceAction(raceState === 'paused' ? 'resume' : 'pause');
 }
 
 function stopRace(): void {
-    raceState = 'stopped';
-    clearInterval(raceTimer!);
-    raceTimer = null;
-    currentLap = 0;
-    updateStatus();
+    postRaceAction('stop');
 }
 
 function updateStatus(): void {

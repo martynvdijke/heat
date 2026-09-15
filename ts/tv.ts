@@ -11,9 +11,36 @@ interface TVRacer {
 
 let tvRacers: TVRacer[] = [];
 let tvSocket: HeatSocket | null = null;
-let tvSeconds = 0;
-let tvTimer: ReturnType<typeof setInterval> | null = null;
 let currentFlag = 'green';
+type Standing = { racer_id: number; name: string; car_color: string; position: number; lap: number; gap: string };
+let tvStandings: Standing[] = [];
+
+function formatElapsed(ms: number): string {
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+function applyTVRaceState(payload: any): void {
+    if (!payload) return;
+    if (typeof payload.current_lap === 'number') currentTVLap = payload.current_lap;
+    const lapEl = document.getElementById('tv-lap');
+    if (lapEl) lapEl.textContent = String(currentTVLap).padStart(2, '0');
+    if (typeof payload.elapsed_ms === 'number') {
+        const c = document.getElementById('tv-clock');
+        if (c) c.textContent = formatElapsed(payload.elapsed_ms);
+    }
+    renderWeather();
+    renderLeaderboard();
+}
+function applyTVStandings(payload: any): void {
+    if (Array.isArray(payload) && payload.length) tvStandings = payload as Standing[];
+    else if (Array.isArray(payload) && payload.length === 0) tvStandings = [];
+    else return;
+    renderLeaderboard();
+}
 let tvCommentary: CommentaryTicker | null = null;
 let weatherEntries: WeatherEntry[] = [];
 
@@ -72,21 +99,24 @@ function renderWeather(): void {
 }
 
 function renderLeaderboard(): void {
-    const sorted = [...tvRacers].sort((a, b) => a.position - b.position);
     const board = document.getElementById('tv-leaderboard')!;
-
-    const s = (n: number) => { const d = Math.floor(n / 86400); const h = Math.floor((n % 86400) / 3600); const m = Math.floor((n % 3600) / 60); const sec = n % 60; return d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}` : `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`; };
-
-    board.innerHTML = sorted.map((r, i) => {
-        const gap = i === 0 ? 'LEAD' : `+${s(Math.floor(Math.random() * 30) + 1)}`;
-        return `<div class="tv-driver-row pos${Math.min(r.position, 3)}" style="animation-delay:${i * 0.05}s">
+    if (tvStandings.length) {
+        const sorted = [...tvStandings].sort((a, b) => a.position - b.position);
+        board.innerHTML = sorted.map((r, i) => `<div class="tv-driver-row pos${Math.min(r.position, 3)}" style="animation-delay:${i * 0.05}s">
             <div class="tv-position">${r.position}</div>
             <span class="tv-car-color" style="background:${r.car_color}"></span>
             <div class="tv-name">${r.name}</div>
-            <div class="tv-gap">${gap}</div>
-        </div>`;
-    }).join('');
-
+            <div class="tv-gap">${r.gap}</div>
+        </div>`).join('');
+    } else {
+        const sorted = [...tvRacers].sort((a, b) => a.position - b.position);
+        board.innerHTML = sorted.map((r, i) => `<div class="tv-driver-row pos${Math.min(r.position, 3)}" style="animation-delay:${i * 0.05}s">
+            <div class="tv-position">${r.position}</div>
+            <span class="tv-car-color" style="background:${r.car_color}"></span>
+            <div class="tv-name">${r.name}</div>
+            <div class="tv-gap">${i === 0 ? 'LEAD' : ''}</div>
+        </div>`).join('');
+    }
     document.getElementById('tv-lap')!.textContent = String(currentTVLap).padStart(2, '0');
 }
 
@@ -103,7 +133,7 @@ function upsertWeather(entry: WeatherEntry): void {
 function connectTVWebSocket(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     tvSocket = connectWithRetry(`${protocol}//${window.location.host}/ws`, {
-        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay'],
+        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'standings', 'game_mechanics', 'sound', 'lap_replay'],
         onMessage: (msg) => {
             if (msg.type === 'racers') {
                 tvRacers = msg.payload;
@@ -119,6 +149,10 @@ function connectTVWebSocket(): void {
                 upsertWeather(msg.payload as WeatherEntry);
             } else if (msg.type === 'commentary') {
                 tvCommentary?.handleEnvelope(msg);
+            } else if (msg.type === 'race_state') {
+                applyTVRaceState(msg.payload);
+            } else if (msg.type === 'standings') {
+                applyTVStandings(msg.payload);
             } else if (msg.type === 'hello' || msg.type === 'resync') {
                 if (msg.snapshot?.racers) {
                     tvRacers = msg.snapshot.racers;
@@ -129,6 +163,8 @@ function connectTVWebSocket(): void {
                     if (Array.isArray(w)) w.forEach((e: WeatherEntry) => upsertWeather(e));
                     else upsertWeather(w as WeatherEntry);
                 }
+                if (msg.snapshot?.race_state) applyTVRaceState(msg.snapshot.race_state);
+                if (msg.snapshot?.standings) applyTVStandings(msg.snapshot.standings);
             }
         },
     });
@@ -189,13 +225,5 @@ function tvToggleFullscreen(): void {
         document.exitFullscreen();
     }
 }
-
-// Clock
-tvTimer = setInterval(() => {
-    tvSeconds++;
-    const m = Math.floor(tvSeconds / 60);
-    const s = tvSeconds % 60;
-    document.getElementById('tv-clock')!.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-}, 1000);
 
 loadTVData();

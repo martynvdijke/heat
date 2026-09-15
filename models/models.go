@@ -488,3 +488,25 @@ type LogSetting struct {
 	Module string `json:"module"`
 	Level  string `json:"level"`
 }
+
+// RaceState is the server-authoritative race lifecycle/clock state, served by
+// GET /api/race/state and broadcast as
+// {type:'race_state', seq, payload:{state, elapsed_ms, current_lap, total_laps}}.
+type RaceState struct {
+	State      string `json:"state"`
+	ElapsedMs  int64  `json:"elapsed_ms"`
+	CurrentLap int    `json:"current_lap"`
+	TotalLaps  int    `json:"total_laps"`
+}
+
+// Standing is one row of the server-computed live standings broadcast as
+// {type:'standings', seq, payload:[...]}. Gap follows the controller's
+// computeGaps semantics: "LEAD", "+N" for lapped racers, "" otherwise.
+type Standing struct {
+	RacerID  int    `json:"racer_id"`
+	Name     string `json:"name"`
+	CarColor string `json:"car_color"`
+	Position int    `json:"position"`
+	Lap      int    `json:"lap"`
+	Gap      string `json:"gap"`
+}

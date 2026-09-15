@@ -12,6 +12,33 @@ let specSocket: HeatSocket | null = null;
 let specCommentary: CommentaryTicker | null = null;
 let specWeather: WeatherEntry[] = [];
 let specLap = 0;
+type Standing = { racer_id: number; name: string; car_color: string; position: number; lap: number; gap: string };
+let specStandings: Standing[] = [];
+function formatElapsed(ms: number): string {
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+function applySpecRaceState(payload: any): void {
+    if (!payload) return;
+    if (typeof payload.current_lap === 'number') specLap = payload.current_lap;
+    const lapEl = document.getElementById('spec-lap');
+    if (lapEl) lapEl.textContent = `Lap ${specLap}`;
+    if (typeof payload.elapsed_ms === 'number') {
+        const c = document.getElementById('spec-clock');
+        if (c) c.textContent = formatElapsed(payload.elapsed_ms);
+    }
+    renderSpecWeather();
+    renderSpecGrid();
+}
+function applySpecStandings(payload: any): void {
+    if (Array.isArray(payload)) specStandings = payload as Standing[];
+    else return;
+    renderSpecGrid();
+}
 
 async function loadSpecState(): Promise<void> {
     const [stateRes, eventsRes] = await Promise.all([
@@ -56,23 +83,32 @@ async function loadSpecState(): Promise<void> {
 }
 
 function renderSpecGrid(): void {
-    const sorted = [...specRacers].sort((a, b) => a.position - b.position);
     const grid = document.getElementById('spec-grid')!;
-    const maxPos = Math.max(...sorted.map(r => r.position), 1);
-
-    grid.innerHTML = sorted.map(r => {
-        const gap = r.position <= 1 ? 'LEAD' : `+${(r.position - 1) * 2}s`;
-        return `<div class="spec-card" style="border-left-color:${r.car_color}">
+    if (specStandings.length) {
+        const sorted = [...specStandings].sort((a, b) => a.position - b.position);
+        grid.innerHTML = sorted.map(r => `<div class="spec-card" style="border-left-color:${r.car_color}">
             <div class="d-flex justify-content-between">
                 <div class="pos">P${r.position}</div>
-                <span class="badge bg-dark" style="height:fit-content;">${gap}</span>
+                <span class="badge bg-dark" style="height:fit-content;">${r.gap}</span>
+            </div>
+            <div class="name" style="color:${r.car_color}">${r.name}</div>
+            <div class="meta">${r.name}</div>
+        </div>`).join('');
+    } else {
+        const sorted = [...specRacers].sort((a, b) => a.position - b.position);
+        const maxPos = Math.max(...sorted.map(r => r.position), 1);
+        grid.innerHTML = sorted.map(r => {
+            return `<div class="spec-card" style="border-left-color:${r.car_color}">
+            <div class="d-flex justify-content-between">
+                <div class="pos">P${r.position}</div>
+                <span class="badge bg-dark" style="height:fit-content;"></span>
             </div>
             <div class="name" style="color:${r.car_color}">${r.name}</div>
             <div class="meta">${r.car_name} · ${r.points} pts</div>
         </div>`;
-    }).join('');
-
-    document.getElementById('spec-lap')!.textContent = `Lap ${maxPos}`;
+        }).join('');
+    }
+    document.getElementById('spec-lap')!.textContent = `Lap ${specLap || 0}`;
 }
 
 function renderSpecWeather(): void {
@@ -112,14 +148,13 @@ function upsertSpecWeather(entry: WeatherEntry): void {
 function connectSpecWebSocket(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     specSocket = connectWithRetry(`${protocol}//${window.location.host}/ws`, {
-        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay'],
+        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'standings', 'game_mechanics', 'sound', 'lap_replay'],
         onMessage: (msg) => {
             if (msg.type === 'racers') {
                 specRacers = msg.payload;
                 renderSpecGrid();
                 document.getElementById('spec-status-indicator')!.textContent = 'RACING';
                 document.getElementById('spec-status-indicator')!.className = 'spec-status racing';
-                specLap = Math.max(...(msg.payload as SpecRacer[]).map((r: SpecRacer) => r.position), specLap || 0);
                 renderSpecWeather();
             } else if (msg.type === 'flag') {
                 const statusEl = document.getElementById('spec-status-indicator')!;
@@ -138,11 +173,14 @@ function connectSpecWebSocket(): void {
                 upsertSpecWeather(msg.payload as WeatherEntry);
             } else if (msg.type === 'commentary') {
                 specCommentary?.handleEnvelope(msg);
+            } else if (msg.type === 'race_state') {
+                applySpecRaceState(msg.payload);
+            } else if (msg.type === 'standings') {
+                applySpecStandings(msg.payload);
             } else if (msg.type === 'hello' || msg.type === 'resync') {
                 if (msg.snapshot?.racers) {
                     specRacers = msg.snapshot.racers;
                     renderSpecGrid();
-                    specLap = Math.max(...(msg.snapshot.racers as SpecRacer[]).map((r: SpecRacer) => r.position), specLap || 0);
                     renderSpecWeather();
                 }
                 if (msg.snapshot?.weather) {
@@ -150,6 +188,8 @@ function connectSpecWebSocket(): void {
                     if (Array.isArray(w)) w.forEach((e: WeatherEntry) => upsertSpecWeather(e));
                     else upsertSpecWeather(w as WeatherEntry);
                 }
+                if (msg.snapshot?.race_state) applySpecRaceState(msg.snapshot.race_state);
+                if (msg.snapshot?.standings) applySpecStandings(msg.snapshot.standings);
             }
         },
     });

@@ -197,6 +197,9 @@ func (h *Handler) RecordLap(c *gin.Context) {
 	// Also update racer position
 	h.S.DB.Exec("UPDATE racers SET position = ? WHERE id = ?", lr.Position, lr.RacerID)
 	h.S.BroadcastRacers()
+	if standings, err := h.S.ComputeStandings(lr.RaceID); err == nil {
+		app.TrySend(h.S, h.S.StandingsBroadcast, standings)
+	}
 	c.Status(http.StatusOK)
 }
 
@@ -237,6 +240,9 @@ func (h *Handler) RecordLapBatch(c *gin.Context) {
 
 	app.TrySend(h.S, h.S.LapReplayBroadcast, frame)
 	h.S.BroadcastRacers()
+	if standings, err := h.S.ComputeStandings(req.RaceID); err == nil {
+		app.TrySend(h.S, h.S.StandingsBroadcast, standings)
+	}
 	c.Status(http.StatusOK)
 }
 

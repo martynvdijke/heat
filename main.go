@@ -279,6 +279,8 @@ func main() {
 	go wsManager.BroadcastSound()
 	go wsManager.BroadcastRaceRadio()
 	go wsManager.BroadcastCommentary()
+	go wsManager.BroadcastRaceState()
+	go wsManager.BroadcastStandings()
 	go func() {
 		for {
 			time.Sleep(15 * time.Minute)
@@ -346,6 +348,12 @@ func main() {
 	r.GET("/api/auth/oidc/logout", h.HandleOIDCLogout)
 
 	r.GET("/api/racers", h.GetRacers)
+
+	// Authoritative race clock/lap state. Reads are public; transitions require
+	// a controller (admin) session.
+	r.GET("/api/race/state", h.GetRaceState)
+	r.POST("/api/race/state", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.PostRaceState)
+
 	admin := r.Group("/api")
 	admin.Use(middleware.CSRFMiddleware(), middleware.AuthMiddleware(server))
 	{

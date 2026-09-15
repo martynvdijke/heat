@@ -88,6 +88,20 @@ func Init(s *app.Server) {
 	)`)
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_commentary_race_id ON commentary(race_id)")
 
+	// Server-authoritative race state (live-race-state-broadcast): a single row
+	// (id=1) holding the lifecycle state, start timestamp, accumulated elapsed
+	// milliseconds, and lap counters. Persists across restart/reload.
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS race_state (
+		id INTEGER PRIMARY KEY CHECK (id = 1),
+		state TEXT NOT NULL DEFAULT 'stopped',
+		started_at TEXT NOT NULL DEFAULT '',
+		accumulated_ms INTEGER NOT NULL DEFAULT 0,
+		current_lap INTEGER NOT NULL DEFAULT 0,
+		total_laps INTEGER NOT NULL DEFAULT 0,
+		updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+	)`)
+	srv.DB.Exec("INSERT OR IGNORE INTO race_state (id, state) VALUES (1, 'stopped')")
+
 	// Extension/module catalog tables (module-extension-tracker)
 	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS extensions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

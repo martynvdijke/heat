@@ -46,7 +46,7 @@ const (
 // publicTopics are subscribed for every role on connect, preserving the
 // pre-auth broadcast behaviour that TV/spectator/pitboard pages rely on.
 var publicTopics = []string{
-	"flags", "racers", "commentary", "weather", "race_state",
+	"flags", "racers", "commentary", "weather", "race_state", "standings",
 	"game_mechanics", "sound", "lap_replay",
 }
 
@@ -710,8 +710,7 @@ func (m *Manager) listRacers() ([]models.Racer, error) {
 }
 
 // buildSnapshot collects current state for the given topics (D4). Sections are
-// only included when subscribed; `race_state`/standings are added by
-// live-race-state-broadcast when present.
+// only included when subscribed.
 func (m *Manager) buildSnapshot(topics map[string]bool) map[string]any {
 	snap := map[string]any{}
 	if topics["flags"] {
@@ -725,6 +724,16 @@ func (m *Manager) buildSnapshot(topics map[string]bool) map[string]any {
 	if topics["racers"] {
 		if racers, err := m.listRacers(); err == nil {
 			snap["racers"] = racers
+		}
+	}
+	if topics["race_state"] {
+		if st, err := m.S.GetRaceState(); err == nil {
+			snap["race_state"] = st
+		}
+	}
+	if topics["standings"] {
+		if standings, err := m.S.ComputeStandings(0); err == nil {
+			snap["standings"] = standings
 		}
 	}
 	return snap
@@ -772,4 +781,42 @@ func (m *Manager) BroadcastRacers() {
 		return
 	}
 	app.TrySend(m.S, m.S.Broadcast, racers)
+}
+
+// BroadcastRaceState fans out every race_state transition. While racing it also
+// emits a 1s tick with a freshly computed elapsed_ms; the ticker is stopped on
+// pause/stop and restarted on start/resume (D5).
+func (m *Manager) BroadcastRaceState() {
+	ticker := time.NewTicker(time.Second)
+	ticker.Stop()
+	var tick <-chan time.Time
+	for {
+		select {
+		case st, ok := <-m.S.RaceStateBroadcast:
+			if !ok {
+				return
+			}
+			if st.State == app.RaceRacing {
+				if tick == nil {
+					ticker.Reset(time.Second)
+					tick = ticker.C
+				}
+			} else if tick != nil {
+				ticker.Stop()
+				tick = nil
+			}
+			m.deliver("race_state", "race_state", st, nil)
+		case <-tick:
+			if st, err := m.S.GetRaceState(); err == nil {
+				m.deliver("race_state", "race_state", st, nil)
+			}
+		}
+	}
+}
+
+// BroadcastStandings delivers server-computed standings on lap/position changes.
+func (m *Manager) BroadcastStandings() {
+	for standings := range m.S.StandingsBroadcast {
+		m.deliver("standings", "standings", standings, nil)
+	}
 }

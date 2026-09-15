@@ -72,6 +72,8 @@ type Server struct {
 	SoundBroadcast         chan models.SoundCommand
 	RaceRadioBroadcast     chan models.RaceRadioMessage
 	CommentaryBroadcast    chan models.Commentary
+	RaceStateBroadcast     chan models.RaceState
+	StandingsBroadcast     chan []models.Standing
 
 	BasePath       string
 	DBPath         string
@@ -102,6 +104,8 @@ func NewServer() *Server {
 		SoundBroadcast:         make(chan models.SoundCommand, wsChannelBuffer),
 		RaceRadioBroadcast:     make(chan models.RaceRadioMessage, wsChannelBuffer),
 		CommentaryBroadcast:    make(chan models.Commentary, wsChannelBuffer),
+		RaceStateBroadcast:     make(chan models.RaceState, wsChannelBuffer),
+		StandingsBroadcast:     make(chan []models.Standing, wsChannelBuffer),
 		LoginLimiter:           rate.NewLimiter(rate.Limit(5), 10),
 		LoginLimiters:          make(map[string]*rate.Limiter),
 		CurrentVersion:         "1.59.4",
