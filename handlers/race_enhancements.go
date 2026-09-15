@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"heat/app"
 	"heat/models"
 )
 
@@ -55,10 +56,7 @@ func (h *Handler) SetWeather(c *gin.Context) {
 			return
 		}
 	}
-	select {
-	case h.S.WeatherBroadcast <- w:
-	default:
-	}
+	app.TrySend(h.S, h.S.WeatherBroadcast, w)
 	// Auto-narrate the condition change on the commentary feed.
 	h.generateWeatherCommentary(w.RaceID, w.LapStart, w.Condition)
 	c.Status(http.StatusOK)
@@ -125,16 +123,13 @@ func (h *Handler) AddTurboLog(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	select {
-	case h.S.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
+	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{
 		Type: "turbo", RacerID: tl.RacerID, Action: "used",
 		Data: func() json.RawMessage {
 			d, _ := json.Marshal(map[string]int{"lap": tl.Lap, "times": tl.TimesUsed})
 			return d
 		}(),
-	}:
-	default:
-	}
+	})
 	c.Status(http.StatusOK)
 }
 
@@ -240,10 +235,7 @@ func (h *Handler) RecordLapBatch(c *gin.Context) {
 		})
 	}
 
-	select {
-	case h.S.LapReplayBroadcast <- frame:
-	default:
-	}
+	app.TrySend(h.S, h.S.LapReplayBroadcast, frame)
 	h.S.BroadcastRacers()
 	c.Status(http.StatusOK)
 }
@@ -454,9 +446,6 @@ func (h *Handler) PlaySound(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	select {
-	case h.S.SoundBroadcast <- models.SoundCommand{Type: "sound", Sound: req.Sound}:
-	default:
-	}
+	app.TrySend(h.S, h.S.SoundBroadcast, models.SoundCommand{Type: "sound", Sound: req.Sound})
 	c.Status(http.StatusOK)
 }

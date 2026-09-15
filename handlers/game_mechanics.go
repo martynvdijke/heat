@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"heat/app"
 	"heat/models"
 )
 
@@ -54,10 +55,7 @@ func (h *Handler) AddHeatCard(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	select {
-	case h.S.GameMechanicsBroadcast <- models.GameMechanicsUpdate{Type: "heat_cards", RacerID: hc.RacerID, Action: "added"}:
-	default:
-	}
+	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{Type: "heat_cards", RacerID: hc.RacerID, Action: "added"})
 	c.Status(http.StatusOK)
 }
 
@@ -88,10 +86,7 @@ func (h *Handler) DeleteHeatCard(c *gin.Context) {
 	var racerID int
 	h.S.DB.QueryRow("SELECT racer_id FROM heat_cards WHERE id = ?", id).Scan(&racerID)
 	h.S.DB.Exec("DELETE FROM heat_cards WHERE id = ?", id)
-	select {
-	case h.S.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{Type: "heat_cards", RacerID: racerID, Action: "removed"}):
-	default:
-	}
+	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{Type: "heat_cards", RacerID: racerID, Action: "removed"})
 	c.Status(http.StatusOK)
 }
 
@@ -156,16 +151,13 @@ func (h *Handler) AddGearShift(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	select {
-	case h.S.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{
+	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{
 		Type: "gear_shifts", RacerID: gs.RacerID, Action: "shifted",
 		Data: func() json.RawMessage {
 			d, _ := json.Marshal(map[string]int{"lap": gs.Lap, "gear": gs.Gear, "stress": gs.Stress})
 			return d
 		}(),
-	}):
-	default:
-	}
+	})
 	c.Status(http.StatusOK)
 }
 
@@ -298,16 +290,13 @@ func (h *Handler) BuyUpgrade(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	select {
-	case h.S.GameMechanicsBroadcast <- (models.GameMechanicsUpdate{
+	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{
 		Type: "upgrades", RacerID: req.RacerID, Action: "bought",
 		Data: func() json.RawMessage {
 			d, _ := json.Marshal(map[string]int{"upgrade_id": req.UpgradeID, "round": req.Round})
 			return d
 		}(),
-	}):
-	default:
-	}
+	})
 	c.Status(http.StatusOK)
 }
 

@@ -63,8 +63,6 @@ type Server struct {
 	Ent            *ent.Client
 	SessionStore   map[string]SessionInfo
 	SessionStoreMu sync.RWMutex
-	Clients        map[*websocket.Conn]bool
-	ClientsMu      sync.RWMutex
 	Broadcast      chan []models.Racer
 
 	FlagBroadcast          chan models.FlagCommand
@@ -96,18 +94,17 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		SessionStore:           make(map[string]SessionInfo),
-		Clients:                make(map[*websocket.Conn]bool),
-		Broadcast:              make(chan []models.Racer),
-		FlagBroadcast:          make(chan models.FlagCommand),
-		GameMechanicsBroadcast: make(chan models.GameMechanicsUpdate),
-		WeatherBroadcast:       make(chan models.WeatherCondition),
-		LapReplayBroadcast:     make(chan models.LapReplayFrame),
-		SoundBroadcast:         make(chan models.SoundCommand),
-		RaceRadioBroadcast:     make(chan models.RaceRadioMessage),
-		CommentaryBroadcast:    make(chan models.Commentary),
+		Broadcast:              make(chan []models.Racer, wsChannelBuffer),
+		FlagBroadcast:          make(chan models.FlagCommand, wsChannelBuffer),
+		GameMechanicsBroadcast: make(chan models.GameMechanicsUpdate, wsChannelBuffer),
+		WeatherBroadcast:       make(chan models.WeatherCondition, wsChannelBuffer),
+		LapReplayBroadcast:     make(chan models.LapReplayFrame, wsChannelBuffer),
+		SoundBroadcast:         make(chan models.SoundCommand, wsChannelBuffer),
+		RaceRadioBroadcast:     make(chan models.RaceRadioMessage, wsChannelBuffer),
+		CommentaryBroadcast:    make(chan models.Commentary, wsChannelBuffer),
 		LoginLimiter:           rate.NewLimiter(rate.Limit(5), 10),
 		LoginLimiters:          make(map[string]*rate.Limiter),
-		CurrentVersion:         "1.59.6",
+		CurrentVersion:         "1.59.4",
 		BasePath:               "/app",
 		DBPath:                 "/db/heat.db",
 		MediaPath:              "/app/media",

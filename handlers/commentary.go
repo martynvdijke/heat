@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"heat/app"
 	"heat/models"
 )
 
@@ -187,10 +188,7 @@ func (h *Handler) insertCommentary(entry *models.Commentary) error {
 	}
 	h.S.DB.QueryRow("SELECT created_at FROM commentary WHERE id = ?", id).Scan(&entry.CreatedAt)
 
-	select {
-	case h.S.CommentaryBroadcast <- *entry:
-	default:
-	}
+	app.TrySend(h.S, h.S.CommentaryBroadcast, *entry)
 	return nil
 }
 

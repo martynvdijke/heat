@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"heat/app"
 	"heat/models"
 )
 
@@ -80,10 +81,7 @@ func (h *Handler) AddRaceRadio(c *gin.Context) {
 	h.S.DB.QueryRow("SELECT name FROM racers WHERE id = ?", msg.RacerID).Scan(&name)
 	msg.RacerName = name
 
-	select {
-	case h.S.RaceRadioBroadcast <- msg:
-	default:
-	}
+	app.TrySend(h.S, h.S.RaceRadioBroadcast, msg)
 
 	c.JSON(http.StatusOK, msg)
 }

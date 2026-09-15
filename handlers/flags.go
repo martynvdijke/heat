@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"heat/app"
 	"heat/models"
 )
 
@@ -27,9 +28,6 @@ func (h *Handler) HandleFlag(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid flag type"})
 		return
 	}
-	select {
-	case h.S.FlagBroadcast <- cmd:
-	default:
-	}
+	app.TrySend(h.S, h.S.FlagBroadcast, cmd)
 	c.Status(http.StatusOK)
 }

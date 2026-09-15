@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"heat/app"
 	"heat/models"
 )
 
@@ -208,16 +209,13 @@ func (h *Handler) PlayerReportHeat(c *gin.Context) {
 			racerID, req.Location, req.CardType, 0)
 	}
 
-	select {
-	case h.S.GameMechanicsBroadcast <- models.GameMechanicsUpdate{
+	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{
 		Type: "heat_cards", RacerID: racerID, Action: "added",
 		Data: func() json.RawMessage {
 			d, _ := json.Marshal(map[string]any{"count": req.Count, "location": req.Location})
 			return d
 		}(),
-	}:
-	default:
-	}
+	})
 
 	c.Status(http.StatusOK)
 }
