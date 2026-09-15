@@ -1,5 +1,6 @@
 import './theme';
 import { StartLightsEngine } from './startlights-core';
+import { connectWithRetry } from './ws';
 // Start Light System - F1-style 5-light countdown
 // Thin wrapper: wires the shared StartLightsEngine to the standalone page DOM.
 
@@ -86,22 +87,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Connect to WebSocket for start light commands
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'flag' && data.flag === 'startlights') {
-                    engine.handleCommand(data);
+        connectWithRetry(`${protocol}//${window.location.host}/ws`, {
+            topics: ['flags'],
+            onStatusChange: (s) => {
+                if (s === 'closed') showStatusBar('DISCONNECTED • Reconnecting...');
+                else showStatusBar('START LIGHTS • READY');
+            },
+            onMessage: (msg) => {
+                if (msg.type === 'flag' && msg.payload?.flag === 'startlights') {
+                    try { engine.handleCommand(msg.payload); } catch { /* ignore */ }
                 }
-            } catch {
-                // ignore parse errors
-            }
-        };
-        ws.onclose = () => {
-            showStatusBar('DISCONNECTED • Reconnecting...');
-            setTimeout(() => {
-                window.location.reload();
-            }, 5000);
-        };
+            },
+        });
     }
 });

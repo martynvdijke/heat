@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -106,6 +107,27 @@ func (mt *ConnMeta) setTopics(topics map[string]bool) {
 	mt.mu.Unlock()
 }
 
+// topicSet returns a copy of the connection's subscribed topics.
+func (mt *ConnMeta) topicSet() map[string]bool {
+	mt.mu.RLock()
+	defer mt.mu.RUnlock()
+	out := make(map[string]bool, len(mt.topics))
+	for t := range mt.topics {
+		out[t] = true
+	}
+	return out
+}
+
+// envelope is the wire format for every outbound broadcast. seq comes from a
+// single global counter so clients can order messages and detect loss; payload
+// carries the domain object (racers use a JSON array).
+type envelope struct {
+	Type    string          `json:"type"`
+	Topic   string          `json:"topic,omitempty"`
+	Seq     uint64          `json:"seq"`
+	Payload json.RawMessage `json:"payload,omitempty"`
+}
+
 // client is a single WebSocket connection. Only the per-connection writer
 // goroutine writes to conn; everyone else enqueues on send. A lagging client
 // whose send queue is full is evicted instead of blocking the broadcast path.
@@ -181,6 +203,13 @@ type Manager struct {
 
 	mu      sync.RWMutex
 	clients map[*client]*ConnMeta
+
+	// seq is the global broadcast sequence counter (D2).
+	seq atomic.Uint64
+
+	// flagState retains the latest command per flag so snapshots can restore it.
+	flagMu    sync.Mutex
+	flagState map[string]models.FlagCommand
 }
 
 func NewManager(s *app.Server) *Manager {
@@ -191,6 +220,7 @@ func NewManager(s *app.Server) *Manager {
 		PingPeriod:     defaultPingPeriod,
 		MaxMessageSize: defaultMaxMessageSize,
 		clients:        make(map[*client]*ConnMeta),
+		flagState:      make(map[string]models.FlagCommand),
 	}
 }
 
@@ -266,7 +296,7 @@ func (m *Manager) registerClient(c *client, meta *ConnMeta) {
 	n := len(m.clients)
 	m.mu.Unlock()
 	m.S.Log.Infof("ws", "New %s client connected. Total clients: %d", meta.Role, n)
-	m.deliver("presence", presenceMessage("join", meta), nil)
+	m.deliver("presence", "presence", presencePayload("join", meta), nil)
 }
 
 func (m *Manager) removeClient(c *client) {
@@ -275,15 +305,13 @@ func (m *Manager) removeClient(c *client) {
 	delete(m.clients, c)
 	m.mu.Unlock()
 	if ok {
-		m.deliver("presence", presenceMessage("leave", meta), nil)
+		m.deliver("presence", "presence", presencePayload("leave", meta), nil)
 	}
 	c.shutdown()
 }
 
-func presenceMessage(event string, meta *ConnMeta) map[string]any {
+func presencePayload(event string, meta *ConnMeta) map[string]any {
 	msg := map[string]any{
-		"type":          "presence",
-		"topic":         "presence",
 		"event":         event,
 		"role":          meta.Role,
 		"connection_id": meta.ID,
@@ -315,6 +343,7 @@ func (m *Manager) HandleWebSocket(c *gin.Context) {
 	cl := &client{conn: conn, send: make(chan []byte, sendQueueSize)}
 	m.registerClient(cl, meta)
 	go cl.writePump(m.PingPeriod, m.WriteWait)
+	m.sendHello(cl, meta)
 
 	defer m.removeClient(cl)
 	m.readPump(cl, meta)
@@ -429,41 +458,44 @@ func (m *Manager) handleMessage(cl *client, meta *ConnMeta, msgType string, msgB
 		if err := json.Unmarshal(msgBytes, &a); err != nil {
 			return
 		}
-		m.deliverToRole(RoleController, map[string]any{
-			"type":     "notify_ack",
+		m.deliverToRole(RoleController, "notify_ack", map[string]any{
 			"id":       a.ID,
 			"racer_id": meta.RacerID,
 		})
+	case "resync":
+		var req struct {
+			Topics []string `json:"topics"`
+		}
+		if err := json.Unmarshal(msgBytes, &req); err != nil {
+			return
+		}
+		m.sendResync(cl, meta, req.Topics)
 	}
 }
 
 func (m *Manager) sendError(cl *client, code int, message string) {
-	data, err := json.Marshal(map[string]any{"type": "error", "code": code, "message": message})
+	data, err := json.Marshal(map[string]any{"type": "error", "seq": m.seq.Add(1), "code": code, "message": message})
 	if err != nil {
 		return
 	}
 	cl.trySend(data)
 }
 
-// withTopic marshals a protocol struct and stamps a topic onto the envelope.
-func withTopic(topic string, msg any) map[string]any {
-	b, err := json.Marshal(msg)
+// envelopeBytes wraps payload in a sequenced envelope (D2/D3).
+func (m *Manager) envelopeBytes(msgType, topic string, payload any) ([]byte, error) {
+	raw, err := json.Marshal(payload)
 	if err != nil {
-		return map[string]any{"type": topic, "topic": topic}
+		return nil, err
 	}
-	out := map[string]any{}
-	if err := json.Unmarshal(b, &out); err != nil {
-		return map[string]any{"type": topic, "topic": topic}
-	}
-	out["topic"] = topic
-	return out
+	return json.Marshal(envelope{Type: msgType, Topic: topic, Seq: m.seq.Add(1), Payload: raw})
 }
 
-// deliver enqueues msg to every client subscribed to topic. allow, when
-// non-nil, further restricts delivery (e.g. telemetry to the owning player).
-// Clients whose queue is full are evicted so they cannot stall the broadcast.
-func (m *Manager) deliver(topic string, msg any, allow func(*ConnMeta) bool) {
-	data, err := json.Marshal(msg)
+// deliver enqueues a sequenced envelope to every client subscribed to topic.
+// allow, when non-nil, further restricts delivery (e.g. telemetry to the owning
+// player). Clients whose queue is full are evicted so they cannot stall the
+// broadcast.
+func (m *Manager) deliver(topic, msgType string, payload any, allow func(*ConnMeta) bool) {
+	data, err := m.envelopeBytes(msgType, topic, payload)
 	if err != nil {
 		m.S.Log.Errorf("ws", "Error marshalling broadcast: %v", err)
 		return
@@ -490,8 +522,8 @@ func (m *Manager) deliver(topic string, msg any, allow func(*ConnMeta) bool) {
 	}
 }
 
-func (m *Manager) deliverToRole(role Role, msg any) {
-	data, err := json.Marshal(msg)
+func (m *Manager) deliverToRole(role Role, msgType string, payload any) {
+	data, err := m.envelopeBytes(msgType, "", payload)
 	if err != nil {
 		return
 	}
@@ -513,8 +545,7 @@ func (m *Manager) deliverToRole(role Role, msg any) {
 
 // notifyRacer delivers a notification only to connections bound to racerID.
 func (m *Manager) notifyRacer(racerID int, id, message string) {
-	data, err := json.Marshal(map[string]any{
-		"type":     "notify",
+	data, err := m.envelopeBytes("notify", "", map[string]any{
 		"id":       id,
 		"racer_id": racerID,
 		"message":  message,
@@ -540,27 +571,30 @@ func (m *Manager) notifyRacer(racerID int, id, message string) {
 
 func (m *Manager) BroadcastManager() {
 	for racers := range m.S.Broadcast {
-		m.deliver("racers", racers, nil)
+		m.deliver("racers", "racers", racers, nil)
 	}
 }
 
 func (m *Manager) BroadcastFlags() {
 	for cmd := range m.S.FlagBroadcast {
-		m.deliver("flags", withTopic("flags", cmd), nil)
+		m.recordFlag(cmd)
+		m.deliver("flags", "flag", cmd, nil)
 	}
 }
 
 func (m *Manager) BroadcastGameMechanics() {
 	for update := range m.S.GameMechanicsBroadcast {
-		m.deliver("game_mechanics", withTopic("game_mechanics", update), nil)
+		msgType := update.Type
+		if msgType == "" {
+			msgType = "game_mechanics"
+		}
+		m.deliver("game_mechanics", msgType, update, nil)
 	}
 }
 
 func (m *Manager) BroadcastWeather() {
 	for wc := range m.S.WeatherBroadcast {
-		m.deliver("weather", map[string]any{
-			"type":          "weather_update",
-			"topic":         "weather",
+		m.deliver("weather", "weather_update", map[string]any{
 			"id":            wc.ID,
 			"race_id":       wc.RaceID,
 			"condition":     wc.Condition,
@@ -573,22 +607,20 @@ func (m *Manager) BroadcastWeather() {
 
 func (m *Manager) BroadcastLapReplay() {
 	for frame := range m.S.LapReplayBroadcast {
-		m.deliver("lap_replay", withTopic("lap_replay", frame), nil)
+		m.deliver("lap_replay", "lap_replay", frame, nil)
 	}
 }
 
 func (m *Manager) BroadcastSound() {
 	for cmd := range m.S.SoundBroadcast {
-		m.deliver("sound", withTopic("sound", cmd), nil)
+		m.deliver("sound", "sound", cmd, nil)
 	}
 }
 
 func (m *Manager) BroadcastRaceRadio() {
 	for msg := range m.S.RaceRadioBroadcast {
 		racerID := msg.RacerID
-		m.deliver("race_radio", map[string]any{
-			"type":       "race_radio",
-			"topic":      "race_radio",
+		m.deliver("race_radio", "race_radio", map[string]any{
 			"id":         msg.ID,
 			"racer_id":   racerID,
 			"racer_name": msg.RacerName,
@@ -602,9 +634,7 @@ func (m *Manager) BroadcastRaceRadio() {
 
 func (m *Manager) BroadcastCommentary() {
 	for entry := range m.S.CommentaryBroadcast {
-		m.deliver("commentary", map[string]any{
-			"type":         "commentary",
-			"topic":        "commentary",
+		m.deliver("commentary", "commentary", map[string]any{
 			"id":           entry.ID,
 			"race_id":      entry.RaceID,
 			"lap":          entry.Lap,
@@ -618,38 +648,128 @@ func (m *Manager) BroadcastCommentary() {
 }
 
 func (m *Manager) BroadcastSelfService(action models.SelfServiceAction) {
-	msg := map[string]any{
-		"type":     "self_service",
-		"topic":    "telemetry",
+	m.deliver("telemetry", "self_service", map[string]any{
 		"action":   action.Type,
 		"racer_id": action.RacerID,
 		"lap":      action.Lap,
 		"gear":     action.Gear,
 		"stress":   action.Stress,
 		"turbo":    action.TurboUsed,
-	}
-	m.deliver("telemetry", msg, func(meta *ConnMeta) bool {
+	}, func(meta *ConnMeta) bool {
 		return meta.Role != RolePlayer || meta.RacerID == action.RacerID
 	})
 }
 
-func (m *Manager) BroadcastRacers() {
+// --- Snapshot support (D4) -----------------------------------------------
+
+func (m *Manager) recordFlag(cmd models.FlagCommand) {
+	if cmd.Flag == "" {
+		return
+	}
+	m.flagMu.Lock()
+	m.flagState[cmd.Flag] = cmd
+	m.flagMu.Unlock()
+}
+
+func (m *Manager) currentFlags() []models.FlagCommand {
+	m.flagMu.Lock()
+	defer m.flagMu.Unlock()
+	out := make([]models.FlagCommand, 0, len(m.flagState))
+	for _, cmd := range m.flagState {
+		out = append(out, cmd)
+	}
+	return out
+}
+
+func (m *Manager) latestWeather() *models.WeatherCondition {
+	var w models.WeatherCondition
+	err := m.S.DB.QueryRow("SELECT id, race_id, condition, lap_start, lap_end, grip_modifier FROM weather_conditions ORDER BY id DESC LIMIT 1").
+		Scan(&w.ID, &w.RaceID, &w.Condition, &w.LapStart, &w.LapEnd, &w.GripModifier)
+	if err != nil {
+		return nil
+	}
+	return &w
+}
+
+func (m *Manager) listRacers() ([]models.Racer, error) {
 	rows, err := m.S.DB.Query("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, ''), COALESCE(t.color, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id ORDER BY r.rank ASC")
 	if err != nil {
-		m.S.Log.Errorf("ws", "Error fetching racers for broadcast: %v", err)
-		return
+		return nil, err
 	}
 	defer rows.Close()
 
 	var racers []models.Racer
 	for rows.Next() {
 		var r models.Racer
-		err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID, &r.TeamName, &r.TeamColor)
-		if err != nil {
-			m.S.Log.Errorf("ws", "Error scanning racer for broadcast: %v", err)
-			return
+		if err := rows.Scan(&r.ID, &r.Name, &r.ProfilePicture, &r.CarColor, &r.CarName, &r.Points, &r.Rank, &r.Position, &r.TeamID, &r.TeamName, &r.TeamColor); err != nil {
+			return nil, err
 		}
 		racers = append(racers, r)
+	}
+	return racers, nil
+}
+
+// buildSnapshot collects current state for the given topics (D4). Sections are
+// only included when subscribed; `race_state`/standings are added by
+// live-race-state-broadcast when present.
+func (m *Manager) buildSnapshot(topics map[string]bool) map[string]any {
+	snap := map[string]any{}
+	if topics["flags"] {
+		snap["flags"] = m.currentFlags()
+	}
+	if topics["weather"] {
+		if w := m.latestWeather(); w != nil {
+			snap["weather"] = w
+		}
+	}
+	if topics["racers"] {
+		if racers, err := m.listRacers(); err == nil {
+			snap["racers"] = racers
+		}
+	}
+	return snap
+}
+
+// sendHello pushes the connect-time snapshot scoped to the connection's topics.
+func (m *Manager) sendHello(cl *client, meta *ConnMeta) {
+	data, err := json.Marshal(map[string]any{
+		"type":     "hello",
+		"seq":      m.seq.Add(1),
+		"snapshot": m.buildSnapshot(meta.topicSet()),
+	})
+	if err != nil {
+		return
+	}
+	cl.trySend(data)
+}
+
+// sendResync replies with a fresh snapshot for the requested (allowed) topics.
+func (m *Manager) sendResync(cl *client, meta *ConnMeta, requested []string) {
+	topics := make(map[string]bool, len(requested))
+	for _, t := range requested {
+		if topicAllowed(meta.Role, t) {
+			topics[t] = true
+		}
+	}
+	if len(topics) == 0 {
+		topics = meta.topicSet()
+	}
+	data, err := json.Marshal(map[string]any{
+		"type":     "resync",
+		"seq":      m.seq.Add(1),
+		"snapshot": m.buildSnapshot(topics),
+	})
+	if err != nil {
+		return
+	}
+	cl.trySend(data)
+}
+
+func (m *Manager) BroadcastRacers() {
+	racers, err := m.listRacers()
+	if err != nil {
+		m.S.Log.Errorf("ws", "Error fetching racers for broadcast: %v", err)
+		return
 	}
 	app.TrySend(m.S, m.S.Broadcast, racers)
 }

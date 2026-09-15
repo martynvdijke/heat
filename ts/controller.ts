@@ -2,6 +2,7 @@ import './theme';
 import { showToast } from './toast';
 import { StartLightsEngine } from './startlights-core';
 import { CommentaryTicker } from './commentary';
+import { connectWithRetry, type HeatSocket } from './ws';
 
 interface ControllerRacer {
     id: number;
@@ -55,8 +56,7 @@ function updateAbortButton(): void {
     btn.disabled = !startLightsEngine.isRunning;
 }
 
-let controllerWs: WebSocket | null = null;
-let controllerWsReconnect: ReturnType<typeof setTimeout> | null = null;
+let controllerSocket: HeatSocket | null = null;
 let controllerCommentary: CommentaryTicker | null = null;
 
 const presenceMap = new Map<string, { role: string; racer_id?: number }>();
@@ -77,43 +77,62 @@ function renderPresenceSummary(): void {
 
 function connectControllerWebSocket(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    controllerWs = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    controllerCommentary?.connect(controllerWs);
-    controllerWs.onopen = () => {
-        (window as any).__controllerWsConnected = true;
-        try {
-            controllerWs!.send(JSON.stringify({ type: 'subscribe', topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay', 'telemetry', 'presence', 'race_radio'] }));
-        } catch { /* ignore */ }
-    };
-    controllerWs.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'flag' && data.flag === 'startlights') {
-                startLightsEngine.handleCommand(data);
+    const url = `${protocol}//${window.location.host}/ws`;
+    controllerSocket = connectWithRetry(url, {
+        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay', 'telemetry', 'presence', 'race_radio'],
+        onOpen: () => { (window as any).__controllerWsConnected = true; },
+        onStatusChange: (s) => { (window as any).__controllerWsConnected = (s === 'open'); },
+        onMessage: (msg) => {
+            if (msg.type === 'flag' && msg.payload?.flag === 'startlights') {
+                try { startLightsEngine.handleCommand(msg.payload); } catch { /* ignore */ }
                 updateAbortButton();
-            } else if (data.type === 'presence') {
-                const cid = data.connection_id as string | undefined;
+            } else if (msg.type === 'commentary') {
+                controllerCommentary?.handleEnvelope(msg);
+            } else if (msg.type === 'presence') {
+                const p = msg.payload;
+                const cid = p?.connection_id as string | undefined;
                 if (cid) {
-                    if (data.event === 'join') {
-                        presenceMap.set(cid, { role: data.role, racer_id: data.racer_id });
-                    } else if (data.event === 'leave') {
+                    if (p.event === 'join') {
+                        presenceMap.set(cid, { role: p.role, racer_id: p.racer_id });
+                    } else if (p.event === 'leave') {
                         presenceMap.delete(cid);
                     }
                     renderPresenceSummary();
                 }
-            } else if (data.type === 'error') {
-                console.warn(data.message ?? data);
+            } else if (msg.type === 'racers') {
+                controllerRacers = msg.payload;
+                renderStandings();
+                populateDriverSelect();
+            } else if (msg.type === 'hello' || msg.type === 'resync') {
+                if (msg.snapshot?.racers) {
+                    controllerRacers = msg.snapshot.racers;
+                    renderStandings();
+                    populateDriverSelect();
+                }
+                if (msg.snapshot?.flags) {
+                    for (const f of msg.snapshot.flags as any[]) {
+                        const flag = f.flag ?? f.type ?? '';
+                        if (flag === 'safety') { safetyActive = true; redFlagActive = false; }
+                        else if (flag === 'red') { redFlagActive = true; safetyActive = false; }
+                        else if (flag === 'clear' || flag === 'green') { safetyActive = false; redFlagActive = false; }
+                    }
+                    // refresh flag UI if buttons exist
+                    const safetyBtn = document.querySelector('[data-action="toggleSafetyCar"]') as HTMLButtonElement | null;
+                    if (safetyBtn) {
+                        safetyBtn.classList.toggle('active-flag', safetyActive);
+                        safetyBtn.innerHTML = safetyActive ? '<i class="fa-solid fa-car-side me-2"></i>Safety ON' : '<i class="fa-solid fa-car-side me-2"></i>Safety OFF';
+                    }
+                    const redBtn = document.querySelector('[data-action="toggleRedFlag"]') as HTMLButtonElement | null;
+                    if (redBtn) {
+                        redBtn.classList.toggle('active-flag', redFlagActive);
+                        redBtn.innerHTML = redFlagActive ? '<i class="fa-solid fa-circle-exclamation me-2"></i>Red Flag ON' : '<i class="fa-solid fa-circle-exclamation me-2"></i>Red Flag OFF';
+                    }
+                }
+            } else if (msg.type === 'error') {
+                console.warn((msg as any).message ?? msg);
             }
-        } catch {
-            // ignore parse errors
-        }
-    };
-    controllerWs.onclose = () => {
-        (window as any).__controllerWsConnected = false;
-        controllerWs = null;
-        if (controllerWsReconnect) clearTimeout(controllerWsReconnect);
-        controllerWsReconnect = setTimeout(connectControllerWebSocket, 5000);
-    };
+        },
+    });
 }
 
 // Keep the Abort button state in sync with the engine phase.
@@ -791,13 +810,13 @@ document.addEventListener('click', (e: Event) => {
     }
 });
 
-loadControllerData();
-connectControllerWebSocket();
-
 // Live commentary feed in the Tracking card.
 const commentaryFeedEl = document.getElementById('commentary-feed');
 if (commentaryFeedEl) {
     controllerCommentary = new CommentaryTicker(commentaryFeedEl);
     controllerCommentary.start();
 }
+
+loadControllerData();
+connectControllerWebSocket();
 

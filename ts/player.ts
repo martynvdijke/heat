@@ -1,4 +1,5 @@
 import './theme';
+import { connectWithRetry, type HeatSocket } from './ws';
 interface PlayerRacer {
     id: number; name: string; profile_picture: string; car_color: string;
     car_name: string; points: number; rank: number; position: number;
@@ -9,7 +10,7 @@ let playerRacerId = 0;
 let playerRacerName = '';
 let playerCarColor = '';
 let playerCurrentLap = 1;
-let playerWs: WebSocket | null = null;
+let playerSocket: HeatSocket | null = null;
 
 async function playerLoadRacers(): Promise<void> {
     const res = await fetch('/api/racers');
@@ -65,7 +66,7 @@ function playerLogout(): void {
     localStorage.removeItem('player_token');
     localStorage.removeItem('player_racer_id');
     playerToken = '';
-    if (playerWs) playerWs.close();
+    if (playerSocket) playerSocket.close();
     document.getElementById('login-screen')!.style.display = 'block';
     document.getElementById('dashboard-screen')!.style.display = 'none';
 }
@@ -172,13 +173,6 @@ function connectWebSocket(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const url = `${protocol}//${window.location.host}/ws`;
     const protocols = playerToken ? ['heat', 'heat.token.' + playerToken] : ['heat'];
-    playerWs = new WebSocket(url, protocols);
-
-    playerWs.onopen = () => {
-        try {
-            playerWs!.send(JSON.stringify({ type: 'subscribe', topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay', 'telemetry'] }));
-        } catch { /* ignore */ }
-    };
 
     function showPlayerNotify(message: string): void {
         let el = document.getElementById('player-notify');
@@ -192,23 +186,25 @@ function connectWebSocket(): void {
         }
     }
 
-    playerWs.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (Array.isArray(data)) {
-            // Racer update
-            const me = data.find((r: PlayerRacer) => r.id === playerRacerId);
-            if (me) {
-                document.getElementById('my-pos')!.textContent = me.position;
-                document.getElementById('my-lap')!.textContent = me.position;
-                playerCarColor = me.car_color;
+    playerSocket = connectWithRetry(url, {
+        protocols,
+        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay', 'telemetry'],
+        onMessage: (msg) => {
+            if (msg.type === 'racers') {
+                const me = (msg.payload as PlayerRacer[]).find((r) => r.id === playerRacerId);
+                if (me) {
+                    document.getElementById('my-pos')!.textContent = String(me.position);
+                    document.getElementById('my-lap')!.textContent = String(me.position);
+                    playerCarColor = me.car_color;
+                }
+            } else if (msg.type === 'self_service' && msg.payload?.racer_id === playerRacerId) {
+                // Our own action confirmed
+            } else if (msg.type === 'notify') {
+                showPlayerNotify(msg.payload.message);
+                try { playerSocket?.send({ type: 'notify_ack', id: msg.payload.id }); } catch { /* ignore */ }
             }
-        } else if (data.type === 'self_service' && data.racer_id === playerRacerId) {
-            // Our own action confirmed
-        } else if (data.type === 'notify') {
-            showPlayerNotify(data.message);
-            try { playerWs!.send(JSON.stringify({ type: 'notify_ack', id: data.id })); } catch { /* ignore */ }
-        }
-    };
+        },
+    });
 }
 
 // Auto-login check

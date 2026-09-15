@@ -29,6 +29,11 @@ tasks:
     cmds:
       - npm run test:color
 
+  test:ws:
+    desc: Run WebSocket helper unit tests (node:test)
+    cmds:
+      - npm run test:ws
+
   test:e2e:
     desc: Run Playwright end-to-end tests
     cmds:
@@ -81,6 +86,7 @@ tasks:
       - task: generate-swagger
       - task: test
       - task: typecheck
+      - task: test:ws
       - task: build:frontend
       - task: build
 

@@ -12,7 +12,8 @@
     "build:ts": "tsc",
     "verify:sw-precache": "node scripts/verify-sw-precache.mjs",
     "verify:sw-precache:self-test": "node scripts/verify-sw-precache.mjs --self-test",
-    "test:color": "node --test tests/color.test.mjs"
+    "test:color": "node --test tests/color.test.mjs",
+    "test:ws": "node --test tests/ws.test.mjs"
   },
   "repository": {
     "type": "git",

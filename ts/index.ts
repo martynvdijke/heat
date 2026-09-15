@@ -2,6 +2,7 @@ import './i18n';
 import './theme';
 import { normalizeHex } from './color';
 import { escapeHtml } from './toast';
+import { connectWithRetry, type HeatSocket } from './ws';
 
 interface Racer {
     id: number;
@@ -63,6 +64,7 @@ interface GeoJSONFeature {
     };
 }
 
+let homeSocket: HeatSocket | null = null;
 let trackGeoJSON: Record<string, any> = {};
 
 declare const L: any;
@@ -464,18 +466,25 @@ async function loadData(): Promise<void> {
         loadQualificationGrid();
         startQuoteRotation();
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'flag') {
-                handleFlagCommand(data);
-            } else if (Array.isArray(data)) {
-                racers = data;
-                renderRacers();
-                loadQualificationGrid();
-            }
-        };
-        ws.onclose = () => setTimeout(loadData, 5000);
+        homeSocket?.close();
+        homeSocket = connectWithRetry(`${protocol}//${window.location.host}/ws`, {
+            topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay'],
+            onMessage: (msg) => {
+                if (msg.type === 'flag') {
+                    handleFlagCommand(msg.payload);
+                } else if (msg.type === 'racers') {
+                    racers = msg.payload;
+                    renderRacers();
+                    loadQualificationGrid();
+                } else if (msg.type === 'hello' || msg.type === 'resync') {
+                    if (msg.snapshot?.racers) {
+                        racers = msg.snapshot.racers;
+                        renderRacers();
+                        loadQualificationGrid();
+                    }
+                }
+            },
+        });
     } catch (err) {
         console.error("Failed to load data:", err);
     }

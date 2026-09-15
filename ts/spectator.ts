@@ -1,13 +1,14 @@
 import './theme';
 import { CommentaryTicker } from './commentary';
 import { WeatherEntry, getActiveWeather, getForecast, weatherIcon, weatherLabel } from './weather';
+import { connectWithRetry, type HeatSocket } from './ws';
 interface SpecRacer {
     id: number; name: string; car_color: string; car_name: string;
     position: number; points: number; rank: number;
 }
 
 let specRacers: SpecRacer[] = [];
-let specWs: WebSocket | null = null;
+let specSocket: HeatSocket | null = null;
 let specCommentary: CommentaryTicker | null = null;
 let specWeather: WeatherEntry[] = [];
 let specLap = 0;
@@ -110,35 +111,48 @@ function upsertSpecWeather(entry: WeatherEntry): void {
 
 function connectSpecWebSocket(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    specWs = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    specCommentary?.connect(specWs);
-
-    specWs.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (Array.isArray(data)) {
-            specRacers = data;
-            renderSpecGrid();
-            document.getElementById('spec-status-indicator')!.textContent = 'RACING';
-            document.getElementById('spec-status-indicator')!.className = 'spec-status racing';
-            // Infer lap from max position as approximation for forecast
-            specLap = Math.max(...data.map((r: SpecRacer) => r.position), specLap || 0);
-            renderSpecWeather();
-        } else if (data.type === 'flag') {
-            const statusEl = document.getElementById('spec-status-indicator')!;
-            if (data.flag === 'chequered') {
-                statusEl.textContent = 'FINISHED';
-                statusEl.className = 'spec-status stopped';
-            } else if (data.flag === 'red') {
-                statusEl.textContent = 'RED FLAG';
-                statusEl.className = 'spec-status stopped';
-            } else {
-                statusEl.textContent = data.flag.toUpperCase();
-                statusEl.className = 'spec-status racing';
+    specSocket = connectWithRetry(`${protocol}//${window.location.host}/ws`, {
+        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay'],
+        onMessage: (msg) => {
+            if (msg.type === 'racers') {
+                specRacers = msg.payload;
+                renderSpecGrid();
+                document.getElementById('spec-status-indicator')!.textContent = 'RACING';
+                document.getElementById('spec-status-indicator')!.className = 'spec-status racing';
+                specLap = Math.max(...(msg.payload as SpecRacer[]).map((r: SpecRacer) => r.position), specLap || 0);
+                renderSpecWeather();
+            } else if (msg.type === 'flag') {
+                const statusEl = document.getElementById('spec-status-indicator')!;
+                const flag = msg.payload.flag;
+                if (flag === 'chequered') {
+                    statusEl.textContent = 'FINISHED';
+                    statusEl.className = 'spec-status stopped';
+                } else if (flag === 'red') {
+                    statusEl.textContent = 'RED FLAG';
+                    statusEl.className = 'spec-status stopped';
+                } else {
+                    statusEl.textContent = flag.toUpperCase();
+                    statusEl.className = 'spec-status racing';
+                }
+            } else if (msg.type === 'weather_update') {
+                upsertSpecWeather(msg.payload as WeatherEntry);
+            } else if (msg.type === 'commentary') {
+                specCommentary?.handleEnvelope(msg);
+            } else if (msg.type === 'hello' || msg.type === 'resync') {
+                if (msg.snapshot?.racers) {
+                    specRacers = msg.snapshot.racers;
+                    renderSpecGrid();
+                    specLap = Math.max(...(msg.snapshot.racers as SpecRacer[]).map((r: SpecRacer) => r.position), specLap || 0);
+                    renderSpecWeather();
+                }
+                if (msg.snapshot?.weather) {
+                    const w = msg.snapshot.weather;
+                    if (Array.isArray(w)) w.forEach((e: WeatherEntry) => upsertSpecWeather(e));
+                    else upsertSpecWeather(w as WeatherEntry);
+                }
             }
-        } else if (data.type === 'weather_update') {
-            upsertSpecWeather(data as WeatherEntry);
-        }
-    };
+        },
+    });
 }
 
 loadSpecState();

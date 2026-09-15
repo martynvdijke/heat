@@ -139,6 +139,16 @@ func wsSend(t *testing.T, c *websocket.Conn, payload string) {
 	}
 }
 
+// wsPayload returns the sequenced envelope's payload object.
+func wsPayload(t *testing.T, m map[string]any) map[string]any {
+	t.Helper()
+	p, ok := m["payload"].(map[string]any)
+	if !ok {
+		t.Fatalf("message has no payload object: %v", m)
+	}
+	return p
+}
+
 // TestWSAuthHandshake covers handshake classification: no credentials is
 // spectator, valid session is controller, valid token is player, and invalid
 // credentials are rejected with 401.
@@ -165,7 +175,7 @@ func TestWSAuthHandshake(t *testing.T) {
 	session := addTestSession(t, srv)
 	controller := wsDial(t, url, session)
 	wsSend(t, controller, `{"type":"flag","flag":"safety","state":"on"}`)
-	if m := wsWaitFor(t, controller, "flag", 2*time.Second); m["flag"] != "safety" {
+	if m := wsWaitFor(t, controller, "flag", 2*time.Second); wsPayload(t, m)["flag"] != "safety" {
 		t.Fatalf("controller flag not echoed: %v", m)
 	}
 
@@ -243,7 +253,7 @@ func TestWSTopicFiltering(t *testing.T) {
 	wsSend(t, player7, `{"type":"self_service","action":"turbo","racer_id":`+fmt.Sprint(racer7)+`}`)
 
 	// player7 gets its own telemetry; player9 (unsubscribed) must not.
-	if m := wsWaitFor(t, player7, "self_service", 2*time.Second); m["racer_id"] != float64(racer7) {
+	if m := wsWaitFor(t, player7, "self_service", 2*time.Second); wsPayload(t, m)["racer_id"] != float64(racer7) {
 		t.Fatalf("unexpected self_service for player7: %v", m)
 	}
 	wsExpectNone(t, player9, "self_service", 300*time.Millisecond)
@@ -252,10 +262,10 @@ func TestWSTopicFiltering(t *testing.T) {
 	// also receives it, proving public defaults are intact.
 	controller := wsDial(t, url, addTestSession(t, srv))
 	wsSend(t, controller, `{"type":"flag","flag":"yellow","state":"on"}`)
-	if m := wsWaitFor(t, controller, "flag", 2*time.Second); m["flag"] != "yellow" {
+	if m := wsWaitFor(t, controller, "flag", 2*time.Second); wsPayload(t, m)["flag"] != "yellow" {
 		t.Fatalf("controller did not receive flags: %v", m)
 	}
-	if m := wsWaitFor(t, spectator, "flag", 2*time.Second); m["flag"] != "yellow" {
+	if m := wsWaitFor(t, spectator, "flag", 2*time.Second); wsPayload(t, m)["flag"] != "yellow" {
 		t.Fatalf("spectator did not receive default public flags: %v", m)
 	}
 }
@@ -275,13 +285,13 @@ func TestWSTargetedNotify(t *testing.T) {
 
 	wsSend(t, controller, `{"type":"notify","racer_id":`+fmt.Sprint(racer7)+`,"id":"n1","message":"Box this lap"}`)
 
-	if m := wsWaitFor(t, player7, "notify", 2*time.Second); m["id"] != "n1" || m["message"] != "Box this lap" {
+	if m := wsWaitFor(t, player7, "notify", 2*time.Second); wsPayload(t, m)["id"] != "n1" || wsPayload(t, m)["message"] != "Box this lap" {
 		t.Fatalf("player7 got unexpected notify: %v", m)
 	}
 	wsExpectNone(t, player9, "notify", 300*time.Millisecond)
 
 	wsSend(t, player7, `{"type":"notify_ack","id":"n1"}`)
-	if m := wsWaitFor(t, controller, "notify_ack", 2*time.Second); m["id"] != "n1" {
+	if m := wsWaitFor(t, controller, "notify_ack", 2*time.Second); wsPayload(t, m)["id"] != "n1" {
 		t.Fatalf("controller did not receive notify_ack: %v", m)
 	}
 }
@@ -291,16 +301,16 @@ func TestWSPresence(t *testing.T) {
 	url, _, srv := newAuthTestServer(t)
 
 	controllerA := wsDial(t, url, addTestSession(t, srv))
-	if m := wsWaitFor(t, controllerA, "presence", 2*time.Second); m["event"] != "join" {
+	if m := wsWaitFor(t, controllerA, "presence", 2*time.Second); wsPayload(t, m)["event"] != "join" {
 		t.Fatalf("controller did not receive its own presence join: %v", m)
 	}
 
 	// A controller that opts out of presence must not see later changes.
 	controllerC := wsDial(t, url, addTestSession(t, srv))
-	if m := wsWaitFor(t, controllerC, "presence", 2*time.Second); m["event"] != "join" {
+	if m := wsWaitFor(t, controllerC, "presence", 2*time.Second); wsPayload(t, m)["event"] != "join" {
 		t.Fatalf("controllerC did not receive its own join: %v", m)
 	}
-	if m := wsWaitFor(t, controllerA, "presence", 2*time.Second); m["event"] != "join" || m["role"] != "controller" {
+	if m := wsWaitFor(t, controllerA, "presence", 2*time.Second); wsPayload(t, m)["event"] != "join" || wsPayload(t, m)["role"] != "controller" {
 		t.Fatalf("controllerA did not receive controllerC's join: %v", m)
 	}
 	wsSend(t, controllerC, `{"type":"subscribe","topics":["flags"]}`)
@@ -308,13 +318,13 @@ func TestWSPresence(t *testing.T) {
 	racerID := createTestRacer(t, "Presence Racer")
 	player := wsDial(t, url, "", "heat", "heat.token."+createTestPlayerToken(t, racerID))
 
-	if m := wsWaitFor(t, controllerA, "presence", 2*time.Second); m["event"] != "join" || m["role"] != "player" {
+	if m := wsWaitFor(t, controllerA, "presence", 2*time.Second); wsPayload(t, m)["event"] != "join" || wsPayload(t, m)["role"] != "player" {
 		t.Fatalf("controllerA did not receive player presence join: %v", m)
 	}
 	wsExpectNone(t, controllerC, "presence", 300*time.Millisecond)
 
 	player.Close()
-	if m := wsWaitFor(t, controllerA, "presence", 2*time.Second); m["event"] != "leave" {
+	if m := wsWaitFor(t, controllerA, "presence", 2*time.Second); wsPayload(t, m)["event"] != "leave" {
 		t.Fatalf("controllerA did not receive presence leave: %v", m)
 	}
 }

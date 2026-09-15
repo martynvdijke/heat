@@ -59,6 +59,12 @@ export class CommentaryTicker {
         ws.addEventListener('message', this.onWsMessage);
     }
 
+    /** Handle a parsed WebSocket message (envelope or legacy flat shape). */
+    handleEnvelope(msg: any): void {
+        if (!msg || msg.type !== 'commentary') return;
+        this.append((msg.payload ?? msg) as CommentaryEntry);
+    }
+
     private onWsMessage = (event: MessageEvent): void => {
         let data: any;
         try {
@@ -66,9 +72,7 @@ export class CommentaryTicker {
         } catch {
             return;
         }
-        if (data && data.type === 'commentary') {
-            this.append(data as CommentaryEntry);
-        }
+        this.handleEnvelope(data);
     };
 
     private async poll(): Promise<void> {

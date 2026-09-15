@@ -3,13 +3,14 @@ import { playCategory } from './sound';
 import './sound-settings';
 import { CommentaryTicker } from './commentary';
 import { WeatherEntry, getActiveWeather, getForecast, weatherIcon, weatherLabel, formatGrip } from './weather';
+import { connectWithRetry, type HeatSocket } from './ws';
 interface TVRacer {
     id: number; name: string; car_color: string; car_name: string;
     position: number; points: number; rank: number;
 }
 
 let tvRacers: TVRacer[] = [];
-let tvWs: WebSocket | null = null;
+let tvSocket: HeatSocket | null = null;
 let tvSeconds = 0;
 let tvTimer: ReturnType<typeof setInterval> | null = null;
 let currentFlag = 'green';
@@ -101,25 +102,36 @@ function upsertWeather(entry: WeatherEntry): void {
 
 function connectTVWebSocket(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    tvWs = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    tvCommentary?.connect(tvWs);
-
-    tvWs.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (Array.isArray(data)) {
-            tvRacers = data;
-            renderLeaderboard();
-        } else if (data.type === 'flag') {
-            handleTVFlag(data);
-            tvPlaySound('flag');
-        } else if (data.type === 'self_service') {
-            updateEvent(`⚡ ${data.racer_name || `Racer #${data.racer_id}`} used turbo`);
-        } else if (data.type === 'sound') {
-            tvPlaySound(data.sound || 'flag');
-        } else if (data.type === 'weather_update') {
-            upsertWeather(data as WeatherEntry);
-        }
-    };
+    tvSocket = connectWithRetry(`${protocol}//${window.location.host}/ws`, {
+        topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay'],
+        onMessage: (msg) => {
+            if (msg.type === 'racers') {
+                tvRacers = msg.payload;
+                renderLeaderboard();
+            } else if (msg.type === 'flag') {
+                handleTVFlag(msg.payload);
+                tvPlaySound('flag');
+            } else if (msg.type === 'self_service') {
+                updateEvent(`⚡ ${msg.payload.racer_name || `Racer #${msg.payload.racer_id}`} used turbo`);
+            } else if (msg.type === 'sound') {
+                tvPlaySound(msg.payload.sound || 'flag');
+            } else if (msg.type === 'weather_update') {
+                upsertWeather(msg.payload as WeatherEntry);
+            } else if (msg.type === 'commentary') {
+                tvCommentary?.handleEnvelope(msg);
+            } else if (msg.type === 'hello' || msg.type === 'resync') {
+                if (msg.snapshot?.racers) {
+                    tvRacers = msg.snapshot.racers;
+                    renderLeaderboard();
+                }
+                if (msg.snapshot?.weather) {
+                    const w = msg.snapshot.weather;
+                    if (Array.isArray(w)) w.forEach((e: WeatherEntry) => upsertWeather(e));
+                    else upsertWeather(w as WeatherEntry);
+                }
+            }
+        },
+    });
 }
 
 // Audio feedback - routed through the customizable sound module

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"net"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -69,6 +70,12 @@ func TestWebSocketRejectsOversizedMessage(t *testing.T) {
 	}
 	defer conn.Close()
 
+	// Drain the connect-time hello snapshot, then send an oversized frame.
+	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if _, _, err := conn.ReadMessage(); err != nil {
+		t.Fatalf("expected hello snapshot before oversized write: %v", err)
+	}
+
 	if err := conn.WriteMessage(websocket.TextMessage, bytes.Repeat([]byte("a"), 2048)); err != nil {
 		t.Fatalf("write oversized frame: %v", err)
 	}
@@ -76,5 +83,7 @@ func TestWebSocketRejectsOversizedMessage(t *testing.T) {
 	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 	if _, _, err := conn.ReadMessage(); err == nil {
 		t.Fatal("expected connection to close after oversized message, read succeeded")
+	} else if ne, ok := err.(net.Error); ok && ne.Timeout() {
+		t.Fatal("connection was not closed after oversized message (read timed out)")
 	}
 }

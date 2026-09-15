@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -63,12 +64,24 @@ func TestWebSocketThroughGzipMiddleware(t *testing.T) {
 
 	// The BroadcastFlags goroutine (started in TestMain) picks up the flag
 	// from FlagBroadcast channel and broadcasts to all connected clients.
-	// Skip non-flag envelopes (e.g. the presence join emitted on connect).
+	// Every broadcast is a sequenced envelope; skip other envelopes (presence,
+	// hello) until the flag arrives and read its payload.
 	wsConn.SetReadDeadline(time.Now().Add(3 * time.Second))
 	var received models.FlagCommand
 	for received.Flag == "" {
-		if err := wsConn.ReadJSON(&received); err != nil {
+		var env struct {
+			Type    string          `json:"type"`
+			Seq     uint64          `json:"seq"`
+			Payload json.RawMessage `json:"payload"`
+		}
+		if err := wsConn.ReadJSON(&env); err != nil {
 			t.Fatalf("Did not receive broadcast flag message within timeout: %v", err)
+		}
+		if env.Type != "flag" {
+			continue
+		}
+		if err := json.Unmarshal(env.Payload, &received); err != nil {
+			t.Fatalf("Failed to decode flag payload: %v", err)
 		}
 	}
 	if received.Flag != "startlights" {

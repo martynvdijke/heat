@@ -46,7 +46,7 @@ func TestBroadcastEvictsOnlyLaggingClient(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		m.deliver("flags", map[string]string{"type": "test"}, nil)
+		m.deliver("flags", "test", map[string]string{"k": "v"}, nil)
 		close(done)
 	}()
 	select {
@@ -66,6 +66,9 @@ func TestBroadcastEvictsOnlyLaggingClient(t *testing.T) {
 	case msg := <-healthy.send:
 		if !bytes.Contains(msg, []byte(`"type":"test"`)) {
 			t.Errorf("healthy client got unexpected payload: %s", msg)
+		}
+		if !bytes.Contains(msg, []byte(`"seq":`)) {
+			t.Errorf("envelope missing seq: %s", msg)
 		}
 	default:
 		t.Fatal("healthy client did not receive the broadcast")
