@@ -42,7 +42,7 @@ func AuthMiddleware(s *app.Server) gin.HandlerFunc {
 			return
 		}
 
-		if info.IP != "" && c.ClientIP() != info.IP {
+		if !app.SameClientIP(info.IP, c.ClientIP()) {
 			s.SessionStoreMu.Lock()
 			delete(s.SessionStore, sessionCookie)
 			s.SessionStoreMu.Unlock()

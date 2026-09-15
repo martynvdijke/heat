@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -37,6 +38,36 @@ func newAuthTestServer(t *testing.T) (string, *ws.Manager, *app.Server) {
 	t.Cleanup(ts.Close)
 
 	return "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws", m, srv
+}
+
+// Regression test for the CI failure where Firefox opened the controller
+// WebSocket over ::1 while the session had been created over 127.0.0.1.
+func TestWSAcceptsSessionAcrossLoopbackFamilies(t *testing.T) {
+	ln, err := net.Listen("tcp", "[::1]:0")
+	if err != nil {
+		t.Skipf("ipv6 loopback unavailable: %v", err)
+	}
+
+	srv := app.NewServer()
+	srv.DB = testServer.DB
+	srv.Log = testServer.Log
+	srv.Upgrader = testServer.Upgrader
+	m := ws.NewManager(srv)
+
+	r := gin.New()
+	r.GET("/ws", m.HandleWebSocket)
+	ts := httptest.NewUnstartedServer(r)
+	ts.Listener.Close()
+	ts.Listener = ln
+	ts.Start()
+	t.Cleanup(ts.Close)
+
+	id := fmt.Sprintf("sess-loop-%d", time.Now().UnixNano())
+	srv.SessionStoreMu.Lock()
+	srv.SessionStore[id] = app.SessionInfo{Expiry: time.Now().Add(time.Hour).Unix(), IP: "127.0.0.1"}
+	srv.SessionStoreMu.Unlock()
+
+	wsDial(t, "ws://"+ln.Addr().String()+"/ws", id)
 }
 
 func addTestSession(t *testing.T, srv *app.Server) string {

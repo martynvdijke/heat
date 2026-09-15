@@ -1,6 +1,28 @@
 package app
 
-import "time"
+import (
+	"net"
+	"time"
+)
+
+// SameClientIP reports whether two client IPs should be treated as the same
+// host for session binding. Empty values match anything. Any two loopback
+// addresses match: browsers may open a WebSocket over a different loopback
+// family (127.0.0.1 vs ::1) than the request that created the session, and
+// both are the same machine.
+func SameClientIP(a, b string) bool {
+	if a == "" || b == "" {
+		return true
+	}
+	if a == b {
+		return true
+	}
+	ia, ib := net.ParseIP(a), net.ParseIP(b)
+	if ia != nil && ib != nil {
+		return ia.IsLoopback() && ib.IsLoopback()
+	}
+	return false
+}
 
 // ValidateSession reports whether sessionID is a live, non-expired session
 // valid for clientIP. It exists as a bool helper for the WebSocket handshake;
@@ -24,7 +46,7 @@ func (s *Server) ValidateSession(sessionID, clientIP string) bool {
 		return false
 	}
 
-	if info.IP != "" && clientIP != "" && info.IP != clientIP {
+	if !SameClientIP(info.IP, clientIP) {
 		return false
 	}
 	return true
