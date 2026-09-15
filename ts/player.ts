@@ -170,7 +170,27 @@ function addLapEntry(text: string, type: string): void {
 // WebSocket for live updates
 function connectWebSocket(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    playerWs = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    const url = `${protocol}//${window.location.host}/ws`;
+    const protocols = playerToken ? ['heat', 'heat.token.' + playerToken] : ['heat'];
+    playerWs = new WebSocket(url, protocols);
+
+    playerWs.onopen = () => {
+        try {
+            playerWs!.send(JSON.stringify({ type: 'subscribe', topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay', 'telemetry'] }));
+        } catch { /* ignore */ }
+    };
+
+    function showPlayerNotify(message: string): void {
+        let el = document.getElementById('player-notify');
+        if (el) {
+            el.textContent = message;
+            el.hidden = false;
+            el.style.display = 'block';
+            setTimeout(() => { if (el) el.hidden = true; }, 5000);
+        } else {
+            alert(message);
+        }
+    }
 
     playerWs.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -184,6 +204,9 @@ function connectWebSocket(): void {
             }
         } else if (data.type === 'self_service' && data.racer_id === playerRacerId) {
             // Our own action confirmed
+        } else if (data.type === 'notify') {
+            showPlayerNotify(data.message);
+            try { playerWs!.send(JSON.stringify({ type: 'notify_ack', id: data.id })); } catch { /* ignore */ }
         }
     };
 }

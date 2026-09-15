@@ -38,8 +38,15 @@ func TestWebSocketThroughGzipMiddleware(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
 
+	// Authenticate as controller: flags are an authorized (controller-only)
+	// inbound message, so an anonymous spectator would be rejected instead of
+	// echoed.
+	sessionID := createAdminSession(t)
+	header := http.Header{}
+	header.Add("Cookie", "session="+sessionID)
+
 	dialer := websocket.Dialer{HandshakeTimeout: 5 * time.Second}
-	wsConn, _, err := dialer.Dial(wsURL, nil)
+	wsConn, _, err := dialer.Dial(wsURL, header)
 	if err != nil {
 		t.Fatalf("WebSocket upgrade failed through gzip middleware with /ws exclusion: %v", err)
 	}
@@ -56,10 +63,13 @@ func TestWebSocketThroughGzipMiddleware(t *testing.T) {
 
 	// The BroadcastFlags goroutine (started in TestMain) picks up the flag
 	// from FlagBroadcast channel and broadcasts to all connected clients.
+	// Skip non-flag envelopes (e.g. the presence join emitted on connect).
 	wsConn.SetReadDeadline(time.Now().Add(3 * time.Second))
 	var received models.FlagCommand
-	if err := wsConn.ReadJSON(&received); err != nil {
-		t.Fatalf("Did not receive broadcast flag message within timeout: %v", err)
+	for received.Flag == "" {
+		if err := wsConn.ReadJSON(&received); err != nil {
+			t.Fatalf("Did not receive broadcast flag message within timeout: %v", err)
+		}
 	}
 	if received.Flag != "startlights" {
 		t.Errorf("Received flag %q, want %q", received.Flag, "startlights")

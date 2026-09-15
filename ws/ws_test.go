@@ -36,28 +36,29 @@ func newTestManager(t *testing.T) *Manager {
 func TestBroadcastEvictsOnlyLaggingClient(t *testing.T) {
 	m := newTestManager(t)
 
+	topics := map[string]bool{"flags": true}
 	healthy := &client{send: make(chan []byte, 4)}
 	lagging := &client{send: make(chan []byte, 1)}
 	lagging.send <- []byte("already queued") // fill to capacity
 
-	m.clients[healthy] = true
-	m.clients[lagging] = true
+	m.clients[healthy] = &ConnMeta{topics: topics}
+	m.clients[lagging] = &ConnMeta{topics: topics}
 
 	done := make(chan struct{})
 	go func() {
-		m.broadcastToClients(map[string]string{"type": "test"})
+		m.deliver("flags", map[string]string{"type": "test"}, nil)
 		close(done)
 	}()
 	select {
 	case <-done:
 	case <-time.After(time.Second):
-		t.Fatal("broadcastToClients blocked on a lagging client")
+		t.Fatal("deliver blocked on a lagging client")
 	}
 
-	if !m.clients[healthy] {
+	if _, ok := m.clients[healthy]; !ok {
 		t.Error("healthy client was evicted")
 	}
-	if m.clients[lagging] {
+	if _, ok := m.clients[lagging]; ok {
 		t.Error("lagging client was not evicted")
 	}
 

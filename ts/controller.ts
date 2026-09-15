@@ -59,12 +59,31 @@ let controllerWs: WebSocket | null = null;
 let controllerWsReconnect: ReturnType<typeof setTimeout> | null = null;
 let controllerCommentary: CommentaryTicker | null = null;
 
+const presenceMap = new Map<string, { role: string; racer_id?: number }>();
+
+function renderPresenceSummary(): void {
+    const el = document.getElementById('presence-summary');
+    if (!el) return;
+    let players = 0;
+    let controllers = 0;
+    let spectators = 0;
+    for (const v of presenceMap.values()) {
+        if (v.role === 'player') players++;
+        else if (v.role === 'controller') controllers++;
+        else spectators++;
+    }
+    el.textContent = `${players} player${players !== 1 ? 's' : ''} \u00b7 ${controllers} controller${controllers !== 1 ? 's' : ''} \u00b7 ${spectators} spectator${spectators !== 1 ? 's' : ''}`;
+}
+
 function connectControllerWebSocket(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     controllerWs = new WebSocket(`${protocol}//${window.location.host}/ws`);
     controllerCommentary?.connect(controllerWs);
     controllerWs.onopen = () => {
         (window as any).__controllerWsConnected = true;
+        try {
+            controllerWs!.send(JSON.stringify({ type: 'subscribe', topics: ['flags', 'racers', 'commentary', 'weather', 'race_state', 'game_mechanics', 'sound', 'lap_replay', 'telemetry', 'presence', 'race_radio'] }));
+        } catch { /* ignore */ }
     };
     controllerWs.onmessage = (event) => {
         try {
@@ -72,6 +91,18 @@ function connectControllerWebSocket(): void {
             if (data.type === 'flag' && data.flag === 'startlights') {
                 startLightsEngine.handleCommand(data);
                 updateAbortButton();
+            } else if (data.type === 'presence') {
+                const cid = data.connection_id as string | undefined;
+                if (cid) {
+                    if (data.event === 'join') {
+                        presenceMap.set(cid, { role: data.role, racer_id: data.racer_id });
+                    } else if (data.event === 'leave') {
+                        presenceMap.delete(cid);
+                    }
+                    renderPresenceSummary();
+                }
+            } else if (data.type === 'error') {
+                console.warn(data.message ?? data);
             }
         } catch {
             // ignore parse errors
