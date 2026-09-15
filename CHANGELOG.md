@@ -1,3 +1,18 @@
+# [1.60.0](https://github.com/martynvdijke/heat/compare/v1.59.6...v1.60.0) (2026-09-15)
+
+
+### Bug Fixes
+
+* accept websocket sessions across loopback address families ([f9efac6](https://github.com/martynvdijke/heat/commit/f9efac645f72c7d4f53661bed9242fefe84ee4d0))
+
+
+### Features
+
+* add websocket reconnect, sequenced envelopes, and snapshot resync ([963d9a6](https://github.com/martynvdijke/heat/commit/963d9a63026a9d2f320fcfdf960503a8e8c13ec6))
+* authenticate websocket handshakes and filter broadcasts by topic ([0786f95](https://github.com/martynvdijke/heat/commit/0786f950e5ce5c8b32d88e07d10afa982f10e7ca))
+* harden websocket hub with heartbeat, per-connection writers, and backpressure ([eb84df7](https://github.com/martynvdijke/heat/commit/eb84df750a2a97bdc5c95ad311b7579e3e9ced6f))
+* server-authoritative race state with live standings and race radio ([3a6f555](https://github.com/martynvdijke/heat/commit/3a6f5550caa6c6cedb414f452b6bb7e8f25b1f9d))
+
 ## [1.59.6](https://github.com/martynvdijke/heat/compare/v1.59.5...v1.59.6) (2026-09-14)
 
 ## [1.59.5](https://github.com/martynvdijke/heat/compare/v1.59.4...v1.59.5) (2026-09-11)
