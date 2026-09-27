@@ -112,7 +112,7 @@ func NewServer() *Server {
 		StandingsBroadcast:     make(chan []models.Standing, wsChannelBuffer),
 		LoginLimiter:           rate.NewLimiter(rate.Limit(5), 10),
 		LoginLimiters:          make(map[string]*rate.Limiter),
-		CurrentVersion:         "1.60.7",
+		CurrentVersion:         "1.61.0",
 		BasePath:               "/app",
 		DBPath:                 "/db/heat.db",
 		MediaPath:              "/app/media",

@@ -1,3 +1,10 @@
+# [1.61.0](https://github.com/martynvdijke/heat/compare/v1.60.7...v1.61.0) (2026-09-27)
+
+
+### Features
+
+* add WLED light sync for race-control flags ([1679126](https://github.com/martynvdijke/heat/commit/1679126d3feafed39aadcd56d00630887cc16a89))
+
 ## [1.60.7](https://github.com/martynvdijke/heat/compare/v1.60.6...v1.60.7) (2026-09-23)
 
 ## [1.60.6](https://github.com/martynvdijke/heat/compare/v1.60.5...v1.60.6) (2026-09-22)
