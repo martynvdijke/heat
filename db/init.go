@@ -211,4 +211,5 @@ func Init(s *app.Server) {
 	SeedSectors()
 	SeedLogSettings()
 	SeedOTelSettings()
+	SeedWLEDSettings()
 }

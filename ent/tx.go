@@ -80,6 +80,8 @@ type Tx struct {
 	UpgradeCard *UpgradeCardClient
 	// Upload is the client for interacting with the Upload builders.
 	Upload *UploadClient
+	// WLEDSetting is the client for interacting with the WLEDSetting builders.
+	WLEDSetting *WLEDSettingClient
 	// WeatherCondition is the client for interacting with the WeatherCondition builders.
 	WeatherCondition *WeatherConditionClient
 
@@ -247,6 +249,7 @@ func (tx *Tx) init() {
 	tx.UmamiSetting = NewUmamiSettingClient(tx.config)
 	tx.UpgradeCard = NewUpgradeCardClient(tx.config)
 	tx.Upload = NewUploadClient(tx.config)
+	tx.WLEDSetting = NewWLEDSettingClient(tx.config)
 	tx.WeatherCondition = NewWeatherConditionClient(tx.config)
 }
 

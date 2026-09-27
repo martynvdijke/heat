@@ -157,6 +157,13 @@ type AISettings struct {
 	Enabled         bool   `json:"enabled"`
 }
 
+type WLEDSettings struct {
+	ID      int            `json:"id"`
+	URL     string         `json:"url"`
+	Enabled bool           `json:"enabled"`
+	Presets map[string]int `json:"presets"`
+}
+
 type EmailSettings struct {
 	ID       int    `json:"id"`
 	SMTPHost string `json:"smtp_host"`

@@ -59,6 +59,7 @@ import (
 	"heat/middleware"
 	"heat/pkg/logger"
 	"heat/racing"
+	"heat/wled"
 	"heat/ws"
 )
 
@@ -281,6 +282,7 @@ func main() {
 	go wsManager.BroadcastCommentary()
 	go wsManager.BroadcastRaceState()
 	go wsManager.BroadcastStandings()
+	go wled.New(server).Run()
 	go func() {
 		for {
 			time.Sleep(15 * time.Minute)
@@ -384,6 +386,11 @@ func main() {
 		admin.POST("/umami-settings", h.SaveUmamiSettings)
 		admin.GET("/otel-settings", h.GetOTelSettings)
 		admin.POST("/otel-settings", h.SaveOTelSettings)
+		admin.GET("/wled-settings", h.GetWLEDSettings)
+		admin.POST("/wled-settings", h.SaveWLEDSettings)
+		admin.POST("/wled-settings/test", h.TestWLED)
+		admin.GET("/wled/status", h.GetWLEDStatus)
+		admin.POST("/wled/arm", h.SetWLEDArmed)
 		admin.POST("/quotes", h.HandleQuotes)
 		admin.PUT("/quotes", h.HandleQuotes)
 		admin.DELETE("/quotes", h.HandleQuotes)

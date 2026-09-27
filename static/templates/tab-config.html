@@ -16,6 +16,9 @@
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button" role="tab"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>AI</button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#wled-pane" type="button" role="tab"><i class="fa-solid fa-lightbulb me-1"></i>WLED</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-pane" type="button" role="tab"><i class="fa-solid fa-database me-1"></i>Backup</button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -221,6 +224,78 @@
                                     <div class="card-body">
                                         <p class="small text-muted mb-2">Umami is a simple, fast, privacy-focused alternative to Google Analytics.</p>
                                         <p class="small text-muted mb-0">The tracking script is automatically injected into all pages when enabled.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="wled-pane">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-lightbulb me-2 text-warning"></i>WLED Light Sync</div>
+                                    <div class="card-body">
+                                        <form id="wled-form">
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">WLED URL</label>
+                                                <input type="text" class="form-control" id="wled-url" placeholder="http://192.168.1.50">
+                                                <div class="form-text">Base URL of your WLED device</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="wled-enabled">
+                                                    <label class="form-check-label small fw-bold" for="wled-enabled">Enable WLED Sync</label>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <p class="small fw-bold mb-2">Presets (optional)</p>
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <label class="form-label small">Safety</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" id="wled-preset-safety">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small">Red</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" id="wled-preset-red">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small">Blue</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" id="wled-preset-blue">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small">Yellow</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" id="wled-preset-yellow">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small">Chequered</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" id="wled-preset-chequered">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small">Black/White</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" id="wled-preset-blackwhite">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small">Clear</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" id="wled-preset-clear">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small">Start Lights</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" id="wled-preset-startlights">
+                                                </div>
+                                            </div>
+                                            <div class="form-text mb-3">Leave 0 to use the default flag color.</div>
+                                            <button type="submit" class="btn btn-primary w-100 mb-2">Save WLED Settings</button>
+                                            <button type="button" class="btn btn-outline-secondary w-100" id="wled-test-btn">Send Test Color</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About WLED</div>
+                                    <div class="card-body">
+                                        <p class="small text-muted mb-2">Mirrors race-control flags to a WLED device over its JSON API.</p>
+                                        <p class="small text-muted mb-0">Arm sync from the controller page to start mirroring lights.</p>
                                     </div>
                                 </div>
                             </div>

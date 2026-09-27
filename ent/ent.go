@@ -41,6 +41,7 @@ import (
 	"heat/ent/upgradecard"
 	"heat/ent/upload"
 	"heat/ent/weathercondition"
+	"heat/ent/wledsetting"
 	"reflect"
 	"sync"
 
@@ -141,6 +142,7 @@ func checkColumn(t, c string) error {
 			umamisetting.Table:        umamisetting.ValidColumn,
 			upgradecard.Table:         upgradecard.ValidColumn,
 			upload.Table:              upload.ValidColumn,
+			wledsetting.Table:         wledsetting.ValidColumn,
 			weathercondition.Table:    weathercondition.ValidColumn,
 		})
 	})

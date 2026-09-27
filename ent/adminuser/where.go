@@ -68,6 +68,16 @@ func Email(v string) predicate.AdminUser {
 	return predicate.AdminUser(sql.FieldEQ(FieldEmail, v))
 }
 
+// OidcSub applies equality check predicate on the "oidc_sub" field. It's identical to OidcSubEQ.
+func OidcSub(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldEQ(FieldOidcSub, v))
+}
+
+// AuthMethod applies equality check predicate on the "auth_method" field. It's identical to AuthMethodEQ.
+func AuthMethod(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldEQ(FieldAuthMethod, v))
+}
+
 // UsernameEQ applies the EQ predicate on the "username" field.
 func UsernameEQ(v string) predicate.AdminUser {
 	return predicate.AdminUser(sql.FieldEQ(FieldUsername, v))
@@ -271,6 +281,156 @@ func EmailEqualFold(v string) predicate.AdminUser {
 // EmailContainsFold applies the ContainsFold predicate on the "email" field.
 func EmailContainsFold(v string) predicate.AdminUser {
 	return predicate.AdminUser(sql.FieldContainsFold(FieldEmail, v))
+}
+
+// OidcSubEQ applies the EQ predicate on the "oidc_sub" field.
+func OidcSubEQ(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldEQ(FieldOidcSub, v))
+}
+
+// OidcSubNEQ applies the NEQ predicate on the "oidc_sub" field.
+func OidcSubNEQ(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldNEQ(FieldOidcSub, v))
+}
+
+// OidcSubIn applies the In predicate on the "oidc_sub" field.
+func OidcSubIn(vs ...string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldIn(FieldOidcSub, vs...))
+}
+
+// OidcSubNotIn applies the NotIn predicate on the "oidc_sub" field.
+func OidcSubNotIn(vs ...string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldNotIn(FieldOidcSub, vs...))
+}
+
+// OidcSubGT applies the GT predicate on the "oidc_sub" field.
+func OidcSubGT(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldGT(FieldOidcSub, v))
+}
+
+// OidcSubGTE applies the GTE predicate on the "oidc_sub" field.
+func OidcSubGTE(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldGTE(FieldOidcSub, v))
+}
+
+// OidcSubLT applies the LT predicate on the "oidc_sub" field.
+func OidcSubLT(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldLT(FieldOidcSub, v))
+}
+
+// OidcSubLTE applies the LTE predicate on the "oidc_sub" field.
+func OidcSubLTE(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldLTE(FieldOidcSub, v))
+}
+
+// OidcSubContains applies the Contains predicate on the "oidc_sub" field.
+func OidcSubContains(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldContains(FieldOidcSub, v))
+}
+
+// OidcSubHasPrefix applies the HasPrefix predicate on the "oidc_sub" field.
+func OidcSubHasPrefix(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldHasPrefix(FieldOidcSub, v))
+}
+
+// OidcSubHasSuffix applies the HasSuffix predicate on the "oidc_sub" field.
+func OidcSubHasSuffix(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldHasSuffix(FieldOidcSub, v))
+}
+
+// OidcSubIsNil applies the IsNil predicate on the "oidc_sub" field.
+func OidcSubIsNil() predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldIsNull(FieldOidcSub))
+}
+
+// OidcSubNotNil applies the NotNil predicate on the "oidc_sub" field.
+func OidcSubNotNil() predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldNotNull(FieldOidcSub))
+}
+
+// OidcSubEqualFold applies the EqualFold predicate on the "oidc_sub" field.
+func OidcSubEqualFold(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldEqualFold(FieldOidcSub, v))
+}
+
+// OidcSubContainsFold applies the ContainsFold predicate on the "oidc_sub" field.
+func OidcSubContainsFold(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldContainsFold(FieldOidcSub, v))
+}
+
+// AuthMethodEQ applies the EQ predicate on the "auth_method" field.
+func AuthMethodEQ(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldEQ(FieldAuthMethod, v))
+}
+
+// AuthMethodNEQ applies the NEQ predicate on the "auth_method" field.
+func AuthMethodNEQ(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldNEQ(FieldAuthMethod, v))
+}
+
+// AuthMethodIn applies the In predicate on the "auth_method" field.
+func AuthMethodIn(vs ...string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldIn(FieldAuthMethod, vs...))
+}
+
+// AuthMethodNotIn applies the NotIn predicate on the "auth_method" field.
+func AuthMethodNotIn(vs ...string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldNotIn(FieldAuthMethod, vs...))
+}
+
+// AuthMethodGT applies the GT predicate on the "auth_method" field.
+func AuthMethodGT(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldGT(FieldAuthMethod, v))
+}
+
+// AuthMethodGTE applies the GTE predicate on the "auth_method" field.
+func AuthMethodGTE(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldGTE(FieldAuthMethod, v))
+}
+
+// AuthMethodLT applies the LT predicate on the "auth_method" field.
+func AuthMethodLT(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldLT(FieldAuthMethod, v))
+}
+
+// AuthMethodLTE applies the LTE predicate on the "auth_method" field.
+func AuthMethodLTE(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldLTE(FieldAuthMethod, v))
+}
+
+// AuthMethodContains applies the Contains predicate on the "auth_method" field.
+func AuthMethodContains(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldContains(FieldAuthMethod, v))
+}
+
+// AuthMethodHasPrefix applies the HasPrefix predicate on the "auth_method" field.
+func AuthMethodHasPrefix(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldHasPrefix(FieldAuthMethod, v))
+}
+
+// AuthMethodHasSuffix applies the HasSuffix predicate on the "auth_method" field.
+func AuthMethodHasSuffix(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldHasSuffix(FieldAuthMethod, v))
+}
+
+// AuthMethodIsNil applies the IsNil predicate on the "auth_method" field.
+func AuthMethodIsNil() predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldIsNull(FieldAuthMethod))
+}
+
+// AuthMethodNotNil applies the NotNil predicate on the "auth_method" field.
+func AuthMethodNotNil() predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldNotNull(FieldAuthMethod))
+}
+
+// AuthMethodEqualFold applies the EqualFold predicate on the "auth_method" field.
+func AuthMethodEqualFold(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldEqualFold(FieldAuthMethod, v))
+}
+
+// AuthMethodContainsFold applies the ContainsFold predicate on the "auth_method" field.
+func AuthMethodContainsFold(v string) predicate.AdminUser {
+	return predicate.AdminUser(sql.FieldContainsFold(FieldAuthMethod, v))
 }
 
 // And groups predicates with the AND operator between them.

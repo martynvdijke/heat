@@ -75,6 +75,46 @@ func (_u *AdminUserUpdate) ClearEmail() *AdminUserUpdate {
 	return _u
 }
 
+// SetOidcSub sets the "oidc_sub" field.
+func (_u *AdminUserUpdate) SetOidcSub(v string) *AdminUserUpdate {
+	_u.mutation.SetOidcSub(v)
+	return _u
+}
+
+// SetNillableOidcSub sets the "oidc_sub" field if the given value is not nil.
+func (_u *AdminUserUpdate) SetNillableOidcSub(v *string) *AdminUserUpdate {
+	if v != nil {
+		_u.SetOidcSub(*v)
+	}
+	return _u
+}
+
+// ClearOidcSub clears the value of the "oidc_sub" field.
+func (_u *AdminUserUpdate) ClearOidcSub() *AdminUserUpdate {
+	_u.mutation.ClearOidcSub()
+	return _u
+}
+
+// SetAuthMethod sets the "auth_method" field.
+func (_u *AdminUserUpdate) SetAuthMethod(v string) *AdminUserUpdate {
+	_u.mutation.SetAuthMethod(v)
+	return _u
+}
+
+// SetNillableAuthMethod sets the "auth_method" field if the given value is not nil.
+func (_u *AdminUserUpdate) SetNillableAuthMethod(v *string) *AdminUserUpdate {
+	if v != nil {
+		_u.SetAuthMethod(*v)
+	}
+	return _u
+}
+
+// ClearAuthMethod clears the value of the "auth_method" field.
+func (_u *AdminUserUpdate) ClearAuthMethod() *AdminUserUpdate {
+	_u.mutation.ClearAuthMethod()
+	return _u
+}
+
 // Mutation returns the AdminUserMutation object of the builder.
 func (_u *AdminUserUpdate) Mutation() *AdminUserMutation {
 	return _u.mutation
@@ -127,6 +167,18 @@ func (_u *AdminUserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.EmailCleared() {
 		_spec.ClearField(adminuser.FieldEmail, field.TypeString)
+	}
+	if value, ok := _u.mutation.OidcSub(); ok {
+		_spec.SetField(adminuser.FieldOidcSub, field.TypeString, value)
+	}
+	if _u.mutation.OidcSubCleared() {
+		_spec.ClearField(adminuser.FieldOidcSub, field.TypeString)
+	}
+	if value, ok := _u.mutation.AuthMethod(); ok {
+		_spec.SetField(adminuser.FieldAuthMethod, field.TypeString, value)
+	}
+	if _u.mutation.AuthMethodCleared() {
+		_spec.ClearField(adminuser.FieldAuthMethod, field.TypeString)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -193,6 +245,46 @@ func (_u *AdminUserUpdateOne) SetNillableEmail(v *string) *AdminUserUpdateOne {
 // ClearEmail clears the value of the "email" field.
 func (_u *AdminUserUpdateOne) ClearEmail() *AdminUserUpdateOne {
 	_u.mutation.ClearEmail()
+	return _u
+}
+
+// SetOidcSub sets the "oidc_sub" field.
+func (_u *AdminUserUpdateOne) SetOidcSub(v string) *AdminUserUpdateOne {
+	_u.mutation.SetOidcSub(v)
+	return _u
+}
+
+// SetNillableOidcSub sets the "oidc_sub" field if the given value is not nil.
+func (_u *AdminUserUpdateOne) SetNillableOidcSub(v *string) *AdminUserUpdateOne {
+	if v != nil {
+		_u.SetOidcSub(*v)
+	}
+	return _u
+}
+
+// ClearOidcSub clears the value of the "oidc_sub" field.
+func (_u *AdminUserUpdateOne) ClearOidcSub() *AdminUserUpdateOne {
+	_u.mutation.ClearOidcSub()
+	return _u
+}
+
+// SetAuthMethod sets the "auth_method" field.
+func (_u *AdminUserUpdateOne) SetAuthMethod(v string) *AdminUserUpdateOne {
+	_u.mutation.SetAuthMethod(v)
+	return _u
+}
+
+// SetNillableAuthMethod sets the "auth_method" field if the given value is not nil.
+func (_u *AdminUserUpdateOne) SetNillableAuthMethod(v *string) *AdminUserUpdateOne {
+	if v != nil {
+		_u.SetAuthMethod(*v)
+	}
+	return _u
+}
+
+// ClearAuthMethod clears the value of the "auth_method" field.
+func (_u *AdminUserUpdateOne) ClearAuthMethod() *AdminUserUpdateOne {
+	_u.mutation.ClearAuthMethod()
 	return _u
 }
 
@@ -278,6 +370,18 @@ func (_u *AdminUserUpdateOne) sqlSave(ctx context.Context) (_node *AdminUser, er
 	}
 	if _u.mutation.EmailCleared() {
 		_spec.ClearField(adminuser.FieldEmail, field.TypeString)
+	}
+	if value, ok := _u.mutation.OidcSub(); ok {
+		_spec.SetField(adminuser.FieldOidcSub, field.TypeString, value)
+	}
+	if _u.mutation.OidcSubCleared() {
+		_spec.ClearField(adminuser.FieldOidcSub, field.TypeString)
+	}
+	if value, ok := _u.mutation.AuthMethod(); ok {
+		_spec.SetField(adminuser.FieldAuthMethod, field.TypeString, value)
+	}
+	if _u.mutation.AuthMethodCleared() {
+		_spec.ClearField(adminuser.FieldAuthMethod, field.TypeString)
 	}
 	_node = &AdminUser{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +11,7 @@ import (
 	"heat/db"
 	"heat/middleware"
 	"heat/models"
+	"heat/wled"
 )
 
 // @Summary Get AI settings
@@ -347,4 +349,103 @@ func (h *Handler) DeleteOneOffRace(c *gin.Context) {
 	h.S.DB.Exec("DELETE FROM race_results WHERE race_id = ?", id)
 	h.S.DB.Exec("DELETE FROM race_history WHERE id = ? AND race_type = 'oneoff'", id)
 	c.Status(http.StatusOK)
+}
+
+// @Summary Get WLED settings
+// @Description Get the WLED light sync settings
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} models.WLEDSettings
+// @Security cookieAuth
+// @Router /api/wled-settings [get]
+func (h *Handler) GetWLEDSettings(c *gin.Context) {
+	s, err := wled.LoadSettings(h.S)
+	if err != nil {
+		s = models.WLEDSettings{ID: 1, Presets: map[string]int{}}
+	}
+	if s.Presets == nil {
+		s.Presets = map[string]int{}
+	}
+	c.JSON(http.StatusOK, s)
+}
+
+// @Summary Save WLED settings
+// @Description Save the WLED light sync settings
+// @Tags Settings
+// @Accept json
+// @Produce json
+// @Param settings body models.WLEDSettings true "WLED settings"
+// @Success 200 {object} models.WLEDSettings
+// @Security cookieAuth
+// @Router /api/wled-settings [post]
+func (h *Handler) SaveWLEDSettings(c *gin.Context) {
+	var s models.WLEDSettings
+	if err := c.ShouldBindJSON(&s); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	presets, _ := json.Marshal(s.Presets)
+	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO wled_settings (id, url, enabled, presets) VALUES (1, ?, ?, ?)`,
+		s.URL, db.BoolToInt(s.Enabled), string(presets))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	h.S.Log.Infof("wled", "WLED settings saved: url=%q enabled=%v", s.URL, s.Enabled)
+	c.JSON(http.StatusOK, s)
+}
+
+// @Summary Test WLED connection
+// @Description Send a test color to the configured WLED device
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/wled-settings/test [post]
+func (h *Handler) TestWLED(c *gin.Context) {
+	s, err := wled.LoadSettings(h.S)
+	if err != nil || s.URL == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "WLED URL not configured"})
+		return
+	}
+	if err := wled.New(h.S).SendTest(s.URL); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// @Summary Get WLED status
+// @Description Get whether WLED sync is enabled and armed
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} map[string]bool
+// @Security cookieAuth
+// @Router /api/wled/status [get]
+func (h *Handler) GetWLEDStatus(c *gin.Context) {
+	s, err := wled.LoadSettings(h.S)
+	enabled := err == nil && s.Enabled && s.URL != ""
+	c.JSON(http.StatusOK, gin.H{"enabled": enabled, "armed": h.S.WLEDArmed.Load()})
+}
+
+// @Summary Arm or disarm WLED sync
+// @Description Toggle whether flag changes are mirrored to WLED
+// @Tags Settings
+// @Accept json
+// @Produce json
+// @Param body body map[string]bool true "Armed state"
+// @Success 200 {object} map[string]bool
+// @Security cookieAuth
+// @Router /api/wled/arm [post]
+func (h *Handler) SetWLEDArmed(c *gin.Context) {
+	var body struct {
+		Armed bool `json:"armed"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	h.S.WLEDArmed.Store(body.Armed)
+	c.JSON(http.StatusOK, gin.H{"armed": body.Armed})
 }

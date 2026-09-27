@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/time/rate"
@@ -66,6 +67,8 @@ type Server struct {
 	Broadcast      chan []models.Racer
 
 	FlagBroadcast          chan models.FlagCommand
+	WLEDBroadcast          chan models.FlagCommand
+	WLEDArmed              atomic.Bool
 	GameMechanicsBroadcast chan models.GameMechanicsUpdate
 	WeatherBroadcast       chan models.WeatherCondition
 	LapReplayBroadcast     chan models.LapReplayFrame
@@ -98,6 +101,7 @@ func NewServer() *Server {
 		SessionStore:           make(map[string]SessionInfo),
 		Broadcast:              make(chan []models.Racer, wsChannelBuffer),
 		FlagBroadcast:          make(chan models.FlagCommand, wsChannelBuffer),
+		WLEDBroadcast:          make(chan models.FlagCommand, wsChannelBuffer),
 		GameMechanicsBroadcast: make(chan models.GameMechanicsUpdate, wsChannelBuffer),
 		WeatherBroadcast:       make(chan models.WeatherCondition, wsChannelBuffer),
 		LapReplayBroadcast:     make(chan models.LapReplayFrame, wsChannelBuffer),

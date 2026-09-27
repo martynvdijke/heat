@@ -21,7 +21,11 @@ type AdminUser struct {
 	// Password holds the value of the "password" field.
 	Password string `json:"password,omitempty"`
 	// Email holds the value of the "email" field.
-	Email        string `json:"email,omitempty"`
+	Email string `json:"email,omitempty"`
+	// OidcSub holds the value of the "oidc_sub" field.
+	OidcSub string `json:"oidc_sub,omitempty"`
+	// AuthMethod holds the value of the "auth_method" field.
+	AuthMethod   string `json:"auth_method,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -32,7 +36,7 @@ func (*AdminUser) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case adminuser.FieldID:
 			values[i] = new(sql.NullInt64)
-		case adminuser.FieldUsername, adminuser.FieldPassword, adminuser.FieldEmail:
+		case adminuser.FieldUsername, adminuser.FieldPassword, adminuser.FieldEmail, adminuser.FieldOidcSub, adminuser.FieldAuthMethod:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -72,6 +76,18 @@ func (_m *AdminUser) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field email", values[i])
 			} else if value.Valid {
 				_m.Email = value.String
+			}
+		case adminuser.FieldOidcSub:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field oidc_sub", values[i])
+			} else if value.Valid {
+				_m.OidcSub = value.String
+			}
+		case adminuser.FieldAuthMethod:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field auth_method", values[i])
+			} else if value.Valid {
+				_m.AuthMethod = value.String
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -117,6 +133,12 @@ func (_m *AdminUser) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("email=")
 	builder.WriteString(_m.Email)
+	builder.WriteString(", ")
+	builder.WriteString("oidc_sub=")
+	builder.WriteString(_m.OidcSub)
+	builder.WriteString(", ")
+	builder.WriteString("auth_method=")
+	builder.WriteString(_m.AuthMethod)
 	builder.WriteByte(')')
 	return builder.String()
 }

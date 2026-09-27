@@ -475,8 +475,51 @@ function sendBlackWhiteFlag(): void {
     broadcastMessage({ type: 'flag', flag: 'blackwhite', racer_id: id, racer_name: name });
 }
 
-function triggerBlueFlag(id: number, name: string): void {
-    broadcastMessage({ type: 'flag', flag: 'blue', racer_id: id, racer_name: name });
+let wledEnabled = false;
+let wledArmed = false;
+
+function renderWLEDButton(): void {
+    const btn = document.getElementById('wled-arm-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.disabled = !wledEnabled;
+    btn.classList.toggle('active-flag', wledArmed);
+    btn.innerHTML = wledArmed
+        ? '<i class="fa-solid fa-lightbulb me-2"></i>WLED Sync ON'
+        : '<i class="fa-solid fa-lightbulb me-2"></i>WLED Sync OFF';
+}
+
+function loadWLEDStatus(): void {
+    fetch('/api/wled/status')
+        .then(res => res.json())
+        .then((data: { enabled: boolean; armed: boolean }) => {
+            wledEnabled = !!data.enabled;
+            wledArmed = !!data.armed;
+            renderWLEDButton();
+        })
+        .catch(() => {});
+}
+
+function toggleWLED(): void {
+    if (!wledEnabled) {
+        showToast('Enable WLED in admin settings first', 'warning');
+        return;
+    }
+    wledArmed = !wledArmed;
+    renderWLEDButton();
+    fetch('/api/wled/arm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ armed: wledArmed })
+    })
+        .then(res => { if (!res.ok) throw new Error(); })
+        .catch(() => {
+            wledArmed = !wledArmed;
+            renderWLEDButton();
+            showToast('Failed to toggle WLED sync', 'error');
+        });
+}
+
+function triggerBlueFlag(id: number, name: string): void {    broadcastMessage({ type: 'flag', flag: 'blue', racer_id: id, racer_name: name });
 }
 
 function triggerBlackWhiteFlag(id: number, name: string): void {
@@ -831,6 +874,10 @@ document.addEventListener('click', (e: Event) => {
         toggleRedFlag(target as HTMLButtonElement);
         return;
     }
+    if (action === 'toggleWLED') {
+        toggleWLED();
+        return;
+    }
     if (action === 'playSound') {
         playSound(target.getAttribute('data-value') || 'engine');
         return;
@@ -852,4 +899,5 @@ if (commentaryFeedEl) {
 
 loadControllerData();
 connectControllerWebSocket();
+loadWLEDStatus();
 

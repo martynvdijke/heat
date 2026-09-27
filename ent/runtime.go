@@ -38,6 +38,7 @@ import (
 	"heat/ent/upgradecard"
 	"heat/ent/upload"
 	"heat/ent/weathercondition"
+	"heat/ent/wledsetting"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -72,6 +73,14 @@ func init() {
 	adminuserDescEmail := adminuserFields[3].Descriptor()
 	// adminuser.DefaultEmail holds the default value on creation for the email field.
 	adminuser.DefaultEmail = adminuserDescEmail.Default.(string)
+	// adminuserDescOidcSub is the schema descriptor for oidc_sub field.
+	adminuserDescOidcSub := adminuserFields[4].Descriptor()
+	// adminuser.DefaultOidcSub holds the default value on creation for the oidc_sub field.
+	adminuser.DefaultOidcSub = adminuserDescOidcSub.Default.(string)
+	// adminuserDescAuthMethod is the schema descriptor for auth_method field.
+	adminuserDescAuthMethod := adminuserFields[5].Descriptor()
+	// adminuser.DefaultAuthMethod holds the default value on creation for the auth_method field.
+	adminuser.DefaultAuthMethod = adminuserDescAuthMethod.Default.(string)
 	backupsettingFields := schema.BackupSetting{}.Fields()
 	_ = backupsettingFields
 	// backupsettingDescEnabled is the schema descriptor for enabled field.
@@ -522,6 +531,12 @@ func init() {
 	uploadDescCreatedAt := uploadFields[6].Descriptor()
 	// upload.DefaultCreatedAt holds the default value on creation for the created_at field.
 	upload.DefaultCreatedAt = uploadDescCreatedAt.Default.(string)
+	wledsettingFields := schema.WLEDSetting{}.Fields()
+	_ = wledsettingFields
+	// wledsettingDescEnabled is the schema descriptor for enabled field.
+	wledsettingDescEnabled := wledsettingFields[2].Descriptor()
+	// wledsetting.DefaultEnabled holds the default value on creation for the enabled field.
+	wledsetting.DefaultEnabled = wledsettingDescEnabled.Default.(int)
 	weatherconditionFields := schema.WeatherCondition{}.Fields()
 	_ = weatherconditionFields
 	// weatherconditionDescRaceID is the schema descriptor for race_id field.

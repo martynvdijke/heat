@@ -42,6 +42,7 @@ import (
 	"heat/ent/upgradecard"
 	"heat/ent/upload"
 	"heat/ent/weathercondition"
+	"heat/ent/wledsetting"
 	"sync"
 
 	"entgo.io/ent"
@@ -91,6 +92,7 @@ const (
 	TypeUmamiSetting        = "UmamiSetting"
 	TypeUpgradeCard         = "UpgradeCard"
 	TypeUpload              = "Upload"
+	TypeWLEDSetting         = "WLEDSetting"
 	TypeWeatherCondition    = "WeatherCondition"
 )
 
@@ -935,6 +937,8 @@ type AdminUserMutation struct {
 	username      *string
 	password      *string
 	email         *string
+	oidc_sub      *string
+	auth_method   *string
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*AdminUser, error)
@@ -1166,6 +1170,104 @@ func (m *AdminUserMutation) ResetEmail() {
 	delete(m.clearedFields, adminuser.FieldEmail)
 }
 
+// SetOidcSub sets the "oidc_sub" field.
+func (m *AdminUserMutation) SetOidcSub(s string) {
+	m.oidc_sub = &s
+}
+
+// OidcSub returns the value of the "oidc_sub" field in the mutation.
+func (m *AdminUserMutation) OidcSub() (r string, exists bool) {
+	v := m.oidc_sub
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOidcSub returns the old "oidc_sub" field's value of the AdminUser entity.
+// If the AdminUser object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AdminUserMutation) OldOidcSub(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOidcSub is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOidcSub requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOidcSub: %w", err)
+	}
+	return oldValue.OidcSub, nil
+}
+
+// ClearOidcSub clears the value of the "oidc_sub" field.
+func (m *AdminUserMutation) ClearOidcSub() {
+	m.oidc_sub = nil
+	m.clearedFields[adminuser.FieldOidcSub] = struct{}{}
+}
+
+// OidcSubCleared returns if the "oidc_sub" field was cleared in this mutation.
+func (m *AdminUserMutation) OidcSubCleared() bool {
+	_, ok := m.clearedFields[adminuser.FieldOidcSub]
+	return ok
+}
+
+// ResetOidcSub resets all changes to the "oidc_sub" field.
+func (m *AdminUserMutation) ResetOidcSub() {
+	m.oidc_sub = nil
+	delete(m.clearedFields, adminuser.FieldOidcSub)
+}
+
+// SetAuthMethod sets the "auth_method" field.
+func (m *AdminUserMutation) SetAuthMethod(s string) {
+	m.auth_method = &s
+}
+
+// AuthMethod returns the value of the "auth_method" field in the mutation.
+func (m *AdminUserMutation) AuthMethod() (r string, exists bool) {
+	v := m.auth_method
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAuthMethod returns the old "auth_method" field's value of the AdminUser entity.
+// If the AdminUser object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AdminUserMutation) OldAuthMethod(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAuthMethod is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAuthMethod requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAuthMethod: %w", err)
+	}
+	return oldValue.AuthMethod, nil
+}
+
+// ClearAuthMethod clears the value of the "auth_method" field.
+func (m *AdminUserMutation) ClearAuthMethod() {
+	m.auth_method = nil
+	m.clearedFields[adminuser.FieldAuthMethod] = struct{}{}
+}
+
+// AuthMethodCleared returns if the "auth_method" field was cleared in this mutation.
+func (m *AdminUserMutation) AuthMethodCleared() bool {
+	_, ok := m.clearedFields[adminuser.FieldAuthMethod]
+	return ok
+}
+
+// ResetAuthMethod resets all changes to the "auth_method" field.
+func (m *AdminUserMutation) ResetAuthMethod() {
+	m.auth_method = nil
+	delete(m.clearedFields, adminuser.FieldAuthMethod)
+}
+
 // Where appends a list predicates to the AdminUserMutation builder.
 func (m *AdminUserMutation) Where(ps ...predicate.AdminUser) {
 	m.predicates = append(m.predicates, ps...)
@@ -1200,7 +1302,7 @@ func (m *AdminUserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AdminUserMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 5)
 	if m.username != nil {
 		fields = append(fields, adminuser.FieldUsername)
 	}
@@ -1209,6 +1311,12 @@ func (m *AdminUserMutation) Fields() []string {
 	}
 	if m.email != nil {
 		fields = append(fields, adminuser.FieldEmail)
+	}
+	if m.oidc_sub != nil {
+		fields = append(fields, adminuser.FieldOidcSub)
+	}
+	if m.auth_method != nil {
+		fields = append(fields, adminuser.FieldAuthMethod)
 	}
 	return fields
 }
@@ -1224,6 +1332,10 @@ func (m *AdminUserMutation) Field(name string) (ent.Value, bool) {
 		return m.Password()
 	case adminuser.FieldEmail:
 		return m.Email()
+	case adminuser.FieldOidcSub:
+		return m.OidcSub()
+	case adminuser.FieldAuthMethod:
+		return m.AuthMethod()
 	}
 	return nil, false
 }
@@ -1239,6 +1351,10 @@ func (m *AdminUserMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldPassword(ctx)
 	case adminuser.FieldEmail:
 		return m.OldEmail(ctx)
+	case adminuser.FieldOidcSub:
+		return m.OldOidcSub(ctx)
+	case adminuser.FieldAuthMethod:
+		return m.OldAuthMethod(ctx)
 	}
 	return nil, fmt.Errorf("unknown AdminUser field %s", name)
 }
@@ -1268,6 +1384,20 @@ func (m *AdminUserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEmail(v)
+		return nil
+	case adminuser.FieldOidcSub:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOidcSub(v)
+		return nil
+	case adminuser.FieldAuthMethod:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAuthMethod(v)
 		return nil
 	}
 	return fmt.Errorf("unknown AdminUser field %s", name)
@@ -1302,6 +1432,12 @@ func (m *AdminUserMutation) ClearedFields() []string {
 	if m.FieldCleared(adminuser.FieldEmail) {
 		fields = append(fields, adminuser.FieldEmail)
 	}
+	if m.FieldCleared(adminuser.FieldOidcSub) {
+		fields = append(fields, adminuser.FieldOidcSub)
+	}
+	if m.FieldCleared(adminuser.FieldAuthMethod) {
+		fields = append(fields, adminuser.FieldAuthMethod)
+	}
 	return fields
 }
 
@@ -1319,6 +1455,12 @@ func (m *AdminUserMutation) ClearField(name string) error {
 	case adminuser.FieldEmail:
 		m.ClearEmail()
 		return nil
+	case adminuser.FieldOidcSub:
+		m.ClearOidcSub()
+		return nil
+	case adminuser.FieldAuthMethod:
+		m.ClearAuthMethod()
+		return nil
 	}
 	return fmt.Errorf("unknown AdminUser nullable field %s", name)
 }
@@ -1335,6 +1477,12 @@ func (m *AdminUserMutation) ResetField(name string) error {
 		return nil
 	case adminuser.FieldEmail:
 		m.ResetEmail()
+		return nil
+	case adminuser.FieldOidcSub:
+		m.ResetOidcSub()
+		return nil
+	case adminuser.FieldAuthMethod:
+		m.ResetAuthMethod()
 		return nil
 	}
 	return fmt.Errorf("unknown AdminUser field %s", name)
@@ -22876,6 +23024,523 @@ func (m *UploadMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *UploadMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Upload edge %s", name)
+}
+
+// WLEDSettingMutation represents an operation that mutates the WLEDSetting nodes in the graph.
+type WLEDSettingMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	url           *string
+	enabled       *int
+	addenabled    *int
+	presets       *string
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*WLEDSetting, error)
+	predicates    []predicate.WLEDSetting
+}
+
+var _ ent.Mutation = (*WLEDSettingMutation)(nil)
+
+// wledsettingOption allows management of the mutation configuration using functional options.
+type wledsettingOption func(*WLEDSettingMutation)
+
+// newWLEDSettingMutation creates new mutation for the WLEDSetting entity.
+func newWLEDSettingMutation(c config, op Op, opts ...wledsettingOption) *WLEDSettingMutation {
+	m := &WLEDSettingMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeWLEDSetting,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withWLEDSettingID sets the ID field of the mutation.
+func withWLEDSettingID(id int) wledsettingOption {
+	return func(m *WLEDSettingMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *WLEDSetting
+		)
+		m.oldValue = func(ctx context.Context) (*WLEDSetting, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().WLEDSetting.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withWLEDSetting sets the old WLEDSetting of the mutation.
+func withWLEDSetting(node *WLEDSetting) wledsettingOption {
+	return func(m *WLEDSettingMutation) {
+		m.oldValue = func(context.Context) (*WLEDSetting, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m WLEDSettingMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m WLEDSettingMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of WLEDSetting entities.
+func (m *WLEDSettingMutation) SetID(id int) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *WLEDSettingMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *WLEDSettingMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().WLEDSetting.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetURL sets the "url" field.
+func (m *WLEDSettingMutation) SetURL(s string) {
+	m.url = &s
+}
+
+// URL returns the value of the "url" field in the mutation.
+func (m *WLEDSettingMutation) URL() (r string, exists bool) {
+	v := m.url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldURL returns the old "url" field's value of the WLEDSetting entity.
+// If the WLEDSetting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WLEDSettingMutation) OldURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldURL: %w", err)
+	}
+	return oldValue.URL, nil
+}
+
+// ClearURL clears the value of the "url" field.
+func (m *WLEDSettingMutation) ClearURL() {
+	m.url = nil
+	m.clearedFields[wledsetting.FieldURL] = struct{}{}
+}
+
+// URLCleared returns if the "url" field was cleared in this mutation.
+func (m *WLEDSettingMutation) URLCleared() bool {
+	_, ok := m.clearedFields[wledsetting.FieldURL]
+	return ok
+}
+
+// ResetURL resets all changes to the "url" field.
+func (m *WLEDSettingMutation) ResetURL() {
+	m.url = nil
+	delete(m.clearedFields, wledsetting.FieldURL)
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *WLEDSettingMutation) SetEnabled(i int) {
+	m.enabled = &i
+	m.addenabled = nil
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *WLEDSettingMutation) Enabled() (r int, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the WLEDSetting entity.
+// If the WLEDSetting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WLEDSettingMutation) OldEnabled(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// AddEnabled adds i to the "enabled" field.
+func (m *WLEDSettingMutation) AddEnabled(i int) {
+	if m.addenabled != nil {
+		*m.addenabled += i
+	} else {
+		m.addenabled = &i
+	}
+}
+
+// AddedEnabled returns the value that was added to the "enabled" field in this mutation.
+func (m *WLEDSettingMutation) AddedEnabled() (r int, exists bool) {
+	v := m.addenabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *WLEDSettingMutation) ResetEnabled() {
+	m.enabled = nil
+	m.addenabled = nil
+}
+
+// SetPresets sets the "presets" field.
+func (m *WLEDSettingMutation) SetPresets(s string) {
+	m.presets = &s
+}
+
+// Presets returns the value of the "presets" field in the mutation.
+func (m *WLEDSettingMutation) Presets() (r string, exists bool) {
+	v := m.presets
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPresets returns the old "presets" field's value of the WLEDSetting entity.
+// If the WLEDSetting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WLEDSettingMutation) OldPresets(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPresets is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPresets requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPresets: %w", err)
+	}
+	return oldValue.Presets, nil
+}
+
+// ClearPresets clears the value of the "presets" field.
+func (m *WLEDSettingMutation) ClearPresets() {
+	m.presets = nil
+	m.clearedFields[wledsetting.FieldPresets] = struct{}{}
+}
+
+// PresetsCleared returns if the "presets" field was cleared in this mutation.
+func (m *WLEDSettingMutation) PresetsCleared() bool {
+	_, ok := m.clearedFields[wledsetting.FieldPresets]
+	return ok
+}
+
+// ResetPresets resets all changes to the "presets" field.
+func (m *WLEDSettingMutation) ResetPresets() {
+	m.presets = nil
+	delete(m.clearedFields, wledsetting.FieldPresets)
+}
+
+// Where appends a list predicates to the WLEDSettingMutation builder.
+func (m *WLEDSettingMutation) Where(ps ...predicate.WLEDSetting) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the WLEDSettingMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *WLEDSettingMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.WLEDSetting, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *WLEDSettingMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *WLEDSettingMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (WLEDSetting).
+func (m *WLEDSettingMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *WLEDSettingMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.url != nil {
+		fields = append(fields, wledsetting.FieldURL)
+	}
+	if m.enabled != nil {
+		fields = append(fields, wledsetting.FieldEnabled)
+	}
+	if m.presets != nil {
+		fields = append(fields, wledsetting.FieldPresets)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *WLEDSettingMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case wledsetting.FieldURL:
+		return m.URL()
+	case wledsetting.FieldEnabled:
+		return m.Enabled()
+	case wledsetting.FieldPresets:
+		return m.Presets()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *WLEDSettingMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case wledsetting.FieldURL:
+		return m.OldURL(ctx)
+	case wledsetting.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case wledsetting.FieldPresets:
+		return m.OldPresets(ctx)
+	}
+	return nil, fmt.Errorf("unknown WLEDSetting field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *WLEDSettingMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case wledsetting.FieldURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetURL(v)
+		return nil
+	case wledsetting.FieldEnabled:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case wledsetting.FieldPresets:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPresets(v)
+		return nil
+	}
+	return fmt.Errorf("unknown WLEDSetting field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *WLEDSettingMutation) AddedFields() []string {
+	var fields []string
+	if m.addenabled != nil {
+		fields = append(fields, wledsetting.FieldEnabled)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *WLEDSettingMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case wledsetting.FieldEnabled:
+		return m.AddedEnabled()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *WLEDSettingMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case wledsetting.FieldEnabled:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddEnabled(v)
+		return nil
+	}
+	return fmt.Errorf("unknown WLEDSetting numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *WLEDSettingMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(wledsetting.FieldURL) {
+		fields = append(fields, wledsetting.FieldURL)
+	}
+	if m.FieldCleared(wledsetting.FieldPresets) {
+		fields = append(fields, wledsetting.FieldPresets)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *WLEDSettingMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *WLEDSettingMutation) ClearField(name string) error {
+	switch name {
+	case wledsetting.FieldURL:
+		m.ClearURL()
+		return nil
+	case wledsetting.FieldPresets:
+		m.ClearPresets()
+		return nil
+	}
+	return fmt.Errorf("unknown WLEDSetting nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *WLEDSettingMutation) ResetField(name string) error {
+	switch name {
+	case wledsetting.FieldURL:
+		m.ResetURL()
+		return nil
+	case wledsetting.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case wledsetting.FieldPresets:
+		m.ResetPresets()
+		return nil
+	}
+	return fmt.Errorf("unknown WLEDSetting field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *WLEDSettingMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *WLEDSettingMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *WLEDSettingMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *WLEDSettingMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *WLEDSettingMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *WLEDSettingMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *WLEDSettingMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown WLEDSetting unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *WLEDSettingMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown WLEDSetting edge %s", name)
 }
 
 // WeatherConditionMutation represents an operation that mutates the WeatherCondition nodes in the graph.

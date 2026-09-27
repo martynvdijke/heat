@@ -477,6 +477,19 @@ definitions:
       url:
         type: string
     type: object
+  models.WLEDSettings:
+    properties:
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      presets:
+        additionalProperties:
+          type: integer
+        type: object
+      url:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -2292,4 +2305,110 @@ paths:
       summary: List recent uploads
       tags:
       - Upload
+  /api/wled-settings:
+    get:
+      description: Get the WLED light sync settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.WLEDSettings'
+      security:
+      - cookieAuth: []
+      summary: Get WLED settings
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: Save the WLED light sync settings
+      parameters:
+      - description: WLED settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/models.WLEDSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.WLEDSettings'
+      security:
+      - cookieAuth: []
+      summary: Save WLED settings
+      tags:
+      - Settings
+  /api/wled-settings/test:
+    post:
+      description: Send a test color to the configured WLED device
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Test WLED connection
+      tags:
+      - Settings
+  /api/wled/arm:
+    post:
+      consumes:
+      - application/json
+      description: Toggle whether flag changes are mirrored to WLED
+      parameters:
+      - description: Armed state
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: boolean
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Arm or disarm WLED sync
+      tags:
+      - Settings
+  /api/wled/status:
+    get:
+      description: Get whether WLED sync is enabled and armed
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Get WLED status
+      tags:
+      - Settings
 swagger: "2.0"

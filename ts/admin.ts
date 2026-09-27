@@ -392,8 +392,51 @@ document.getElementById('umami-form')?.addEventListener('submit', async (e: Even
     if (res.ok) showToast('Analytics settings saved!', 'success');
 });
 
-async function loadNotificationSettings(): Promise<void> {
+const WLED_PRESET_FLAGS = ['safety', 'red', 'blue', 'yellow', 'chequered', 'blackwhite', 'clear', 'startlights'];
+
+async function loadWLEDSettings(): Promise<void> {
     try {
+        const res = await fetch('/api/wled-settings');
+        const data = await res.json();
+        (document.getElementById('wled-url') as HTMLInputElement).value = data.url || '';
+        (document.getElementById('wled-enabled') as HTMLInputElement).checked = !!data.enabled;
+        const presets = data.presets || {};
+        for (const flag of WLED_PRESET_FLAGS) {
+            const el = document.getElementById(`wled-preset-${flag}`) as HTMLInputElement | null;
+            if (el) el.value = presets[flag] ? String(presets[flag]) : '';
+        }
+    } catch (e) { console.error('Failed to load WLED settings', e); }
+}
+
+document.getElementById('wled-form')?.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    const presets: Record<string, number> = {};
+    for (const flag of WLED_PRESET_FLAGS) {
+        const el = document.getElementById(`wled-preset-${flag}`) as HTMLInputElement | null;
+        const val = parseInt(el?.value || '0') || 0;
+        if (val > 0) presets[flag] = val;
+    }
+    const data = {
+        url: (document.getElementById('wled-url') as HTMLInputElement).value,
+        enabled: (document.getElementById('wled-enabled') as HTMLInputElement).checked,
+        presets
+    };
+    const res = await fetch('/api/wled-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (res.ok) showToast('WLED settings saved!', 'success');
+    else showToast('Failed to save WLED settings', 'error');
+});
+
+document.getElementById('wled-test-btn')?.addEventListener('click', async () => {
+    const res = await fetch('/api/wled-settings/test', { method: 'POST' });
+    if (res.ok) showToast('Test color sent!', 'success');
+    else showToast('WLED test failed', 'error');
+});
+
+async function loadNotificationSettings(): Promise<void> {    try {
         const res = await fetch('/api/notification-settings');
         const data = await res.json();
         (document.getElementById('gotify-url') as HTMLInputElement).value = data.gotify_url || '';
@@ -1568,6 +1611,7 @@ document.body.addEventListener('htmx:afterOnLoad', (evt: any) => {
         loadBackupList();
         loadEmailSettings();
         loadRacerEmails();
+        loadWLEDSettings();
     }
 });
 

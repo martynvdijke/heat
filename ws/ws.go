@@ -579,6 +579,7 @@ func (m *Manager) BroadcastFlags() {
 	for cmd := range m.S.FlagBroadcast {
 		m.recordFlag(cmd)
 		m.deliver("flags", "flag", cmd, nil)
+		app.TrySend(m.S, m.S.WLEDBroadcast, cmd)
 	}
 }
 

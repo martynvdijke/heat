@@ -46,6 +46,7 @@ import (
 	"heat/ent/upgradecard"
 	"heat/ent/upload"
 	"heat/ent/weathercondition"
+	"heat/ent/wledsetting"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
@@ -125,6 +126,8 @@ type Client struct {
 	UpgradeCard *UpgradeCardClient
 	// Upload is the client for interacting with the Upload builders.
 	Upload *UploadClient
+	// WLEDSetting is the client for interacting with the WLEDSetting builders.
+	WLEDSetting *WLEDSettingClient
 	// WeatherCondition is the client for interacting with the WeatherCondition builders.
 	WeatherCondition *WeatherConditionClient
 }
@@ -172,6 +175,7 @@ func (c *Client) init() {
 	c.UmamiSetting = NewUmamiSettingClient(c.config)
 	c.UpgradeCard = NewUpgradeCardClient(c.config)
 	c.Upload = NewUploadClient(c.config)
+	c.WLEDSetting = NewWLEDSettingClient(c.config)
 	c.WeatherCondition = NewWeatherConditionClient(c.config)
 }
 
@@ -299,6 +303,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		UmamiSetting:        NewUmamiSettingClient(cfg),
 		UpgradeCard:         NewUpgradeCardClient(cfg),
 		Upload:              NewUploadClient(cfg),
+		WLEDSetting:         NewWLEDSettingClient(cfg),
 		WeatherCondition:    NewWeatherConditionClient(cfg),
 	}, nil
 }
@@ -353,6 +358,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		UmamiSetting:        NewUmamiSettingClient(cfg),
 		UpgradeCard:         NewUpgradeCardClient(cfg),
 		Upload:              NewUploadClient(cfg),
+		WLEDSetting:         NewWLEDSettingClient(cfg),
 		WeatherCondition:    NewWeatherConditionClient(cfg),
 	}, nil
 }
@@ -389,7 +395,7 @@ func (c *Client) Use(hooks ...Hook) {
 		c.RaceHistory, c.RaceInfo, c.RaceRadio, c.RaceResult, c.Racer, c.RacerEmail,
 		c.RacerLegendAbility, c.RacerSector, c.RacerStats, c.RoundSnapshot,
 		c.RoundSnapshotScore, c.Season, c.Sector, c.Team, c.Track, c.TurboLog,
-		c.UmamiSetting, c.UpgradeCard, c.Upload, c.WeatherCondition,
+		c.UmamiSetting, c.UpgradeCard, c.Upload, c.WLEDSetting, c.WeatherCondition,
 	} {
 		n.Use(hooks...)
 	}
@@ -405,7 +411,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.RaceHistory, c.RaceInfo, c.RaceRadio, c.RaceResult, c.Racer, c.RacerEmail,
 		c.RacerLegendAbility, c.RacerSector, c.RacerStats, c.RoundSnapshot,
 		c.RoundSnapshotScore, c.Season, c.Sector, c.Team, c.Track, c.TurboLog,
-		c.UmamiSetting, c.UpgradeCard, c.Upload, c.WeatherCondition,
+		c.UmamiSetting, c.UpgradeCard, c.Upload, c.WLEDSetting, c.WeatherCondition,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -482,6 +488,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UpgradeCard.mutate(ctx, m)
 	case *UploadMutation:
 		return c.Upload.mutate(ctx, m)
+	case *WLEDSettingMutation:
+		return c.WLEDSetting.mutate(ctx, m)
 	case *WeatherConditionMutation:
 		return c.WeatherCondition.mutate(ctx, m)
 	default:
@@ -5011,6 +5019,139 @@ func (c *UploadClient) mutate(ctx context.Context, m *UploadMutation) (Value, er
 	}
 }
 
+// WLEDSettingClient is a client for the WLEDSetting schema.
+type WLEDSettingClient struct {
+	config
+}
+
+// NewWLEDSettingClient returns a client for the WLEDSetting from the given config.
+func NewWLEDSettingClient(c config) *WLEDSettingClient {
+	return &WLEDSettingClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `wledsetting.Hooks(f(g(h())))`.
+func (c *WLEDSettingClient) Use(hooks ...Hook) {
+	c.hooks.WLEDSetting = append(c.hooks.WLEDSetting, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `wledsetting.Intercept(f(g(h())))`.
+func (c *WLEDSettingClient) Intercept(interceptors ...Interceptor) {
+	c.inters.WLEDSetting = append(c.inters.WLEDSetting, interceptors...)
+}
+
+// Create returns a builder for creating a WLEDSetting entity.
+func (c *WLEDSettingClient) Create() *WLEDSettingCreate {
+	mutation := newWLEDSettingMutation(c.config, OpCreate)
+	return &WLEDSettingCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of WLEDSetting entities.
+func (c *WLEDSettingClient) CreateBulk(builders ...*WLEDSettingCreate) *WLEDSettingCreateBulk {
+	return &WLEDSettingCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *WLEDSettingClient) MapCreateBulk(slice any, setFunc func(*WLEDSettingCreate, int)) *WLEDSettingCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &WLEDSettingCreateBulk{err: fmt.Errorf("calling to WLEDSettingClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*WLEDSettingCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &WLEDSettingCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for WLEDSetting.
+func (c *WLEDSettingClient) Update() *WLEDSettingUpdate {
+	mutation := newWLEDSettingMutation(c.config, OpUpdate)
+	return &WLEDSettingUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *WLEDSettingClient) UpdateOne(_m *WLEDSetting) *WLEDSettingUpdateOne {
+	mutation := newWLEDSettingMutation(c.config, OpUpdateOne, withWLEDSetting(_m))
+	return &WLEDSettingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *WLEDSettingClient) UpdateOneID(id int) *WLEDSettingUpdateOne {
+	mutation := newWLEDSettingMutation(c.config, OpUpdateOne, withWLEDSettingID(id))
+	return &WLEDSettingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for WLEDSetting.
+func (c *WLEDSettingClient) Delete() *WLEDSettingDelete {
+	mutation := newWLEDSettingMutation(c.config, OpDelete)
+	return &WLEDSettingDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *WLEDSettingClient) DeleteOne(_m *WLEDSetting) *WLEDSettingDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *WLEDSettingClient) DeleteOneID(id int) *WLEDSettingDeleteOne {
+	builder := c.Delete().Where(wledsetting.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &WLEDSettingDeleteOne{builder}
+}
+
+// Query returns a query builder for WLEDSetting.
+func (c *WLEDSettingClient) Query() *WLEDSettingQuery {
+	return &WLEDSettingQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeWLEDSetting},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a WLEDSetting entity by its id.
+func (c *WLEDSettingClient) Get(ctx context.Context, id int) (*WLEDSetting, error) {
+	return c.Query().Where(wledsetting.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *WLEDSettingClient) GetX(ctx context.Context, id int) *WLEDSetting {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *WLEDSettingClient) Hooks() []Hook {
+	return c.hooks.WLEDSetting
+}
+
+// Interceptors returns the client interceptors.
+func (c *WLEDSettingClient) Interceptors() []Interceptor {
+	return c.inters.WLEDSetting
+}
+
+func (c *WLEDSettingClient) mutate(ctx context.Context, m *WLEDSettingMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&WLEDSettingCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&WLEDSettingUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&WLEDSettingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&WLEDSettingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown WLEDSetting mutation op: %q", m.Op())
+	}
+}
+
 // WeatherConditionClient is a client for the WeatherCondition schema.
 type WeatherConditionClient struct {
 	config
@@ -5152,7 +5293,8 @@ type (
 		PlayerSession, PlayerUpgrade, Quote, RaceEvent, RaceHistory, RaceInfo,
 		RaceRadio, RaceResult, Racer, RacerEmail, RacerLegendAbility, RacerSector,
 		RacerStats, RoundSnapshot, RoundSnapshotScore, Season, Sector, Team, Track,
-		TurboLog, UmamiSetting, UpgradeCard, Upload, WeatherCondition []ent.Hook
+		TurboLog, UmamiSetting, UpgradeCard, Upload, WLEDSetting,
+		WeatherCondition []ent.Hook
 	}
 	inters struct {
 		AISetting, AdminUser, BackupSetting, DriverShare, EmailSetting, GearShift,
@@ -5160,6 +5302,7 @@ type (
 		PlayerSession, PlayerUpgrade, Quote, RaceEvent, RaceHistory, RaceInfo,
 		RaceRadio, RaceResult, Racer, RacerEmail, RacerLegendAbility, RacerSector,
 		RacerStats, RoundSnapshot, RoundSnapshotScore, Season, Sector, Team, Track,
-		TurboLog, UmamiSetting, UpgradeCard, Upload, WeatherCondition []ent.Interceptor
+		TurboLog, UmamiSetting, UpgradeCard, Upload, WLEDSetting,
+		WeatherCondition []ent.Interceptor
 	}
 )

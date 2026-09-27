@@ -108,5 +108,8 @@ type UpgradeCard func(*sql.Selector)
 // Upload is the predicate function for upload builders.
 type Upload func(*sql.Selector)
 
+// WLEDSetting is the predicate function for wledsetting builders.
+type WLEDSetting func(*sql.Selector)
+
 // WeatherCondition is the predicate function for weathercondition builders.
 type WeatherCondition func(*sql.Selector)

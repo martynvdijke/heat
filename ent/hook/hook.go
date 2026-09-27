@@ -416,6 +416,18 @@ func (f UploadFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UploadMutation", m)
 }
 
+// The WLEDSettingFunc type is an adapter to allow the use of ordinary
+// function as WLEDSetting mutator.
+type WLEDSettingFunc func(context.Context, *ent.WLEDSettingMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f WLEDSettingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.WLEDSettingMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.WLEDSettingMutation", m)
+}
+
 // The WeatherConditionFunc type is an adapter to allow the use of ordinary
 // function as WeatherCondition mutator.
 type WeatherConditionFunc func(context.Context, *ent.WeatherConditionMutation) (ent.Value, error)

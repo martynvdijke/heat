@@ -32,6 +32,8 @@ var (
 		{Name: "username", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
 		{Name: "email", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "oidc_sub", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "auth_method", Type: field.TypeString, Nullable: true, Default: "password"},
 	}
 	// AdminUsersTable holds the schema information for the "admin_users" table.
 	AdminUsersTable = &schema.Table{
@@ -535,6 +537,19 @@ var (
 		Columns:    UploadsColumns,
 		PrimaryKey: []*schema.Column{UploadsColumns[0]},
 	}
+	// WledSettingsColumns holds the columns for the "wled_settings" table.
+	WledSettingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "url", Type: field.TypeString, Nullable: true},
+		{Name: "enabled", Type: field.TypeInt, Default: 0},
+		{Name: "presets", Type: field.TypeString, Nullable: true},
+	}
+	// WledSettingsTable holds the schema information for the "wled_settings" table.
+	WledSettingsTable = &schema.Table{
+		Name:       "wled_settings",
+		Columns:    WledSettingsColumns,
+		PrimaryKey: []*schema.Column{WledSettingsColumns[0]},
+	}
 	// WeatherConditionsColumns holds the columns for the "weather_conditions" table.
 	WeatherConditionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -586,6 +601,7 @@ var (
 		UmamiSettingsTable,
 		UpgradeCardsTable,
 		UploadsTable,
+		WledSettingsTable,
 		WeatherConditionsTable,
 	}
 )

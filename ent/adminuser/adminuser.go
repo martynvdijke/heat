@@ -17,6 +17,10 @@ const (
 	FieldPassword = "password"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
+	// FieldOidcSub holds the string denoting the oidc_sub field in the database.
+	FieldOidcSub = "oidc_sub"
+	// FieldAuthMethod holds the string denoting the auth_method field in the database.
+	FieldAuthMethod = "auth_method"
 	// Table holds the table name of the adminuser in the database.
 	Table = "admin_users"
 )
@@ -27,6 +31,8 @@ var Columns = []string{
 	FieldUsername,
 	FieldPassword,
 	FieldEmail,
+	FieldOidcSub,
+	FieldAuthMethod,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -42,6 +48,10 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultEmail holds the default value on creation for the "email" field.
 	DefaultEmail string
+	// DefaultOidcSub holds the default value on creation for the "oidc_sub" field.
+	DefaultOidcSub string
+	// DefaultAuthMethod holds the default value on creation for the "auth_method" field.
+	DefaultAuthMethod string
 )
 
 // OrderOption defines the ordering options for the AdminUser queries.
@@ -65,4 +75,14 @@ func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 // ByEmail orders the results by the email field.
 func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEmail, opts...).ToFunc()
+}
+
+// ByOidcSub orders the results by the oidc_sub field.
+func ByOidcSub(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOidcSub, opts...).ToFunc()
+}
+
+// ByAuthMethod orders the results by the auth_method field.
+func ByAuthMethod(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAuthMethod, opts...).ToFunc()
 }

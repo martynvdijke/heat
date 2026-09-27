@@ -45,6 +45,34 @@ func (_c *AdminUserCreate) SetNillableEmail(v *string) *AdminUserCreate {
 	return _c
 }
 
+// SetOidcSub sets the "oidc_sub" field.
+func (_c *AdminUserCreate) SetOidcSub(v string) *AdminUserCreate {
+	_c.mutation.SetOidcSub(v)
+	return _c
+}
+
+// SetNillableOidcSub sets the "oidc_sub" field if the given value is not nil.
+func (_c *AdminUserCreate) SetNillableOidcSub(v *string) *AdminUserCreate {
+	if v != nil {
+		_c.SetOidcSub(*v)
+	}
+	return _c
+}
+
+// SetAuthMethod sets the "auth_method" field.
+func (_c *AdminUserCreate) SetAuthMethod(v string) *AdminUserCreate {
+	_c.mutation.SetAuthMethod(v)
+	return _c
+}
+
+// SetNillableAuthMethod sets the "auth_method" field if the given value is not nil.
+func (_c *AdminUserCreate) SetNillableAuthMethod(v *string) *AdminUserCreate {
+	if v != nil {
+		_c.SetAuthMethod(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *AdminUserCreate) SetID(v int) *AdminUserCreate {
 	_c.mutation.SetID(v)
@@ -89,6 +117,14 @@ func (_c *AdminUserCreate) defaults() {
 	if _, ok := _c.mutation.Email(); !ok {
 		v := adminuser.DefaultEmail
 		_c.mutation.SetEmail(v)
+	}
+	if _, ok := _c.mutation.OidcSub(); !ok {
+		v := adminuser.DefaultOidcSub
+		_c.mutation.SetOidcSub(v)
+	}
+	if _, ok := _c.mutation.AuthMethod(); !ok {
+		v := adminuser.DefaultAuthMethod
+		_c.mutation.SetAuthMethod(v)
 	}
 }
 
@@ -143,6 +179,14 @@ func (_c *AdminUserCreate) createSpec() (*AdminUser, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Email(); ok {
 		_spec.SetField(adminuser.FieldEmail, field.TypeString, value)
 		_node.Email = value
+	}
+	if value, ok := _c.mutation.OidcSub(); ok {
+		_spec.SetField(adminuser.FieldOidcSub, field.TypeString, value)
+		_node.OidcSub = value
+	}
+	if value, ok := _c.mutation.AuthMethod(); ok {
+		_spec.SetField(adminuser.FieldAuthMethod, field.TypeString, value)
+		_node.AuthMethod = value
 	}
 	return _node, _spec
 }
