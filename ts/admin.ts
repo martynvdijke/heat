@@ -436,6 +436,56 @@ document.getElementById('wled-test-btn')?.addEventListener('click', async () => 
     else showToast('WLED test failed', 'error');
 });
 
+async function loadTelegramSettings(): Promise<void> {
+    try {
+        const res = await fetch('/api/telegram-settings');
+        const data = await res.json();
+        const tokenEl = document.getElementById('telegram-token') as HTMLInputElement | null;
+        if (tokenEl) {
+            tokenEl.value = '';
+            tokenEl.placeholder = data.has_bot_token ? '•••••••• (saved) — leave blank to keep' : '123456:ABC-DEF...';
+        }
+        (document.getElementById('telegram-chat-id') as HTMLInputElement).value = data.default_chat_id || '';
+        (document.getElementById('telegram-enabled') as HTMLInputElement).checked = !!data.enabled;
+        (document.getElementById('telegram-notify-results') as HTMLInputElement).checked = !!data.notify_results;
+        (document.getElementById('telegram-notify-next') as HTMLInputElement).checked = !!data.notify_next_race;
+        (document.getElementById('telegram-reminder-days') as HTMLInputElement).value = data.reminder_days || '7,1';
+        (document.getElementById('telegram-reminder-hour') as HTMLInputElement).value = String(data.reminder_hour ?? 18);
+        const subsEl = document.getElementById('telegram-subscribers');
+        if (subsEl) subsEl.textContent = String(data.subscribers || 0);
+    } catch (e) { console.error('Failed to load Telegram settings', e); }
+}
+
+document.getElementById('telegram-form')?.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    const data = {
+        bot_token: (document.getElementById('telegram-token') as HTMLInputElement).value,
+        default_chat_id: (document.getElementById('telegram-chat-id') as HTMLInputElement).value,
+        enabled: (document.getElementById('telegram-enabled') as HTMLInputElement).checked,
+        notify_results: (document.getElementById('telegram-notify-results') as HTMLInputElement).checked,
+        notify_next_race: (document.getElementById('telegram-notify-next') as HTMLInputElement).checked,
+        reminder_days: (document.getElementById('telegram-reminder-days') as HTMLInputElement).value,
+        reminder_hour: parseInt((document.getElementById('telegram-reminder-hour') as HTMLInputElement).value || '18', 10) || 0
+    };
+    const res = await fetch('/api/telegram-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (res.ok) showToast('Telegram settings saved!', 'success');
+    else showToast('Failed to save Telegram settings', 'error');
+});
+
+document.getElementById('telegram-test-btn')?.addEventListener('click', async () => {
+    const res = await fetch('/api/telegram-settings/test', { method: 'POST' });
+    if (res.ok) {
+        showToast('Test message sent!', 'success');
+    } else {
+        const err = await res.json().catch(() => ({ error: 'Telegram test failed' }));
+        showToast('Telegram test failed: ' + (err.error || ''), 'error');
+    }
+});
+
 async function loadNotificationSettings(): Promise<void> {    try {
         const res = await fetch('/api/notification-settings');
         const data = await res.json();
@@ -1612,6 +1662,7 @@ document.body.addEventListener('htmx:afterOnLoad', (evt: any) => {
         loadEmailSettings();
         loadRacerEmails();
         loadWLEDSettings();
+        loadTelegramSettings();
     }
 });
 

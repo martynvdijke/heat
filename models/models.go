@@ -164,6 +164,39 @@ type WLEDSettings struct {
 	Presets map[string]int `json:"presets"`
 }
 
+// TelegramSettings holds the single-row configuration for the Telegram bot.
+// The bot token is a secret and is never returned by the settings API.
+type TelegramSettings struct {
+	ID             int    `json:"id"`
+	BotToken       string `json:"bot_token"`
+	Enabled        bool   `json:"enabled"`
+	DefaultChatID  string `json:"default_chat_id"`
+	NotifyResults  bool   `json:"notify_results"`
+	NotifyNextRace bool   `json:"notify_next_race"`
+	ReminderDays   string `json:"reminder_days"`
+	ReminderHour   int    `json:"reminder_hour"`
+	Subscribers    int    `json:"subscribers,omitempty"`
+}
+
+// TelegramSubscriber is a chat that opted in to race pushes and reminders via
+// the bot's /subscribe command.
+type TelegramSubscriber struct {
+	ChatID     string `json:"chat_id"`
+	Username   string `json:"username"`
+	FirstName  string `json:"first_name"`
+	Subscribed bool   `json:"subscribed"`
+}
+
+// TelegramEvent is the message passed over Server.TelegramBroadcast to ask the
+// bot to push something to its chats. Kind is one of "race_saved",
+// "round_final" or "test".
+type TelegramEvent struct {
+	Kind   string `json:"kind"`
+	RaceID int    `json:"race_id,omitempty"`
+	ChatID string `json:"chat_id,omitempty"`
+	Text   string `json:"text,omitempty"`
+}
+
 type EmailSettings struct {
 	ID       int    `json:"id"`
 	SMTPHost string `json:"smtp_host"`

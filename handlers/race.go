@@ -184,6 +184,9 @@ func (h *Handler) SaveRaceToHistory(c *gin.Context) {
 		}
 	}
 
+	// Push the saved race to Telegram subscribers (non-blocking).
+	h.enqueueTelegram(models.TelegramEvent{Kind: "race_saved", RaceID: int(raceID)})
+
 	// Invalidate stats cache after race results change
 	h.S.StatsCache.InvalidatePrefix("stats:")
 

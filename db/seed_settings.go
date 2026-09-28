@@ -28,6 +28,10 @@ func SeedWLEDSettings() {
 	srv.DB.Exec("INSERT OR IGNORE INTO wled_settings (id, enabled) VALUES (1, 0)")
 }
 
+func SeedTelegramSettings() {
+	srv.DB.Exec("INSERT OR IGNORE INTO telegram_settings (id, enabled, notify_results, notify_next_race, reminder_days, reminder_hour) VALUES (1, 0, 1, 1, '7,1', 18)")
+}
+
 func SeedLogSettings() {
 	srv.DB.Exec("INSERT OR IGNORE INTO log_settings (id, module, level) VALUES (1, 'default', 'WARN')")
 }

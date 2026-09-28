@@ -388,6 +388,27 @@ definitions:
       status:
         type: string
     type: object
+  models.TelegramSettings:
+    properties:
+      bot_token:
+        type: string
+      default_chat_id:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      notify_next_race:
+        type: boolean
+      notify_results:
+        type: boolean
+      reminder_days:
+        type: string
+      reminder_hour:
+        type: integer
+      subscribers:
+        type: integer
+    type: object
   models.Track:
     properties:
       country:
@@ -2153,6 +2174,72 @@ paths:
       summary: Get racer streaks
       tags:
       - Stats
+  /api/telegram-settings:
+    get:
+      description: Get the Telegram bot settings. The bot token is never returned;
+        has_bot_token reports whether one is stored.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Get Telegram settings
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: Save the Telegram bot settings. An empty bot_token keeps the stored
+        one.
+      parameters:
+      - description: Telegram settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/models.TelegramSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Save Telegram settings
+      tags:
+      - Settings
+  /api/telegram-settings/test:
+    post:
+      description: Send a test message to the configured default chat
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Test Telegram bot
+      tags:
+      - Settings
   /api/test-notification:
     post:
       description: Send a test notification via Gotify

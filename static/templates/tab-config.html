@@ -19,6 +19,9 @@
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#wled-pane" type="button" role="tab"><i class="fa-solid fa-lightbulb me-1"></i>WLED</button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#telegram-pane" type="button" role="tab"><i class="fa-brands fa-telegram me-1"></i>Telegram</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-pane" type="button" role="tab"><i class="fa-solid fa-database me-1"></i>Backup</button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -296,6 +299,76 @@
                                     <div class="card-body">
                                         <p class="small text-muted mb-2">Mirrors race-control flags to a WLED device over its JSON API.</p>
                                         <p class="small text-muted mb-0">Arm sync from the controller page to start mirroring lights.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="telegram-pane">
+                        <form id="telegram-form">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="card">
+                                        <div class="card-header"><i class="fa-brands fa-telegram me-2 text-info"></i>Telegram Bot</div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">Bot Token</label>
+                                                <input type="password" class="form-control" id="telegram-token" placeholder="123456:ABC-DEF...">
+                                                <div class="form-text">From @BotFather. Stored server-side; leave blank to keep the existing token.</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">Default Chat ID</label>
+                                                <input type="text" class="form-control" id="telegram-chat-id" placeholder="-1001234567890">
+                                                <div class="form-text">Pushes and the test message are sent here. Friends can <code>/subscribe</code> for themselves.</div>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="telegram-enabled">
+                                                <label class="form-check-label small fw-bold" for="telegram-enabled">Enable Telegram Bot</label>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100 mb-2">Save Telegram Settings</button>
+                                            <button type="button" class="btn btn-outline-secondary w-100" id="telegram-test-btn">Send Test Message</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="card">
+                                        <div class="card-header"><i class="fa-solid fa-sliders me-2 text-info"></i>Triggers &amp; Reminders</div>
+                                        <div class="card-body">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="telegram-notify-results">
+                                                <label class="form-check-label" for="telegram-notify-results">
+                                                    <i class="fa-solid fa-flag-checkered me-1 text-success"></i> Push results when a race is saved
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="telegram-notify-next">
+                                                <label class="form-check-label" for="telegram-notify-next">
+                                                    <i class="fa-solid fa-clock me-1 text-warning"></i> Send upcoming-race reminders
+                                                </label>
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-8">
+                                                    <label class="form-label small fw-bold">Reminder days before</label>
+                                                    <input type="text" class="form-control" id="telegram-reminder-days" placeholder="7,1,0">
+                                                    <div class="form-text">Comma-separated. 0 = race day.</div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <label class="form-label small fw-bold">At hour</label>
+                                                    <input type="number" min="0" max="23" class="form-control" id="telegram-reminder-hour">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header"><i class="fa-solid fa-info-circle me-2 text-info"></i>About the Telegram Bot</div>
+                                    <div class="card-body">
+                                        <p class="small text-muted mb-2">Friends can message the bot: <code>/results</code>, <code>/standings</code>, <code>/next</code>, <code>/history</code>, <code>/stats</code>, <code>/quote</code>. They can run <code>/subscribe</code> to receive results and reminders.</p>
+                                        <p class="small text-muted mb-0">The bot runs in a background thread and never blocks race operations. Active subscribers: <span id="telegram-subscribers" class="badge bg-info">0</span></p>
                                     </div>
                                 </div>
                             </div>

@@ -59,6 +59,7 @@ import (
 	"heat/middleware"
 	"heat/pkg/logger"
 	"heat/racing"
+	"heat/telegram"
 	"heat/wled"
 	"heat/ws"
 )
@@ -283,6 +284,7 @@ func main() {
 	go wsManager.BroadcastRaceState()
 	go wsManager.BroadcastStandings()
 	go wled.New(server).Run()
+	go telegram.New(server).Run()
 	go func() {
 		for {
 			time.Sleep(15 * time.Minute)
@@ -391,6 +393,9 @@ func main() {
 		admin.POST("/wled-settings/test", h.TestWLED)
 		admin.GET("/wled/status", h.GetWLEDStatus)
 		admin.POST("/wled/arm", h.SetWLEDArmed)
+		admin.GET("/telegram-settings", h.GetTelegramSettings)
+		admin.POST("/telegram-settings", h.SaveTelegramSettings)
+		admin.POST("/telegram-settings/test", h.TestTelegram)
 		admin.POST("/quotes", h.HandleQuotes)
 		admin.PUT("/quotes", h.HandleQuotes)
 		admin.DELETE("/quotes", h.HandleQuotes)
@@ -555,6 +560,7 @@ func main() {
 	r.GET("/api/seasons", h.GetSeasons)
 	r.GET("/api/trmnl/summary", h.GetTRMNLSummary)
 	r.GET("/api/trmnl/next-race", h.GetTRMNLNextRace)
+	r.GET("/api/telegram/summary", h.GetTelegramSummary)
 
 	// Game Mechanics routes
 	r.GET("/api/heat-cards", h.GetHeatCards)

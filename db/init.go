@@ -163,6 +163,26 @@ func Init(s *app.Server) {
 		extension_id INTEGER PRIMARY KEY
 	)`)
 
+	// Telegram bot: single-row settings plus the self-serve subscriber list
+	// populated by the bot's /subscribe command.
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS telegram_settings (
+		id INTEGER PRIMARY KEY,
+		bot_token TEXT NOT NULL DEFAULT '',
+		enabled INTEGER NOT NULL DEFAULT 0,
+		default_chat_id TEXT NOT NULL DEFAULT '',
+		notify_results INTEGER NOT NULL DEFAULT 1,
+		notify_next_race INTEGER NOT NULL DEFAULT 1,
+		reminder_days TEXT NOT NULL DEFAULT '7,1',
+		reminder_hour INTEGER NOT NULL DEFAULT 18
+	)`)
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS telegram_subscribers (
+		chat_id TEXT PRIMARY KEY,
+		username TEXT NOT NULL DEFAULT '',
+		first_name TEXT NOT NULL DEFAULT '',
+		subscribed INTEGER NOT NULL DEFAULT 1,
+		created_at TEXT NOT NULL DEFAULT (datetime('now'))
+	)`)
+
 	// Performance indexes for common query patterns
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_id ON race_results(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_race_id ON race_results(race_id)")
@@ -212,4 +232,5 @@ func Init(s *app.Server) {
 	SeedLogSettings()
 	SeedOTelSettings()
 	SeedWLEDSettings()
+	SeedTelegramSettings()
 }

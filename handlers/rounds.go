@@ -549,6 +549,9 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 	// Send email notifications asynchronously
 	go h.SendRoundEmail(raceName, raceDate, emailScores)
 
+	// Push the finalized results to Telegram subscribers (non-blocking).
+	h.enqueueTelegram(models.TelegramEvent{Kind: "round_final"})
+
 	c.JSON(http.StatusOK, gin.H{"status": "finalized"})
 }
 

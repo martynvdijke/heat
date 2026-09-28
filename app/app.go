@@ -77,6 +77,7 @@ type Server struct {
 	CommentaryBroadcast    chan models.Commentary
 	RaceStateBroadcast     chan models.RaceState
 	StandingsBroadcast     chan []models.Standing
+	TelegramBroadcast      chan models.TelegramEvent
 
 	BasePath       string
 	DBPath         string
@@ -110,6 +111,7 @@ func NewServer() *Server {
 		CommentaryBroadcast:    make(chan models.Commentary, wsChannelBuffer),
 		RaceStateBroadcast:     make(chan models.RaceState, wsChannelBuffer),
 		StandingsBroadcast:     make(chan []models.Standing, wsChannelBuffer),
+		TelegramBroadcast:      make(chan models.TelegramEvent, wsChannelBuffer),
 		LoginLimiter:           rate.NewLimiter(rate.Limit(5), 10),
 		LoginLimiters:          make(map[string]*rate.Limiter),
 		CurrentVersion:         "1.61.0",

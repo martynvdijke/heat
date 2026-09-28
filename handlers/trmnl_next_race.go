@@ -27,33 +27,10 @@ type trmnlNextRace struct {
 // standings. When no upcoming race is configured it still responds 200 with
 // next_race: null so the display can show a "not scheduled" state.
 func (h *Handler) GetTRMNLNextRace(c *gin.Context) {
-	// Next race: the most recent race_info row's configured event.
-	var nextRace *trmnlNextRace
-	var country, track, trackID, nextRaceDate string
-	var laps int
-	err := h.S.DB.QueryRow(`
-		SELECT COALESCE(country, ''), COALESCE(track, ''), COALESCE(track_id, ''),
-			COALESCE(laps, 0), COALESCE(next_race_date, '')
-		FROM race_info
-		ORDER BY id DESC
-		LIMIT 1`).Scan(&country, &track, &trackID, &laps, &nextRaceDate)
-	switch {
-	case err == sql.ErrNoRows:
-		// No race_info row: next_race stays null.
-	case err != nil:
+	nextRace, err := h.trmnlNextRace()
+	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	default:
-		if nextRaceDate != "" {
-			nextRace = &trmnlNextRace{
-				RaceDate:      nextRaceDate,
-				Track:         track,
-				Country:       country,
-				TrackID:       trackID,
-				TotalLaps:     laps,
-				DaysRemaining: trmnlDaysRemaining(nextRaceDate),
-			}
-		}
 	}
 
 	latestRace := h.trmnlLatestRace(c, 3)
@@ -70,6 +47,36 @@ func (h *Handler) GetTRMNLNextRace(c *gin.Context) {
 		"standings":   standings,
 		"season":      season,
 	})
+}
+
+// trmnlNextRace loads the configured upcoming race from the most recent
+// race_info row. It returns (nil, nil) when no race is scheduled.
+func (h *Handler) trmnlNextRace() (*trmnlNextRace, error) {
+	var country, track, trackID, nextRaceDate string
+	var laps int
+	err := h.S.DB.QueryRow(`
+		SELECT COALESCE(country, ''), COALESCE(track, ''), COALESCE(track_id, ''),
+			COALESCE(laps, 0), COALESCE(next_race_date, '')
+		FROM race_info
+		ORDER BY id DESC
+		LIMIT 1`).Scan(&country, &track, &trackID, &laps, &nextRaceDate)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, nil
+	case err != nil:
+		return nil, err
+	}
+	if nextRaceDate == "" {
+		return nil, nil
+	}
+	return &trmnlNextRace{
+		RaceDate:      nextRaceDate,
+		Track:         track,
+		Country:       country,
+		TrackID:       trackID,
+		TotalLaps:     laps,
+		DaysRemaining: trmnlDaysRemaining(nextRaceDate),
+	}, nil
 }
 
 // trmnlDaysRemaining computes the number of whole days until a YYYY-MM-DD
