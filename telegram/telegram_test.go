@@ -123,8 +123,8 @@ func TestExecuteResultsUsesPublicAPI(t *testing.T) {
 	}))
 	defer api.Close()
 
-	b := &Bot{s: testServer(t), http: api.Client(), baseURL: api.URL, apiBase: "https://api.telegram.org", sentReminders: map[string]time.Time{}}
-	out := b.execute("/results", &tgMessage{Chat: &tgChat{ID: 1}})
+	b := &Bot{s: testServer(t), http: api.Client(), baseURL: api.URL, sentReminders: map[string]time.Time{}}
+	out := b.execute("/results", 1, "", "")
 	if gotPath != "/api/telegram/summary" {
 		t.Errorf("public API path = %q, want /api/telegram/summary", gotPath)
 	}
@@ -136,15 +136,14 @@ func TestExecuteResultsUsesPublicAPI(t *testing.T) {
 func TestSubscribeUnsubscribe(t *testing.T) {
 	s := testServer(t)
 	b := &Bot{s: s, sentReminders: map[string]time.Time{}}
-	m := &tgMessage{Chat: &tgChat{ID: -42}, From: &tgUser{Username: "dave", FirstName: "Dave"}}
 
-	if out := b.execute("/subscribe", m); !strings.Contains(out, "Subscribed") {
+	if out := b.execute("/subscribe", -42, "dave", "Dave"); !strings.Contains(out, "Subscribed") {
 		t.Fatalf("subscribe reply: %q", out)
 	}
 	if ids := b.subscriberChatIDs(); len(ids) != 1 || ids[0] != "-42" {
 		t.Fatalf("subscriberChatIDs = %v", ids)
 	}
-	if out := b.execute("/unsubscribe", m); !strings.Contains(out, "Unsubscribed") {
+	if out := b.execute("/unsubscribe", -42, "dave", "Dave"); !strings.Contains(out, "Unsubscribed") {
 		t.Fatalf("unsubscribe reply: %q", out)
 	}
 	if ids := b.subscriberChatIDs(); len(ids) != 0 {
@@ -156,11 +155,15 @@ func TestSendTest(t *testing.T) {
 	var path string
 	tg := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path = r.URL.Path
-		_, _ = w.Write([]byte(`{"ok":true}`))
+		if strings.HasSuffix(r.URL.Path, "/getMe") {
+			_, _ = w.Write([]byte(`{"ok":true,"result":{"id":1,"is_bot":true,"first_name":"Test"}}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"ok":true,"result":{"message_id":1,"date":0,"chat":{"id":1,"type":"private"}}}`))
 	}))
 	defer tg.Close()
 
-	b := &Bot{http: tg.Client(), apiBase: tg.URL, sentReminders: map[string]time.Time{}}
+	b := &Bot{http: tg.Client(), apiServerURL: tg.URL, sentReminders: map[string]time.Time{}}
 	if err := b.SendTest("token", "123", "hi"); err != nil {
 		t.Fatalf("SendTest: %v", err)
 	}

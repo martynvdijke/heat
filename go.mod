@@ -9,6 +9,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/gin-contrib/gzip v1.2.8
 	github.com/gin-gonic/gin v1.12.0
+	github.com/go-telegram/bot v1.27.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/prometheus/client_golang v1.24.1
 	github.com/swaggo/files/v2 v2.0.2

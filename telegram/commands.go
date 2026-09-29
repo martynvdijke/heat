@@ -39,7 +39,7 @@ func rankLabel(rank int) string {
 }
 
 // execute answers a single command and returns the reply text ("" = no reply).
-func (b *Bot) execute(cmd string, m *tgMessage) string {
+func (b *Bot) execute(cmd string, chatID int64, username, firstName string) string {
 	switch cmd {
 	case "/start", "/help":
 		return helpText()
@@ -56,13 +56,13 @@ func (b *Bot) execute(cmd string, m *tgMessage) string {
 	case "/quote":
 		return b.renderQuote()
 	case "/subscribe":
-		if err := b.setSubscription(m, true); err != nil {
+		if err := b.setSubscription(chatID, username, firstName, true); err != nil {
 			b.warnf("subscribe failed: %v", err)
 			return "⚠️ Could not subscribe right now."
 		}
 		return "✅ <b>Subscribed!</b> You'll now get race results and upcoming-race reminders."
 	case "/unsubscribe":
-		if err := b.setSubscription(m, false); err != nil {
+		if err := b.setSubscription(chatID, username, firstName, false); err != nil {
 			b.warnf("unsubscribe failed: %v", err)
 			return "⚠️ Could not unsubscribe right now."
 		}

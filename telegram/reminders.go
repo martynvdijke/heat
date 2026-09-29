@@ -47,7 +47,7 @@ func (b *Bot) checkReminders() {
 	b.mu.Unlock()
 
 	b.logf("sending upcoming-race reminder for %s (T-%d)", nr.RaceDate, nr.DaysRemaining)
-	b.broadcast(st, renderNextRace(nr))
+	b.broadcast(renderNextRace(nr))
 }
 
 // reminderDueAt reports whether a reminder should fire right now: the race is

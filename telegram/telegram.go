@@ -1,16 +1,12 @@
-// Package telegram implements a self-contained Telegram bot for the HEAT
-// racing app. It long-polls the Telegram Bot API in its own goroutine,
-// answers commands by calling the app's own public HTTP API, pushes race
-// results when asked to via Server.TelegramBroadcast, and sends upcoming-race
-// reminders on a schedule.
-//
-// It deliberately has no third-party dependencies: the handful of Bot API
-// methods it needs (getUpdates, sendMessage) are called with net/http, the
-// same way package wled talks to WLED devices.
+// Package telegram implements a Telegram bot for the HEAT racing app using
+// the github.com/go-telegram/bot client library. The bot runs in its own
+// goroutine, answers commands by calling the app's own public HTTP API,
+// pushes race results when asked to via Server.TelegramBroadcast, and sends
+// upcoming-race reminders on a schedule.
 package telegram
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,27 +17,29 @@ import (
 	"sync"
 	"time"
 
+	tgbot "github.com/go-telegram/bot"
+	tgmodels "github.com/go-telegram/bot/models"
+
 	"heat/app"
 	"heat/models"
 )
 
 const (
-	tgAPIBase        = "https://api.telegram.org"
-	pollTimeoutSecs  = 25
 	idlePollInterval = 15 * time.Second
-	errorBackoff     = 5 * time.Second
+	sendTimeout      = 20 * time.Second
 )
 
 // Bot is the long-lived Telegram integration. One Bot is created at startup
 // and its Run method occupies a single goroutine.
 type Bot struct {
-	s       *app.Server
-	http    *http.Client
-	baseURL string // this app's own public API, e.g. http://127.0.0.1:6270
-	apiBase string // Telegram Bot API base
+	s            *app.Server
+	http         *http.Client
+	baseURL      string // this app's own public API, e.g. http://127.0.0.1:6270
+	apiServerURL string // optional Bot API override (tests / self-hosted)
 
 	mu            sync.Mutex
-	offset        int64
+	client        *tgbot.Bot
+	cancel        context.CancelFunc
 	token         string
 	sentReminders map[string]time.Time
 }
@@ -53,22 +51,18 @@ func New(s *app.Server) *Bot {
 		port = "6270"
 	}
 	return &Bot{
-		s: s,
-		http: &http.Client{
-			// Must exceed the getUpdates long-poll timeout.
-			Timeout: (pollTimeoutSecs + 15) * time.Second,
-		},
+		s:             s,
+		http:          &http.Client{Timeout: sendTimeout},
 		baseURL:       "http://127.0.0.1:" + port,
-		apiBase:       tgAPIBase,
 		sentReminders: make(map[string]time.Time),
 	}
 }
 
-// Run starts the poll and reminder loops and then services outbound push
-// events until the broadcast channel is closed. Intended to be launched as a
-// goroutine from main: `go telegram.New(server).Run()`.
+// Run starts the settings supervisor and reminder loop, then services
+// outbound push events until the broadcast channel is closed. Intended to be
+// launched as a goroutine from main: `go telegram.New(server).Run()`.
 func (b *Bot) Run() {
-	go b.pollLoop()
+	go b.supervise()
 	go b.reminderLoop()
 	for evt := range b.s.TelegramBroadcast {
 		b.handleEvent(evt)
@@ -108,51 +102,79 @@ func (b *Bot) warnf(format string, args ...any) {
 	}
 }
 
-// pollLoop long-polls Telegram and dispatches incoming commands. It re-reads
-// settings every cycle so that enabling/disabling or changing the token takes
-// effect without a restart.
-func (b *Bot) pollLoop() {
+// supervise keeps the running bot in sync with the stored settings: it starts
+// the client when enabled, stops it when disabled, and restarts it when the
+// token changes — all without an app restart.
+func (b *Bot) supervise() {
 	for {
 		st, err := LoadSettings(b.s)
-		if err != nil || !st.Enabled || st.BotToken == "" {
-			time.Sleep(idlePollInterval)
-			continue
+		switch {
+		case err != nil || !st.Enabled || st.BotToken == "":
+			b.stopClient()
+		case b.currentToken() != st.BotToken:
+			b.startClient(st.BotToken)
 		}
-
-		b.mu.Lock()
-		if b.token != st.BotToken {
-			b.token = st.BotToken
-			b.offset = 0 // a new token starts a new update stream
-		}
-		offset := b.offset
-		b.mu.Unlock()
-
-		updates, err := b.getUpdates(st.BotToken, offset)
-		if err != nil {
-			b.warnf("getUpdates failed: %v", err)
-			time.Sleep(errorBackoff)
-			continue
-		}
-		for _, u := range updates {
-			b.mu.Lock()
-			if u.UpdateID+1 > b.offset {
-				b.offset = u.UpdateID + 1
-			}
-			b.mu.Unlock()
-			if u.Message == nil {
-				continue
-			}
-			b.handleMessage(st, u.Message)
-		}
+		time.Sleep(idlePollInterval)
 	}
 }
 
-// handleMessage parses and answers a single incoming Telegram message.
-func (b *Bot) handleMessage(st models.TelegramSettings, m *tgMessage) {
-	if m.Chat == nil {
+func (b *Bot) currentToken() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.token
+}
+
+func (b *Bot) currentClient() *tgbot.Bot {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.client
+}
+
+func (b *Bot) startClient(token string) {
+	b.stopClient()
+	opts := []tgbot.Option{
+		tgbot.WithDefaultHandler(b.onUpdate),
+		tgbot.WithAllowedUpdates(tgbot.AllowedUpdates{tgmodels.AllowedUpdateMessage}),
+	}
+	if b.apiServerURL != "" {
+		opts = append(opts, tgbot.WithServerURL(b.apiServerURL))
+	}
+	client, err := tgbot.New(token, opts...)
+	if err != nil {
+		b.warnf("failed to start Telegram bot: %v", err)
 		return
 	}
-	text := strings.TrimSpace(m.Text)
+	ctx, cancel := context.WithCancel(context.Background())
+	b.mu.Lock()
+	b.client = client
+	b.cancel = cancel
+	b.token = token
+	b.mu.Unlock()
+	b.logf("Telegram bot started")
+	go client.Start(ctx)
+}
+
+func (b *Bot) stopClient() {
+	b.mu.Lock()
+	cancel := b.cancel
+	b.cancel = nil
+	b.client = nil
+	b.token = ""
+	b.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
+// onUpdate is the library's default update handler. It only reacts to
+// commands and replies privately to the sender.
+func (b *Bot) onUpdate(_ context.Context, _ *tgbot.Bot, update *tgmodels.Update) {
+	if update == nil || update.Message == nil {
+		return
+	}
+	msg := update.Message
+
+	text := strings.TrimSpace(msg.Text)
 	if !strings.HasPrefix(text, "/") {
 		return
 	}
@@ -165,8 +187,14 @@ func (b *Bot) handleMessage(st models.TelegramSettings, m *tgMessage) {
 	}
 	cmd = strings.ToLower(cmd)
 
-	if reply := b.execute(cmd, m); reply != "" {
-		b.sendMessage(st.BotToken, strconv.FormatInt(m.Chat.ID, 10), reply)
+	username, firstName := "", ""
+	if msg.From != nil {
+		username = msg.From.Username
+		firstName = msg.From.FirstName
+	}
+
+	if reply := b.execute(cmd, msg.Chat.ID, username, firstName); reply != "" {
+		b.send(msg.Chat.ID, reply)
 	}
 }
 
@@ -179,23 +207,43 @@ func (b *Bot) handleEvent(evt models.TelegramEvent) {
 	switch evt.Kind {
 	case "test":
 		if evt.ChatID != "" {
-			b.sendMessage(st.BotToken, evt.ChatID, evt.Text)
+			b.send(evt.ChatID, evt.Text)
 		}
 	case "race_saved":
 		if !st.NotifyResults {
 			return
 		}
-		b.broadcast(st, b.renderArchivedRace(evt.RaceID))
+		b.broadcast(b.renderArchivedRace(evt.RaceID))
 	case "round_final":
 		if !st.NotifyResults {
 			return
 		}
-		b.broadcast(st, b.renderLatestRace())
+		b.broadcast(b.renderLatestRace())
+	}
+}
+
+// send delivers one HTML message through the running client, if any.
+func (b *Bot) send(chatID any, text string) {
+	if strings.TrimSpace(text) == "" {
+		return
+	}
+	client := b.currentClient()
+	if client == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	if _, err := client.SendMessage(ctx, &tgbot.SendMessageParams{
+		ChatID:    chatID,
+		Text:      text,
+		ParseMode: tgmodels.ParseModeHTML,
+	}); err != nil {
+		b.warnf("sendMessage to %v failed: %v", chatID, err)
 	}
 }
 
 // broadcast sends text to the default chat and every subscribed chat, once each.
-func (b *Bot) broadcast(st models.TelegramSettings, text string) {
+func (b *Bot) broadcast(text string) {
 	if strings.TrimSpace(text) == "" {
 		return
 	}
@@ -209,117 +257,36 @@ func (b *Bot) broadcast(st models.TelegramSettings, text string) {
 		seen[id] = true
 		targets = append(targets, id)
 	}
-	add(st.DefaultChatID)
+	if st, err := LoadSettings(b.s); err == nil {
+		add(st.DefaultChatID)
+	}
 	for _, id := range b.subscriberChatIDs() {
 		add(id)
 	}
 	for _, chatID := range targets {
-		b.sendMessage(st.BotToken, chatID, text)
+		b.send(chatID, text)
 	}
 }
 
 // SendTest delivers a one-off message, used by the admin "send test" button.
+// It works even when the persistent client is not running.
 func (b *Bot) SendTest(token, chatID, text string) error {
-	var res tgResult
-	if err := b.call(token, "sendMessage", map[string]any{
-		"chat_id":                  chatID,
-		"text":                     text,
-		"parse_mode":               "HTML",
-		"disable_web_page_preview": true,
-	}, &res); err != nil {
-		return err
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	var opts []tgbot.Option
+	if b.apiServerURL != "" {
+		opts = append(opts, tgbot.WithServerURL(b.apiServerURL))
 	}
-	if !res.Ok {
-		return fmt.Errorf("telegram: %s", res.Description)
-	}
-	return nil
-}
-
-func (b *Bot) sendMessage(token, chatID, text string) {
-	if text == "" {
-		return
-	}
-	var res tgResult
-	err := b.call(token, "sendMessage", map[string]any{
-		"chat_id":                  chatID,
-		"text":                     text,
-		"parse_mode":               "HTML",
-		"disable_web_page_preview": true,
-	}, &res)
-	if err != nil {
-		b.warnf("sendMessage to %s failed: %v", chatID, err)
-		return
-	}
-	if !res.Ok {
-		b.warnf("sendMessage to %s rejected: %s", chatID, res.Description)
-	}
-}
-
-func (b *Bot) getUpdates(token string, offset int64) ([]tgUpdate, error) {
-	var res tgUpdates
-	err := b.call(token, "getUpdates", map[string]any{
-		"offset":          offset,
-		"timeout":         pollTimeoutSecs,
-		"allowed_updates": []string{"message"},
-	}, &res)
-	if err != nil {
-		return nil, err
-	}
-	if !res.Ok {
-		return nil, fmt.Errorf("telegram: %s", res.Description)
-	}
-	return res.Result, nil
-}
-
-// call performs a single Bot API request. It honours 429 retry_after by
-// sleeping before returning so callers can simply retry.
-func (b *Bot) call(token, method string, payload any, out any) error {
-	body, err := json.Marshal(payload)
+	client, err := tgbot.New(token, opts...)
 	if err != nil {
 		return err
 	}
-	url := b.apiBase + "/bot" + token + "/" + method
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := b.http.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode == http.StatusTooManyRequests {
-		var rl struct {
-			Parameters struct {
-				RetryAfter int `json:"retry_after"`
-			} `json:"parameters"`
-		}
-		_ = json.Unmarshal(data, &rl)
-		wait := rl.Parameters.RetryAfter
-		if wait <= 0 {
-			wait = 5
-		}
-		if wait > 60 {
-			wait = 60
-		}
-		time.Sleep(time.Duration(wait) * time.Second)
-		return fmt.Errorf("telegram: rate limited, retry after %ds", wait)
-	}
-
-	if out != nil {
-		if err := json.Unmarshal(data, out); err != nil {
-			return fmt.Errorf("telegram: decode %s response: %w", method, err)
-		}
-	}
-	return nil
+	_, err = client.SendMessage(ctx, &tgbot.SendMessageParams{
+		ChatID:    chatID,
+		Text:      text,
+		ParseMode: tgmodels.ParseModeHTML,
+	})
+	return err
 }
 
 // apiGet fetches JSON from this app's own public API.
@@ -353,13 +320,8 @@ func (b *Bot) subscriberChatIDs() []string {
 }
 
 // setSubscription opts a chat in or out of pushes/reminders.
-func (b *Bot) setSubscription(m *tgMessage, subscribed bool) error {
-	username, firstName := "", ""
-	if m.From != nil {
-		username = m.From.Username
-		firstName = m.From.FirstName
-	}
-	chatID := strconv.FormatInt(m.Chat.ID, 10)
+func (b *Bot) setSubscription(chatID int64, username, firstName string, subscribed bool) error {
+	id := strconv.FormatInt(chatID, 10)
 	_, err := b.s.DB.Exec(`
 		INSERT INTO telegram_subscribers (chat_id, username, first_name, subscribed, created_at)
 		VALUES (?, ?, ?, ?, datetime('now'))
@@ -367,7 +329,7 @@ func (b *Bot) setSubscription(m *tgMessage, subscribed bool) error {
 			username = excluded.username,
 			first_name = excluded.first_name,
 			subscribed = excluded.subscribed`,
-		chatID, username, firstName, boolToInt(subscribed))
+		id, username, firstName, boolToInt(subscribed))
 	return err
 }
 

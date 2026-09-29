@@ -1,42 +1,5 @@
 package telegram
 
-// Telegram Bot API wire types (only the fields the bot needs).
-
-type tgResult struct {
-	Ok          bool   `json:"ok"`
-	Description string `json:"description"`
-}
-
-type tgUpdates struct {
-	Ok          bool       `json:"ok"`
-	Result      []tgUpdate `json:"result"`
-	Description string     `json:"description"`
-}
-
-type tgUpdate struct {
-	UpdateID int64      `json:"update_id"`
-	Message  *tgMessage `json:"message"`
-}
-
-type tgMessage struct {
-	MessageID int64   `json:"message_id"`
-	From      *tgUser `json:"from"`
-	Chat      *tgChat `json:"chat"`
-	Text      string  `json:"text"`
-}
-
-type tgUser struct {
-	ID        int64  `json:"id"`
-	FirstName string `json:"first_name"`
-	Username  string `json:"username"`
-}
-
-type tgChat struct {
-	ID    int64  `json:"id"`
-	Type  string `json:"type"`
-	Title string `json:"title"`
-}
-
 // Types mirroring the app's public /api/telegram/summary payload.
 
 type apiRaceResult struct {
