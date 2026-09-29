@@ -1,3 +1,10 @@
+# [1.63.0](https://github.com/martynvdijke/heat/compare/v1.62.1...v1.63.0) (2026-09-29)
+
+
+### Features
+
+* show spins/overheated in Telegram results and stats, add /addquote ([060da9b](https://github.com/martynvdijke/heat/commit/060da9bb23b5881828383915d0f64aa68cf82ae7))
+
 ## [1.62.1](https://github.com/martynvdijke/heat/compare/v1.62.0...v1.62.1) (2026-09-29)
 
 
