@@ -1,3 +1,10 @@
+# [1.64.0](https://github.com/martynvdijke/heat/compare/v1.63.0...v1.64.0) (2026-09-29)
+
+
+### Features
+
+* expand Telegram bot with quotes, keyboards, and richer commands ([94f2cf5](https://github.com/martynvdijke/heat/commit/94f2cf518b54f19b052f76bb8b38c8aaf1acf3d7))
+
 # [1.63.0](https://github.com/martynvdijke/heat/compare/v1.62.1...v1.63.0) (2026-09-29)
 
 
