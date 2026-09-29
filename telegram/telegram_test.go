@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -9,14 +10,17 @@ import (
 	"testing"
 	"time"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	_ "github.com/mattn/go-sqlite3"
 
 	"heat/app"
+	"heat/ent"
 )
 
 func testServer(t *testing.T) *app.Server {
 	t.Helper()
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", ":memory:?_fk=1")
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
@@ -42,7 +46,12 @@ func testServer(t *testing.T) *app.Server {
 	if err != nil {
 		t.Fatalf("schema: %v", err)
 	}
-	return &app.Server{DB: db}
+	drv := entsql.OpenDB(dialect.SQLite, db)
+	client := ent.NewClient(ent.Driver(drv))
+	if err := client.Schema.Create(context.Background()); err != nil {
+		t.Fatalf("ent schema: %v", err)
+	}
+	return &app.Server{DB: db, Ent: client}
 }
 
 func TestLoadSettings(t *testing.T) {
@@ -113,6 +122,29 @@ func TestRenderRace(t *testing.T) {
 	}
 }
 
+func TestRenderRaceIncludesSpinsOverheated(t *testing.T) {
+	out := renderRace(&apiRace{
+		Name:    "Test GP",
+		Results: []apiRaceResult{{RacerName: "Alice", Position: 1, Points: 25, Spins: 2, Overheated: 1}},
+	})
+	if !strings.Contains(out, "2 spins") {
+		t.Errorf("expected '2 spins' in %q", out)
+	}
+	if !strings.Contains(out, "1 overheated") {
+		t.Errorf("expected '1 overheated' in %q", out)
+	}
+	out2 := renderRace(&apiRace{
+		Name:    "Test GP",
+		Results: []apiRaceResult{{RacerName: "Bob", Position: 2, Points: 18, Spins: 1}},
+	})
+	if !strings.Contains(out2, "1 spin") {
+		t.Errorf("expected '1 spin' in %q", out2)
+	}
+	if strings.Contains(out2, "1 spins") {
+		t.Errorf("should not contain '1 spins' in %q", out2)
+	}
+}
+
 func TestExecuteResultsUsesPublicAPI(t *testing.T) {
 	var gotPath string
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +156,7 @@ func TestExecuteResultsUsesPublicAPI(t *testing.T) {
 	defer api.Close()
 
 	b := &Bot{s: testServer(t), http: api.Client(), baseURL: api.URL, sentReminders: map[string]time.Time{}}
-	out := b.execute("/results", 1, "", "")
+	out := b.execute("/results", "", 1, "", "")
 	if gotPath != "/api/telegram/summary" {
 		t.Errorf("public API path = %q, want /api/telegram/summary", gotPath)
 	}
@@ -137,17 +169,53 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	s := testServer(t)
 	b := &Bot{s: s, sentReminders: map[string]time.Time{}}
 
-	if out := b.execute("/subscribe", -42, "dave", "Dave"); !strings.Contains(out, "Subscribed") {
+	if out := b.execute("/subscribe", "", -42, "dave", "Dave"); !strings.Contains(out, "Subscribed") {
 		t.Fatalf("subscribe reply: %q", out)
 	}
 	if ids := b.subscriberChatIDs(); len(ids) != 1 || ids[0] != "-42" {
 		t.Fatalf("subscriberChatIDs = %v", ids)
 	}
-	if out := b.execute("/unsubscribe", -42, "dave", "Dave"); !strings.Contains(out, "Unsubscribed") {
+	if out := b.execute("/unsubscribe", "", -42, "dave", "Dave"); !strings.Contains(out, "Unsubscribed") {
 		t.Fatalf("unsubscribe reply: %q", out)
 	}
 	if ids := b.subscriberChatIDs(); len(ids) != 0 {
 		t.Fatalf("expected no subscribers, got %v", ids)
+	}
+}
+
+func TestAddQuote(t *testing.T) {
+	s := testServer(t)
+	if _, err := s.DB.Exec(`INSERT INTO telegram_settings (id, bot_token, enabled, default_chat_id) VALUES (1, 'tok', 1, '-100')`); err != nil {
+		t.Fatalf("insert settings: %v", err)
+	}
+	b := &Bot{s: s, sentReminders: map[string]time.Time{}}
+
+	out := b.execute("/addquote", "Rain is just nature's lube | M. Webb", -100, "dave", "Dave")
+	if !strings.Contains(out, "Quote added") {
+		t.Fatalf("expected Quote added, got %q", out)
+	}
+	var count int
+	if err := s.DB.QueryRow(`SELECT COUNT(*) FROM quotes WHERE text = ? AND author = ?`, "Rain is just nature's lube", "M. Webb").Scan(&count); err != nil {
+		t.Fatalf("query quotes: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected 1 quote row, got %d", count)
+	}
+
+	out = b.execute("/addquote", "Hello | Author", -999, "dave", "Dave")
+	if !strings.Contains(out, "Only the configured admin chat") {
+		t.Fatalf("expected denial, got %q", out)
+	}
+	if err := s.DB.QueryRow(`SELECT COUNT(*) FROM quotes`).Scan(&count); err != nil {
+		t.Fatalf("query count: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected still 1 quote, got %d", count)
+	}
+
+	out = b.execute("/addquote", "   ", -100, "dave", "Dave")
+	if !strings.Contains(out, "Usage: /addquote") {
+		t.Fatalf("expected usage, got %q", out)
 	}
 }
 

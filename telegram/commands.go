@@ -38,8 +38,15 @@ func rankLabel(rank int) string {
 	}
 }
 
+func pluralize(n int, word string) string {
+	if n == 1 {
+		return word
+	}
+	return word + "s"
+}
+
 // execute answers a single command and returns the reply text ("" = no reply).
-func (b *Bot) execute(cmd string, chatID int64, username, firstName string) string {
+func (b *Bot) execute(cmd, args string, chatID int64, username, firstName string) string {
 	switch cmd {
 	case "/start", "/help":
 		return helpText()
@@ -55,6 +62,33 @@ func (b *Bot) execute(cmd string, chatID int64, username, firstName string) stri
 		return b.renderStats()
 	case "/quote":
 		return b.renderQuote()
+	case "/addquote":
+		st, err := LoadSettings(b.s)
+		if err != nil || st.DefaultChatID == "" || strconv.FormatInt(chatID, 10) != st.DefaultChatID {
+			return "🔒 Only the configured admin chat can add quotes."
+		}
+		parts := strings.SplitN(args, "|", 2)
+		text := strings.TrimSpace(parts[0])
+		if text == "" {
+			return "✍️ Usage: /addquote <text> [| author]"
+		}
+		var author string
+		if len(parts) == 2 {
+			author = strings.TrimSpace(parts[1])
+		}
+		if author == "" {
+			author = strings.TrimSpace(firstName)
+			if author == "" && username != "" {
+				author = "@" + username
+			}
+			if author == "" {
+				author = "Telegram"
+			}
+		}
+		if err := b.CreateQuote(text, author); err != nil {
+			return "⚠️ Could not save the quote right now."
+		}
+		return fmt.Sprintf("✅ <b>Quote added</b>\n\n💬 <i>%s</i>\n— %s", escapeHTML(text), escapeHTML(author))
 	case "/subscribe":
 		if err := b.setSubscription(chatID, username, firstName, true); err != nil {
 			b.warnf("subscribe failed: %v", err)
@@ -85,6 +119,7 @@ func helpText() string {
 		"/history — recent races",
 		"/stats — career points leaders",
 		"/quote — a paddock quote",
+		"/addquote <text> [| author] — add a paddock quote (admin chat only)",
 		"/subscribe — get results &amp; race reminders pushed to you",
 		"/unsubscribe — stop pushes",
 		"",
@@ -133,6 +168,12 @@ func renderRace(r *apiRace) string {
 		}
 		if res.Points > 0 {
 			line += fmt.Sprintf(" — %d pts", res.Points)
+		}
+		if res.Spins > 0 {
+			line += fmt.Sprintf(" · %d %s", res.Spins, pluralize(res.Spins, "spin"))
+		}
+		if res.Overheated > 0 {
+			line += fmt.Sprintf(" · %d overheated", res.Overheated)
 		}
 		sb.WriteString(line + "\n")
 	}
@@ -279,6 +320,12 @@ func (b *Bot) renderStats() string {
 		line := fmt.Sprintf("%s <b>%s</b> — %d pts", rankLabel(rank), escapeHTML(name), s.Points)
 		if s.Wins > 0 {
 			line += fmt.Sprintf(" · %d wins", s.Wins)
+		}
+		if s.Spins > 0 {
+			line += fmt.Sprintf(" · %d %s", s.Spins, pluralize(s.Spins, "spin"))
+		}
+		if s.Overheated > 0 {
+			line += fmt.Sprintf(" · %d overheated", s.Overheated)
 		}
 		sb.WriteString(line + "\n")
 	}

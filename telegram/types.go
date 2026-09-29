@@ -3,10 +3,12 @@ package telegram
 // Types mirroring the app's public /api/telegram/summary payload.
 
 type apiRaceResult struct {
-	RacerName string `json:"racer_name"`
-	Team      string `json:"team"`
-	Position  int    `json:"position"`
-	Points    int    `json:"points"`
+	RacerName  string `json:"racer_name"`
+	Team       string `json:"team"`
+	Position   int    `json:"position"`
+	Points     int    `json:"points"`
+	Spins      int    `json:"spins"`
+	Overheated int    `json:"overheated"`
 }
 
 type apiRace struct {
@@ -68,11 +70,13 @@ type apiHistory struct {
 }
 
 type apiRacerStats struct {
-	RacerID int `json:"racer_id"`
-	Races   int `json:"races"`
-	Wins    int `json:"wins"`
-	Gold    int `json:"gold"`
-	Points  int `json:"points"`
+	RacerID    int `json:"racer_id"`
+	Races      int `json:"races"`
+	Wins       int `json:"wins"`
+	Gold       int `json:"gold"`
+	Points     int `json:"points"`
+	Spins      int `json:"spins"`
+	Overheated int `json:"overheated"`
 }
 
 type apiQuote struct {

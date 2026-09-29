@@ -18,6 +18,8 @@ type trmnlResult struct {
 	Position       int    `json:"position"`
 	Points         int    `json:"points"`
 	ProfilePicture string `json:"profile_picture,omitempty"`
+	Spins          int    `json:"spins"`
+	Overheated     int    `json:"overheated"`
 }
 
 // trmnlRace is the latest race section of the TRMNL summary payload.
@@ -76,7 +78,7 @@ func (h *Handler) trmnlLatestRace(c *gin.Context, limit int) *trmnlRace {
 
 	rows, err := h.S.DB.Query(`
 		SELECT rss.racer_name, COALESCE(t.name, ''), rss.position, rss.points,
-			COALESCE(r.profile_picture, '')
+			COALESCE(r.profile_picture, ''), rss.spins, rss.overheated
 		FROM round_snapshot_scores rss
 		LEFT JOIN racers r ON r.id = rss.racer_id
 		LEFT JOIN teams t ON t.id = r.team_id
@@ -89,7 +91,7 @@ func (h *Handler) trmnlLatestRace(c *gin.Context, limit int) *trmnlRace {
 	defer rows.Close()
 	for rows.Next() {
 		var r trmnlResult
-		if err := rows.Scan(&r.RacerName, &r.Team, &r.Position, &r.Points, &r.ProfilePicture); err != nil {
+		if err := rows.Scan(&r.RacerName, &r.Team, &r.Position, &r.Points, &r.ProfilePicture, &r.Spins, &r.Overheated); err != nil {
 			continue
 		}
 		r.ProfilePicture = trmnlAbsoluteURL(c, r.ProfilePicture)

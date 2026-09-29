@@ -174,18 +174,20 @@ func (b *Bot) onUpdate(_ context.Context, _ *tgbot.Bot, update *tgmodels.Update)
 	}
 	msg := update.Message
 
-	text := strings.TrimSpace(msg.Text)
-	if !strings.HasPrefix(text, "/") {
+	raw := strings.TrimSpace(msg.Text)
+	if !strings.HasPrefix(raw, "/") {
 		return
 	}
-	cmd := text
-	if i := strings.IndexByte(cmd, ' '); i >= 0 {
-		cmd = cmd[:i]
+	body := strings.TrimPrefix(raw, "/")
+	cmd, args := body, ""
+	if i := strings.IndexAny(body, " \t\n"); i >= 0 {
+		cmd = body[:i]
+		args = strings.TrimSpace(body[i+1:])
 	}
 	if i := strings.IndexByte(cmd, '@'); i >= 0 {
-		cmd = cmd[:i] // strip the @BotName suffix used in group chats
+		cmd = cmd[:i] // strip @BotName
 	}
-	cmd = strings.ToLower(cmd)
+	cmd = "/" + strings.ToLower(cmd)
 
 	username, firstName := "", ""
 	if msg.From != nil {
@@ -193,9 +195,17 @@ func (b *Bot) onUpdate(_ context.Context, _ *tgbot.Bot, update *tgmodels.Update)
 		firstName = msg.From.FirstName
 	}
 
-	if reply := b.execute(cmd, msg.Chat.ID, username, firstName); reply != "" {
+	if reply := b.execute(cmd, args, msg.Chat.ID, username, firstName); reply != "" {
 		b.send(msg.Chat.ID, reply)
 	}
+}
+
+func (b *Bot) CreateQuote(text, author string) error {
+	if b.s == nil || b.s.Ent == nil {
+		return fmt.Errorf("ent client unavailable")
+	}
+	_, err := b.s.Ent.Quote.Create().SetText(text).SetAuthor(author).Save(context.Background())
+	return err
 }
 
 // handleEvent services an outbound push request.
