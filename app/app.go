@@ -114,7 +114,7 @@ func NewServer() *Server {
 		TelegramBroadcast:      make(chan models.TelegramEvent, wsChannelBuffer),
 		LoginLimiter:           rate.NewLimiter(rate.Limit(5), 10),
 		LoginLimiters:          make(map[string]*rate.Limiter),
-		CurrentVersion:         "1.61.0",
+		CurrentVersion:         "1.62.0",
 		BasePath:               "/app",
 		DBPath:                 "/db/heat.db",
 		MediaPath:              "/app/media",

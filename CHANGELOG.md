@@ -1,3 +1,10 @@
+# [1.62.0](https://github.com/martynvdijke/heat/compare/v1.61.0...v1.62.0) (2026-09-29)
+
+
+### Features
+
+* add Telegram bot for results, pushes, and race reminders ([a93a37c](https://github.com/martynvdijke/heat/commit/a93a37c4bf4f30bb1ab324e4b2547524845006a3))
+
 # [1.61.0](https://github.com/martynvdijke/heat/compare/v1.60.7...v1.61.0) (2026-09-27)
 
 
