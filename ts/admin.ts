@@ -408,8 +408,7 @@ async function loadWLEDSettings(): Promise<void> {
     } catch (e) { console.error('Failed to load WLED settings', e); }
 }
 
-document.getElementById('wled-form')?.addEventListener('submit', async (e: Event) => {
-    e.preventDefault();
+async function saveWLEDSettings(): Promise<void> {
     const presets: Record<string, number> = {};
     for (const flag of WLED_PRESET_FLAGS) {
         const el = document.getElementById(`wled-preset-${flag}`) as HTMLInputElement | null;
@@ -428,13 +427,13 @@ document.getElementById('wled-form')?.addEventListener('submit', async (e: Event
     });
     if (res.ok) showToast('WLED settings saved!', 'success');
     else showToast('Failed to save WLED settings', 'error');
-});
+}
 
-document.getElementById('wled-test-btn')?.addEventListener('click', async () => {
+async function testWLED(): Promise<void> {
     const res = await fetch('/api/wled-settings/test', { method: 'POST' });
     if (res.ok) showToast('Test color sent!', 'success');
     else showToast('WLED test failed', 'error');
-});
+}
 
 async function loadTelegramSettings(): Promise<void> {
     try {
@@ -456,8 +455,7 @@ async function loadTelegramSettings(): Promise<void> {
     } catch (e) { console.error('Failed to load Telegram settings', e); }
 }
 
-document.getElementById('telegram-form')?.addEventListener('submit', async (e: Event) => {
-    e.preventDefault();
+async function saveTelegramSettings(): Promise<void> {
     const data = {
         bot_token: (document.getElementById('telegram-token') as HTMLInputElement).value,
         default_chat_id: (document.getElementById('telegram-chat-id') as HTMLInputElement).value,
@@ -474,9 +472,9 @@ document.getElementById('telegram-form')?.addEventListener('submit', async (e: E
     });
     if (res.ok) showToast('Telegram settings saved!', 'success');
     else showToast('Failed to save Telegram settings', 'error');
-});
+}
 
-document.getElementById('telegram-test-btn')?.addEventListener('click', async () => {
+async function testTelegram(): Promise<void> {
     const res = await fetch('/api/telegram-settings/test', { method: 'POST' });
     if (res.ok) {
         showToast('Test message sent!', 'success');
@@ -484,7 +482,7 @@ document.getElementById('telegram-test-btn')?.addEventListener('click', async ()
         const err = await res.json().catch(() => ({ error: 'Telegram test failed' }));
         showToast('Telegram test failed: ' + (err.error || ''), 'error');
     }
-});
+}
 
 async function loadNotificationSettings(): Promise<void> {    try {
         const res = await fetch('/api/notification-settings');
@@ -1638,7 +1636,21 @@ document.body.addEventListener('submit', async (e: SubmitEvent) => {
             const err = await res.json();
             showToast('Failed to save quote: ' + (err.error || 'Unknown error'), 'error');
         }
+    } else if (formId === 'wled-form') {
+        e.preventDefault();
+        await saveWLEDSettings();
+    } else if (formId === 'telegram-form') {
+        e.preventDefault();
+        await saveTelegramSettings();
     }
+});
+
+// Event delegation for action buttons loaded dynamically by HTMX.
+document.body.addEventListener('click', async (e: MouseEvent) => {
+    const btn = (e.target as HTMLElement).closest('#wled-test-btn, #telegram-test-btn') as HTMLElement | null;
+    if (!btn) return;
+    if (btn.id === 'wled-test-btn') await testWLED();
+    else if (btn.id === 'telegram-test-btn') await testTelegram();
 });
 
 // Event delegation for notification toggle checkboxes loaded dynamically
