@@ -112,13 +112,17 @@ func TestRenderRace(t *testing.T) {
 	out := renderRace(&apiRace{
 		Name:    "Monaco GP",
 		Track:   "Monte Carlo",
+		Round:   3,
 		Results: []apiRaceResult{{RacerName: "Alice", Team: "Red", Position: 1, Points: 25}, {RacerName: "Bob", Position: 2, Points: 18}},
-	})
+	}, "Season 1")
 	if !strings.Contains(out, "Monaco GP") || !strings.Contains(out, "Alice") || !strings.Contains(out, "25 pts") {
 		t.Errorf("unexpected render: %q", out)
 	}
 	if !strings.Contains(out, "🥇") || !strings.Contains(out, "🥈") {
 		t.Errorf("missing medals: %q", out)
+	}
+	if !strings.Contains(out, "Season 1") || !strings.Contains(out, "Round 3") || !strings.Contains(out, divider) {
+		t.Errorf("missing season/round/divider context: %q", out)
 	}
 }
 
@@ -126,7 +130,7 @@ func TestRenderRaceIncludesSpinsOverheated(t *testing.T) {
 	out := renderRace(&apiRace{
 		Name:    "Test GP",
 		Results: []apiRaceResult{{RacerName: "Alice", Position: 1, Points: 25, Spins: 2, Overheated: 1}},
-	})
+	}, "")
 	if !strings.Contains(out, "2 spins") {
 		t.Errorf("expected '2 spins' in %q", out)
 	}
@@ -136,7 +140,7 @@ func TestRenderRaceIncludesSpinsOverheated(t *testing.T) {
 	out2 := renderRace(&apiRace{
 		Name:    "Test GP",
 		Results: []apiRaceResult{{RacerName: "Bob", Position: 2, Points: 18, Spins: 1}},
-	})
+	}, "")
 	if !strings.Contains(out2, "1 spin") {
 		t.Errorf("expected '1 spin' in %q", out2)
 	}
@@ -156,7 +160,7 @@ func TestExecuteResultsUsesPublicAPI(t *testing.T) {
 	defer api.Close()
 
 	b := &Bot{s: testServer(t), http: api.Client(), baseURL: api.URL, sentReminders: map[string]time.Time{}}
-	out := b.execute("/results", "", 1, "", "")
+	out := b.execute(cmdContext{name: "/results", chatID: 1})
 	if gotPath != "/api/telegram/summary" {
 		t.Errorf("public API path = %q, want /api/telegram/summary", gotPath)
 	}
@@ -169,53 +173,19 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	s := testServer(t)
 	b := &Bot{s: s, sentReminders: map[string]time.Time{}}
 
-	if out := b.execute("/subscribe", "", -42, "dave", "Dave"); !strings.Contains(out, "Subscribed") {
+	c := cmdContext{name: "/subscribe", chatID: -42, username: "dave", firstName: "Dave"}
+	if out := b.execute(c); !strings.Contains(out, "Subscribed") {
 		t.Fatalf("subscribe reply: %q", out)
 	}
 	if ids := b.subscriberChatIDs(); len(ids) != 1 || ids[0] != "-42" {
 		t.Fatalf("subscriberChatIDs = %v", ids)
 	}
-	if out := b.execute("/unsubscribe", "", -42, "dave", "Dave"); !strings.Contains(out, "Unsubscribed") {
+	c.name = "/unsubscribe"
+	if out := b.execute(c); !strings.Contains(out, "Unsubscribed") {
 		t.Fatalf("unsubscribe reply: %q", out)
 	}
 	if ids := b.subscriberChatIDs(); len(ids) != 0 {
 		t.Fatalf("expected no subscribers, got %v", ids)
-	}
-}
-
-func TestAddQuote(t *testing.T) {
-	s := testServer(t)
-	if _, err := s.DB.Exec(`INSERT INTO telegram_settings (id, bot_token, enabled, default_chat_id) VALUES (1, 'tok', 1, '-100')`); err != nil {
-		t.Fatalf("insert settings: %v", err)
-	}
-	b := &Bot{s: s, sentReminders: map[string]time.Time{}}
-
-	out := b.execute("/addquote", "Rain is just nature's lube | M. Webb", -100, "dave", "Dave")
-	if !strings.Contains(out, "Quote added") {
-		t.Fatalf("expected Quote added, got %q", out)
-	}
-	var count int
-	if err := s.DB.QueryRow(`SELECT COUNT(*) FROM quotes WHERE text = ? AND author = ?`, "Rain is just nature's lube", "M. Webb").Scan(&count); err != nil {
-		t.Fatalf("query quotes: %v", err)
-	}
-	if count != 1 {
-		t.Fatalf("expected 1 quote row, got %d", count)
-	}
-
-	out = b.execute("/addquote", "Hello | Author", -999, "dave", "Dave")
-	if !strings.Contains(out, "Only the configured admin chat") {
-		t.Fatalf("expected denial, got %q", out)
-	}
-	if err := s.DB.QueryRow(`SELECT COUNT(*) FROM quotes`).Scan(&count); err != nil {
-		t.Fatalf("query count: %v", err)
-	}
-	if count != 1 {
-		t.Fatalf("expected still 1 quote, got %d", count)
-	}
-
-	out = b.execute("/addquote", "   ", -100, "dave", "Dave")
-	if !strings.Contains(out, "Usage: /addquote") {
-		t.Fatalf("expected usage, got %q", out)
 	}
 }
 

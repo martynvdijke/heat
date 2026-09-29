@@ -42,6 +42,7 @@ type Bot struct {
 	cancel        context.CancelFunc
 	token         string
 	sentReminders map[string]time.Time
+	pendingQuotes map[int64]pendingQuote
 }
 
 // New builds a Bot bound to the given server.
@@ -55,6 +56,7 @@ func New(s *app.Server) *Bot {
 		http:          &http.Client{Timeout: sendTimeout},
 		baseURL:       "http://127.0.0.1:" + port,
 		sentReminders: make(map[string]time.Time),
+		pendingQuotes: make(map[int64]pendingQuote),
 	}
 }
 
@@ -134,7 +136,10 @@ func (b *Bot) startClient(token string) {
 	b.stopClient()
 	opts := []tgbot.Option{
 		tgbot.WithDefaultHandler(b.onUpdate),
-		tgbot.WithAllowedUpdates(tgbot.AllowedUpdates{tgmodels.AllowedUpdateMessage}),
+		tgbot.WithAllowedUpdates(tgbot.AllowedUpdates{
+			tgmodels.AllowedUpdateMessage,
+			tgmodels.AllowedUpdateCallbackQuery,
+		}),
 	}
 	if b.apiServerURL != "" {
 		opts = append(opts, tgbot.WithServerURL(b.apiServerURL))
@@ -150,8 +155,30 @@ func (b *Bot) startClient(token string) {
 	b.cancel = cancel
 	b.token = token
 	b.mu.Unlock()
+	b.registerCommands(client)
 	b.logf("Telegram bot started")
 	go client.Start(ctx)
+}
+
+// registerCommands publishes the registry as Telegram's native command menu.
+func (b *Bot) registerCommands(client *tgbot.Bot) {
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	if _, err := client.SetMyCommands(ctx, &tgbot.SetMyCommandsParams{Commands: botCommands()}); err != nil {
+		b.warnf("setMyCommands failed: %v", err)
+	}
+}
+
+// botCommands converts the registry into Telegram's native command menu.
+func botCommands() []tgmodels.BotCommand {
+	out := make([]tgmodels.BotCommand, 0, len(commandRegistry))
+	for _, cmd := range commandRegistry {
+		out = append(out, tgmodels.BotCommand{
+			Command:     strings.TrimPrefix(cmd.name, "/"),
+			Description: cmd.desc,
+		})
+	}
+	return out
 }
 
 func (b *Bot) stopClient() {
@@ -166,46 +193,89 @@ func (b *Bot) stopClient() {
 	}
 }
 
-// onUpdate is the library's default update handler. It only reacts to
-// commands and replies privately to the sender.
+// onUpdate is the library's default update handler. It reacts to commands and
+// inline-button taps, and feeds plain messages into a guided /addquote flow
+// when one is pending.
 func (b *Bot) onUpdate(_ context.Context, _ *tgbot.Bot, update *tgmodels.Update) {
-	if update == nil || update.Message == nil {
+	if update == nil {
+		return
+	}
+	if update.CallbackQuery != nil {
+		b.handleCallback(update.CallbackQuery)
+		return
+	}
+	if update.Message == nil {
 		return
 	}
 	msg := update.Message
 
-	raw := strings.TrimSpace(msg.Text)
-	if !strings.HasPrefix(raw, "/") {
+	text := strings.TrimSpace(msg.Text)
+	if text == "" {
 		return
 	}
-	body := strings.TrimPrefix(raw, "/")
-	cmd, args := body, ""
-	if i := strings.IndexAny(body, " \t\n"); i >= 0 {
-		cmd = body[:i]
-		args = strings.TrimSpace(body[i+1:])
-	}
-	if i := strings.IndexByte(cmd, '@'); i >= 0 {
-		cmd = cmd[:i] // strip @BotName
-	}
-	cmd = "/" + strings.ToLower(cmd)
 
 	username, firstName := "", ""
 	if msg.From != nil {
 		username = msg.From.Username
 		firstName = msg.From.FirstName
 	}
+	c := cmdContext{chatID: msg.Chat.ID, username: username, firstName: firstName}
 
-	if reply := b.execute(cmd, args, msg.Chat.ID, username, firstName); reply != "" {
-		b.send(msg.Chat.ID, reply)
+	if strings.HasPrefix(text, "/") {
+		c.name, c.args = splitCommand(text)
+		b.handleCommand(c)
+		return
+	}
+	if reply, consumed := b.handleQuoteText(c, text); consumed {
+		b.reply(c, reply)
 	}
 }
 
-func (b *Bot) CreateQuote(text, author string) error {
-	if b.s == nil || b.s.Ent == nil {
-		return fmt.Errorf("ent client unavailable")
+// splitCommand separates "/command@BotName args" into its name and arguments.
+func splitCommand(text string) (string, string) {
+	name := text
+	args := ""
+	if i := strings.IndexByte(text, ' '); i >= 0 {
+		name = text[:i]
+		args = strings.TrimSpace(text[i+1:])
 	}
-	_, err := b.s.Ent.Quote.Create().SetText(text).SetAuthor(author).Save(context.Background())
-	return err
+	if i := strings.IndexByte(name, '@'); i >= 0 {
+		name = name[:i] // strip the @BotName suffix used in group chats
+	}
+	return strings.ToLower(name), args
+}
+
+// handleCommand dispatches a parsed command, steering guided quote input.
+func (b *Bot) handleCommand(c cmdContext) {
+	if _, pending := b.quoteFlow(c.chatID); pending {
+		switch c.name {
+		case "/cancel":
+			b.reply(c, b.cancelQuoteCommand(c))
+			return
+		case "/skip":
+			b.reply(c, b.skipQuoteAuthor(c))
+			return
+		case "/addquote":
+			b.clearQuoteFlow(c.chatID)
+		default:
+			// A different command aborts the flow so nobody gets trapped.
+			b.clearQuoteFlow(c.chatID)
+		}
+	}
+	b.reply(c, b.execute(c))
+}
+
+// reply sends a reply, attaching the navigation keyboard when the command
+// asks for it.
+func (b *Bot) reply(c cmdContext, text string) {
+	if strings.TrimSpace(text) == "" {
+		return
+	}
+	if commandShowsNav(c.name) {
+		b.sendWithKeyboard(c.chatID, text, b.navKeyboard(c.chatID))
+		return
+	}
+	b.send(c.chatID, text)
 }
 
 // handleEvent services an outbound push request.
@@ -234,6 +304,15 @@ func (b *Bot) handleEvent(evt models.TelegramEvent) {
 
 // send delivers one HTML message through the running client, if any.
 func (b *Bot) send(chatID any, text string) {
+	b.sendMessage(chatID, text, nil)
+}
+
+// sendWithKeyboard delivers an HTML message with an inline keyboard attached.
+func (b *Bot) sendWithKeyboard(chatID any, text string, markup tgmodels.ReplyMarkup) {
+	b.sendMessage(chatID, text, markup)
+}
+
+func (b *Bot) sendMessage(chatID any, text string, markup tgmodels.ReplyMarkup) {
 	if strings.TrimSpace(text) == "" {
 		return
 	}
@@ -243,11 +322,15 @@ func (b *Bot) send(chatID any, text string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
-	if _, err := client.SendMessage(ctx, &tgbot.SendMessageParams{
+	params := &tgbot.SendMessageParams{
 		ChatID:    chatID,
 		Text:      text,
 		ParseMode: tgmodels.ParseModeHTML,
-	}); err != nil {
+	}
+	if markup != nil {
+		params.ReplyMarkup = markup
+	}
+	if _, err := client.SendMessage(ctx, params); err != nil {
 		b.warnf("sendMessage to %v failed: %v", chatID, err)
 	}
 }

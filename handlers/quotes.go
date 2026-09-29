@@ -39,11 +39,13 @@ func (h *Handler) GetQuotes(c *gin.Context) {
 // @Success 200 {object} models.Quote
 // @Router /api/quote/random [get]
 func (h *Handler) GetRandomQuote(c *gin.Context) {
-	q, err := h.S.Ent.Quote.Query().Order(ent.Asc(quote.FieldID)).First(context.Background())
+	var q models.Quote
+	err := h.S.DB.QueryRow("SELECT id, text, author, created_at FROM quotes ORDER BY RANDOM() LIMIT 1").
+		Scan(&q.ID, &q.Text, &q.Author, &q.CreatedAt)
 	if err != nil {
-		q = &ent.Quote{Text: "The engines roar as these legends battle for glory!", Author: "Commentator"}
+		q = models.Quote{Text: "The engines roar as these legends battle for glory!", Author: "Commentator"}
 	}
-	c.JSON(http.StatusOK, models.Quote{ID: q.ID, Text: q.Text, Author: q.Author, CreatedAt: q.CreatedAt})
+	c.JSON(http.StatusOK, q)
 }
 
 // @Summary Create a quote

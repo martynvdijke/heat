@@ -2,10 +2,14 @@ package telegram
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"sort"
 	"strconv"
 	"strings"
 )
+
+// divider separates a message header from its body for a consistent look.
+const divider = "━━━━━━━━━━━━"
 
 // escapeHTML makes user-supplied strings safe for Telegram's HTML parse mode.
 func escapeHTML(s string) string {
@@ -45,86 +49,197 @@ func pluralize(n int, word string) string {
 	return word + "s"
 }
 
-// execute answers a single command and returns the reply text ("" = no reply).
-func (b *Bot) execute(cmd, args string, chatID int64, username, firstName string) string {
-	switch cmd {
-	case "/start", "/help":
-		return helpText()
-	case "/results":
-		return b.renderLatestRace()
-	case "/standings":
-		return b.renderStandings()
-	case "/next":
-		return b.renderNextRace()
-	case "/history":
-		return b.renderHistory()
-	case "/stats":
-		return b.renderStats()
-	case "/quote":
-		return b.renderQuote()
-	case "/addquote":
-		st, err := LoadSettings(b.s)
-		if err != nil || st.DefaultChatID == "" || strconv.FormatInt(chatID, 10) != st.DefaultChatID {
-			return "🔒 Only the configured admin chat can add quotes."
-		}
-		parts := strings.SplitN(args, "|", 2)
-		text := strings.TrimSpace(parts[0])
-		if text == "" {
-			return "✍️ Usage: /addquote <text> [| author]"
-		}
-		var author string
-		if len(parts) == 2 {
-			author = strings.TrimSpace(parts[1])
-		}
-		if author == "" {
-			author = strings.TrimSpace(firstName)
-			if author == "" && username != "" {
-				author = "@" + username
-			}
-			if author == "" {
-				author = "Telegram"
-			}
-		}
-		if err := b.CreateQuote(text, author); err != nil {
-			return "⚠️ Could not save the quote right now."
-		}
-		return fmt.Sprintf("✅ <b>Quote added</b>\n\n💬 <i>%s</i>\n— %s", escapeHTML(text), escapeHTML(author))
-	case "/subscribe":
-		if err := b.setSubscription(chatID, username, firstName, true); err != nil {
-			b.warnf("subscribe failed: %v", err)
-			return "⚠️ Could not subscribe right now."
-		}
-		return "✅ <b>Subscribed!</b> You'll now get race results and upcoming-race reminders."
-	case "/unsubscribe":
-		if err := b.setSubscription(chatID, username, firstName, false); err != nil {
-			b.warnf("unsubscribe failed: %v", err)
-			return "⚠️ Could not unsubscribe right now."
-		}
-		return "🔕 <b>Unsubscribed.</b> You won't receive any more pushes."
-	case "/status":
-		return b.renderStatus()
-	default:
-		return "🤖 Unknown command. Try /help"
+// cmdContext carries everything a command handler needs about the sender.
+type cmdContext struct {
+	name      string
+	args      string
+	chatID    int64
+	username  string
+	firstName string
+}
+
+// Command categories, in the order /help renders them.
+const (
+	catRace          = "race"
+	catQuotes        = "quotes"
+	catNotifications = "notifications"
+	catBot           = "bot"
+)
+
+var categoryOrder = []string{catRace, catQuotes, catNotifications, catBot}
+
+var categoryHeadings = map[string]string{
+	catRace:          "🏁 <b>Race</b>",
+	catQuotes:        "💬 <b>Quotes</b>",
+	catNotifications: "🔔 <b>Notifications</b>",
+	catBot:           "🤖 <b>Bot</b>",
+}
+
+// command describes one bot command. The registry below is the single source
+// of truth for dispatch, /help and Telegram's native command menu.
+type command struct {
+	name     string // canonical command, e.g. "/results"
+	usage    string // usage line shown in /help
+	desc     string // one-line description
+	category string
+	aliases  []string
+	showNav  bool // attach the standard navigation keyboard to replies
+	run      func(b *Bot, c cmdContext) string
+}
+
+// commandRegistry is the single source of truth for every bot command. It is
+// assigned in init so the /help handler can reference it without creating an
+// initialization cycle.
+var commandRegistry []command
+
+func init() {
+	commandRegistry = []command{
+		{
+			name: "/results", usage: "/results", desc: "latest race finishing order",
+			category: catRace, showNav: true,
+			run: func(b *Bot, _ cmdContext) string { return b.renderLatestRace() },
+		},
+		{
+			name: "/standings", usage: "/standings", desc: "championship table",
+			category: catRace, showNav: true,
+			run: func(b *Bot, _ cmdContext) string { return b.renderStandings() },
+		},
+		{
+			name: "/next", usage: "/next", desc: "upcoming race countdown",
+			category: catRace, showNav: true,
+			run: func(b *Bot, _ cmdContext) string { return b.renderNextRace() },
+		},
+		{
+			name: "/history", usage: "/history", desc: "recent races with fastest laps",
+			category: catRace,
+			run:      func(b *Bot, _ cmdContext) string { return b.renderHistory() },
+		},
+		{
+			name: "/stats", usage: "/stats", desc: "career points leaders",
+			category: catRace,
+			run:      func(b *Bot, _ cmdContext) string { return b.renderStats() },
+		},
+		{
+			name: "/season", usage: "/season", desc: "season summary and leader",
+			category: catRace,
+			run:      func(b *Bot, _ cmdContext) string { return b.renderSeason() },
+		},
+		{
+			name: "/quote", usage: "/quote", desc: "random paddock quote",
+			category: catQuotes, showNav: true,
+			run: func(b *Bot, _ cmdContext) string { return b.renderQuote() },
+		},
+		{
+			name: "/quotes", usage: "/quotes", desc: "latest quotes with IDs",
+			category: catQuotes,
+			run:      func(b *Bot, _ cmdContext) string { return b.renderQuotes() },
+		},
+		{
+			name: "/addquote", usage: "/addquote <text> — <author>", desc: "add a quote to the web app",
+			category: catQuotes, showNav: true,
+			run: func(b *Bot, c cmdContext) string { return b.addQuoteCommand(c) },
+		},
+		{
+			name: "/subscribe", usage: "/subscribe", desc: "get results & race reminders pushed to you",
+			category: catNotifications,
+			run: func(b *Bot, c cmdContext) string {
+				if err := b.setSubscription(c.chatID, c.username, c.firstName, true); err != nil {
+					b.warnf("subscribe failed: %v", err)
+					return "⚠️ Could not subscribe right now."
+				}
+				return "✅ <b>Subscribed!</b> You'll now get race results and upcoming-race reminders."
+			},
+		},
+		{
+			name: "/unsubscribe", usage: "/unsubscribe", desc: "stop pushes",
+			category: catNotifications,
+			run: func(b *Bot, c cmdContext) string {
+				if err := b.setSubscription(c.chatID, c.username, c.firstName, false); err != nil {
+					b.warnf("unsubscribe failed: %v", err)
+					return "⚠️ Could not unsubscribe right now."
+				}
+				return "🔕 <b>Unsubscribed.</b> You won't receive any more pushes."
+			},
+		},
+		{
+			name: "/help", usage: "/help", desc: "show every command",
+			category: catBot, aliases: []string{"/start"},
+			run: func(_ *Bot, _ cmdContext) string { return helpText() },
+		},
+		{
+			name: "/status", usage: "/status", desc: "bot status and subscriber count",
+			category: catBot,
+			run:      func(b *Bot, _ cmdContext) string { return b.renderStatus() },
+		},
+		{
+			name: "/good-bot", usage: "/good-bot", desc: "tell the bot it did well",
+			category: catBot,
+			run:      func(_ *Bot, _ cmdContext) string { return renderGoodBot() },
+		},
+		{
+			name: "/cancel", usage: "/cancel", desc: "abort a guided /addquote",
+			category: catBot,
+			run:      func(b *Bot, c cmdContext) string { return b.cancelQuoteCommand(c) },
+		},
 	}
 }
 
+// findCommand resolves a command name or alias to its registry entry.
+func findCommand(name string) (command, bool) {
+	for _, cmd := range commandRegistry {
+		if cmd.name == name {
+			return cmd, true
+		}
+		for _, alias := range cmd.aliases {
+			if alias == name {
+				return cmd, true
+			}
+		}
+	}
+	return command{}, false
+}
+
+// commandShowsNav reports whether replies for the named command carry the
+// standard navigation keyboard.
+func commandShowsNav(name string) bool {
+	cmd, ok := findCommand(name)
+	return ok && cmd.showNav
+}
+
+// execute answers a single command and returns the reply text ("" = no reply).
+func (b *Bot) execute(c cmdContext) string {
+	cmd, ok := findCommand(c.name)
+	if !ok {
+		return "🤖 Unknown command. Try /help"
+	}
+	return cmd.run(b, c)
+}
+
+// helpText renders /help straight from the registry, so it can never drift
+// from the commands that are actually dispatched.
 func helpText() string {
-	return strings.Join([]string{
-		"🏎️ <b>HEAT Racing Bot</b>",
-		"",
-		"<b>Commands</b>",
-		"/results — latest race finishing order",
-		"/standings — season championship table",
-		"/next — upcoming race countdown",
-		"/history — recent races",
-		"/stats — career points leaders",
-		"/quote — a paddock quote",
-		"/addquote <text> [| author] — add a paddock quote (admin chat only)",
-		"/subscribe — get results &amp; race reminders pushed to you",
-		"/unsubscribe — stop pushes",
-		"",
-		"Powered by the HEAT public API.",
-	}, "\n")
+	var sb strings.Builder
+	sb.WriteString("🏎️ <b>HEAT Racing Bot</b>\n")
+	sb.WriteString("Everything I can do — tap a button below or type a command.\n")
+	for _, cat := range categoryOrder {
+		sb.WriteString("\n" + categoryHeadings[cat] + "\n")
+		for _, cmd := range commandRegistry {
+			if cmd.category != cat {
+				continue
+			}
+			fmt.Fprintf(&sb, "%s — %s\n", escapeHTML(cmd.usage), escapeHTML(cmd.desc))
+		}
+	}
+	sb.WriteString("\nPowered by the HEAT public API.")
+	return sb.String()
+}
+
+// seasonName returns the current season's name, if any.
+func seasonName(sum apiSummary) string {
+	if sum.Season == nil {
+		return ""
+	}
+	return sum.Season.Name
 }
 
 func (b *Bot) renderLatestRace() string {
@@ -133,10 +248,10 @@ func (b *Bot) renderLatestRace() string {
 		b.warnf("summary fetch failed: %v", err)
 		return "⚠️ Results are unavailable right now."
 	}
-	return renderRace(sum.LatestRace)
+	return renderRace(sum.LatestRace, seasonName(sum))
 }
 
-func renderRace(r *apiRace) string {
+func renderRace(r *apiRace, season string) string {
 	if r == nil || len(r.Results) == 0 {
 		return "🏁 No finalized race results yet."
 	}
@@ -144,6 +259,12 @@ func renderRace(r *apiRace) string {
 	fmt.Fprintf(&sb, "🏁 <b>%s</b>\n", escapeHTML(r.Name))
 
 	var meta []string
+	if season != "" {
+		meta = append(meta, escapeHTML(season))
+	}
+	if r.Round > 0 {
+		meta = append(meta, fmt.Sprintf("Round %d", r.Round))
+	}
 	if r.Track != "" {
 		meta = append(meta, escapeHTML(r.Track))
 	}
@@ -159,7 +280,7 @@ func renderRace(r *apiRace) string {
 	if len(meta) > 0 {
 		fmt.Fprintf(&sb, "<i>%s</i>\n", strings.Join(meta, " · "))
 	}
-	sb.WriteString("\n")
+	sb.WriteString(divider + "\n")
 
 	for _, res := range r.Results {
 		line := fmt.Sprintf("%s <b>%s</b>", positionMedal(res.Position), escapeHTML(res.RacerName))
@@ -191,11 +312,12 @@ func (b *Bot) renderStandings() string {
 	}
 
 	title := "🏆 <b>Championship Standings</b>"
-	if sum.Season != nil && sum.Season.Name != "" {
-		title = "🏆 <b>" + escapeHTML(sum.Season.Name) + "</b>"
+	if name := seasonName(sum); name != "" {
+		title = "🏆 <b>" + escapeHTML(name) + " · Championship Standings</b>"
 	}
 	var sb strings.Builder
-	sb.WriteString(title + "\n\n")
+	sb.WriteString(title + "\n")
+	sb.WriteString(divider + "\n")
 
 	for i, s := range sum.Standings {
 		line := fmt.Sprintf("%s <b>%s</b>", rankLabel(i+1), escapeHTML(s.RacerName))
@@ -217,15 +339,21 @@ func (b *Bot) renderNextRace() string {
 		b.warnf("next race fetch failed: %v", err)
 		return "⚠️ Could not fetch the next race."
 	}
-	return renderNextRace(sum.NextRace)
+	return renderNextRace(sum.NextRace, seasonName(sum))
 }
 
-func renderNextRace(nr *apiNextRace) string {
+func renderNextRace(nr *apiNextRace, season string) string {
 	if nr == nil {
 		return "📅 No upcoming race scheduled yet."
 	}
 	var sb strings.Builder
-	sb.WriteString("🏁 <b>Upcoming Race</b>\n")
+	title := "📅 <b>Upcoming Race</b>"
+	if season != "" {
+		title += " · " + escapeHTML(season)
+	}
+	sb.WriteString(title + "\n")
+	sb.WriteString(divider + "\n")
+
 	var where []string
 	if nr.Track != "" {
 		where = append(where, escapeHTML(nr.Track))
@@ -268,7 +396,8 @@ func (b *Bot) renderHistory() string {
 		limit = len(races)
 	}
 	var sb strings.Builder
-	sb.WriteString("📜 <b>Recent Races</b>\n\n")
+	sb.WriteString("📜 <b>Recent Races</b>\n")
+	sb.WriteString(divider + "\n")
 	for _, r := range races[:limit] {
 		line := "• <b>" + escapeHTML(r.Name) + "</b>"
 		if r.Track != "" {
@@ -277,9 +406,23 @@ func (b *Bot) renderHistory() string {
 		if r.RaceDate != "" {
 			line += " · " + escapeHTML(r.RaceDate)
 		}
+		if name := fastestLapRacer(r.Results); name != "" {
+			line += " · ⚡ " + escapeHTML(name)
+		}
 		sb.WriteString(line + "\n")
 	}
 	return strings.TrimRight(sb.String(), "\n")
+}
+
+// fastestLapRacer returns the racer who set the fastest lap, if the payload
+// records one.
+func fastestLapRacer(results []apiHistoryResult) string {
+	for _, res := range results {
+		if res.FastestLap {
+			return res.RacerName
+		}
+	}
+	return ""
 }
 
 func (b *Bot) renderStats() string {
@@ -306,7 +449,8 @@ func (b *Bot) renderStats() string {
 	})
 
 	var sb strings.Builder
-	sb.WriteString("📊 <b>Career Points Leaders</b>\n\n")
+	sb.WriteString("📊 <b>Career Points Leaders</b>\n")
+	sb.WriteString(divider + "\n")
 	rank := 0
 	for _, s := range stats {
 		name := nameByID[s.RacerID]
@@ -341,11 +485,95 @@ func (b *Bot) renderQuote() string {
 		b.warnf("quote fetch failed: %v", err)
 		return "💬 The paddock is silent."
 	}
-	out := "💬 <i>" + escapeHTML(q.Text) + "</i>"
+	out := "💬 <b>Paddock Quote</b>\n" + divider + "\n<i>" + escapeHTML(q.Text) + "</i>"
 	if q.Author != "" {
 		out += "\n— " + escapeHTML(q.Author)
 	}
 	return out
+}
+
+// renderQuotes lists the most recently added quotes with their IDs.
+func (b *Bot) renderQuotes() string {
+	rows, err := b.s.DB.Query("SELECT id, text, author FROM quotes ORDER BY id DESC LIMIT 5")
+	if err != nil {
+		b.warnf("quotes fetch failed: %v", err)
+		return "⚠️ Quotes are unavailable right now."
+	}
+	defer rows.Close()
+
+	var sb strings.Builder
+	sb.WriteString("💬 <b>Latest Quotes</b>\n")
+	sb.WriteString(divider + "\n")
+	count := 0
+	for rows.Next() {
+		var id int
+		var text, author string
+		if err := rows.Scan(&id, &text, &author); err != nil {
+			continue
+		}
+		count++
+		fmt.Fprintf(&sb, "#%d — <i>%s</i>\n", id, escapeHTML(text))
+		if author != "" {
+			fmt.Fprintf(&sb, "— %s\n", escapeHTML(author))
+		}
+	}
+	if count == 0 {
+		return "💬 No quotes yet — add one with /addquote."
+	}
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+func (b *Bot) renderSeason() string {
+	var sum apiSummary
+	if err := b.apiGet("/api/telegram/summary", &sum); err != nil {
+		b.warnf("season fetch failed: %v", err)
+		return "⚠️ Season info is unavailable right now."
+	}
+	if seasonName(sum) == "" {
+		return "🏎️ No season data yet."
+	}
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "🏎️ <b>%s</b>\n", escapeHTML(sum.Season.Name))
+	sb.WriteString(divider + "\n")
+
+	standings := append([]apiStanding(nil), sum.Standings...)
+	sort.SliceStable(standings, func(i, j int) bool {
+		if standings[i].Points != standings[j].Points {
+			return standings[i].Points > standings[j].Points
+		}
+		return standings[i].Wins > standings[j].Wins
+	})
+	if len(standings) == 0 {
+		sb.WriteString("No championship standings yet.")
+		return sb.String()
+	}
+
+	leader := standings[0]
+	line := "🏆 Leader: <b>" + escapeHTML(leader.RacerName) + "</b>"
+	if leader.TeamName != "" {
+		line += " (" + escapeHTML(leader.TeamName) + ")"
+	}
+	line += fmt.Sprintf(" — %d pts", leader.Points)
+	if leader.Wins > 0 {
+		line += fmt.Sprintf(" · %d wins", leader.Wins)
+	}
+	sb.WriteString(line + "\n")
+	fmt.Fprintf(&sb, "👥 %d racers in the championship", len(standings))
+	return sb.String()
+}
+
+var goodBotReplies = []string{
+	"🚗💨 Thanks! I try my best.",
+	"🤖 Aww, you're too kind.",
+	"🏁 Good human! (Don't tell the other bots.)",
+	"⚡ Beep boop — appreciation logged.",
+	"🥇 You're a legend.",
+	"🏎️ Right back at you!",
+}
+
+func renderGoodBot() string {
+	return goodBotReplies[rand.IntN(len(goodBotReplies))]
 }
 
 func (b *Bot) renderStatus() string {
@@ -356,7 +584,7 @@ func (b *Bot) renderStatus() string {
 	}
 	var subs int
 	b.s.DB.QueryRow("SELECT COUNT(*) FROM telegram_subscribers WHERE subscribed = 1").Scan(&subs)
-	return fmt.Sprintf("🤖 <b>HEAT bot</b> is %s.\n👥 Subscribers: %d\n\nType /help to see what I can do.", state, subs)
+	return fmt.Sprintf("🤖 <b>HEAT bot</b>\n%s\nStatus: %s\n👥 Subscribers: %d\n\nType /help to see what I can do.", divider, state, subs)
 }
 
 // renderArchivedRace builds a results message from the race archive, used by
@@ -389,7 +617,7 @@ func (b *Bot) renderArchivedRace(raceID int) string {
 	if len(meta) > 0 {
 		fmt.Fprintf(&sb, "<i>%s</i>\n", strings.Join(meta, " · "))
 	}
-	sb.WriteString("\n")
+	sb.WriteString(divider + "\n")
 	for _, res := range r.Results {
 		line := fmt.Sprintf("%s <b>%s</b>", positionMedal(res.Position), escapeHTML(res.RacerName))
 		if res.Points > 0 {
@@ -399,6 +627,9 @@ func (b *Bot) renderArchivedRace(raceID int) string {
 			line += " ⚡"
 		}
 		sb.WriteString(line + "\n")
+	}
+	if name := fastestLapRacer(r.Results); name != "" {
+		fmt.Fprintf(&sb, "\n⚡ <b>Fastest lap:</b> %s", escapeHTML(name))
 	}
 	return strings.TrimRight(sb.String(), "\n")
 }
