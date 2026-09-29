@@ -1,3 +1,10 @@
+## [1.62.1](https://github.com/martynvdijke/heat/compare/v1.62.0...v1.62.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* wire Telegram and WLED config forms through delegated events ([afed75b](https://github.com/martynvdijke/heat/commit/afed75b6562f088e925cea5969f50402baecb884)), closes [telegram-form/#wled-form](https://github.com/martynvdijke/heat/issues/wled-form)
+
 # [1.62.0](https://github.com/martynvdijke/heat/compare/v1.61.0...v1.62.0) (2026-09-29)
 
 
