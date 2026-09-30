@@ -1,3 +1,10 @@
+# [1.65.0](https://github.com/martynvdijke/heat/compare/v1.64.1...v1.65.0) (2026-09-30)
+
+
+### Features
+
+* attribute AI provider requests and add AI quote suggestions ([2dd9ace](https://github.com/martynvdijke/heat/commit/2dd9acedef486906592aa730696131242e878a22))
+
 ## [1.64.1](https://github.com/martynvdijke/heat/compare/v1.64.0...v1.64.1) (2026-09-29)
 
 # [1.64.0](https://github.com/martynvdijke/heat/compare/v1.63.0...v1.64.0) (2026-09-29)
