@@ -98,6 +98,13 @@ type Quote struct {
 	CreatedAt string `json:"created_at"`
 }
 
+// QuoteSuggestion is an AI-generated quote candidate returned by the
+// /api/quotes/ai-suggest endpoint.
+type QuoteSuggestion struct {
+	Text   string `json:"text"`
+	Author string `json:"author"`
+}
+
 type RaceHistory struct {
 	ID        int          `json:"id"`
 	Name      string       `json:"name"`
@@ -153,6 +160,8 @@ type OTelSettings struct {
 type AISettings struct {
 	ID              int    `json:"id"`
 	TrackExtractURL string `json:"track_extract_url"`
+	TextGenURL      string `json:"text_gen_url"`
+	TextGenModel    string `json:"text_gen_model"`
 	APIKey          string `json:"api_key"`
 	Enabled         bool   `json:"enabled"`
 }

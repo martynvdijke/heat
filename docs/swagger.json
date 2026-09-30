@@ -1239,6 +1239,54 @@
                 }
             }
         },
+        "/api/quotes/ai-suggest": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Generate commentary quote suggestions using the configured AI text endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Quotes"
+                ],
+                "summary": "Suggest quotes with AI",
+                "parameters": [
+                    {
+                        "description": "Optional context and count",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.QuoteSuggestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/race-history": {
             "get": {
                 "description": "Get race history entries, optionally filtered by ID or type",
@@ -3207,6 +3255,17 @@
                 }
             }
         },
+        "handlers.QuoteSuggestRequest": {
+            "type": "object",
+            "properties": {
+                "context": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                }
+            }
+        },
         "handlers.logSettingInput": {
             "type": "object",
             "required": [
@@ -3233,6 +3292,12 @@
                 },
                 "id": {
                     "type": "integer"
+                },
+                "text_gen_model": {
+                    "type": "string"
+                },
+                "text_gen_url": {
+                    "type": "string"
                 },
                 "track_extract_url": {
                     "type": "string"

@@ -20,6 +20,10 @@ type AISetting struct {
 	TrackExtractURL string `json:"track_extract_url,omitempty"`
 	// APIKey holds the value of the "api_key" field.
 	APIKey string `json:"api_key,omitempty"`
+	// TextGenURL holds the value of the "text_gen_url" field.
+	TextGenURL string `json:"text_gen_url,omitempty"`
+	// TextGenModel holds the value of the "text_gen_model" field.
+	TextGenModel string `json:"text_gen_model,omitempty"`
 	// Enabled holds the value of the "enabled" field.
 	Enabled int `json:"enabled,omitempty"`
 	// Difficulty holds the value of the "difficulty" field.
@@ -40,7 +44,7 @@ func (*AISetting) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case aisetting.FieldID, aisetting.FieldEnabled, aisetting.FieldAggression, aisetting.FieldErrorRate, aisetting.FieldConsistency:
 			values[i] = new(sql.NullInt64)
-		case aisetting.FieldTrackExtractURL, aisetting.FieldAPIKey, aisetting.FieldDifficulty:
+		case aisetting.FieldTrackExtractURL, aisetting.FieldAPIKey, aisetting.FieldTextGenURL, aisetting.FieldTextGenModel, aisetting.FieldDifficulty:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -74,6 +78,18 @@ func (_m *AISetting) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field api_key", values[i])
 			} else if value.Valid {
 				_m.APIKey = value.String
+			}
+		case aisetting.FieldTextGenURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field text_gen_url", values[i])
+			} else if value.Valid {
+				_m.TextGenURL = value.String
+			}
+		case aisetting.FieldTextGenModel:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field text_gen_model", values[i])
+			} else if value.Valid {
+				_m.TextGenModel = value.String
 			}
 		case aisetting.FieldEnabled:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -146,6 +162,12 @@ func (_m *AISetting) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("api_key=")
 	builder.WriteString(_m.APIKey)
+	builder.WriteString(", ")
+	builder.WriteString("text_gen_url=")
+	builder.WriteString(_m.TextGenURL)
+	builder.WriteString(", ")
+	builder.WriteString("text_gen_model=")
+	builder.WriteString(_m.TextGenModel)
 	builder.WriteString(", ")
 	builder.WriteString("enabled=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Enabled))

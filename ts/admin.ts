@@ -1007,6 +1007,47 @@ async function deleteQuote(id: number): Promise<void> {
     }
 }
 
+async function suggestQuotes(): Promise<void> {
+    const btn = document.getElementById('quote-ai-suggest-btn') as HTMLButtonElement | null;
+    const original = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Thinking...';
+    }
+    try {
+        const context = (document.getElementById('quote-text') as HTMLTextAreaElement)?.value || '';
+        const res = await fetch('/api/quotes/ai-suggest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ context: context.trim(), count: 3 })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({} as any));
+            showToast('AI suggestion failed: ' + (err.error || 'Unknown error'), 'error');
+            return;
+        }
+        const data = await res.json();
+        const suggestions: Array<{ text: string; author: string }> = data.suggestions || [];
+        if (suggestions.length === 0) {
+            showToast('AI returned no suggestions', 'error');
+            return;
+        }
+        const pick = suggestions[Math.floor(Math.random() * suggestions.length)];
+        (document.getElementById('quote-text') as HTMLTextAreaElement).value = pick.text;
+        if (pick.author) {
+            (document.getElementById('quote-author') as HTMLInputElement).value = pick.author;
+        }
+        showToast(`AI suggested ${suggestions.length} quote(s)`, 'success');
+    } catch (e: any) {
+        showToast('AI suggestion failed: ' + (e.message || 'Unknown error'), 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = original;
+        }
+    }
+}
+
 async function uploadImage(input: HTMLInputElement): Promise<void> {
     const file = input.files?.[0];
     if (!file) return;
@@ -1079,6 +1120,8 @@ async function loadAISettings(): Promise<void> {
         const res = await fetch('/api/ai-settings');
         const data = await res.json();
         (document.getElementById('ai-track-extract-url') as HTMLInputElement).value = data.track_extract_url || '';
+        (document.getElementById('ai-text-gen-url') as HTMLInputElement).value = data.text_gen_url || '';
+        (document.getElementById('ai-text-gen-model') as HTMLInputElement).value = data.text_gen_model || '';
         (document.getElementById('ai-api-key') as HTMLInputElement).value = data.api_key || '';
         (document.getElementById('ai-enabled') as HTMLInputElement).checked = data.enabled;
     } catch (e) { console.error('Failed to load AI settings', e); }
@@ -1119,6 +1162,8 @@ document.getElementById('ai-settings-form')?.addEventListener('submit', async (e
     e.preventDefault();
     const data = {
         track_extract_url: (document.getElementById('ai-track-extract-url') as HTMLInputElement).value,
+        text_gen_url: (document.getElementById('ai-text-gen-url') as HTMLInputElement).value,
+        text_gen_model: (document.getElementById('ai-text-gen-model') as HTMLInputElement).value,
         api_key: (document.getElementById('ai-api-key') as HTMLInputElement).value,
         enabled: (document.getElementById('ai-enabled') as HTMLInputElement).checked
     };
@@ -2007,6 +2052,7 @@ async function loadSeasonRounds(seasonId: string): Promise<void> {
 (window as any).extractTrackFromAIStandalone = extractTrackFromAIStandalone;
 (window as any).editQuote = editQuote;
 (window as any).deleteQuote = deleteQuote;
+(window as any).suggestQuotes = suggestQuotes;
 (window as any).editStats = editStats;
 (window as any).loadRacerStats = loadRacerStats;
 (window as any).loadSeasons = loadSeasons;

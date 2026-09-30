@@ -63,6 +63,16 @@ func APIKey(v string) predicate.AISetting {
 	return predicate.AISetting(sql.FieldEQ(FieldAPIKey, v))
 }
 
+// TextGenURL applies equality check predicate on the "text_gen_url" field. It's identical to TextGenURLEQ.
+func TextGenURL(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldEQ(FieldTextGenURL, v))
+}
+
+// TextGenModel applies equality check predicate on the "text_gen_model" field. It's identical to TextGenModelEQ.
+func TextGenModel(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldEQ(FieldTextGenModel, v))
+}
+
 // Enabled applies equality check predicate on the "enabled" field. It's identical to EnabledEQ.
 func Enabled(v int) predicate.AISetting {
 	return predicate.AISetting(sql.FieldEQ(FieldEnabled, v))
@@ -236,6 +246,156 @@ func APIKeyEqualFold(v string) predicate.AISetting {
 // APIKeyContainsFold applies the ContainsFold predicate on the "api_key" field.
 func APIKeyContainsFold(v string) predicate.AISetting {
 	return predicate.AISetting(sql.FieldContainsFold(FieldAPIKey, v))
+}
+
+// TextGenURLEQ applies the EQ predicate on the "text_gen_url" field.
+func TextGenURLEQ(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldEQ(FieldTextGenURL, v))
+}
+
+// TextGenURLNEQ applies the NEQ predicate on the "text_gen_url" field.
+func TextGenURLNEQ(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldNEQ(FieldTextGenURL, v))
+}
+
+// TextGenURLIn applies the In predicate on the "text_gen_url" field.
+func TextGenURLIn(vs ...string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldIn(FieldTextGenURL, vs...))
+}
+
+// TextGenURLNotIn applies the NotIn predicate on the "text_gen_url" field.
+func TextGenURLNotIn(vs ...string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldNotIn(FieldTextGenURL, vs...))
+}
+
+// TextGenURLGT applies the GT predicate on the "text_gen_url" field.
+func TextGenURLGT(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldGT(FieldTextGenURL, v))
+}
+
+// TextGenURLGTE applies the GTE predicate on the "text_gen_url" field.
+func TextGenURLGTE(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldGTE(FieldTextGenURL, v))
+}
+
+// TextGenURLLT applies the LT predicate on the "text_gen_url" field.
+func TextGenURLLT(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldLT(FieldTextGenURL, v))
+}
+
+// TextGenURLLTE applies the LTE predicate on the "text_gen_url" field.
+func TextGenURLLTE(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldLTE(FieldTextGenURL, v))
+}
+
+// TextGenURLContains applies the Contains predicate on the "text_gen_url" field.
+func TextGenURLContains(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldContains(FieldTextGenURL, v))
+}
+
+// TextGenURLHasPrefix applies the HasPrefix predicate on the "text_gen_url" field.
+func TextGenURLHasPrefix(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldHasPrefix(FieldTextGenURL, v))
+}
+
+// TextGenURLHasSuffix applies the HasSuffix predicate on the "text_gen_url" field.
+func TextGenURLHasSuffix(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldHasSuffix(FieldTextGenURL, v))
+}
+
+// TextGenURLIsNil applies the IsNil predicate on the "text_gen_url" field.
+func TextGenURLIsNil() predicate.AISetting {
+	return predicate.AISetting(sql.FieldIsNull(FieldTextGenURL))
+}
+
+// TextGenURLNotNil applies the NotNil predicate on the "text_gen_url" field.
+func TextGenURLNotNil() predicate.AISetting {
+	return predicate.AISetting(sql.FieldNotNull(FieldTextGenURL))
+}
+
+// TextGenURLEqualFold applies the EqualFold predicate on the "text_gen_url" field.
+func TextGenURLEqualFold(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldEqualFold(FieldTextGenURL, v))
+}
+
+// TextGenURLContainsFold applies the ContainsFold predicate on the "text_gen_url" field.
+func TextGenURLContainsFold(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldContainsFold(FieldTextGenURL, v))
+}
+
+// TextGenModelEQ applies the EQ predicate on the "text_gen_model" field.
+func TextGenModelEQ(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldEQ(FieldTextGenModel, v))
+}
+
+// TextGenModelNEQ applies the NEQ predicate on the "text_gen_model" field.
+func TextGenModelNEQ(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldNEQ(FieldTextGenModel, v))
+}
+
+// TextGenModelIn applies the In predicate on the "text_gen_model" field.
+func TextGenModelIn(vs ...string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldIn(FieldTextGenModel, vs...))
+}
+
+// TextGenModelNotIn applies the NotIn predicate on the "text_gen_model" field.
+func TextGenModelNotIn(vs ...string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldNotIn(FieldTextGenModel, vs...))
+}
+
+// TextGenModelGT applies the GT predicate on the "text_gen_model" field.
+func TextGenModelGT(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldGT(FieldTextGenModel, v))
+}
+
+// TextGenModelGTE applies the GTE predicate on the "text_gen_model" field.
+func TextGenModelGTE(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldGTE(FieldTextGenModel, v))
+}
+
+// TextGenModelLT applies the LT predicate on the "text_gen_model" field.
+func TextGenModelLT(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldLT(FieldTextGenModel, v))
+}
+
+// TextGenModelLTE applies the LTE predicate on the "text_gen_model" field.
+func TextGenModelLTE(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldLTE(FieldTextGenModel, v))
+}
+
+// TextGenModelContains applies the Contains predicate on the "text_gen_model" field.
+func TextGenModelContains(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldContains(FieldTextGenModel, v))
+}
+
+// TextGenModelHasPrefix applies the HasPrefix predicate on the "text_gen_model" field.
+func TextGenModelHasPrefix(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldHasPrefix(FieldTextGenModel, v))
+}
+
+// TextGenModelHasSuffix applies the HasSuffix predicate on the "text_gen_model" field.
+func TextGenModelHasSuffix(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldHasSuffix(FieldTextGenModel, v))
+}
+
+// TextGenModelIsNil applies the IsNil predicate on the "text_gen_model" field.
+func TextGenModelIsNil() predicate.AISetting {
+	return predicate.AISetting(sql.FieldIsNull(FieldTextGenModel))
+}
+
+// TextGenModelNotNil applies the NotNil predicate on the "text_gen_model" field.
+func TextGenModelNotNil() predicate.AISetting {
+	return predicate.AISetting(sql.FieldNotNull(FieldTextGenModel))
+}
+
+// TextGenModelEqualFold applies the EqualFold predicate on the "text_gen_model" field.
+func TextGenModelEqualFold(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldEqualFold(FieldTextGenModel, v))
+}
+
+// TextGenModelContainsFold applies the ContainsFold predicate on the "text_gen_model" field.
+func TextGenModelContainsFold(v string) predicate.AISetting {
+	return predicate.AISetting(sql.FieldContainsFold(FieldTextGenModel, v))
 }
 
 // EnabledEQ applies the EQ predicate on the "enabled" field.

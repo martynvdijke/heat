@@ -65,6 +65,13 @@ definitions:
       sort_order:
         type: integer
     type: object
+  handlers.QuoteSuggestRequest:
+    properties:
+      context:
+        type: string
+      count:
+        type: integer
+    type: object
   handlers.logSettingInput:
     properties:
       level:
@@ -83,6 +90,10 @@ definitions:
         type: boolean
       id:
         type: integer
+      text_gen_model:
+        type: string
+      text_gen_url:
+        type: string
       track_extract_url:
         type: string
     type: object
@@ -1297,6 +1308,37 @@ paths:
       security:
       - cookieAuth: []
       summary: Create a quote
+      tags:
+      - Quotes
+  /api/quotes/ai-suggest:
+    post:
+      consumes:
+      - application/json
+      description: Generate commentary quote suggestions using the configured AI text
+        endpoint
+      parameters:
+      - description: Optional context and count
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/handlers.QuoteSuggestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Suggest quotes with AI
       tags:
       - Quotes
   /api/race-history:

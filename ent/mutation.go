@@ -104,6 +104,8 @@ type AISettingMutation struct {
 	id                *int
 	track_extract_url *string
 	api_key           *string
+	text_gen_url      *string
+	text_gen_model    *string
 	enabled           *int
 	addenabled        *int
 	difficulty        *string
@@ -319,6 +321,104 @@ func (m *AISettingMutation) APIKeyCleared() bool {
 func (m *AISettingMutation) ResetAPIKey() {
 	m.api_key = nil
 	delete(m.clearedFields, aisetting.FieldAPIKey)
+}
+
+// SetTextGenURL sets the "text_gen_url" field.
+func (m *AISettingMutation) SetTextGenURL(s string) {
+	m.text_gen_url = &s
+}
+
+// TextGenURL returns the value of the "text_gen_url" field in the mutation.
+func (m *AISettingMutation) TextGenURL() (r string, exists bool) {
+	v := m.text_gen_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTextGenURL returns the old "text_gen_url" field's value of the AISetting entity.
+// If the AISetting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AISettingMutation) OldTextGenURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTextGenURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTextGenURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTextGenURL: %w", err)
+	}
+	return oldValue.TextGenURL, nil
+}
+
+// ClearTextGenURL clears the value of the "text_gen_url" field.
+func (m *AISettingMutation) ClearTextGenURL() {
+	m.text_gen_url = nil
+	m.clearedFields[aisetting.FieldTextGenURL] = struct{}{}
+}
+
+// TextGenURLCleared returns if the "text_gen_url" field was cleared in this mutation.
+func (m *AISettingMutation) TextGenURLCleared() bool {
+	_, ok := m.clearedFields[aisetting.FieldTextGenURL]
+	return ok
+}
+
+// ResetTextGenURL resets all changes to the "text_gen_url" field.
+func (m *AISettingMutation) ResetTextGenURL() {
+	m.text_gen_url = nil
+	delete(m.clearedFields, aisetting.FieldTextGenURL)
+}
+
+// SetTextGenModel sets the "text_gen_model" field.
+func (m *AISettingMutation) SetTextGenModel(s string) {
+	m.text_gen_model = &s
+}
+
+// TextGenModel returns the value of the "text_gen_model" field in the mutation.
+func (m *AISettingMutation) TextGenModel() (r string, exists bool) {
+	v := m.text_gen_model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTextGenModel returns the old "text_gen_model" field's value of the AISetting entity.
+// If the AISetting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AISettingMutation) OldTextGenModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTextGenModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTextGenModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTextGenModel: %w", err)
+	}
+	return oldValue.TextGenModel, nil
+}
+
+// ClearTextGenModel clears the value of the "text_gen_model" field.
+func (m *AISettingMutation) ClearTextGenModel() {
+	m.text_gen_model = nil
+	m.clearedFields[aisetting.FieldTextGenModel] = struct{}{}
+}
+
+// TextGenModelCleared returns if the "text_gen_model" field was cleared in this mutation.
+func (m *AISettingMutation) TextGenModelCleared() bool {
+	_, ok := m.clearedFields[aisetting.FieldTextGenModel]
+	return ok
+}
+
+// ResetTextGenModel resets all changes to the "text_gen_model" field.
+func (m *AISettingMutation) ResetTextGenModel() {
+	m.text_gen_model = nil
+	delete(m.clearedFields, aisetting.FieldTextGenModel)
 }
 
 // SetEnabled sets the "enabled" field.
@@ -615,12 +715,18 @@ func (m *AISettingMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AISettingMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 9)
 	if m.track_extract_url != nil {
 		fields = append(fields, aisetting.FieldTrackExtractURL)
 	}
 	if m.api_key != nil {
 		fields = append(fields, aisetting.FieldAPIKey)
+	}
+	if m.text_gen_url != nil {
+		fields = append(fields, aisetting.FieldTextGenURL)
+	}
+	if m.text_gen_model != nil {
+		fields = append(fields, aisetting.FieldTextGenModel)
 	}
 	if m.enabled != nil {
 		fields = append(fields, aisetting.FieldEnabled)
@@ -649,6 +755,10 @@ func (m *AISettingMutation) Field(name string) (ent.Value, bool) {
 		return m.TrackExtractURL()
 	case aisetting.FieldAPIKey:
 		return m.APIKey()
+	case aisetting.FieldTextGenURL:
+		return m.TextGenURL()
+	case aisetting.FieldTextGenModel:
+		return m.TextGenModel()
 	case aisetting.FieldEnabled:
 		return m.Enabled()
 	case aisetting.FieldDifficulty:
@@ -672,6 +782,10 @@ func (m *AISettingMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldTrackExtractURL(ctx)
 	case aisetting.FieldAPIKey:
 		return m.OldAPIKey(ctx)
+	case aisetting.FieldTextGenURL:
+		return m.OldTextGenURL(ctx)
+	case aisetting.FieldTextGenModel:
+		return m.OldTextGenModel(ctx)
 	case aisetting.FieldEnabled:
 		return m.OldEnabled(ctx)
 	case aisetting.FieldDifficulty:
@@ -704,6 +818,20 @@ func (m *AISettingMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAPIKey(v)
+		return nil
+	case aisetting.FieldTextGenURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTextGenURL(v)
+		return nil
+	case aisetting.FieldTextGenModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTextGenModel(v)
 		return nil
 	case aisetting.FieldEnabled:
 		v, ok := value.(int)
@@ -827,6 +955,12 @@ func (m *AISettingMutation) ClearedFields() []string {
 	if m.FieldCleared(aisetting.FieldAPIKey) {
 		fields = append(fields, aisetting.FieldAPIKey)
 	}
+	if m.FieldCleared(aisetting.FieldTextGenURL) {
+		fields = append(fields, aisetting.FieldTextGenURL)
+	}
+	if m.FieldCleared(aisetting.FieldTextGenModel) {
+		fields = append(fields, aisetting.FieldTextGenModel)
+	}
 	return fields
 }
 
@@ -847,6 +981,12 @@ func (m *AISettingMutation) ClearField(name string) error {
 	case aisetting.FieldAPIKey:
 		m.ClearAPIKey()
 		return nil
+	case aisetting.FieldTextGenURL:
+		m.ClearTextGenURL()
+		return nil
+	case aisetting.FieldTextGenModel:
+		m.ClearTextGenModel()
+		return nil
 	}
 	return fmt.Errorf("unknown AISetting nullable field %s", name)
 }
@@ -860,6 +1000,12 @@ func (m *AISettingMutation) ResetField(name string) error {
 		return nil
 	case aisetting.FieldAPIKey:
 		m.ResetAPIKey()
+		return nil
+	case aisetting.FieldTextGenURL:
+		m.ResetTextGenURL()
+		return nil
+	case aisetting.FieldTextGenModel:
+		m.ResetTextGenModel()
 		return nil
 	case aisetting.FieldEnabled:
 		m.ResetEnabled()

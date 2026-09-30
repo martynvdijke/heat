@@ -47,6 +47,34 @@ func (_c *AISettingCreate) SetNillableAPIKey(v *string) *AISettingCreate {
 	return _c
 }
 
+// SetTextGenURL sets the "text_gen_url" field.
+func (_c *AISettingCreate) SetTextGenURL(v string) *AISettingCreate {
+	_c.mutation.SetTextGenURL(v)
+	return _c
+}
+
+// SetNillableTextGenURL sets the "text_gen_url" field if the given value is not nil.
+func (_c *AISettingCreate) SetNillableTextGenURL(v *string) *AISettingCreate {
+	if v != nil {
+		_c.SetTextGenURL(*v)
+	}
+	return _c
+}
+
+// SetTextGenModel sets the "text_gen_model" field.
+func (_c *AISettingCreate) SetTextGenModel(v string) *AISettingCreate {
+	_c.mutation.SetTextGenModel(v)
+	return _c
+}
+
+// SetNillableTextGenModel sets the "text_gen_model" field if the given value is not nil.
+func (_c *AISettingCreate) SetNillableTextGenModel(v *string) *AISettingCreate {
+	if v != nil {
+		_c.SetTextGenModel(*v)
+	}
+	return _c
+}
+
 // SetEnabled sets the "enabled" field.
 func (_c *AISettingCreate) SetEnabled(v int) *AISettingCreate {
 	_c.mutation.SetEnabled(v)
@@ -236,6 +264,14 @@ func (_c *AISettingCreate) createSpec() (*AISetting, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.APIKey(); ok {
 		_spec.SetField(aisetting.FieldAPIKey, field.TypeString, value)
 		_node.APIKey = value
+	}
+	if value, ok := _c.mutation.TextGenURL(); ok {
+		_spec.SetField(aisetting.FieldTextGenURL, field.TypeString, value)
+		_node.TextGenURL = value
+	}
+	if value, ok := _c.mutation.TextGenModel(); ok {
+		_spec.SetField(aisetting.FieldTextGenModel, field.TypeString, value)
+		_node.TextGenModel = value
 	}
 	if value, ok := _c.mutation.Enabled(); ok {
 		_spec.SetField(aisetting.FieldEnabled, field.TypeInt, value)

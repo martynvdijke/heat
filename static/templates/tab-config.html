@@ -380,7 +380,7 @@
                                 <div class="card mb-4">
                                     <div class="card-header"><i class="fa-solid fa-wand-magic-sparkles me-2 text-danger"></i>AI Track Extraction Settings</div>
                                     <div class="card-body">
-                                        <p class="small text-muted mb-3">Configure an AI endpoint to extract track layouts from board game map images.</p>
+                                        <p class="small text-muted mb-3">Configure an AI endpoint to extract track layouts from board game map images, and an OpenAI-compatible text endpoint used to suggest commentary quotes.</p>
                                         <form id="ai-settings-form">
                                             <div class="row g-3">
                                                 <div class="col-md-6">
@@ -398,6 +398,18 @@
                                                         <input class="form-check-input" type="checkbox" id="ai-enabled">
                                                         <label class="form-check-label small fw-bold" for="ai-enabled">Enabled</label>
                                                     </div>
+                                                </div>
+                                            </div>
+                                            <div class="row g-3 mt-1">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold">AI Text Endpoint URL (OpenAI-compatible)</label>
+                                                    <input type="text" class="form-control" id="ai-text-gen-url" placeholder="https://api.openai.com/v1">
+                                                    <div class="form-text">Used for AI quote suggestions. Set <code>AI_TEXT_GEN_URL</code> env var to override. Requests go to <code>&lt;url&gt;/chat/completions</code>.</div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold">Text Model</label>
+                                                    <input type="text" class="form-control" id="ai-text-gen-model" placeholder="gpt-4o-mini">
+                                                    <div class="form-text">Sent as the <code>model</code> field. Set <code>AI_TEXT_GEN_MODEL</code> env var to override.</div>
                                                 </div>
                                             </div>
                                             <button type="submit" class="btn btn-primary w-100 mt-2">Save AI Settings</button>

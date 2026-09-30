@@ -14,6 +14,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "track_extract_url", Type: field.TypeString, Nullable: true},
 		{Name: "api_key", Type: field.TypeString, Nullable: true},
+		{Name: "text_gen_url", Type: field.TypeString, Nullable: true},
+		{Name: "text_gen_model", Type: field.TypeString, Nullable: true},
 		{Name: "enabled", Type: field.TypeInt, Default: 0},
 		{Name: "difficulty", Type: field.TypeString, Default: "balanced"},
 		{Name: "aggression", Type: field.TypeInt, Default: 50},

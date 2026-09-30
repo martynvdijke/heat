@@ -14,6 +14,8 @@ func (AISetting) Fields() []ent.Field {
 		field.Int("id"),
 		field.String("track_extract_url").Optional(),
 		field.String("api_key").Optional(),
+		field.String("text_gen_url").Optional(),
+		field.String("text_gen_model").Optional(),
 		field.Int("enabled").Default(0),
 		field.String("difficulty").Default("balanced"),
 		field.Int("aggression").Default(50),

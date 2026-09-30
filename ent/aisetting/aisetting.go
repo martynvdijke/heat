@@ -15,6 +15,10 @@ const (
 	FieldTrackExtractURL = "track_extract_url"
 	// FieldAPIKey holds the string denoting the api_key field in the database.
 	FieldAPIKey = "api_key"
+	// FieldTextGenURL holds the string denoting the text_gen_url field in the database.
+	FieldTextGenURL = "text_gen_url"
+	// FieldTextGenModel holds the string denoting the text_gen_model field in the database.
+	FieldTextGenModel = "text_gen_model"
 	// FieldEnabled holds the string denoting the enabled field in the database.
 	FieldEnabled = "enabled"
 	// FieldDifficulty holds the string denoting the difficulty field in the database.
@@ -34,6 +38,8 @@ var Columns = []string{
 	FieldID,
 	FieldTrackExtractURL,
 	FieldAPIKey,
+	FieldTextGenURL,
+	FieldTextGenModel,
 	FieldEnabled,
 	FieldDifficulty,
 	FieldAggression,
@@ -80,6 +86,16 @@ func ByTrackExtractURL(opts ...sql.OrderTermOption) OrderOption {
 // ByAPIKey orders the results by the api_key field.
 func ByAPIKey(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAPIKey, opts...).ToFunc()
+}
+
+// ByTextGenURL orders the results by the text_gen_url field.
+func ByTextGenURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTextGenURL, opts...).ToFunc()
+}
+
+// ByTextGenModel orders the results by the text_gen_model field.
+func ByTextGenModel(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTextGenModel, opts...).ToFunc()
 }
 
 // ByEnabled orders the results by the enabled field.

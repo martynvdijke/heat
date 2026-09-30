@@ -342,6 +342,10 @@ func (h *Handler) HandleAIExtract(c *gin.Context) {
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
+	sessionID := resolveSessionID(c.GetHeader("x-opencode-session"))
+	setAIProviderHeaders(req, sessionID, h.S.CurrentVersion)
+	c.Header("X-Opencode-Session", sessionID)
+
 	setting, err := h.S.Ent.AISetting.Query().Where(aisetting.ID(1)).First(c.Request.Context())
 	if err == nil && setting.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+setting.APIKey)

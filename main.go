@@ -399,6 +399,7 @@ func main() {
 		admin.POST("/quotes", h.HandleQuotes)
 		admin.PUT("/quotes", h.HandleQuotes)
 		admin.DELETE("/quotes", h.HandleQuotes)
+		admin.POST("/quotes/ai-suggest", h.HandleQuoteSuggest)
 		admin.GET("/backup-settings", h.GetBackupSettings)
 		admin.POST("/backup-settings", h.SaveBackupSettings)
 		admin.POST("/backup/manual", h.TriggerManualBackup)

@@ -24,8 +24,8 @@ import (
 func (h *Handler) GetAISettings(c *gin.Context) {
 	var s models.AISettings
 	var enabled int
-	err := h.S.DB.QueryRow("SELECT id, COALESCE(track_extract_url, ''), COALESCE(api_key, ''), COALESCE(enabled, 0) FROM ai_settings WHERE id = 1").
-		Scan(&s.ID, &s.TrackExtractURL, &s.APIKey, &enabled)
+	err := h.S.DB.QueryRow("SELECT id, COALESCE(track_extract_url, ''), COALESCE(text_gen_url, ''), COALESCE(text_gen_model, ''), COALESCE(api_key, ''), COALESCE(enabled, 0) FROM ai_settings WHERE id = 1").
+		Scan(&s.ID, &s.TrackExtractURL, &s.TextGenURL, &s.TextGenModel, &s.APIKey, &enabled)
 	if err != nil {
 		s = models.AISettings{ID: 1, Enabled: false}
 		c.JSON(http.StatusOK, s)
@@ -34,8 +34,8 @@ func (h *Handler) GetAISettings(c *gin.Context) {
 	s.Enabled = enabled == 1
 	hasKey := s.APIKey != ""
 	s.APIKey = ""
-	h.S.Log.Debugf("ai", "GetAISettings: enabled=%v has_key=%v", s.Enabled, hasKey)
-	c.JSON(http.StatusOK, gin.H{"id": s.ID, "track_extract_url": s.TrackExtractURL, "has_api_key": hasKey, "enabled": s.Enabled})
+	h.S.Log.Debugf("ai", "GetAISettings: enabled=%v has_key=%v text_gen_url=%q", s.Enabled, hasKey, s.TextGenURL)
+	c.JSON(http.StatusOK, gin.H{"id": s.ID, "track_extract_url": s.TrackExtractURL, "text_gen_url": s.TextGenURL, "text_gen_model": s.TextGenModel, "has_api_key": hasKey, "enabled": s.Enabled})
 }
 
 // @Summary Save AI settings
@@ -61,14 +61,14 @@ func (h *Handler) SaveAISettings(c *gin.Context) {
 		s.APIKey = existingKey
 	}
 
-	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO ai_settings (id, track_extract_url, api_key, enabled) VALUES (1, ?, ?, ?)`,
-		s.TrackExtractURL, s.APIKey, db.BoolToInt(s.Enabled))
+	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO ai_settings (id, track_extract_url, text_gen_url, text_gen_model, api_key, enabled) VALUES (1, ?, ?, ?, ?, ?)`,
+		s.TrackExtractURL, s.TextGenURL, s.TextGenModel, s.APIKey, db.BoolToInt(s.Enabled))
 	if err != nil {
 		h.S.Log.Errorf("ai", "SaveAISettings: DB error: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	h.S.Log.Infof("ai", "AI settings saved: track_extract_url=%q enabled=%v", s.TrackExtractURL, s.Enabled)
+	h.S.Log.Infof("ai", "AI settings saved: track_extract_url=%q text_gen_url=%q text_gen_model=%q enabled=%v", s.TrackExtractURL, s.TextGenURL, s.TextGenModel, s.Enabled)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 

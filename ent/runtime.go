@@ -48,23 +48,23 @@ func init() {
 	aisettingFields := schema.AISetting{}.Fields()
 	_ = aisettingFields
 	// aisettingDescEnabled is the schema descriptor for enabled field.
-	aisettingDescEnabled := aisettingFields[3].Descriptor()
+	aisettingDescEnabled := aisettingFields[5].Descriptor()
 	// aisetting.DefaultEnabled holds the default value on creation for the enabled field.
 	aisetting.DefaultEnabled = aisettingDescEnabled.Default.(int)
 	// aisettingDescDifficulty is the schema descriptor for difficulty field.
-	aisettingDescDifficulty := aisettingFields[4].Descriptor()
+	aisettingDescDifficulty := aisettingFields[6].Descriptor()
 	// aisetting.DefaultDifficulty holds the default value on creation for the difficulty field.
 	aisetting.DefaultDifficulty = aisettingDescDifficulty.Default.(string)
 	// aisettingDescAggression is the schema descriptor for aggression field.
-	aisettingDescAggression := aisettingFields[5].Descriptor()
+	aisettingDescAggression := aisettingFields[7].Descriptor()
 	// aisetting.DefaultAggression holds the default value on creation for the aggression field.
 	aisetting.DefaultAggression = aisettingDescAggression.Default.(int)
 	// aisettingDescErrorRate is the schema descriptor for error_rate field.
-	aisettingDescErrorRate := aisettingFields[6].Descriptor()
+	aisettingDescErrorRate := aisettingFields[8].Descriptor()
 	// aisetting.DefaultErrorRate holds the default value on creation for the error_rate field.
 	aisetting.DefaultErrorRate = aisettingDescErrorRate.Default.(int)
 	// aisettingDescConsistency is the schema descriptor for consistency field.
-	aisettingDescConsistency := aisettingFields[7].Descriptor()
+	aisettingDescConsistency := aisettingFields[9].Descriptor()
 	// aisetting.DefaultConsistency holds the default value on creation for the consistency field.
 	aisetting.DefaultConsistency = aisettingDescConsistency.Default.(int)
 	adminuserFields := schema.AdminUser{}.Fields()

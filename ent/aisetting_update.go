@@ -67,6 +67,46 @@ func (_u *AISettingUpdate) ClearAPIKey() *AISettingUpdate {
 	return _u
 }
 
+// SetTextGenURL sets the "text_gen_url" field.
+func (_u *AISettingUpdate) SetTextGenURL(v string) *AISettingUpdate {
+	_u.mutation.SetTextGenURL(v)
+	return _u
+}
+
+// SetNillableTextGenURL sets the "text_gen_url" field if the given value is not nil.
+func (_u *AISettingUpdate) SetNillableTextGenURL(v *string) *AISettingUpdate {
+	if v != nil {
+		_u.SetTextGenURL(*v)
+	}
+	return _u
+}
+
+// ClearTextGenURL clears the value of the "text_gen_url" field.
+func (_u *AISettingUpdate) ClearTextGenURL() *AISettingUpdate {
+	_u.mutation.ClearTextGenURL()
+	return _u
+}
+
+// SetTextGenModel sets the "text_gen_model" field.
+func (_u *AISettingUpdate) SetTextGenModel(v string) *AISettingUpdate {
+	_u.mutation.SetTextGenModel(v)
+	return _u
+}
+
+// SetNillableTextGenModel sets the "text_gen_model" field if the given value is not nil.
+func (_u *AISettingUpdate) SetNillableTextGenModel(v *string) *AISettingUpdate {
+	if v != nil {
+		_u.SetTextGenModel(*v)
+	}
+	return _u
+}
+
+// ClearTextGenModel clears the value of the "text_gen_model" field.
+func (_u *AISettingUpdate) ClearTextGenModel() *AISettingUpdate {
+	_u.mutation.ClearTextGenModel()
+	return _u
+}
+
 // SetEnabled sets the "enabled" field.
 func (_u *AISettingUpdate) SetEnabled(v int) *AISettingUpdate {
 	_u.mutation.ResetEnabled()
@@ -218,6 +258,18 @@ func (_u *AISettingUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.APIKeyCleared() {
 		_spec.ClearField(aisetting.FieldAPIKey, field.TypeString)
 	}
+	if value, ok := _u.mutation.TextGenURL(); ok {
+		_spec.SetField(aisetting.FieldTextGenURL, field.TypeString, value)
+	}
+	if _u.mutation.TextGenURLCleared() {
+		_spec.ClearField(aisetting.FieldTextGenURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.TextGenModel(); ok {
+		_spec.SetField(aisetting.FieldTextGenModel, field.TypeString, value)
+	}
+	if _u.mutation.TextGenModelCleared() {
+		_spec.ClearField(aisetting.FieldTextGenModel, field.TypeString)
+	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(aisetting.FieldEnabled, field.TypeInt, value)
 	}
@@ -302,6 +354,46 @@ func (_u *AISettingUpdateOne) SetNillableAPIKey(v *string) *AISettingUpdateOne {
 // ClearAPIKey clears the value of the "api_key" field.
 func (_u *AISettingUpdateOne) ClearAPIKey() *AISettingUpdateOne {
 	_u.mutation.ClearAPIKey()
+	return _u
+}
+
+// SetTextGenURL sets the "text_gen_url" field.
+func (_u *AISettingUpdateOne) SetTextGenURL(v string) *AISettingUpdateOne {
+	_u.mutation.SetTextGenURL(v)
+	return _u
+}
+
+// SetNillableTextGenURL sets the "text_gen_url" field if the given value is not nil.
+func (_u *AISettingUpdateOne) SetNillableTextGenURL(v *string) *AISettingUpdateOne {
+	if v != nil {
+		_u.SetTextGenURL(*v)
+	}
+	return _u
+}
+
+// ClearTextGenURL clears the value of the "text_gen_url" field.
+func (_u *AISettingUpdateOne) ClearTextGenURL() *AISettingUpdateOne {
+	_u.mutation.ClearTextGenURL()
+	return _u
+}
+
+// SetTextGenModel sets the "text_gen_model" field.
+func (_u *AISettingUpdateOne) SetTextGenModel(v string) *AISettingUpdateOne {
+	_u.mutation.SetTextGenModel(v)
+	return _u
+}
+
+// SetNillableTextGenModel sets the "text_gen_model" field if the given value is not nil.
+func (_u *AISettingUpdateOne) SetNillableTextGenModel(v *string) *AISettingUpdateOne {
+	if v != nil {
+		_u.SetTextGenModel(*v)
+	}
+	return _u
+}
+
+// ClearTextGenModel clears the value of the "text_gen_model" field.
+func (_u *AISettingUpdateOne) ClearTextGenModel() *AISettingUpdateOne {
+	_u.mutation.ClearTextGenModel()
 	return _u
 }
 
@@ -485,6 +577,18 @@ func (_u *AISettingUpdateOne) sqlSave(ctx context.Context) (_node *AISetting, er
 	}
 	if _u.mutation.APIKeyCleared() {
 		_spec.ClearField(aisetting.FieldAPIKey, field.TypeString)
+	}
+	if value, ok := _u.mutation.TextGenURL(); ok {
+		_spec.SetField(aisetting.FieldTextGenURL, field.TypeString, value)
+	}
+	if _u.mutation.TextGenURLCleared() {
+		_spec.ClearField(aisetting.FieldTextGenURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.TextGenModel(); ok {
+		_spec.SetField(aisetting.FieldTextGenModel, field.TypeString, value)
+	}
+	if _u.mutation.TextGenModelCleared() {
+		_spec.ClearField(aisetting.FieldTextGenModel, field.TypeString)
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(aisetting.FieldEnabled, field.TypeInt, value)
