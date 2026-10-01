@@ -1,3 +1,10 @@
+## [1.65.1](https://github.com/martynvdijke/heat/compare/v1.65.0...v1.65.1) (2026-10-01)
+
+
+### Bug Fixes
+
+* make WebSocket subscription tests deterministic ([be38587](https://github.com/martynvdijke/heat/commit/be385875bf8b68e7d2cee41580870d73fa51b915))
+
 # [1.65.0](https://github.com/martynvdijke/heat/compare/v1.64.1...v1.65.0) (2026-09-30)
 
 
