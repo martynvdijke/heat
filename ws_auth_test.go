@@ -170,6 +170,18 @@ func wsSend(t *testing.T, c *websocket.Conn, payload string) {
 	}
 }
 
+// wsSubscribe sends a subscribe frame and waits until the server has provably
+// applied it. The resync reply is sent on the same connection and frames are
+// handled in order per connection, so receiving it proves the preceding
+// subscribe was processed. Without that round-trip, a later broadcast can race
+// ahead of the subscription change.
+func wsSubscribe(t *testing.T, c *websocket.Conn, topics ...string) {
+	t.Helper()
+	wsSend(t, c, `{"type":"subscribe","topics":["`+strings.Join(topics, `","`)+`"]}`)
+	wsSend(t, c, `{"type":"resync"}`)
+	wsWaitFor(t, c, "resync", 2*time.Second)
+}
+
 // wsPayload returns the sequenced envelope's payload object.
 func wsPayload(t *testing.T, m map[string]any) map[string]any {
 	t.Helper()
@@ -279,7 +291,7 @@ func TestWSTopicFiltering(t *testing.T) {
 	player9 := wsDial(t, url, "", "heat", "heat.token."+token9)
 
 	// player9 opts out of telemetry.
-	wsSend(t, player9, `{"type":"subscribe","topics":["flags"]}`)
+	wsSubscribe(t, player9, "flags")
 
 	wsSend(t, player7, `{"type":"self_service","action":"turbo","racer_id":`+fmt.Sprint(racer7)+`}`)
 
@@ -344,7 +356,7 @@ func TestWSPresence(t *testing.T) {
 	if m := wsWaitFor(t, controllerA, "presence", 2*time.Second); wsPayload(t, m)["event"] != "join" || wsPayload(t, m)["role"] != "controller" {
 		t.Fatalf("controllerA did not receive controllerC's join: %v", m)
 	}
-	wsSend(t, controllerC, `{"type":"subscribe","topics":["flags"]}`)
+	wsSubscribe(t, controllerC, "flags")
 
 	racerID := createTestRacer(t, "Presence Racer")
 	player := wsDial(t, url, "", "heat", "heat.token."+createTestPlayerToken(t, racerID))

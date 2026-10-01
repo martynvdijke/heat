@@ -19,7 +19,7 @@ func TestWSRaceStateBroadcast(t *testing.T) {
 	t.Cleanup(func() { srv.ApplyRaceAction("stop", 0) })
 
 	controller := wsDial(t, url, addTestSession(t, srv))
-	wsSend(t, controller, `{"type":"subscribe","topics":["race_state","standings"]}`)
+	wsSubscribe(t, controller, "race_state", "standings")
 
 	// Transition: start racing and push the new state onto the broadcast channel.
 	state, err := srv.ApplyRaceAction("start", 10)
@@ -51,7 +51,7 @@ func TestWSRaceRadioDelivery(t *testing.T) {
 	go m.BroadcastRaceRadio()
 
 	controller := wsDial(t, url, addTestSession(t, srv))
-	wsSend(t, controller, `{"type":"subscribe","topics":["race_radio"]}`)
+	wsSubscribe(t, controller, "race_radio")
 
 	spectator := wsDial(t, url, "")
 
