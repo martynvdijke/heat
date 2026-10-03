@@ -20,3 +20,6 @@ backups/
 docs/*.md
 openspec/
 .opencode/
+
+# Zensical build output
+site/
