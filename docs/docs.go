@@ -1793,6 +1793,26 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/races/export.ics": {
+            "get": {
+                "description": "Export upcoming and done races as an iCalendar (.ics) feed",
+                "produces": [
+                    "text/calendar"
+                ],
+                "tags": [
+                    "Race"
+                ],
+                "summary": "Export races as iCalendar",
+                "responses": {
+                    "200": {
+                        "description": "iCalendar data",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/reset-password": {
             "post": {
                 "description": "Set a new password using a valid reset token, then log in automatically",

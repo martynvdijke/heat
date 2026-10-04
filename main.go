@@ -532,6 +532,7 @@ func main() {
 
 	r.GET("/api/uploads", h.GetUploads)
 	r.GET("/api/race-info", h.GetRaceInfo)
+	r.GET("/api/races/export.ics", h.ExportRacesICS)
 	r.GET("/api/tracks", h.GetTracks)
 	r.GET("/api/tracks/geojson", h.GetTrackGeoJSON)
 	r.GET("/api/board-game/tracks", h.GetBoardGameTracks)

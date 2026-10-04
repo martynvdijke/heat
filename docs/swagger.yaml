@@ -1656,6 +1656,19 @@ paths:
       summary: Batch update racer ranks
       tags:
       - Racers
+  /api/races/export.ics:
+    get:
+      description: Export upcoming and done races as an iCalendar (.ics) feed
+      produces:
+      - text/calendar
+      responses:
+        "200":
+          description: iCalendar data
+          schema:
+            type: string
+      summary: Export races as iCalendar
+      tags:
+      - Race
   /api/reset-password:
     post:
       consumes:

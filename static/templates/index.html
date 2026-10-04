@@ -44,7 +44,10 @@
 <section class="next-race mb-5">
     <div class="row align-items-stretch g-4">
         <div class="col-lg-8" id="race-info-container">
-            <h2 class="mb-4">Next HEAT Race</h2>
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+                <h2 class="mb-0">Next HEAT Race</h2>
+                <a href="/api/races/export.ics" download class="btn btn-sm btn-outline-secondary"><i aria-hidden="true" class="fa-solid fa-calendar-plus me-1"></i> Export iCal</a>
+            </div>
             <div class="race-card d-flex flex-column flex-md-row justify-content-between align-items-center p-4">
                 <div class="race-info">
                     <span class="country d-block mb-1" id="race-country">... <i class="fa-solid fa-location-dot ms-2 text-warning"></i></span>
