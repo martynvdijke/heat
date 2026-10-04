@@ -1,3 +1,10 @@
+# [1.66.0](https://github.com/martynvdijke/heat/compare/v1.65.3...v1.66.0) (2026-10-04)
+
+
+### Features
+
+* add iCal export for upcoming and done races ([adef8a4](https://github.com/martynvdijke/heat/commit/adef8a4bfaed2e512209c4cbe5195a3c83d876fc))
+
 ## [1.65.3](https://github.com/martynvdijke/heat/compare/v1.65.2...v1.65.3) (2026-10-03)
 
 
