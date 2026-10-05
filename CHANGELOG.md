@@ -1,3 +1,10 @@
+# [1.67.0](https://github.com/martynvdijke/heat/compare/v1.66.2...v1.67.0) (2026-10-05)
+
+
+### Features
+
+* show upcoming race date and countdown on the main page ([6be864a](https://github.com/martynvdijke/heat/commit/6be864af048846a2d5ed674a7fe16f7ee1f5d92a))
+
 ## [1.66.2](https://github.com/martynvdijke/heat/compare/v1.66.1...v1.66.2) (2026-10-04)
 
 ## [1.66.1](https://github.com/martynvdijke/heat/compare/v1.66.0...v1.66.1) (2026-10-04)
