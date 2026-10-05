@@ -141,4 +141,76 @@ test.describe('Index Page', () => {
       expect(box.width).toBeLessThan(600);
     }
   });
+
+  test.describe('upcoming race badge', () => {
+    async function loginAsAdmin(page: import('@playwright/test').Page) {
+      await page.goto('/admin.html');
+      if (await page.locator('#admin-nav').count() > 0) return;
+      await page.waitForSelector('#setup-form, #login-form', { timeout: 10000 });
+      if (await page.locator('#setup-form').count() > 0) {
+        await page.fill('#setup-form input[name="username"]', 'admin');
+        await page.fill('#setup-form input[name="password"]', 'admin123');
+        await page.fill('#setup-form input[name="confirm_password"]', 'admin123');
+        await page.click('#setup-form button[type="submit"]');
+        try {
+          await page.waitForURL(/admin/, { timeout: 5000 });
+        } catch {
+          await page.goto('/login.html');
+        }
+      }
+      if (!page.url().includes('/admin')) {
+        await page.waitForSelector('#login-form', { timeout: 10000 });
+        await page.fill('#login-form input[name="username"]', 'admin');
+        await page.fill('#login-form input[name="password"]', 'admin123');
+        await page.click('#login-form button[type="submit"]');
+      }
+      await page.waitForURL(/admin/, { timeout: 20000 });
+      await expect(page.locator('#admin-nav')).toBeVisible({ timeout: 10000 });
+    }
+
+    async function setNextRaceDate(
+      page: import('@playwright/test').Page,
+      info: Record<string, unknown>,
+      nextRaceDate: string
+    ): Promise<boolean> {
+      // Use the browser's own fetch so the session cookie + Origin header are sent
+      // (page.request does not reliably carry the session cookie on all browsers).
+      return page.evaluate(async (body) => {
+        const res = await fetch('/api/race-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        return res.ok;
+      }, { ...info, next_race_date: nextRaceDate });
+    }
+
+    test('should show the upcoming race date and countdown', async ({ page }) => {
+      await loginAsAdmin(page);
+      const info = await (await page.request.get('/api/race-info')).json();
+      const original = info.next_race_date || '';
+      try {
+        expect(await setNextRaceDate(page, info, '2099-01-01')).toBeTruthy();
+        await page.goto('/');
+        const badge = page.locator('#next-race-badge');
+        await expect(badge).toBeVisible();
+        await expect(badge).toContainText('2099-01-01');
+        await expect(badge).toContainText(/in \d+ days/);
+      } finally {
+        await setNextRaceDate(page, info, original);
+      }
+    });
+
+    test('should hide the upcoming race badge when no date is set', async ({ page }) => {
+      await loginAsAdmin(page);
+      const info = await (await page.request.get('/api/race-info')).json();
+      try {
+        expect(await setNextRaceDate(page, info, '')).toBeTruthy();
+        await page.goto('/');
+        await expect(page.locator('#next-race-badge')).toBeHidden();
+      } finally {
+        await setNextRaceDate(page, info, info.next_race_date || '');
+      }
+    });
+  });
 });

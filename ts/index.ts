@@ -34,6 +34,7 @@ interface RaceInfo {
     track: string;
     laps: number;
     track_id: string;
+    next_race_date?: string;
 }
 
 interface RacerStats {
@@ -438,6 +439,33 @@ function startQuoteRotation(): void {
     quoteInterval = window.setInterval(loadRandomQuote, 15000);
 }
 
+// Upcoming-race badge: scheduled date plus a relative countdown.
+// Hidden when no date is configured or it cannot be parsed.
+function renderNextRace(nextRaceDate: string): void {
+    const badge = document.getElementById('next-race-badge');
+    if (!badge) return;
+    if (!nextRaceDate) {
+        badge.classList.add('d-none');
+        return;
+    }
+    const date = new Date(`${nextRaceDate}T00:00:00`);
+    if (isNaN(date.getTime())) {
+        badge.classList.add('d-none');
+        return;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((date.getTime() - today.getTime()) / 86400000);
+    let when: string;
+    if (diffDays === 0) when = 'today';
+    else if (diffDays === 1) when = 'tomorrow';
+    else if (diffDays > 1) when = `in ${diffDays} days`;
+    else when = `${Math.abs(diffDays)} days ago`;
+    const text = document.getElementById('next-race-date');
+    if (text) text.textContent = `${nextRaceDate} · ${when}`;
+    badge.classList.remove('d-none');
+}
+
 async function loadData(): Promise<void> {
     try {
         const [raceResp, racerResp, seasonsResp, geoResp] = await Promise.all([
@@ -453,6 +481,7 @@ async function loadData(): Promise<void> {
         document.getElementById('race-country')!.innerHTML = `${race.country} <i class="fa-solid fa-location-dot ms-2 text-warning"></i>`;
         document.getElementById('race-track')!.textContent = race.track;
         document.getElementById('race-laps')!.textContent = String(race.laps);
+        renderNextRace(race.next_race_date || '');
         document.getElementById('total-drivers')!.textContent = String(racers.length);
         document.getElementById('total-seasons')!.textContent = String(Array.isArray(seasons) ? seasons.length : 1);
         currentTrack = race.track_id || 'monza';
