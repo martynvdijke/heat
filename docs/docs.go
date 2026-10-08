@@ -883,6 +883,185 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/me": {
+            "get": {
+                "description": "Career stats, current-season standing, and recent results for the signed-in racer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Current racer's personal summary",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/logout": {
+            "post": {
+                "description": "Clear the racer website session",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Sign out the racer session",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/request-link": {
+            "post": {
+                "description": "Email a racer a passwordless sign-in link. Always returns 200 to avoid user enumeration.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Request a racer sign-in link",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/upgrades": {
+            "get": {
+                "description": "Upgrades owned by the signed-in racer plus upgrades available to buy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Current racer's upgrades",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/upgrades/buy": {
+            "post": {
+                "description": "Buy an eligible upgrade for the current racer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Buy an upgrade as the signed-in racer",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/upgrades/toggle": {
+            "put": {
+                "description": "Toggle the equipped state of a player-upgrade owned by the signed-in racer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Equip or unequip an owned upgrade",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/modules": {
             "get": {
                 "security": [
@@ -1545,6 +1724,44 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": {
                                 "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/racer-recent-results": {
+            "get": {
+                "description": "The most recent race results for a racer (public)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Recent results for a racer",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Racer ID",
+                        "name": "racer_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Max results (default 5)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.racerRecentResult"
                             }
                         }
                     }
@@ -2773,6 +2990,111 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/telegram/link/start": {
+            "post": {
+                "description": "Called by the Telegram bot to email a racer a verification link. Requires the bot token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Start a Telegram chat link (bot only)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/telegram/verify": {
+            "post": {
+                "description": "Consume a verification token: link the originating Telegram chat (if any) and start a racer website session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Confirm a racer verification token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/telegram/verify/validate": {
+            "get": {
+                "description": "Check whether a racer verification token is valid without consuming it",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Racers"
+                ],
+                "summary": "Validate a racer verification token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Verification token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/test-notification": {
             "post": {
                 "security": [
@@ -3308,6 +3630,38 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "module": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.racerRecentResult": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "type": "string"
+                },
+                "fastest_lap": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "race_date": {
+                    "type": "string"
+                },
+                "race_id": {
+                    "type": "integer"
+                },
+                "race_type": {
+                    "type": "string"
+                },
+                "track": {
                     "type": "string"
                 }
             }

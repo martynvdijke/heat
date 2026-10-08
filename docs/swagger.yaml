@@ -82,6 +82,27 @@ definitions:
     - level
     - module
     type: object
+  handlers.racerRecentResult:
+    properties:
+      country:
+        type: string
+      fastest_lap:
+        type: boolean
+      name:
+        type: string
+      points:
+        type: integer
+      position:
+        type: integer
+      race_date:
+        type: string
+      race_id:
+        type: integer
+      race_type:
+        type: string
+      track:
+        type: string
+    type: object
   models.AISettings:
     properties:
       api_key:
@@ -1080,6 +1101,128 @@ paths:
       summary: Logout
       tags:
       - Auth
+  /api/me:
+    get:
+      description: Career stats, current-season standing, and recent results for the
+        signed-in racer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Current racer's personal summary
+      tags:
+      - Racers
+  /api/me/logout:
+    post:
+      description: Clear the racer website session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Sign out the racer session
+      tags:
+      - Racers
+  /api/me/request-link:
+    post:
+      consumes:
+      - application/json
+      description: Email a racer a passwordless sign-in link. Always returns 200 to
+        avoid user enumeration.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request a racer sign-in link
+      tags:
+      - Racers
+  /api/me/upgrades:
+    get:
+      description: Upgrades owned by the signed-in racer plus upgrades available to
+        buy
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Current racer's upgrades
+      tags:
+      - Racers
+  /api/me/upgrades/buy:
+    post:
+      consumes:
+      - application/json
+      description: Buy an eligible upgrade for the current racer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Buy an upgrade as the signed-in racer
+      tags:
+      - Racers
+  /api/me/upgrades/toggle:
+    put:
+      consumes:
+      - application/json
+      description: Toggle the equipped state of a player-upgrade owned by the signed-in
+        racer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Equip or unequip an owned upgrade
+      tags:
+      - Racers
   /api/modules:
     delete:
       description: Delete a gameplay module and its season links
@@ -1501,6 +1644,31 @@ paths:
       summary: Save racer email
       tags:
       - Email
+  /api/racer-recent-results:
+    get:
+      description: The most recent race results for a racer (public)
+      parameters:
+      - description: Racer ID
+        in: query
+        name: racer_id
+        required: true
+        type: integer
+      - description: Max results (default 5)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.racerRecentResult'
+            type: array
+      summary: Recent results for a racer
+      tags:
+      - Racers
   /api/racer-stats:
     get:
       description: Get statistics for all racers or a specific racer by ID
@@ -2295,6 +2463,79 @@ paths:
       summary: Test Telegram bot
       tags:
       - Settings
+  /api/telegram/link/start:
+    post:
+      consumes:
+      - application/json
+      description: Called by the Telegram bot to email a racer a verification link.
+        Requires the bot token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Start a Telegram chat link (bot only)
+      tags:
+      - Racers
+  /api/telegram/verify:
+    post:
+      consumes:
+      - application/json
+      description: 'Consume a verification token: link the originating Telegram chat
+        (if any) and start a racer website session'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Confirm a racer verification token
+      tags:
+      - Racers
+  /api/telegram/verify/validate:
+    get:
+      description: Check whether a racer verification token is valid without consuming
+        it
+      parameters:
+      - description: Verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      summary: Validate a racer verification token
+      tags:
+      - Racers
   /api/test-notification:
     post:
       description: Send a test notification via Gotify

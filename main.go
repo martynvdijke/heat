@@ -296,6 +296,13 @@ func main() {
 				}
 			}
 			server.SessionStoreMu.Unlock()
+			server.RacerSessionsMu.Lock()
+			for k, v := range server.RacerSessions {
+				if now > v.Expiry {
+					delete(server.RacerSessions, k)
+				}
+			}
+			server.RacerSessionsMu.Unlock()
 		}
 	}()
 	go func() {
@@ -564,6 +571,23 @@ func main() {
 	r.GET("/api/trmnl/next-race", h.GetTRMNLNextRace)
 	r.GET("/api/telegram/summary", h.GetTelegramSummary)
 
+	// Racer Identity (email-verified, passwordless)
+	r.POST("/api/telegram/link/start", h.StartTelegramLink)
+	r.POST("/api/me/request-link", middleware.RateLimitMiddleware(server), h.RequestRacerLink)
+	r.GET("/api/telegram/verify/validate", h.ValidateRacerLink)
+	r.POST("/api/telegram/verify", h.VerifyRacerLink)
+	r.GET("/api/racer-recent-results", h.RacerRecentResults)
+
+	me := r.Group("/api/me")
+	me.Use(middleware.RacerAuthMiddleware(server))
+	{
+		me.GET("", h.MeRacer)
+		me.GET("/upgrades", h.MeRacerUpgrades)
+		me.POST("/upgrades/buy", middleware.CSRFMiddleware(), h.MeBuyUpgrade)
+		me.PUT("/upgrades/toggle", middleware.CSRFMiddleware(), h.MeToggleUpgrade)
+		me.POST("/logout", middleware.CSRFMiddleware(), h.MeLogout)
+	}
+
 	// Game Mechanics routes
 	r.GET("/api/heat-cards", h.GetHeatCards)
 	r.GET("/api/gear-shifts", h.GetGearShifts)
@@ -802,6 +826,14 @@ func main() {
 
 		pages.GET("/driver.html", func(c *gin.Context) {
 			c.File(filepath.Join(server.BasePath, "static/driver.html"))
+		})
+
+		pages.GET("/verify.html", func(c *gin.Context) {
+			c.File(filepath.Join(server.BasePath, "static/verify.html"))
+		})
+
+		pages.GET("/me.html", func(c *gin.Context) {
+			c.File(filepath.Join(server.BasePath, "static/me.html"))
 		})
 
 		pages.GET("/", func(c *gin.Context) {

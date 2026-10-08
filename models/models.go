@@ -206,6 +206,26 @@ type TelegramEvent struct {
 	Text   string `json:"text,omitempty"`
 }
 
+// TelegramLinkToken is a single-use, expiring token that verifies ownership of a
+// racer's email (from racer_emails) and links a Telegram chat to that racer. The
+// token is a secret and is never returned by an API.
+type TelegramLinkToken struct {
+	ID        int    `json:"id"`
+	Token     string `json:"-"`
+	RacerID   int    `json:"racer_id"`
+	ChatID    string `json:"chat_id"`
+	CreatedAt string `json:"created_at"`
+	ExpiresAt string `json:"expires_at"`
+	Used      bool   `json:"used"`
+}
+
+// TelegramLink maps a Telegram chat to the racer identity that verified it.
+type TelegramLink struct {
+	ChatID   string `json:"chat_id"`
+	RacerID  int    `json:"racer_id"`
+	LinkedAt string `json:"linked_at"`
+}
+
 type EmailSettings struct {
 	ID       int    `json:"id"`
 	SMTPHost string `json:"smtp_host"`

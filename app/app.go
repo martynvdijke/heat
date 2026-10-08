@@ -23,6 +23,19 @@ type SessionInfo struct {
 	IP     string
 }
 
+// RacerSessionCookie is the cookie name carrying a verified racer's website
+// session. It is intentionally distinct from the admin "session" cookie.
+const RacerSessionCookie = "racer_session"
+
+// RacerSession is a website session for a verified racer. It is kept in a store
+// separate from admin sessions so that a racer session can never satisfy admin
+// authentication.
+type RacerSession struct {
+	RacerID int
+	Expiry  int64
+	IP      string
+}
+
 // OIDCConfig holds Authelia OIDC relying-party settings (see
 // openspec/changes/add-authelia-oidc). Secrets come from
 // OIDC_CLIENT_SECRET_FILE or OIDC_CLIENT_SECRET env, never git.
@@ -60,11 +73,13 @@ func LoadOIDCConfig() OIDCConfig {
 }
 
 type Server struct {
-	DB             *sql.DB
-	Ent            *ent.Client
-	SessionStore   map[string]SessionInfo
-	SessionStoreMu sync.RWMutex
-	Broadcast      chan []models.Racer
+	DB              *sql.DB
+	Ent             *ent.Client
+	SessionStore    map[string]SessionInfo
+	SessionStoreMu  sync.RWMutex
+	RacerSessions   map[string]RacerSession
+	RacerSessionsMu sync.RWMutex
+	Broadcast       chan []models.Racer
 
 	FlagBroadcast          chan models.FlagCommand
 	WLEDBroadcast          chan models.FlagCommand
@@ -100,6 +115,7 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		SessionStore:           make(map[string]SessionInfo),
+		RacerSessions:          make(map[string]RacerSession),
 		Broadcast:              make(chan []models.Racer, wsChannelBuffer),
 		FlagBroadcast:          make(chan models.FlagCommand, wsChannelBuffer),
 		WLEDBroadcast:          make(chan models.FlagCommand, wsChannelBuffer),

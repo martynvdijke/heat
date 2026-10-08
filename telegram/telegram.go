@@ -6,6 +6,7 @@
 package telegram
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -43,6 +44,7 @@ type Bot struct {
 	token         string
 	sentReminders map[string]time.Time
 	pendingQuotes map[int64]pendingQuote
+	pendingLogins map[int64]pendingLogin
 }
 
 // New builds a Bot bound to the given server.
@@ -57,6 +59,7 @@ func New(s *app.Server) *Bot {
 		baseURL:       "http://127.0.0.1:" + port,
 		sentReminders: make(map[string]time.Time),
 		pendingQuotes: make(map[int64]pendingQuote),
+		pendingLogins: make(map[int64]pendingLogin),
 	}
 }
 
@@ -228,6 +231,10 @@ func (b *Bot) onUpdate(_ context.Context, _ *tgbot.Bot, update *tgmodels.Update)
 	}
 	if reply, consumed := b.handleQuoteText(c, text); consumed {
 		b.reply(c, reply)
+		return
+	}
+	if reply, consumed := b.handleLoginText(c, text); consumed {
+		b.reply(c, reply)
 	}
 }
 
@@ -247,6 +254,18 @@ func splitCommand(text string) (string, string) {
 
 // handleCommand dispatches a parsed command, steering guided quote input.
 func (b *Bot) handleCommand(c cmdContext) {
+	if _, pending := b.loginFlow(c.chatID); pending {
+		switch c.name {
+		case "/cancel":
+			b.reply(c, b.cancelLogin(c))
+			return
+		case "/login":
+			b.clearLoginFlow(c.chatID)
+		default:
+			// A different command aborts the login flow so nobody gets trapped.
+			b.clearLoginFlow(c.chatID)
+		}
+	}
 	if _, pending := b.quoteFlow(c.chatID); pending {
 		switch c.name {
 		case "/cancel":
@@ -299,6 +318,15 @@ func (b *Bot) handleEvent(evt models.TelegramEvent) {
 			return
 		}
 		b.broadcast(b.renderLatestRace())
+	case "identity_linked":
+		if evt.ChatID == "" {
+			return
+		}
+		name := evt.Text
+		if name == "" {
+			name = "your racer profile"
+		}
+		b.send(evt.ChatID, fmt.Sprintf("✅ <b>Signed in</b> as %s.\n\nUse /mystats for your stats and /myupgrades for your upgrades.", escapeHTML(name)))
 	}
 }
 
@@ -391,6 +419,33 @@ func (b *Bot) apiGet(path string, out any) error {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("api %s: status %d", path, resp.StatusCode)
+	}
+	return json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(out)
+}
+
+// apiPost sends JSON to this app's own public API. The identity flow uses it to
+// start a link, which must authenticate with the configured bot token.
+func (b *Bot) apiPost(path string, payload any, out any) error {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, b.baseURL+path, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Bot-Token", b.currentToken())
+	resp, err := b.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("api %s: status %d", path, resp.StatusCode)
+	}
+	if out == nil {
+		return nil
 	}
 	return json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(out)
 }

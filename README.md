@@ -260,6 +260,14 @@ Geared towards the next race: a countdown to the upcoming race, the latest resul
 - **Install**: point the plugin's `url` custom field at your Heat instance (e.g. `https://heat.example.com`); the plugin polls `<instance>/api/trmnl/next-race` every 60 minutes. Configure the upcoming race date under the admin race info page (field `next race date`, format `YYYY-MM-DD`).
 - **Note**: the display reflects the championship — finalized round snapshots — not the manual race history archive, so the two views may diverge.
 
+## 🔐 Racer Sign-in (Telegram & Website)
+
+Racers can sign in with the email address on file for their racer profile (managed by an admin under **Settings → Racer Emails**). Sign-in is passwordless: the app emails a single-use link that both links the Telegram chat and opens the personal website session.
+
+- **Telegram**: in a private chat with the bot, send `/login` and follow the prompt (or `/login you@example.com`). Once linked, `/mystats` shows career, current-season, and recent-form stats, and `/myupgrades` shows owned upgrades read-only. `/logout` unlinks the chat.
+- **Website**: visit `/me.html` and enter your email to receive a sign-in link, or open the link from the bot. `/me.html` shows personal stats plus upgrade buy/equip management.
+- **Configuration**: set `PUBLIC_BASE_URL` to the publicly reachable URL of your instance (e.g. `https://heat.example.com`) so emailed links point at the right host. When unset, links fall back to the request host — which is the localhost address when the Telegram bot requests them, so setting this is strongly recommended in production.
+
 ## 🐳 Docker Deployment
 
 ### Build Image

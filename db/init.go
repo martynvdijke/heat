@@ -183,6 +183,25 @@ func Init(s *app.Server) {
 		created_at TEXT NOT NULL DEFAULT (datetime('now'))
 	)`)
 
+	// Racer identity: single-use tokens proving ownership of a racer's email,
+	// and the resulting chat -> racer links created by the Telegram /login flow.
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS telegram_link_tokens (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		token TEXT UNIQUE NOT NULL,
+		racer_id INTEGER NOT NULL,
+		chat_id TEXT NOT NULL DEFAULT '',
+		created_at TEXT NOT NULL DEFAULT (datetime('now')),
+		expires_at TEXT NOT NULL,
+		used INTEGER NOT NULL DEFAULT 0
+	)`)
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_telegram_link_tokens_racer ON telegram_link_tokens(racer_id)")
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS telegram_links (
+		chat_id TEXT PRIMARY KEY,
+		racer_id INTEGER NOT NULL,
+		linked_at TEXT NOT NULL DEFAULT (datetime('now'))
+	)`)
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_telegram_links_racer ON telegram_links(racer_id)")
+
 	// Performance indexes for common query patterns
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_id ON race_results(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_race_id ON race_results(race_id)")

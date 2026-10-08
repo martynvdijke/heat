@@ -177,9 +177,32 @@ func init() {
 			run:      func(_ *Bot, _ cmdContext) string { return renderGoodBot() },
 		},
 		{
-			name: "/cancel", usage: "/cancel", desc: "abort a guided /addquote",
+			name: "/cancel", usage: "/cancel", desc: "abort a guided login or quote",
 			category: catBot,
 			run:      func(b *Bot, c cmdContext) string { return b.cancelQuoteCommand(c) },
+		},
+		{
+			name: "/login", usage: "/login [email]", desc: "sign in and link this chat to your racer",
+			category: catBot,
+			showNav:  true,
+			run:      func(b *Bot, c cmdContext) string { return b.loginCommand(c) },
+		},
+		{
+			name: "/logout", usage: "/logout", desc: "unlink this chat from your racer",
+			category: catBot,
+			run:      func(b *Bot, c cmdContext) string { return b.logoutCommand(c) },
+		},
+		{
+			name: "/mystats", usage: "/mystats", desc: "your personal stats and recent form",
+			category: catBot,
+			showNav:  true,
+			run:      func(b *Bot, c cmdContext) string { return b.renderMyStats(c) },
+		},
+		{
+			name: "/myupgrades", usage: "/myupgrades", desc: "the upgrades you own",
+			category: catBot,
+			showNav:  true,
+			run:      func(b *Bot, c cmdContext) string { return b.renderMyUpgrades(c) },
 		},
 	}
 }
