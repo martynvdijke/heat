@@ -32,7 +32,7 @@ services:
       # Public URL of this Heat instance, used for links in racer sign-in emails
       # (e.g. https://heat.example.com). Recommended: the Telegram bot requests
       # links over localhost, so without this they would point at localhost.
-      - PUBLIC_BASE_URL=
+      - PUBLIC_BASE_URL=https://heat.vandijke.xyz
 
 volumes:
   heat-data:
