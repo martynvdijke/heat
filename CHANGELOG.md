@@ -1,3 +1,16 @@
+# [1.68.0](https://github.com/martynvdijke/heat/compare/v1.67.3...v1.68.0) (2026-10-10)
+
+
+### Bug Fixes
+
+* **trmnl:** replace removed value--medium with value--base ([59bc5a3](https://github.com/martynvdijke/heat/commit/59bc5a3854109c71ee0d5046488670598c236f38))
+
+
+### Features
+
+* add Telegram stats, achievements, RSVP, and personal result DMs ([9b2f63d](https://github.com/martynvdijke/heat/commit/9b2f63d12093d4ba0ec49f901b16951b861d319f))
+* racer sign-in via Telegram and website email links ([becb4c6](https://github.com/martynvdijke/heat/commit/becb4c612cda6ad72992c98439bc15e004803269))
+
 ## [1.67.3](https://github.com/martynvdijke/heat/compare/v1.67.2...v1.67.3) (2026-10-08)
 
 ## [1.67.2](https://github.com/martynvdijke/heat/compare/v1.67.1...v1.67.2) (2026-10-07)
