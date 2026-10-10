@@ -1,3 +1,10 @@
+## [1.68.1](https://github.com/martynvdijke/heat/compare/v1.68.0...v1.68.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([#112](https://github.com/martynvdijke/heat/issues/112)) ([ea98104](https://github.com/martynvdijke/heat/commit/ea981045d56c257328b554a7d8cb890e1204efc7))
+
 # [1.68.0](https://github.com/martynvdijke/heat/compare/v1.67.3...v1.68.0) (2026-10-10)
 
 
