@@ -202,6 +202,38 @@ func Init(s *app.Server) {
 	)`)
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_telegram_links_racer ON telegram_links(racer_id)")
 
+	// Personal result DMs are opt-in per chat (default OFF) and only apply to
+	// chats that have linked their racer via /login. Status is "in", "out" or
+	// "maybe" for the race-day RSVP poll.
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS telegram_notify_prefs (
+		chat_id TEXT PRIMARY KEY,
+		personal INTEGER NOT NULL DEFAULT 0,
+		updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+	)`)
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS telegram_rsvp (
+		race_date TEXT NOT NULL,
+		chat_id TEXT NOT NULL,
+		racer_id INTEGER NOT NULL DEFAULT 0,
+		status TEXT NOT NULL,
+		updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+		PRIMARY KEY (race_date, chat_id)
+	)`)
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_telegram_rsvp_date ON telegram_rsvp(race_date)")
+
+	// Racer achievements: one row per racer per achievement code, awarded by the
+	// bot when a round is finalized. `detail` carries context (e.g. the race).
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS racer_achievements (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		racer_id INTEGER NOT NULL,
+		code TEXT NOT NULL,
+		label TEXT NOT NULL,
+		detail TEXT NOT NULL DEFAULT '',
+		race_id INTEGER NOT NULL DEFAULT 0,
+		achieved_at TEXT NOT NULL DEFAULT (datetime('now')),
+		UNIQUE(racer_id, code)
+	)`)
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_racer_achievements_racer ON racer_achievements(racer_id)")
+
 	// Performance indexes for common query patterns
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_id ON race_results(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_race_id ON race_results(race_id)")

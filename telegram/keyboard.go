@@ -60,6 +60,14 @@ func (b *Bot) handleCallback(cq *tgmodels.CallbackQuery) {
 	}
 	chatID := cq.Message.Message.Chat.ID
 	c := cmdContext{chatID: chatID, username: cq.From.Username, firstName: cq.From.FirstName}
+	if strings.HasPrefix(cq.Data, callbackRsvpPrefix) {
+		reply, raceDate, ok := b.handleRsvpCallback(c, cq.Data)
+		if !ok || reply == "" {
+			return
+		}
+		b.sendWithKeyboard(chatID, reply, b.rsvpKeyboard(raceDate))
+		return
+	}
 	reply, ok := b.handleCallbackData(c, cq.Data)
 	if !ok || reply == "" {
 		return

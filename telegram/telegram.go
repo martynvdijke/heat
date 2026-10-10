@@ -314,10 +314,11 @@ func (b *Bot) handleEvent(evt models.TelegramEvent) {
 		}
 		b.broadcast(b.renderArchivedRace(evt.RaceID))
 	case "round_final":
-		if !st.NotifyResults {
-			return
+		if st.NotifyResults {
+			b.broadcast(b.renderLatestRace())
 		}
-		b.broadcast(b.renderLatestRace())
+		b.sendPersonalResults()
+		b.checkAchievements()
 	case "identity_linked":
 		if evt.ChatID == "" {
 			return

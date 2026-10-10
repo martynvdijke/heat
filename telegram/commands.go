@@ -125,6 +125,41 @@ func init() {
 			run:      func(b *Bot, _ cmdContext) string { return b.renderSeason() },
 		},
 		{
+			name: "/elo", usage: "/elo", desc: "ELO-style skill ratings",
+			category: catRace,
+			run:      func(b *Bot, _ cmdContext) string { return b.renderElo() },
+		},
+		{
+			name: "/streaks", usage: "/streaks", desc: "longest podium streaks",
+			category: catRace,
+			run:      func(b *Bot, _ cmdContext) string { return b.renderStreaks() },
+		},
+		{
+			name: "/h2h", usage: "/h2h <a> vs <b>", desc: "head-to-head between two racers",
+			category: catRace,
+			run:      func(b *Bot, c cmdContext) string { return b.renderH2H(c) },
+		},
+		{
+			name: "/career", usage: "/career [racer]", desc: "full career record for a racer",
+			category: catRace,
+			run:      func(b *Bot, c cmdContext) string { return b.renderCareer(c) },
+		},
+		{
+			name: "/trackperf", usage: "/trackperf [racer]", desc: "best tracks for a racer",
+			category: catRace,
+			run:      func(b *Bot, c cmdContext) string { return b.renderTrackPerf(c) },
+		},
+		{
+			name: "/calendar", usage: "/calendar", desc: "subscribe to the season calendar",
+			category: catRace,
+			run:      func(b *Bot, _ cmdContext) string { return b.renderCalendar() },
+		},
+		{
+			name: "/rsvp", usage: "/rsvp", desc: "check in for the next race day",
+			category: catRace,
+			run:      func(b *Bot, c cmdContext) string { return b.startRsvpCommand(c) },
+		},
+		{
 			name: "/quote", usage: "/quote", desc: "random paddock quote",
 			category: catQuotes, showNav: true,
 			run: func(b *Bot, _ cmdContext) string { return b.renderQuote() },
@@ -203,6 +238,16 @@ func init() {
 			category: catBot,
 			showNav:  true,
 			run:      func(b *Bot, c cmdContext) string { return b.renderMyUpgrades(c) },
+		},
+		{
+			name: "/badges", usage: "/badges [racer]", desc: "your unlocked achievements",
+			category: catBot,
+			run:      func(b *Bot, c cmdContext) string { return b.badgesCommand(c) },
+		},
+		{
+			name: "/notify", usage: "/notify on|off", desc: "personal result DMs on/off",
+			category: catBot,
+			run:      func(b *Bot, c cmdContext) string { return b.notifyCommand(c) },
 		},
 	}
 }
