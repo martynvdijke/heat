@@ -1,3 +1,10 @@
+## [1.68.4](https://github.com/martynvdijke/heat/compare/v1.68.3...v1.68.4) (2026-10-13)
+
+
+### Bug Fixes
+
+* allow iframe embedding via HEAT_FRAME_ANCESTORS ([9d248ee](https://github.com/martynvdijke/heat/commit/9d248eea710790e276aff889c8ed0f2d9c2c219f))
+
 ## [1.68.3](https://github.com/martynvdijke/heat/compare/v1.68.2...v1.68.3) (2026-10-12)
 
 ## [1.68.2](https://github.com/martynvdijke/heat/compare/v1.68.1...v1.68.2) (2026-10-11)
