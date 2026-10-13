@@ -1,3 +1,10 @@
+## [1.68.5](https://github.com/martynvdijke/heat/compare/v1.68.4...v1.68.5) (2026-10-13)
+
+
+### Bug Fixes
+
+* harden e2e navigation waits against stalled CDN resources ([82cdbf3](https://github.com/martynvdijke/heat/commit/82cdbf3d554cbab520a4dc60dc59397d870daef4))
+
 ## [1.68.4](https://github.com/martynvdijke/heat/compare/v1.68.3...v1.68.4) (2026-10-13)
 
 
