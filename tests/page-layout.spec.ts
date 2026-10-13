@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Page Layout Regression — CSS body cascade fix', () => {
   // Previously, page-specific body styles in style.css used bare selectors.

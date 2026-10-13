@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Index Page', () => {
   test('should load the index page without critical console errors', async ({ page }) => {

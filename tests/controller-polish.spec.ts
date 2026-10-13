@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Controller Polish', () => {
   async function loginAsAdmin(page: import('@playwright/test').Page) {

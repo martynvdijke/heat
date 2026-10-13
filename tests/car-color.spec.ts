@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page } from './fixtures';
 
 test.describe('Car Color Rendering', () => {
   test('should display car color indicator in standings container', async ({ page }) => {

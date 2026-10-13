@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Sound Settings — Storage & Validation', () => {
   test('should expose sound settings helpers on the TV page', async ({ page }) => {

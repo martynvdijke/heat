@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // The full email-link round trip needs a token that is only ever delivered by
 // email or the Telegram bot, so these tests verify the public frontend wiring

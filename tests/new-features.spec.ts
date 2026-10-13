@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 const API_HEADERS = { Origin: 'http://localhost:6270' };
 
@@ -83,9 +83,9 @@ test.describe('Trophies Page', () => {
 test.describe('Index Page - GeoJSON and Racers', () => {
   test('should display racers with helmet fallback images', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
 
     const rows = page.locator('#leaderboard-body tr');
+    await expect(rows.first()).toBeVisible({ timeout: 15000 });
     const count = await rows.count();
     expect(count).toBeGreaterThan(0);
 
@@ -97,11 +97,10 @@ test.describe('Index Page - GeoJSON and Racers', () => {
 
   test('should render circuit map with GeoJSON', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
 
     const map = page.locator('#circuit-map');
     await expect(map).toBeVisible();
-    await expect(map).toHaveClass(/leaflet-container/);
+    await expect(map).toHaveClass(/leaflet-container/, { timeout: 15000 });
 
     const mapPath = page.locator('#circuit-map path');
     await expect(mapPath.first()).toBeAttached({ timeout: 10000 });
@@ -109,11 +108,10 @@ test.describe('Index Page - GeoJSON and Racers', () => {
 
   test('should display race info with country, track and laps', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
 
     const raceCountry = page.locator('#race-country');
     await expect(raceCountry).toBeVisible();
-    await expect(raceCountry).toContainText('Italy');
+    await expect(raceCountry).toContainText('Italy', { timeout: 15000 });
 
     const raceTrack = page.locator('#race-track');
     await expect(raceTrack).toBeVisible();

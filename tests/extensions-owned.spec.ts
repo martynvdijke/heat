@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page } from './fixtures';
 
 // Extension ownership e2e: the admin Extensions tab exposes an "Owned" toggle
 // per extension, and all content-selection surfaces (race-day track select,
