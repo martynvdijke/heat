@@ -125,6 +125,50 @@ func TestSecurityHeaders(t *testing.T) {
 	if headers.Get("X-XSS-Protection") != "1; mode=block" {
 		t.Error("X-XSS-Protection not set")
 	}
+	if !strings.Contains(headers.Get("Content-Security-Policy"), "frame-ancestors 'none'") {
+		t.Error("CSP frame-ancestors 'none' not set for deny-by-default")
+	}
+}
+
+// TestSecurityHeadersFrameAncestors covers HEAT_FRAME_ANCESTORS, which lets
+// self-hosters embed Heat in an iframe (e.g. a Slidev presentation) without
+// disabling clickjacking protection for everyone by default.
+func TestSecurityHeadersFrameAncestors(t *testing.T) {
+	tests := []struct {
+		name          string
+		env           string
+		wantXFO       string
+		wantAncestors string
+	}{
+		{name: "wildcard allows any origin", env: "*", wantXFO: "", wantAncestors: "*"},
+		{name: "specific origin", env: "http://localhost:3030", wantXFO: "", wantAncestors: "'self' http://localhost:3030"},
+		{name: "comma separated list dedupes self", env: "self, http://localhost:3030", wantXFO: "", wantAncestors: "'self' http://localhost:3030"},
+		{name: "self only uses SAMEORIGIN", env: "self", wantXFO: "SAMEORIGIN", wantAncestors: "'self'"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("HEAT_FRAME_ANCESTORS", tt.env)
+
+			r := gin.New()
+			r.Use(middleware.SecurityHeaders())
+			r.GET("/test", func(c *gin.Context) {
+				c.String(http.StatusOK, "ok")
+			})
+
+			req, _ := http.NewRequest("GET", "/test", nil)
+			rr := httptest.NewRecorder()
+			r.ServeHTTP(rr, req)
+
+			if got := rr.Header().Get("X-Frame-Options"); got != tt.wantXFO {
+				t.Errorf("X-Frame-Options = %q, want %q", got, tt.wantXFO)
+			}
+			csp := rr.Header().Get("Content-Security-Policy")
+			if !strings.Contains(csp, "frame-ancestors "+tt.wantAncestors) {
+				t.Errorf("CSP %q missing frame-ancestors %q", csp, tt.wantAncestors)
+			}
+		})
+	}
 }
 
 func TestLoginLogout(t *testing.T) {

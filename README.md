@@ -268,6 +268,20 @@ Racers can sign in with the email address on file for their racer profile (manag
 - **Website**: visit `/me.html` and enter your email to receive a sign-in link, or open the link from the bot. `/me.html` shows personal stats plus upgrade buy/equip management.
 - **Configuration**: set `PUBLIC_BASE_URL` to the publicly reachable URL of your instance (e.g. `https://heat.example.com`) so emailed links point at the right host. When unset, links fall back to the request host — which is the localhost address when the Telegram bot requests them, so setting this is strongly recommended in production.
 
+## 🖼️ Embedding in iframes (Slidev, OBS, dashboards)
+
+By default Heat refuses to be framed (`X-Frame-Options: DENY`, `frame-ancestors 'none'`) to prevent clickjacking. To embed a Heat page — for example the live race view in a [Slidev](https://sli.dev) presentation or an OBS browser source — opt in with the `HEAT_FRAME_ANCESTORS` environment variable:
+
+```bash
+# Allow one specific presenter origin (e.g. the Slidev dev server)
+HEAT_FRAME_ANCESTORS="http://localhost:3030" ./heat-server
+
+# ...or allow any origin
+HEAT_FRAME_ANCESTORS="*" ./heat-server
+```
+
+The value is applied as the CSP `frame-ancestors` directive; `'self'` is always included when listing origins. Login-protected pages stay safe even with `*`: session cookies are `SameSite=Strict`, so browsers do not send them inside cross-site iframes.
+
 ## 🐳 Docker Deployment
 
 ### Build Image
