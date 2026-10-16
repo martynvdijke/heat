@@ -15,14 +15,14 @@ plugins:
   - [
       "@semantic-release/exec",
       {
-        prepareCmd: "sed -i 's/\"version\": \".*\"/\"version\": \"${nextRelease.version}\"/' package.json && sed -i 's/CurrentVersion:[[:space:]]*\"[^\"]*\"/CurrentVersion:         \"${nextRelease.version}\"/' app/app.go && sed -i 's/\"version\": \".*\"/\"version\": \"${nextRelease.version}\"/' static/swagger.json"
+        prepareCmd: "sed -i 's/\"version\": \".*\"/\"version\": \"${nextRelease.version}\"/' package.json && sed -i 's/CurrentVersion:[[:space:]]*\"[^\"]*\"/CurrentVersion:         \"${nextRelease.version}\"/' app/app.go && sed -i 's/\"version\": \".*\"/\"version\": \"${nextRelease.version}\"/' static/swagger.json && sed -i 's/^version: .*/version: ${nextRelease.version}+1/' mobile/pubspec.yaml"
       }
     ]
   - [
       "@semantic-release/git",
       {
         message: "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
-        assets: ["CHANGELOG.md", "package.json", "app/app.go", "static/swagger.json"],
+        assets: ["CHANGELOG.md", "package.json", "app/app.go", "static/swagger.json", "mobile/pubspec.yaml"],
       },
     ]
   - "@semantic-release/github"

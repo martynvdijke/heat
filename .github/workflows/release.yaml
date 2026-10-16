@@ -92,6 +92,51 @@ jobs:
           docker push ghcr.io/martynvdijke/heat:latest
           docker push ghcr.io/martynvdijke/heat:$VERSION
 
+  android:
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true' && needs.release.result == 'success'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: v${{ needs.release.outputs.new_release_version }}
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: mobile
+        run: flutter build apk --release
+
+      - name: Rename APK
+        env:
+          VERSION: ${{ needs.release.outputs.new_release_version }}
+        run: mv mobile/build/app/outputs/flutter-apk/app-release.apk "heat-${VERSION}-android.apk"
+
+      - name: Upload APK to Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.release.outputs.new_release_version }}
+        run: gh release upload "v${VERSION}" "heat-${VERSION}-android.apk" --clobber
+
   notify:
     needs: [ci, release]
     if: ${{ always() }}
