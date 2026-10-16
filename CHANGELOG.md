@@ -1,3 +1,10 @@
+# [1.69.0](https://github.com/martynvdijke/heat/compare/v1.68.8...v1.69.0) (2026-10-16)
+
+
+### Features
+
+* add Flutter Android companion app with non-blocking CI/release ([c4abf1c](https://github.com/martynvdijke/heat/commit/c4abf1c11fa189a466812d19e970144cd8bc6f4d))
+
 ## [1.68.8](https://github.com/martynvdijke/heat/compare/v1.68.7...v1.68.8) (2026-10-16)
 
 ## [1.68.7](https://github.com/martynvdijke/heat/compare/v1.68.6...v1.68.7) (2026-10-15)
