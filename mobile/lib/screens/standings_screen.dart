@@ -67,21 +67,25 @@ class StandingsScreen extends ConsumerWidget {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(color: AppTheme.surface2, borderRadius: BorderRadius.circular(AppTheme.radiusMd), border: Border.all(color: isActive ? AppTheme.accent.withValues(alpha: 0.28) : AppTheme.borderCol)),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                      leading: Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(color: isActive ? AppTheme.accent.withValues(alpha: 0.14) : AppTheme.surface3, borderRadius: BorderRadius.circular(8), border: Border.all(color: isActive ? AppTheme.accent.withValues(alpha: 0.22) : AppTheme.borderCol)),
-                        child: Icon(isActive ? Icons.bolt : Icons.flag_outlined, size: 16, color: isActive ? AppTheme.accent : AppTheme.textDim),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                        leading: Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(color: isActive ? AppTheme.accent.withValues(alpha: 0.14) : AppTheme.surface3, borderRadius: BorderRadius.circular(8), border: Border.all(color: isActive ? AppTheme.accent.withValues(alpha: 0.22) : AppTheme.borderCol)),
+                          child: Icon(isActive ? Icons.bolt : Icons.flag_outlined, size: 16, color: isActive ? AppTheme.accent : AppTheme.textDim),
+                        ),
+                        title: Text(s.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+                        subtitle: Text('${s.status.toUpperCase()}  •  ${s.startDate ?? '—'}  –  ${s.endDate ?? '—'}', style: const TextStyle(fontSize: 11, color: AppTheme.textDim)),
+                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                          if (isActive) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), decoration: BoxDecoration(color: AppTheme.stateRacing.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(99), border: Border.all(color: AppTheme.stateRacing.withValues(alpha: 0.22))), child: const Text('ACTIVE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.7, color: AppTheme.stateRacing))),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.chevron_right, size: 18, color: AppTheme.textDim),
+                        ]),
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SeasonRoundsScreen(seasonId: s.id, seasonName: s.name))),
                       ),
-                      title: Text(s.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
-                      subtitle: Text('${s.status.toUpperCase()}  •  ${s.startDate ?? '—'}  –  ${s.endDate ?? '—'}', style: const TextStyle(fontSize: 11, color: AppTheme.textDim)),
-                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                        if (isActive) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), decoration: BoxDecoration(color: AppTheme.stateRacing.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(99), border: Border.all(color: AppTheme.stateRacing.withValues(alpha: 0.22))), child: const Text('ACTIVE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.7, color: AppTheme.stateRacing))),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.chevron_right, size: 18, color: AppTheme.textDim),
-                      ]),
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SeasonRoundsScreen(seasonId: s.id, seasonName: s.name))),
                     ),
                   );
                 }).toList(),
@@ -145,36 +149,40 @@ class StandingsScreen extends ConsumerWidget {
                 ...stats.map((s) => Container(
                       margin: const EdgeInsets.only(bottom: 6),
                       decoration: BoxDecoration(color: AppTheme.surface2, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.borderCol)),
-                      child: ListTile(
-                        dense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                        leading: Container(
-                          width: 36, height: 36, alignment: Alignment.center,
-                          decoration: BoxDecoration(color: AppTheme.surface3, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.borderCol)),
-                          child: Text('${s.racerId}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, fontFeatures: [FontFeature.tabularFigures()], color: AppTheme.textPrimary)),
-                        ),
-                        title: Row(children: [
-                          Text('${s.points}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFeatures: [FontFeature.tabularFigures()], color: AppTheme.accent)),
-                          const SizedBox(width: 4),
-                          const Text('PTS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: AppTheme.textDim)),
-                          const SizedBox(width: 8),
-                          Container(width: 1, height: 12, color: AppTheme.borderCol),
-                          const SizedBox(width: 8),
-                          Flexible(child: Text('Racer ${s.racerId}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary), overflow: TextOverflow.ellipsis)),
-                        ]),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Wrap(spacing: 6, runSpacing: 4, children: [
-                            statChip('W', s.wins, AppTheme.accent),
-                            statChip('G', s.gold, const Color(0xFFFFD60A)),
-                            statChip('S', s.silver, const Color(0xFFB0BEC5)),
-                            statChip('B', s.bronze, const Color(0xFFCC7A2A)),
-                            statChip('FL', s.fastestLaps, const Color(0xFF7C5CFF)),
-                            if (s.dnf > 0) statChip('DNF', s.dnf, AppTheme.stateDnf),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        child: ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                          leading: Container(
+                            width: 36, height: 36, alignment: Alignment.center,
+                            decoration: BoxDecoration(color: AppTheme.surface3, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.borderCol)),
+                            child: Text('${s.racerId}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, fontFeatures: [FontFeature.tabularFigures()], color: AppTheme.textPrimary)),
+                          ),
+                          title: Row(children: [
+                            Text('${s.points}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFeatures: [FontFeature.tabularFigures()], color: AppTheme.accent)),
+                            const SizedBox(width: 4),
+                            const Text('PTS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: AppTheme.textDim)),
+                            const SizedBox(width: 8),
+                            Container(width: 1, height: 12, color: AppTheme.borderCol),
+                            const SizedBox(width: 8),
+                            Flexible(child: Text('Racer ${s.racerId}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary), overflow: TextOverflow.ellipsis)),
                           ]),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Wrap(spacing: 6, runSpacing: 4, children: [
+                              statChip('W', s.wins, AppTheme.accent),
+                              statChip('G', s.gold, const Color(0xFFFFD60A)),
+                              statChip('S', s.silver, const Color(0xFFB0BEC5)),
+                              statChip('B', s.bronze, const Color(0xFFCC7A2A)),
+                              statChip('FL', s.fastestLaps, const Color(0xFF7C5CFF)),
+                              if (s.dnf > 0) statChip('DNF', s.dnf, AppTheme.stateDnf),
+                            ]),
+                          ),
+                          trailing: const Icon(Icons.chevron_right, size: 16, color: AppTheme.textDim),
+                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RacerDetailScreen(racerId: s.racerId))),
                         ),
-                        trailing: const Icon(Icons.chevron_right, size: 16, color: AppTheme.textDim),
-                        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RacerDetailScreen(racerId: s.racerId))),
                       ),
                     )),
               ]);

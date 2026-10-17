@@ -19,112 +19,107 @@ void main() {
 
   testWidgets('E2E: onboarding -> player login -> HUD -> standings',
       (WidgetTester tester) async {
-    // Launch app with cleared prefs.
+    // Ensure clean state.
     final prefs = await SharedPreferences.getInstance();
-    // Ensure clean state after setUp.
     await prefs.clear();
 
     await app.main();
-    await tester.pumpAndSettle(const Duration(seconds: 2));
 
-    // If onboarding is shown, connect to server.
+    // Onboarding screen shows up when no session is stored.
     final serverField = find.byKey(const Key('serverUrlField'));
-    if (tester.any(serverField)) {
-      await tester.enterText(serverField, _e2eUrl);
-      await tester.pumpAndSettle();
+    await _pumpUntilFound(tester, serverField);
+    expect(serverField, findsOneWidget);
 
-      final connectBtn = find.byKey(const Key('connectButton'));
-      expect(connectBtn, findsOneWidget);
-      await tester.tap(connectBtn);
-      await tester.pump();
+    await tester.enterText(serverField, _e2eUrl);
+    await _settle(tester);
 
-      // Wait for reachability success (server is up).
-      await tester.pumpAndSettle(const Duration(seconds: 10));
+    final connectBtn = find.byKey(const Key('connectButton'));
+    expect(connectBtn, findsOneWidget);
+    await tester.tap(connectBtn);
 
-      // Verify reachable indicator appeared.
-      expect(find.textContaining('Server reachable'), findsOneWidget);
-    }
+    // Wait for the reachability probe to report success against the live server.
+    final reachable = find.textContaining('Server reachable');
+    await _pumpUntilFound(tester, reachable, timeout: const Duration(seconds: 20));
+    expect(reachable, findsOneWidget);
 
     // Switch to Player login mode.
     final playerMode = find.byKey(const Key('playerLoginMode'));
     if (tester.any(playerMode)) {
       await tester.tap(playerMode);
-      await tester.pumpAndSettle();
-    } else {
-      // Fallback: tap segmented button text if key not hit.
-      final alt = find.text('Player Token');
-      if (tester.any(alt)) {
-        await tester.tap(alt);
-        await tester.pumpAndSettle();
-      }
+      await _settle(tester);
     }
 
-    // Wait for racers dropdown to appear after reachability.
+    // Racer dropdown is populated after a successful reachability probe.
     final racerField = find.byKey(const Key('racerField'));
-    await tester.pumpAndSettle(const Duration(seconds: 3));
+    await _pumpUntilFound(tester, racerField, timeout: const Duration(seconds: 10));
+    expect(racerField, findsOneWidget);
 
-    if (tester.any(racerField)) {
-      await tester.tap(racerField);
-      await tester.pumpAndSettle();
+    await tester.tap(racerField);
+    await _settle(tester);
 
-      // Select racer by name.
-      final racerOption = find.text(_e2eRacer).last;
-      // Wait up to 5s for dropdown items.
-      await _pumpUntilFound(tester, racerOption, timeout: const Duration(seconds: 5));
-      expect(racerOption, findsOneWidget);
-      await tester.tap(racerOption);
-      await tester.pumpAndSettle();
-    }
+    final racerOption = find.text(_e2eRacer).last;
+    await _pumpUntilFound(tester, racerOption, timeout: const Duration(seconds: 10));
+    await tester.tap(racerOption, warnIfMissed: false);
+    await _settle(tester);
 
-    // Login as selected racer.
+    // Login as the selected racer.
     final loginBtn = find.byKey(const Key('loginButton'));
-    await _pumpUntilFound(tester, loginBtn, timeout: const Duration(seconds: 5));
     expect(loginBtn, findsOneWidget);
     await tester.tap(loginBtn);
-    await tester.pumpAndSettle(const Duration(seconds: 8));
 
-    // Expect HUD leaderboard to appear after navigation to home then HUD.
-    // Home screen should be visible after login.
-    // Navigate to HUD if not already there.
-    final hudDirect = find.byKey(const Key('hudLeaderboard'));
-    if (!tester.any(hudDirect)) {
-      // Home has nav via HUD card; try to go to HUD.
-      // First ensure we are on home, then tap HUD implicitly via navigation?
-      // The app navigates to /home after login; HUD is a separate route.
-      // Tap the LIVE RACE HUD card text if present.
-      final hudCard = find.text('LIVE RACE HUD');
-      if (tester.any(hudCard)) {
-        await tester.tap(hudCard);
-        await tester.pumpAndSettle(const Duration(seconds: 5));
-      }
-    }
+    // Login navigates to the Home screen (has an infinite header pulse, so use
+    // bounded pumping rather than pumpAndSettle).
+    final homeCard = find.text('LIVE RACE HUD');
+    await _pumpUntilFound(tester, homeCard, timeout: const Duration(seconds: 20));
+    expect(homeCard, findsOneWidget);
 
-    await _pumpUntilFound(tester, find.byKey(const Key('hudLeaderboard')),
-        timeout: const Duration(seconds: 10));
-    expect(find.byKey(const Key('hudLeaderboard')), findsOneWidget);
+    // Navigate into the live race HUD.
+    await tester.ensureVisible(homeCard);
+    await _settle(tester, frames: 3);
+    await tester.tap(homeCard);
+    final hudLeaderboard = find.byKey(const Key('hudLeaderboard'));
+    await _pumpUntilFound(tester, hudLeaderboard, timeout: const Duration(seconds: 20));
+    expect(hudLeaderboard, findsOneWidget);
 
-    // Navigate back then to Standings.
-    // If we are on HUD, pop.
-    if (tester.any(find.text('LIVE RACE'))) {
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-    }
+    // Back to Home. Wait for the HUD route to actually leave the tree before
+    // tapping Home content, otherwise the fading route swallows the hit test.
+    await tester.pageBack();
+    await _pumpUntilGone(tester, hudLeaderboard, timeout: const Duration(seconds: 10));
+    await _settle(tester, frames: 5);
 
+    // Into Standings.
     final navStandings = find.byKey(const Key('navStandings'));
-    await _pumpUntilFound(tester, navStandings, timeout: const Duration(seconds: 5));
+    await _pumpUntilFound(tester, navStandings, timeout: const Duration(seconds: 10));
     expect(navStandings, findsOneWidget);
+    await tester.ensureVisible(navStandings);
+    await _settle(tester, frames: 3);
     await tester.tap(navStandings);
-    await tester.pumpAndSettle(const Duration(seconds: 5));
 
-    // Expect season list to contain E2E Season.
     final seasonList = find.byKey(const Key('standingsSeasonList'));
-    await _pumpUntilFound(tester, seasonList, timeout: const Duration(seconds: 10));
+    await _pumpUntilFound(tester, seasonList, timeout: const Duration(seconds: 20));
     expect(seasonList, findsOneWidget);
-    expect(find.text('E2E Season'), findsOneWidget);
+
+    // The seeded season must be listed.
+    final seasonName = find.text('E2E Season');
+    await _pumpUntilFound(tester, seasonName, timeout: const Duration(seconds: 10));
+    expect(seasonName, findsOneWidget);
   });
 }
 
-Future<void> _pumpUntilFound(
+/// Pumps a fixed number of frames. Safe to use on screens that contain
+/// infinite animations, unlike [WidgetTester.pumpAndSettle].
+Future<void> _settle(
+  WidgetTester tester, {
+  int frames = 8,
+  Duration step = const Duration(milliseconds: 100),
+}) async {
+  for (var i = 0; i < frames; i++) {
+    await tester.pump(step);
+  }
+}
+
+/// Pumps frames until [finder] matches at least one widget or [timeout] expires.
+Future<bool> _pumpUntilFound(
   WidgetTester tester,
   Finder finder, {
   Duration timeout = const Duration(seconds: 5),
@@ -132,7 +127,23 @@ Future<void> _pumpUntilFound(
 }) async {
   final deadline = DateTime.now().add(timeout);
   while (DateTime.now().isBefore(deadline)) {
-    if (tester.any(finder)) return;
+    if (tester.any(finder)) return true;
     await tester.pump(interval);
   }
+  return tester.any(finder);
+}
+
+/// Pumps frames until [finder] no longer matches any widget or [timeout] expires.
+Future<bool> _pumpUntilGone(
+  WidgetTester tester,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 5),
+  Duration interval = const Duration(milliseconds: 200),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    if (!tester.any(finder)) return true;
+    await tester.pump(interval);
+  }
+  return !tester.any(finder);
 }
