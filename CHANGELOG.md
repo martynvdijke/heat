@@ -1,3 +1,10 @@
+## [1.69.2](https://github.com/martynvdijke/heat/compare/v1.69.1...v1.69.2) (2026-10-17)
+
+
+### Bug Fixes
+
+* **mobile:** wrap standings ListTiles in Material and harden e2e flow ([64c31f2](https://github.com/martynvdijke/heat/commit/64c31f26f79233f9f8f00b274f61f13f818c18ca))
+
 ## [1.69.1](https://github.com/martynvdijke/heat/compare/v1.69.0...v1.69.1) (2026-10-17)
 
 # [1.69.0](https://github.com/martynvdijke/heat/compare/v1.68.8...v1.69.0) (2026-10-16)
