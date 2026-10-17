@@ -72,7 +72,7 @@ jobs:
 
       - name: Set up Go
         if: steps.semantic.outputs.new_release_published == 'true'
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.27.2'
 
@@ -95,7 +95,6 @@ jobs:
   android:
     needs: release
     if: needs.release.outputs.new_release_published == 'true' && needs.release.result == 'success'
-    continue-on-error: true
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -113,7 +112,7 @@ jobs:
           java-version: '17'
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
           cache: true

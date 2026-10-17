@@ -61,6 +61,7 @@ class StandingsScreen extends ConsumerWidget {
             data: (seasons) {
               if (seasons.isEmpty) return const _EmptyBox(text: 'No seasons');
               return Column(
+                key: const Key('standingsSeasonList'),
                 children: seasons.map((s) {
                   final isActive = s.status == 'active';
                   return Container(

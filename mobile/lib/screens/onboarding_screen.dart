@@ -146,6 +146,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ]),
                 const SizedBox(height: 12),
                 TextField(
+                  key: const Key('serverUrlField'),
                   controller: _urlCtrl,
                   style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
                   decoration: const InputDecoration(labelText: 'Server URL (e.g. http://192.168.1.10:6270)', hintText: 'http://192.168.1.10:6270', border: OutlineInputBorder()),
@@ -154,6 +155,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 SizedBox(
                   height: 44,
                   child: ElevatedButton(
+                    key: const Key('connectButton'),
                     onPressed: _checking ? null : _checkReachability,
                     child: _checking
                         ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0B0B0B)))
@@ -195,6 +197,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   selected: {_mode},
                   onSelectionChanged: (s) => setState(() => _mode = s.first),
                 ),
+                // Stable key for E2E to switch to Player mode (tapping SegmentedButton segment is not key-addressable).
+                InkWell(
+                  key: const Key('playerLoginMode'),
+                  onTap: () => setState(() => _mode = 'player'),
+                  child: const SizedBox(width: 1, height: 1),
+                ),
                 const SizedBox(height: 16),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
@@ -228,6 +236,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return Column(key: const ValueKey('player'), crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (_racers.isNotEmpty)
         DropdownButtonFormField<int>(
+          key: const Key('racerField'),
           decoration: const InputDecoration(labelText: 'Pick racer', border: OutlineInputBorder()),
           dropdownColor: AppTheme.surface2,
           style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
@@ -235,7 +244,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           onChanged: (v) => setState(() { _selectedRacerId = v; _selectedRacerName = _racers.firstWhere((e) => e['id'] == v)['name'] as String; }),
         ),
       if (_racers.isNotEmpty) const SizedBox(height: 12),
-      SizedBox(height: 44, child: ElevatedButton(onPressed: _checking ? null : _loginPlayerPick, child: Text(_selectedRacerName == null ? 'LOGIN AS SELECTED RACER' : 'LOGIN AS $_selectedRacerName'))),
+      SizedBox(height: 44, child: ElevatedButton(key: const Key('loginButton'), onPressed: _checking ? null : _loginPlayerPick, child: Text(_selectedRacerName == null ? 'LOGIN AS SELECTED RACER' : 'LOGIN AS $_selectedRacerName'))),
       const SizedBox(height: 16),
       Container(height: 1, color: AppTheme.borderCol),
       const SizedBox(height: 12),

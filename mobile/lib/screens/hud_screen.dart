@@ -100,6 +100,7 @@ class _HudScreenState extends ConsumerState<HudScreen> with SingleTickerProvider
           ),
           const Divider(height: 1),
           Expanded(
+            key: const Key('hudLeaderboard'),
             child: standings.isEmpty
                 ? Center(
                     child: Column(mainAxisSize: MainAxisSize.min, children: [

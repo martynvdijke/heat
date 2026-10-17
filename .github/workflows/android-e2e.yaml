@@ -1,0 +1,105 @@
+name: Android E2E
+
+on:
+  workflow_call:
+  push:
+    branches-ignore:
+      - 'main'
+  pull_request:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-e2e:
+    name: Android E2E
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.2'
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Start Heat server
+        run: |
+          rm -f heat.db heat.db-wal heat.db-shm
+          go build -o heat-server .
+          ./heat-server > server.log 2>&1 &
+          echo "Waiting for server readiness..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:6270/api/version >/dev/null 2>&1; then
+              echo "Server is ready"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Server failed to start within 60s"
+              cat server.log || true
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Seed database
+        run: |
+          echo "Bootstrapping admin..."
+          resp=$(curl -sf -c /tmp/cj.txt -H 'Content-Type: application/json' -d '{"username":"admin","password":"admin123","setup":true,"email":"admin@example.com"}' http://localhost:6270/api/login)
+          echo "Login response: $resp"
+          echo "Creating racer..."
+          resp=$(curl -sf -b /tmp/cj.txt -H 'Content-Type: application/json' -H 'Origin: http://localhost:6270' -d '{"id":0,"name":"E2E Racer","profile_picture":"/static/images/helmet.svg","car_color":"#800080","car_name":"E2E Car","points":0,"rank":0,"position":0}' http://localhost:6270/api/racers)
+          echo "Racer response: $resp"
+          echo "Creating season..."
+          resp=$(curl -sf -b /tmp/cj.txt -H 'Content-Type: application/json' -H 'Origin: http://localhost:6270' -d '{"name":"E2E Season"}' http://localhost:6270/api/seasons)
+          echo "Season response: $resp"
+
+      - name: Set up Java
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+
+      - name: Run integration tests on emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: cd mobile && flutter test integration_test -d emulator-5554 --dart-define=HEAT_E2E_URL=http://10.0.2.2:6270
+
+      - name: Upload server log on failure
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ failure() || !cancelled() }}
+        with:
+          name: android-e2e-server-log
+          path: server.log
+          retention-days: 30

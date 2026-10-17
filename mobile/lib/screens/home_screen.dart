@@ -64,6 +64,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 _NavCard(
+                  key: const Key('navStandings'),
                   accent: const Color(0xFF7C5CFF),
                   icon: Icons.leaderboard_outlined,
                   title: 'STANDINGS & STATS',
@@ -135,7 +136,7 @@ class _NavCard extends StatefulWidget {
   final String hint;
   final VoidCallback onTap;
   final bool muted;
-  const _NavCard({required this.accent, required this.icon, required this.title, required this.subtitle, required this.hint, required this.onTap, this.muted = false});
+  const _NavCard({super.key, required this.accent, required this.icon, required this.title, required this.subtitle, required this.hint, required this.onTap, this.muted = false});
   @override
   State<_NavCard> createState() => _NavCardState();
 }
