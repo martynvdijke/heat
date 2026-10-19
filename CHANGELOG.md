@@ -1,3 +1,10 @@
+# [1.70.0](https://github.com/martynvdijke/heat/compare/v1.69.2...v1.70.0) (2026-10-19)
+
+
+### Features
+
+* add map and extension asset library ([0cfdcf9](https://github.com/martynvdijke/heat/commit/0cfdcf9ef9c1ede6ffb1a844fbfe2a0faabe4ab5))
+
 ## [1.69.2](https://github.com/martynvdijke/heat/compare/v1.69.1...v1.69.2) (2026-10-17)
 
 
