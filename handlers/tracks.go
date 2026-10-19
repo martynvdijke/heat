@@ -267,6 +267,9 @@ func (h *Handler) DeleteTrack(c *gin.Context) {
 		return
 	}
 	h.S.DB.Exec("DELETE FROM board_game_tracks WHERE track_id = ?", id)
+	// Uploaded maps stay in the library but lose their association with the
+	// deleted track.
+	h.S.DB.Exec("UPDATE assets SET track_id = '' WHERE track_id = ?", id)
 
 	c.Status(http.StatusOK)
 }

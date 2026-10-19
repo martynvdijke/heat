@@ -173,11 +173,28 @@ xcode-select --install
 |--------|----------|------|-------------|
 | `GET` | `/api/uploads` | No | List recent file uploads |
 | `POST` | `/api/upload` | Yes | Upload an image file |
+| `GET` | `/api/assets` | No | List map and extension assets (`kind`, `extension_id`, `track_id`, `q`, `limit`) |
+| `POST` | `/api/assets` | Yes | Upload a PDF/PNG/JPEG/WebP/GIF asset (max 25 MB) |
+| `PUT` | `/api/assets` | Yes | Update asset metadata and associations |
+| `DELETE` | `/api/assets` | Yes | Delete an asset and its stored file |
+| `GET` | `/api/assets/{id}/file` | No | View an asset inline (browser preview) |
+| `GET` | `/api/assets/{id}/thumbnail` | No | View an image asset's thumbnail |
+| `GET` | `/api/assets/{id}/download` | No | Download an asset with its original filename |
 | `GET` | `/api/quotes` | No | List all quotes |
 | `POST` | `/api/quotes` | Yes | Add a new quote |
 | `PUT` | `/api/quotes` | Yes | Update a quote |
 | `DELETE` | `/api/quotes` | Yes | Delete a quote |
 | `GET` | `/api/quote/random` | No | Get a random quote |
+
+### Map & Extension Library
+
+Admins upload unofficial maps, rule sheets, and expansion files from the **Library** tab in the admin dashboard (or from an extension's detail view). Everyone can browse and download them from `/library.html`.
+
+- Allowed files: PDF, PNG, JPG, WebP, GIF (25 MB maximum).
+- Each asset can be tagged as `map`, `extension`, or `other` and associated with an extension and/or a track.
+- Image maps can optionally be applied as a track's map background during upload.
+- Identical files are de-duplicated by SHA-256 and stored once under `media/assets/`.
+- Asset bytes are served only through `/api/assets/{id}/file` (inline preview), `/api/assets/{id}/thumbnail`, and `/api/assets/{id}/download`; the raw `media/assets/` path returns 404 so the API stays in control of access and headers.
 
 ### System
 

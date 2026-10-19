@@ -179,6 +179,8 @@ func (h *Handler) DeleteExtension(c *gin.Context) {
 	// Remove season module links for the extension's modules, then the modules
 	h.S.DB.Exec("DELETE FROM season_modules WHERE module_id IN (SELECT id FROM modules WHERE extension_id = ?)", id)
 	h.S.DB.Exec("DELETE FROM modules WHERE extension_id = ?", id)
+	// Keep uploaded files in the library but detach them from the deleted pack.
+	h.S.DB.Exec("UPDATE assets SET extension_id = 0 WHERE extension_id = ?", id)
 	// Finally remove the extension itself
 	if _, err := h.S.DB.Exec("DELETE FROM extensions WHERE id = ?", id); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -199,6 +201,7 @@ type ExtensionDetail struct {
 	Tracks      []models.Track         `json:"tracks"`
 	Upgrades    []models.UpgradeCard   `json:"upgrades"`
 	Legends     []models.LegendAbility `json:"legends"`
+	Assets      []models.Asset         `json:"assets"`
 }
 
 // @Summary Extension detail
@@ -283,6 +286,11 @@ func (h *Handler) GetExtensionDetail(c *gin.Context) {
 			}
 		}
 		rows.Close()
+	}
+
+	d.Assets = make([]models.Asset, 0)
+	if assets, err := h.queryAssets(assetFilter{ExtensionID: id, Limit: 200}); err == nil {
+		d.Assets = assets
 	}
 
 	c.JSON(http.StatusOK, d)

@@ -1,6 +1,10 @@
 definitions:
   handlers.ExtensionDetail:
     properties:
+      assets:
+        items:
+          $ref: '#/definitions/models.Asset'
+        type: array
       description:
         type: string
       id:
@@ -116,6 +120,41 @@ definitions:
       text_gen_url:
         type: string
       track_extract_url:
+        type: string
+    type: object
+  models.Asset:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      ext:
+        type: string
+      extension_id:
+        type: integer
+      extension_name:
+        type: string
+      hash:
+        type: string
+      id:
+        type: integer
+      kind:
+        type: string
+      mime_type:
+        type: string
+      original_name:
+        type: string
+      size_bytes:
+        type: integer
+      thumbnail_url:
+        type: string
+      title:
+        type: string
+      track_id:
+        type: string
+      track_name:
+        type: string
+      url:
         type: string
     type: object
   models.BackupSettings:
@@ -680,6 +719,204 @@ paths:
       summary: Save AI settings
       tags:
       - Settings
+  /api/assets:
+    delete:
+      description: Delete an asset row and its stored original and thumbnail
+      parameters:
+      - description: Asset ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+      security:
+      - cookieAuth: []
+      summary: Delete an asset
+      tags:
+      - Assets
+    get:
+      description: List uploaded assets, optionally filtered by kind, extension, track,
+        or search text
+      parameters:
+      - description: map, extension, or other
+        in: query
+        name: kind
+        type: string
+      - description: Extension ID
+        in: query
+        name: extension_id
+        type: integer
+      - description: Track ID
+        in: query
+        name: track_id
+        type: string
+      - description: Search title or original filename
+        in: query
+        name: q
+        type: string
+      - description: Maximum rows (default 200, max 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Asset'
+            type: array
+      summary: List map and extension assets
+      tags:
+      - Assets
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a PDF or image asset (max 25 MB) and optionally tag it to
+        an extension or track
+      parameters:
+      - description: PDF, PNG, JPEG, WebP, or GIF
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Display title
+        in: formData
+        name: title
+        type: string
+      - description: Description
+        in: formData
+        name: description
+        type: string
+      - description: map, extension, or other
+        in: formData
+        name: kind
+        type: string
+      - description: Associated extension
+        in: formData
+        name: extension_id
+        type: integer
+      - description: Associated track
+        in: formData
+        name: track_id
+        type: string
+      - description: Use an image map as the track background
+        in: formData
+        name: set_as_map_background
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Asset'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Upload a map or extension asset
+      tags:
+      - Assets
+    put:
+      consumes:
+      - application/json
+      description: Update an asset's title, description, kind, extension, or track
+      parameters:
+      - description: Asset metadata
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Asset'
+      security:
+      - cookieAuth: []
+      summary: Update asset metadata
+      tags:
+      - Assets
+  /api/assets/{id}/download:
+    get:
+      description: Download the original asset file with an attachment disposition
+      parameters:
+      - description: Asset ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Download an asset
+      tags:
+      - Assets
+  /api/assets/{id}/file:
+    get:
+      description: Serve the original asset file inline for in-browser preview
+      parameters:
+      - description: Asset ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: View an asset inline
+      tags:
+      - Assets
+  /api/assets/{id}/thumbnail:
+    get:
+      description: Serve the generated thumbnail for an image asset
+      parameters:
+      - description: Asset ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: View an asset thumbnail
+      tags:
+      - Assets
   /api/auth/oidc/callback:
     get:
       description: Verify state/nonce/PKCE + ID token, link/provision user, set session

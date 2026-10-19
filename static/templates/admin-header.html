@@ -67,6 +67,7 @@
             <h1 class="h4 mb-0"><i aria-hidden="true" class="fa-solid fa-flag-checkered me-2"></i>HEAT RACE CONTROL <small class="ms-2 opacity-50 fw-normal">Board Game Companion</small></h1>
             <div>
                 <a href="/controller.html" class="btn btn-outline-light btn-sm me-2"><i aria-hidden="true" class="fa-solid fa-mobile-screen me-2"></i>Controller</a>
+                <a href="/library.html" class="btn btn-outline-light btn-sm me-2"><i aria-hidden="true" class="fa-solid fa-folder-open me-1"></i> Library</a>
                 <a href="/" class="btn btn-outline-light btn-sm me-2"><i aria-hidden="true" class="fa-solid fa-eye me-1"></i> Live Board</a>
                 <button class="btn btn-danger btn-sm" onclick="logout()"><i aria-hidden="true" class="fa-solid fa-sign-out-alt me-1"></i> Logout</button>
             </div>
@@ -87,6 +88,9 @@
         </button>
         <button class="admin-nav__tab" id="tab-extensions" role="tab" aria-controls="admin-tab-container" aria-selected="false" data-tab-id="extensions" hx-get="/api/html/admin/extensions" hx-target="#admin-tab-container" hx-swap="innerHTML">
             <i aria-hidden="true" class="fa-solid fa-box-open"></i><span class="admin-nav__label">Extensions</span>
+        </button>
+        <button class="admin-nav__tab" id="tab-library" role="tab" aria-controls="admin-tab-container" aria-selected="false" data-tab-id="library" hx-get="/api/html/admin/library" hx-target="#admin-tab-container" hx-swap="innerHTML">
+            <i aria-hidden="true" class="fa-solid fa-folder-open"></i><span class="admin-nav__label">Library</span>
         </button>
     </nav>
     <div class="container admin-content">

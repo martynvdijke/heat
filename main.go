@@ -183,12 +183,13 @@ func initAdminTemplate(basePath string) {
 		filepath.Join(basePath, "static/templates/tab-drivers.html"),
 		filepath.Join(basePath, "static/templates/tab-config.html"),
 		filepath.Join(basePath, "static/templates/tab-extensions.html"),
+		filepath.Join(basePath, "static/templates/tab-library.html"),
 	))
 }
 
 func isValidAdminTab(tab string) bool {
 	switch tab {
-	case "race-day", "season", "drivers", "config", "extensions":
+	case "race-day", "season", "drivers", "config", "extensions", "library":
 		return true
 	}
 	return false
@@ -427,6 +428,11 @@ func main() {
 		admin.POST("/modules", h.CreateModule)
 		admin.PUT("/modules", h.UpdateModule)
 		admin.DELETE("/modules", h.DeleteModule)
+
+		// Admin: Asset library (unofficial maps and extension files)
+		admin.POST("/assets", h.UploadAsset)
+		admin.PUT("/assets", h.UpdateAsset)
+		admin.DELETE("/assets", h.DeleteAsset)
 		admin.PUT("/content/extension", h.AssignContentExtension)
 
 		// Admin: Game Mechanics
@@ -513,6 +519,8 @@ func main() {
 				tmplName = "tabConfig"
 			case "extensions":
 				tmplName = "tabExtensions"
+			case "library":
+				tmplName = "tabLibrary"
 			}
 			c.Header("Content-Type", "text/html; charset=utf-8")
 			c.Header("Cache-Control", "no-store")
@@ -538,6 +546,10 @@ func main() {
 	}
 
 	r.GET("/api/uploads", h.GetUploads)
+	r.GET("/api/assets", h.GetAssets)
+	r.GET("/api/assets/:id/file", h.GetAssetFile)
+	r.GET("/api/assets/:id/thumbnail", h.GetAssetThumbnail)
+	r.GET("/api/assets/:id/download", h.DownloadAsset)
 	r.GET("/api/race-info", h.GetRaceInfo)
 	r.GET("/api/races/export.ics", h.ExportRacesICS)
 	r.GET("/api/tracks", h.GetTracks)
@@ -691,7 +703,7 @@ func main() {
 		c.Next()
 	}
 	r.Group("/static", cacheControlStatic).Static("", filepath.Join(server.BasePath, "static"))
-	r.Group("/media", cacheControl("public, max-age=86400")).Static("", server.MediaPath)
+	r.Group("/media", cacheControl("public, max-age=86400"), middleware.BlockStaticSubdir("assets")).Static("", server.MediaPath)
 	r.GET("/sw.js", func(c *gin.Context) {
 		c.Header("Cache-Control", "no-cache")
 		c.File(filepath.Join(server.BasePath, "static/sw.js"))
@@ -802,6 +814,10 @@ func main() {
 
 		pages.GET("/trophies.html", func(c *gin.Context) {
 			serveTemplate(c, "trophies.html", server)
+		})
+
+		pages.GET("/library.html", func(c *gin.Context) {
+			serveTemplate(c, "library.html", server)
 		})
 
 		pages.GET("/tv.html", func(c *gin.Context) {

@@ -1,0 +1,69 @@
+{{define "tabLibrary"}}
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                        <h5 class="mb-0"><i class="fa-solid fa-folder-open me-2 text-danger"></i>Map &amp; Extension Library</h5>
+                        <div class="small text-muted">Unofficial maps, rule sheets, and expansion files. Everyone can view and download; admins manage the library.</div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="libOpenAssetModal()">
+                        <i class="fa-solid fa-upload me-1"></i> Upload Asset
+                    </button>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small fw-bold" for="library-filter-kind">Kind</label>
+                                <select class="form-select form-select-sm" id="library-filter-kind" onchange="libLoadLibrary()">
+                                    <option value="">All kinds</option>
+                                    <option value="map">Maps</option>
+                                    <option value="extension">Extension files</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small fw-bold" for="library-filter-extension">Extension</label>
+                                <select class="form-select form-select-sm" id="library-filter-extension" onchange="libLoadLibrary()">
+                                    <option value="">All extensions</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-bold" for="library-search">Search</label>
+                                <input type="search" class="form-control form-control-sm" id="library-search" placeholder="Title or filename" oninput="libLoadLibraryDebounced()">
+                            </div>
+                            <div class="col-12 col-md-2 d-grid">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="libClearFilters()">
+                                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4" style="width:64px">Preview</th>
+                                        <th>Asset</th>
+                                        <th>Kind</th>
+                                        <th>Association</th>
+                                        <th class="text-end">Size</th>
+                                        <th>Added</th>
+                                        <th class="text-end pe-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="library-list">
+                                    <tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading library...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    if (window.libLoadLibrary) window.libLoadLibrary();
+                </script>
+{{end}}

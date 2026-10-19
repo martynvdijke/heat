@@ -252,6 +252,33 @@ type Upload struct {
 	CreatedAt    string `json:"created_at"`
 }
 
+// Asset is an uploaded unofficial map or extension file. Files are stored
+// content-addressed under media/assets and may be associated with an extension
+// and/or a track.
+type Asset struct {
+	ID            int    `json:"id"`
+	Hash          string `json:"hash"`
+	Ext           string `json:"ext"`
+	MIMEType      string `json:"mime_type"`
+	SizeBytes     int64  `json:"size_bytes"`
+	OriginalName  string `json:"original_name"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	Kind          string `json:"kind"`
+	ExtensionID   int    `json:"extension_id"`
+	ExtensionName string `json:"extension_name,omitempty"`
+	TrackID       string `json:"track_id"`
+	TrackName     string `json:"track_name,omitempty"`
+	URL           string `json:"url"`
+	ThumbnailURL  string `json:"thumbnail_url"`
+	// FilePath and ThumbPath are the internal media paths of the stored files.
+	// They are never exposed: clients fetch bytes through the /api/assets
+	// endpoints so access and response headers stay under our control.
+	FilePath  string `json:"-"`
+	ThumbPath string `json:"-"`
+	CreatedAt string `json:"created_at"`
+}
+
 type TrackStats struct {
 	TrackID    string `json:"track_id"`
 	TrackName  string `json:"track_name"`

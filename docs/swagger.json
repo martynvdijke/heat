@@ -219,6 +219,309 @@
                 }
             }
         },
+        "/api/assets": {
+            "get": {
+                "description": "List uploaded assets, optionally filtered by kind, extension, track, or search text",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "List map and extension assets",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "map, extension, or other",
+                        "name": "kind",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Extension ID",
+                        "name": "extension_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Track ID",
+                        "name": "track_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search title or original filename",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum rows (default 200, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Asset"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Update an asset's title, description, kind, extension, or track",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Update asset metadata",
+                "parameters": [
+                    {
+                        "description": "Asset metadata",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Asset"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Upload a PDF or image asset (max 25 MB) and optionally tag it to an extension or track",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Upload a map or extension asset",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "PDF, PNG, JPEG, WebP, or GIF",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Display title",
+                        "name": "title",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Description",
+                        "name": "description",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "map, extension, or other",
+                        "name": "kind",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Associated extension",
+                        "name": "extension_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Associated track",
+                        "name": "track_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Use an image map as the track background",
+                        "name": "set_as_map_background",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Asset"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Delete an asset row and its stored original and thumbnail",
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Delete an asset",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/assets/{id}/download": {
+            "get": {
+                "description": "Download the original asset file with an attachment disposition",
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Download an asset",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/assets/{id}/file": {
+            "get": {
+                "description": "Serve the original asset file inline for in-browser preview",
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "View an asset inline",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/assets/{id}/thumbnail": {
+            "get": {
+                "description": "Serve the generated thumbnail for an image asset",
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "View an asset thumbnail",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/oidc/callback": {
             "get": {
                 "description": "Verify state/nonce/PKCE + ID token, link/provision user, set session cookie",
@@ -3500,6 +3803,12 @@
         "handlers.ExtensionDetail": {
             "type": "object",
             "properties": {
+                "assets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Asset"
+                    }
+                },
                 "description": {
                     "type": "string"
                 },
@@ -3674,6 +3983,59 @@
                     "type": "string"
                 },
                 "track_extract_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Asset": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "ext": {
+                    "type": "string"
+                },
+                "extension_id": {
+                    "type": "integer"
+                },
+                "extension_name": {
+                    "type": "string"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "mime_type": {
+                    "type": "string"
+                },
+                "original_name": {
+                    "type": "string"
+                },
+                "size_bytes": {
+                    "type": "integer"
+                },
+                "thumbnail_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "track_id": {
+                    "type": "string"
+                },
+                "track_name": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }

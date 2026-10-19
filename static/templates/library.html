@@ -1,0 +1,55 @@
+{{define "title"}}HEAT: Map &amp; Extension Library{{end}}
+
+{{define "nav"}}
+<ul class="mb-0 d-flex flex-wrap gap-3 list-unstyled justify-content-center">
+    <li><a href="/" class="text-uppercase"><i class="fa-solid fa-house me-2"></i>Home</a></li>
+    <li><a href="/seasons.html" class="text-uppercase"><i class="fa-solid fa-calendar-days me-2"></i>Seasons</a></li>
+    <li><a href="/stats.html" class="text-uppercase"><i class="fa-solid fa-chart-line me-2"></i>Stats</a></li>
+    <li><a href="/trophies.html" class="text-uppercase"><i class="fa-solid fa-trophy me-2"></i>Trophies</a></li>
+    <li><a href="/library.html" class="active text-uppercase"><i class="fa-solid fa-folder-open me-2"></i>Library</a></li>
+</ul>
+{{end}}
+
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+    <h1 class="mb-0"><i class="fa-solid fa-folder-open me-2"></i>Map &amp; Extension Library</h1>
+</div>
+<p class="text-muted mb-4">Unofficial maps, rule sheets, and expansion files shared by the community. Open a file to preview it or download a copy.</p>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-3">
+                <label class="form-label small fw-bold" for="library-kind">Kind</label>
+                <select class="form-select" id="library-kind">
+                    <option value="">All kinds</option>
+                    <option value="map">Maps</option>
+                    <option value="extension">Extension files</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label small fw-bold" for="library-extension">Extension</label>
+                <select class="form-select" id="library-extension">
+                    <option value="">All extensions</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label small fw-bold" for="library-search">Search</label>
+                <input type="search" class="form-control" id="library-search" placeholder="Search by title or filename">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4" id="library-grid">
+    <div class="col-12 text-center text-muted py-5">
+        <i class="fa-solid fa-folder-open fa-3x mb-3 opacity-50"></i>
+        <p>Loading library...</p>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/js/library.js"></script>
+{{end}}

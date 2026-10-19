@@ -234,6 +234,25 @@ func Init(s *app.Server) {
 	)`)
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_racer_achievements_racer ON racer_achievements(racer_id)")
 
+	// Asset library: unofficial maps and extension files. Writes are admin-only;
+	// reads and downloads are public. Files live under media/assets/<hash[:2]>/.
+	srv.DB.Exec(`CREATE TABLE IF NOT EXISTS assets (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		hash TEXT NOT NULL UNIQUE,
+		ext TEXT NOT NULL,
+		mime_type TEXT NOT NULL,
+		size_bytes INTEGER NOT NULL DEFAULT 0,
+		original_name TEXT NOT NULL DEFAULT '',
+		title TEXT NOT NULL DEFAULT '',
+		description TEXT NOT NULL DEFAULT '',
+		kind TEXT NOT NULL DEFAULT 'other',
+		extension_id INTEGER NOT NULL DEFAULT 0,
+		track_id TEXT NOT NULL DEFAULT '',
+		url TEXT NOT NULL,
+		thumbnail_url TEXT NOT NULL DEFAULT '',
+		created_at TEXT NOT NULL DEFAULT (datetime('now'))
+	)`)
+
 	// Performance indexes for common query patterns
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_id ON race_results(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_race_id ON race_results(race_id)")
@@ -256,6 +275,10 @@ func Init(s *app.Server) {
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_racerstats_racer_id ON racer_stats(racer_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_race_results_racer_race ON race_results(racer_id, race_id)")
 	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_lap_records_racer_lap ON lap_records(racer_id, lap_number)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_assets_kind ON assets(kind)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_assets_extension_id ON assets(extension_id)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_assets_track_id ON assets(track_id)")
+	srv.DB.Exec("CREATE INDEX IF NOT EXISTS idx_assets_created_at ON assets(created_at)")
 
 	var count int
 	srv.DB.QueryRow("SELECT COUNT(*) FROM racers").Scan(&count)

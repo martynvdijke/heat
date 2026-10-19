@@ -169,6 +169,7 @@
 
                     function loadExtensionDetail(id) {
                         extApi('/api/extensions/detail?id=' + id).then(function(d) {
+                            window._currentExtensionDetailId = d.id;
                             var el = document.getElementById('extension-detail');
                             var moduleRows = (d.modules || []).map(function(m) {
                                 var trackBadges = (m.tracks || []).map(function(t) {
@@ -212,11 +213,36 @@
                                     '<div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0"><tbody>' + body + '</tbody></table></div></div>';
                             };
 
+                            var assetRows = (d.assets || []).map(function(a) {
+                                var icon = a.thumbnail_url
+                                    ? '<img src="' + esc(a.thumbnail_url) + '" alt="" class="rounded border me-2 flex-shrink-0" style="width:40px;height:40px;object-fit:cover">'
+                                    : '<i class="fa-solid ' + (a.mime_type === 'application/pdf' ? 'fa-file-pdf text-danger' : 'fa-file text-secondary') + ' fa-lg me-2"></i>';
+                                return '<div class="d-flex align-items-center justify-content-between border-top px-3 py-2 gap-2">' +
+                                    '<div class="d-flex align-items-center min-w-0">' + icon +
+                                        '<div class="min-w-0"><a href="' + esc(a.url) + '" target="_blank" rel="noopener" class="fw-bold text-decoration-none d-block text-truncate">' + esc(a.title) + '</a>' +
+                                        '<span class="small text-muted d-block text-truncate">' + esc(a.original_name) + ' &middot; ' + libFormatBytes(a.size_bytes) + '</span></div>' +
+                                    '</div>' +
+                                    '<div class="btn-group btn-group-sm flex-shrink-0">' +
+                                        '<a class="btn btn-outline-secondary" href="/api/assets/' + a.id + '/download" title="Download"><i class="fa-solid fa-download"></i></a>' +
+                                        '<button class="btn btn-outline-danger" onclick="libDeleteAsset(' + a.id + ', true)" title="Delete"><i class="fa-solid fa-trash"></i></button>' +
+                                    '</div></div>';
+                            }).join('');
+                            if (!assetRows) assetRows = '<div class="text-muted small px-3 py-3">No files attached to this extension yet.</div>';
+
+                            var extensionAssetsCard =
+                                '<div class="card mt-3">' +
+                                    '<div class="card-header d-flex justify-content-between align-items-center py-2">' +
+                                        '<span class="small fw-bold"><i class="fa-solid fa-paperclip me-1"></i>Files</span>' +
+                                        '<button class="btn btn-sm btn-outline-primary" onclick="libOpenAssetModalForExtension(' + d.id + ')"><i class="fa-solid fa-upload me-1"></i>Upload File</button>' +
+                                    '</div>' +
+                                    assetRows +
+                                '</div>';
+
                             el.innerHTML =
                                 '<div class="card mb-3">' +
                                     '<div class="card-header d-flex justify-content-between align-items-center">' +
                                         '<span><i class="fa-solid fa-box-open me-2 text-danger"></i><strong>' + esc(d.name) + '</strong>' + (d.is_base ? ' <span class="badge bg-success">Base</span>' : '') + ' <span class="small text-muted">' + esc(d.description) + '</span></span>' +
-                                        '<button class="btn btn-sm btn-outline-secondary" onclick="this.closest(\'#extension-detail\').innerHTML=\'\'"><i class="fa-solid fa-xmark"></i></button>' +
+                                        '<button class="btn btn-sm btn-outline-secondary" onclick="this.closest(\'#extension-detail\').innerHTML=\'\'; window._currentExtensionDetailId=null"><i class="fa-solid fa-xmark"></i></button>' +
                                     '</div>' +
                                     '<div class="card-body">' +
                                         '<div class="row g-3">' +
@@ -237,7 +263,8 @@
                                             '</div>' +
                                         '</div>' +
                                     '</div>' +
-                                '</div>';
+                                '</div>' +
+                                extensionAssetsCard;
                         }).catch(function(err) { alert('Failed: ' + err.message); });
                     }
 
