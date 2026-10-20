@@ -1,3 +1,10 @@
+## [1.70.1](https://github.com/martynvdijke/heat/compare/v1.70.0...v1.70.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **android:** add internet permission, cleartext support and release signing ([6b44530](https://github.com/martynvdijke/heat/commit/6b44530a7472b64fe7174471da63b2b9fccbfe97))
+
 # [1.70.0](https://github.com/martynvdijke/heat/compare/v1.69.2...v1.70.0) (2026-10-19)
 
 
