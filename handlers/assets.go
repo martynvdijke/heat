@@ -446,7 +446,7 @@ func (h *Handler) GetAssets(c *gin.Context) {
 		Limit:       limit,
 	})
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, assets)
@@ -482,7 +482,7 @@ func (h *Handler) UpdateAsset(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -526,13 +526,13 @@ func (h *Handler) UpdateAsset(c *gin.Context) {
 		"UPDATE assets SET title = ?, description = ?, kind = ?, extension_id = ?, track_id = ? WHERE id = ?",
 		asset.Title, asset.Description, asset.Kind, asset.ExtensionID, asset.TrackID, asset.ID,
 	); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
 	updated, err := h.getAssetByID(asset.ID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, updated)
@@ -559,12 +559,12 @@ func (h *Handler) DeleteAsset(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
 	if _, err := h.S.DB.Exec("DELETE FROM assets WHERE id = ?", id); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.removeAssetFiles(asset)
@@ -592,7 +592,7 @@ func (h *Handler) DownloadAsset(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -669,7 +669,7 @@ func (h *Handler) serveAssetBytes(c *gin.Context, thumbnail bool) {
 		return
 	}
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

@@ -138,7 +138,7 @@ func (h *Handler) HandleQuoteSuggest(c *gin.Context) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "AI request failed: " + err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer resp.Body.Close()

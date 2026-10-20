@@ -47,7 +47,7 @@ func (h *Handler) GetTrackGeoJSON(c *gin.Context) {
 
 	tracks, err := h.S.Ent.Track.Query().All(c.Request.Context())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -122,7 +122,7 @@ func (h *Handler) GetTracks(c *gin.Context) {
 	}
 	tracks, err := query.All(c.Request.Context())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -166,11 +166,11 @@ func (h *Handler) SaveTrack(c *gin.Context) {
 			SetModuleID(t.ModuleID).
 			Save(ctx)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	} else if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	} else {
 		_, err = h.S.Ent.Track.UpdateOneID(t.ID).
@@ -186,7 +186,7 @@ func (h *Handler) SaveTrack(c *gin.Context) {
 			SetModuleID(t.ModuleID).
 			Save(ctx)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
@@ -198,7 +198,7 @@ func (h *Handler) SaveTrack(c *gin.Context) {
 func (h *Handler) GetBoardGameTracks(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT track_id FROM board_game_tracks")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -225,12 +225,12 @@ func (h *Handler) SetBoardGameTracks(c *gin.Context) {
 	}
 	tx, err := h.S.DB.Begin()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer tx.Rollback()
 	if _, err := tx.Exec("DELETE FROM board_game_tracks"); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	for _, id := range input.TrackIDs {
@@ -243,12 +243,12 @@ func (h *Handler) SetBoardGameTracks(c *gin.Context) {
 			continue
 		}
 		if _, err := tx.Exec("INSERT OR IGNORE INTO board_game_tracks (track_id) VALUES (?)", id); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -263,7 +263,7 @@ func (h *Handler) DeleteTrack(c *gin.Context) {
 
 	err := h.S.Ent.Track.DeleteOneID(id).Exec(c.Request.Context())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.DB.Exec("DELETE FROM board_game_tracks WHERE track_id = ?", id)
@@ -356,7 +356,7 @@ func (h *Handler) HandleAIExtract(c *gin.Context) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "AI request failed: " + err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer resp.Body.Close()

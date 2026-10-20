@@ -59,7 +59,7 @@ func (h *Handler) GetRaceIncidentsReport(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()

@@ -37,7 +37,7 @@ func (h *Handler) GetTrackPerformance(c *gin.Context) {
 		}
 		results, err := racing.TrackPerformance(h.S.DB, racerID, seasonIDs)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 		if results == nil {
@@ -68,7 +68,7 @@ func (h *Handler) GetTrackPerformance(c *gin.Context) {
 		ORDER BY rh.track
 	`, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -112,7 +112,7 @@ func (h *Handler) GetQualifyingRaceDelta(c *gin.Context) {
 
 	deltas, err := racing.QualifyingRaceDelta(h.S.DB, racerID, seasonIDs)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if deltas == nil {
@@ -141,7 +141,7 @@ func (h *Handler) GetConsistencyRatings(c *gin.Context) {
 	}
 	ratings, err := racing.ConsistencyRatings(h.S.DB, seasonIDs)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.StatsCache.Set(cacheKey, ratings)
@@ -193,7 +193,7 @@ func (h *Handler) GetPaceHeatmap(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()

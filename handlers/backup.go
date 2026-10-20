@@ -22,7 +22,7 @@ func (h *Handler) GetBackupSettings(c *gin.Context) {
 	err := h.S.DB.QueryRow("SELECT id, enabled, interval_hrs, retention_count FROM backup_settings WHERE id = 1").Scan(&s.ID, &s.Enabled, &s.IntervalHrs, &s.RetentionCount)
 	if err != nil {
 		h.S.Log.Errorf("backup", "GetBackupSettings: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if s.RetentionCount <= 0 {
@@ -59,7 +59,7 @@ func (h *Handler) SaveBackupSettings(c *gin.Context) {
 	_, err := h.S.DB.Exec("UPDATE backup_settings SET enabled = ?, interval_hrs = ?, retention_count = ? WHERE id = 1", enabled, s.IntervalHrs, s.RetentionCount)
 	if err != nil {
 		h.S.Log.Errorf("backup", "SaveBackupSettings: DB error: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *Handler) SaveBackupSettings(c *gin.Context) {
 func (h *Handler) TriggerManualBackup(c *gin.Context) {
 	if err := db.CreateBackup(); err != nil {
 		h.S.Log.Errorf("backup", "Manual backup failed: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if err := db.PruneBackups(); err != nil {

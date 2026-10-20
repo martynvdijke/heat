@@ -78,7 +78,7 @@ func (h *Handler) GetExtensions(c *gin.Context) {
 		FROM extensions e LEFT JOIN owned_extensions oe ON oe.extension_id = e.id
 		ORDER BY e.sort_order, e.name`)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -118,7 +118,7 @@ func (h *Handler) CreateExtension(c *gin.Context) {
 	res, err := h.S.DB.Exec("INSERT INTO extensions (name, description, is_base, sort_order) VALUES (?, ?, ?, ?)",
 		input.Name, input.Description, input.IsBase, input.SortOrder)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	id, _ := res.LastInsertId()
@@ -150,7 +150,7 @@ func (h *Handler) UpdateExtension(c *gin.Context) {
 	_, err := h.S.DB.Exec("UPDATE extensions SET name=?, description=?, is_base=?, sort_order=? WHERE id=?",
 		input.Name, input.Description, input.IsBase, input.SortOrder, input.ID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -183,7 +183,7 @@ func (h *Handler) DeleteExtension(c *gin.Context) {
 	h.S.DB.Exec("UPDATE assets SET extension_id = 0 WHERE extension_id = ?", id)
 	// Finally remove the extension itself
 	if _, err := h.S.DB.Exec("DELETE FROM extensions WHERE id = ?", id); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -337,7 +337,7 @@ func (h *Handler) queryModules() ([]ModuleSummary, error) {
 func (h *Handler) GetModules(c *gin.Context) {
 	modules, err := h.queryModules()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, modules)
@@ -363,7 +363,7 @@ func (h *Handler) CreateModule(c *gin.Context) {
 	res, err := h.S.DB.Exec("INSERT INTO modules (name, description, extension_id, sort_order) VALUES (?, ?, ?, ?)",
 		input.Name, input.Description, input.ExtensionID, input.SortOrder)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	id, _ := res.LastInsertId()
@@ -395,7 +395,7 @@ func (h *Handler) UpdateModule(c *gin.Context) {
 	_, err := h.S.DB.Exec("UPDATE modules SET name=?, description=?, extension_id=?, sort_order=? WHERE id=?",
 		input.Name, input.Description, input.ExtensionID, input.SortOrder, input.ID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -419,7 +419,7 @@ func (h *Handler) DeleteModule(c *gin.Context) {
 	// Reset tracks owned by this module to the Base Game extension
 	h.S.DB.Exec("UPDATE tracks SET module_id = 0, extension_id = 1 WHERE module_id = ?", id)
 	if _, err := h.S.DB.Exec("DELETE FROM modules WHERE id = ?", id); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -467,7 +467,7 @@ func (h *Handler) AssignContentExtension(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -547,12 +547,12 @@ func (h *Handler) SetOwnedExtensions(c *gin.Context) {
 	}
 	tx, err := h.S.DB.Begin()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer tx.Rollback()
 	if _, err := tx.Exec("DELETE FROM owned_extensions"); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	seen := map[int]bool{}
@@ -566,7 +566,7 @@ func (h *Handler) SetOwnedExtensions(c *gin.Context) {
 			continue
 		}
 		if _, err := tx.Exec("INSERT OR IGNORE INTO owned_extensions (extension_id) VALUES (?)", id); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 		seen[id] = true
@@ -580,12 +580,12 @@ func (h *Handler) SetOwnedExtensions(c *gin.Context) {
 	}
 	if !seen[base] {
 		if _, err := tx.Exec("INSERT OR IGNORE INTO owned_extensions (extension_id) VALUES (?)", base); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})

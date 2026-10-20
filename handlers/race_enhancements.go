@@ -19,7 +19,7 @@ func (h *Handler) GetWeather(c *gin.Context) {
 
 	rows, err := h.S.DB.Query("SELECT id, race_id, condition, lap_start, lap_end, grip_modifier FROM weather_conditions WHERE race_id = ? ORDER BY lap_start", raceID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -45,14 +45,14 @@ func (h *Handler) SetWeather(c *gin.Context) {
 		_, err := h.S.DB.Exec("INSERT INTO weather_conditions (race_id, condition, lap_start, lap_end, grip_modifier) VALUES (?, ?, ?, ?, ?)",
 			w.RaceID, w.Condition, w.LapStart, w.LapEnd, w.GripModifier)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	} else {
 		_, err := h.S.DB.Exec("UPDATE weather_conditions SET condition=?, lap_start=?, lap_end=?, grip_modifier=? WHERE id=?",
 			w.Condition, w.LapStart, w.LapEnd, w.GripModifier, w.ID)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
@@ -95,7 +95,7 @@ func (h *Handler) GetTurboLogs(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -120,7 +120,7 @@ func (h *Handler) AddTurboLog(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT INTO turbo_logs (racer_id, race_id, lap, times_used) VALUES (?, ?, ?, ?)",
 		tl.RacerID, tl.RaceID, tl.Lap, tl.TimesUsed)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{
@@ -166,7 +166,7 @@ func (h *Handler) GetLapRecords(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -191,7 +191,7 @@ func (h *Handler) RecordLap(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT INTO lap_records (race_id, racer_id, lap_number, position, gear_used, heat_generated, turbo_used) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		lr.RaceID, lr.RacerID, lr.LapNumber, lr.Position, lr.GearUsed, lr.HeatGenerated, lr.TurboUsed)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	// Also update racer position
@@ -261,7 +261,7 @@ func (h *Handler) GetSectors(c *gin.Context) {
 	trackID := c.Query("track_id")
 	rows, err := h.S.DB.Query("SELECT id, name, track_id, \"order\" FROM sectors WHERE track_id = ? ORDER BY \"order\"", trackID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -300,7 +300,7 @@ func (h *Handler) GetRacerSectors(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -331,7 +331,7 @@ func (h *Handler) RecordRacerSector(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT INTO racer_sectors (race_id, racer_id, sector_id, lap, entry_time, exit_time) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))",
 		rs.RaceID, rs.RacerID, rs.SectorID, rs.Lap)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -345,7 +345,7 @@ func (h *Handler) GetRaceEvents(c *gin.Context) {
 
 	rows, err := h.S.DB.Query("SELECT id, race_id, lap, event_type, racer_id, racer_id2, note, timestamp FROM race_events WHERE race_id = ? ORDER BY lap, id", raceID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -370,7 +370,7 @@ func (h *Handler) AddRaceEvent(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT INTO race_events (race_id, lap, event_type, racer_id, racer_id2, note) VALUES (?, ?, ?, ?, ?, ?)",
 		e.RaceID, e.Lap, e.EventType, e.RacerID, e.RacerID2, e.Note)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	// Auto-narrate the event on the commentary feed.
@@ -429,14 +429,14 @@ func (h *Handler) SetAIDifficulty(c *gin.Context) {
 		VALUES (1, '', '', 0)
 		ON CONFLICT(id) DO NOTHING`)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
 	_, err = h.S.DB.Exec(`UPDATE ai_settings SET difficulty = ?, aggression = ?, error_rate = ?, consistency = ? WHERE id = 1`,
 		req.Difficulty, req.Aggression, req.ErrorRate, req.Consistency)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

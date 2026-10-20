@@ -32,7 +32,7 @@ func (h *Handler) GetRaceRadio(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -71,7 +71,7 @@ func (h *Handler) AddRaceRadio(c *gin.Context) {
 	result, err := h.S.DB.Exec("INSERT INTO race_radio (race_id, racer_id, message) VALUES (?, ?, ?)",
 		msg.RaceID, msg.RacerID, msg.Message)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	id, _ := result.LastInsertId()

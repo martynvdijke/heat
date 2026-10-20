@@ -21,7 +21,7 @@ import (
 func (h *Handler) GetQuotes(c *gin.Context) {
 	entQuotes, err := h.S.Ent.Quote.Query().Order(ent.Asc(quote.FieldID)).All(context.Background())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -77,7 +77,7 @@ func (h *Handler) HandleQuotes(c *gin.Context) {
 		}
 		created, err := h.S.Ent.Quote.Create().SetText(q.Text).SetAuthor(q.Author).Save(context.Background())
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 		q.ID = created.ID
@@ -94,7 +94,7 @@ func (h *Handler) HandleQuotes(c *gin.Context) {
 		}
 		_, err := h.S.Ent.Quote.UpdateOneID(q.ID).SetText(q.Text).SetAuthor(q.Author).Save(context.Background())
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, q)
@@ -111,7 +111,7 @@ func (h *Handler) HandleQuotes(c *gin.Context) {
 		}
 		_, err = h.S.Ent.Quote.Delete().Where(quote.ID(id)).Exec(context.Background())
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 		c.Status(http.StatusOK)

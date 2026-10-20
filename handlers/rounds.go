@@ -46,7 +46,7 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 		if err == sql.ErrNoRows {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
 		} else {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 		}
 		return
 	}
@@ -65,7 +65,7 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 
 	rows, err := h.S.DB.Query("SELECT id, name, points FROM racers ORDER BY points DESC, name ASC")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -87,7 +87,7 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 
 	tx, err := h.S.DB.Begin()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer tx.Rollback()
@@ -98,7 +98,7 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 		if strings.Contains(err.Error(), "UNIQUE constraint") {
 			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "round number already exists in this season"})
 		} else {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 		}
 		return
 	}
@@ -115,13 +115,13 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 			args = append(args, snapshotID, s.ID, s.Name, s.Points, i+1)
 		}
 		if _, err := tx.Exec(query, args...); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -171,7 +171,7 @@ func (h *Handler) GetRoundSnapshotsBatch(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -198,7 +198,7 @@ func (h *Handler) GetRoundSnapshotsBatch(c *gin.Context) {
 	)
 	scoreRows, err := h.S.DB.Query(scoreQuery, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer scoreRows.Close()
@@ -240,7 +240,7 @@ func (h *Handler) GetRoundSnapshots(c *gin.Context) {
 
 		scoreRows, err := h.S.DB.Query("SELECT id, snapshot_id, racer_id, racer_name, points, position, dnf, dns, spins, overheated FROM round_snapshot_scores WHERE snapshot_id = ? ORDER BY position", id)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 		defer scoreRows.Close()
@@ -276,7 +276,7 @@ func (h *Handler) GetRoundSnapshots(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -316,7 +316,7 @@ func (h *Handler) DeleteRoundSnapshot(c *gin.Context) {
 			if err == sql.ErrNoRows {
 				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
 			} else {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				internalError(c, err)
 			}
 			return
 		}
@@ -368,7 +368,7 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 		if err == sql.ErrNoRows {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
 		} else {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 		}
 		return
 	}
@@ -385,7 +385,7 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 
 	tx, err := h.S.DB.Begin()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer tx.Rollback()
@@ -394,13 +394,13 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 		_, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, position = ?, dnf = ?, dns = ?, spins = ?, overheated = ? WHERE id = ? AND snapshot_id = ?",
 			sc.Points, sc.Position, sc.DNF, sc.DNS, sc.Spins, sc.Overheated, sc.ID, idStr)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -443,7 +443,7 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 		if err == sql.ErrNoRows {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
 		} else {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 		}
 		return
 	}
@@ -454,7 +454,7 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 
 	rows, err := h.S.DB.Query("SELECT racer_id, racer_name, points, position, dnf, dns, spins, overheated FROM round_snapshot_scores WHERE snapshot_id = ?", idStr)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -492,7 +492,7 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 
 	tx, err := h.S.DB.Begin()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer tx.Rollback()
@@ -535,12 +535,12 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 	// Mark round as final
 	_, err = tx.Exec("UPDATE round_snapshots SET status = 'final' WHERE id = ?", idStr)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -564,7 +564,7 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 func (h *Handler) GetSeasons(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT id, name, start_date, COALESCE(end_date, ''), status, created_at FROM seasons ORDER BY id DESC")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -619,7 +619,7 @@ func (h *Handler) CreateSeason(c *gin.Context) {
 
 	res, err := h.S.DB.Exec("INSERT INTO seasons (name, start_date, status) VALUES (?, date('now'), 'active')", input.Name)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	id, _ := res.LastInsertId()
@@ -670,7 +670,7 @@ func (h *Handler) ArchiveSeason(c *gin.Context) {
 	}
 	_, err := h.S.DB.Exec("UPDATE seasons SET status = 'archived', end_date = date('now') WHERE id = ?", id)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)

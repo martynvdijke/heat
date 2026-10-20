@@ -72,7 +72,7 @@ func (h *Handler) SaveTelegramSettings(c *gin.Context) {
 		s.ReminderDays, s.ReminderHour)
 	if err != nil {
 		h.S.Log.Errorf("telegram", "SaveTelegramSettings: DB error: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.Log.Infof("telegram", "Telegram settings saved: enabled=%v chat=%q results=%v reminders=%v", s.Enabled, s.DefaultChatID, s.NotifyResults, s.NotifyNextRace)

@@ -74,7 +74,7 @@ func (h *Handler) GetCommentary(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -115,7 +115,7 @@ func (h *Handler) AddCommentary(c *gin.Context) {
 		Message: req.Message,
 	}
 	if err := h.insertCommentary(&entry); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, entry)

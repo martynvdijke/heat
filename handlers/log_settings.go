@@ -95,7 +95,7 @@ func (h *Handler) SaveLogSettings(c *gin.Context) {
 			input.Module, input.Level, input.Level,
 		)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to save settings: " + err.Error()})
+			internalError(c, err)
 			return
 		}
 	}

@@ -47,7 +47,7 @@ func (h *Handler) PlayerLogin(c *gin.Context) {
 		ON CONFLICT(racer_id) DO UPDATE SET token = ?, device_name = ?, last_seen = datetime('now')`,
 		req.RacerID, token, req.DeviceName, token, req.DeviceName)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -88,7 +88,7 @@ func (h *Handler) ValidatePlayerToken(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (h *Handler) GetPlayerSessions(c *gin.Context) {
 		JOIN racers r ON r.id = ps.racer_id
 		ORDER BY r.name`)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -172,7 +172,7 @@ func (h *Handler) PlayerReportGear(c *gin.Context) {
 	_, err = h.S.DB.Exec("INSERT INTO gear_shifts (racer_id, race_id, lap, gear, stress) VALUES (?, ?, ?, ?, ?)",
 		racerID, raceID, req.Lap, req.Gear, req.Stress)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -243,7 +243,7 @@ func (h *Handler) PlayerReportTurbo(c *gin.Context) {
 	_, err = h.S.DB.Exec("INSERT INTO turbo_logs (racer_id, race_id, lap, times_used) VALUES (?, ?, ?, 1)",
 		racerID, raceID, req.Lap)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -276,7 +276,7 @@ func (h *Handler) PlayerGetStatus(c *gin.Context) {
 	err = h.S.DB.QueryRow("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, ''), COALESCE(t.color, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id WHERE r.id = ?",
 		racerID).Scan(&racer.ID, &racer.Name, &racer.ProfilePicture, &racer.CarColor, &racer.CarName, &racer.Points, &racer.Rank, &racer.Position, &racer.TeamID, &racer.TeamName, &racer.TeamColor)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -309,7 +309,7 @@ func (h *Handler) PlayerGetStatus(c *gin.Context) {
 func (h *Handler) GetSpectatorState(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, ''), COALESCE(t.color, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id ORDER BY r.rank ASC")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()

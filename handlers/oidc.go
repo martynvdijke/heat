@@ -227,9 +227,7 @@ func (h *Handler) HandleOIDCCallback(c *gin.Context) {
 		return
 	}
 	sessionID := generateSessionID()
-	h.S.SessionStoreMu.Lock()
-	h.S.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
-	h.S.SessionStoreMu.Unlock()
+	h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()})
 	setSessionCookie(c, sessionID, h.S.SecureCookies)
 	c.Redirect(http.StatusFound, "/admin.html")
 }
@@ -288,9 +286,7 @@ func (h *Handler) LinkOrProvisionOIDCUser(sub string, claims *OIDCClaims) error 
 // @Router /api/auth/oidc/logout [get]
 func (h *Handler) HandleOIDCLogout(c *gin.Context) {
 	if cookie, err := c.Request.Cookie("session"); err == nil {
-		h.S.SessionStoreMu.Lock()
-		delete(h.S.SessionStore, cookie.Value)
-		h.S.SessionStoreMu.Unlock()
+		h.S.DeleteSession(cookie.Value)
 	}
 	c.SetCookie("session", "", -1, "/", "", h.S.SecureCookies, true)
 	if !h.S.OIDC.Enabled {

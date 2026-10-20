@@ -18,7 +18,7 @@ import (
 func (h *Handler) GetTeams(c *gin.Context) {
 	teams, err := h.S.Ent.Team.Query().Order(team.ByName()).All(c.Request.Context())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *Handler) SaveTeam(c *gin.Context) {
 		err = h.S.Ent.Team.UpdateOneID(team.ID).SetName(team.Name).SetColor(team.Color).Exec(c.Request.Context())
 	}
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -88,7 +88,7 @@ func (h *Handler) GetConstructorStandings(c *gin.Context) {
 		return err
 	})
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *Handler) GetConstructorStandings(c *gin.Context) {
 		return err
 	})
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (h *Handler) GetConstructorStandings(c *gin.Context) {
 		return err
 	})
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *Handler) GetConstructorStandings(c *gin.Context) {
 		return err
 	})
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -196,7 +196,7 @@ func (h *Handler) AssignTeam(c *gin.Context) {
 	}
 	err := h.S.Ent.Racer.UpdateOneID(req.RacerID).SetTeamID(req.TeamID).Exec(c.Request.Context())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.BroadcastRacers()

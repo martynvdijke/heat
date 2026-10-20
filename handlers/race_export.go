@@ -72,14 +72,14 @@ func (h *Handler) ExportRacesICS(c *gin.Context) {
 			})
 		}
 	} else if err != nil && err.Error() != "sql: no rows in result set" {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
 	// Done races
 	rows, err := h.S.DB.Query("SELECT id, COALESCE(name,''), race_date, country, track, total_laps, COALESCE(race_type,'season') FROM race_history ORDER BY race_date ASC")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()

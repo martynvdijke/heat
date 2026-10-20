@@ -97,7 +97,7 @@ func (h *Handler) HtmxRacersTable(c *gin.Context) {
 
 	rows, err := h.S.DB.Query("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, ''), COALESCE(t.color, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id ORDER BY r.rank ASC")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -177,14 +177,14 @@ func (h *Handler) HtmxRacersSave(c *gin.Context) {
 		_, err := h.S.DB.Exec("INSERT INTO racers (name, profile_picture, car_color, car_name, points, rank, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			name, profilePicture, carColor, carName, points, rank, position)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	} else {
 		_, err := h.S.DB.Exec("UPDATE racers SET name=?, profile_picture=?, car_color=?, car_name=?, points=?, rank=?, position=? WHERE id=?",
 			name, profilePicture, carColor, carName, points, rank, position, id)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
@@ -300,7 +300,7 @@ var trackEditFormTmpl = template.Must(template.New("track_form").Parse(`<form id
 func (h *Handler) HtmxTracksTable(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT id, name, country, length_km, lap_record, COALESCE(use_map_image, 0), COALESCE(map_image_url, ''), COALESCE(refresh_geojson, 1) FROM tracks ORDER BY name")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -379,7 +379,7 @@ func (h *Handler) HtmxTracksSave(c *gin.Context) {
 	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO tracks (id, name, country, geojson, length_km, lap_record, use_map_image, map_image_url, refresh_geojson, extension_id, module_id) VALUES (?, ?, ?, ?, ?, ?, 0, '', 1, ?, ?)`,
 		id, name, country, id, length, lapRecord, extensionID, moduleID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -428,7 +428,7 @@ var quoteEditFormTmpl = template.Must(template.New("quote_form").Parse(`<form id
 func (h *Handler) HtmxQuotesTable(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT id, text, author FROM quotes ORDER BY id")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -482,13 +482,13 @@ func (h *Handler) HtmxQuotesSave(c *gin.Context) {
 	if id == 0 {
 		_, err := h.S.DB.Exec("INSERT INTO quotes (text, author) VALUES (?, ?)", text, author)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	} else {
 		_, err := h.S.DB.Exec("UPDATE quotes SET text=?, author=? WHERE id=?", text, author, id)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
@@ -530,7 +530,7 @@ var seasonsTableTmpl = template.Must(template.New("seasons_table").Parse(`<tbody
 func (h *Handler) HtmxSeasonsTable(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT id, name, start_date, COALESCE(end_date, ''), status FROM seasons ORDER BY id DESC")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -561,7 +561,7 @@ func (h *Handler) HtmxSeasonsCreate(c *gin.Context) {
 
 	res, err := h.S.DB.Exec("INSERT INTO seasons (name, start_date, status) VALUES (?, date('now'), 'active')", name)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	id, _ := res.LastInsertId()
@@ -584,7 +584,7 @@ func (h *Handler) HtmxSeasonsArchive(c *gin.Context) {
 	}
 	_, err := h.S.DB.Exec("UPDATE seasons SET status = 'archived', end_date = date('now') WHERE id = ?", idStr)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.HtmxSeasonsTable(c)
@@ -633,7 +633,7 @@ var teamEditFormTmpl = template.Must(template.New("team_form").Parse(`<form id="
 func (h *Handler) HtmxTeamsTable(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT id, name, color FROM teams ORDER BY name")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -692,13 +692,13 @@ func (h *Handler) HtmxTeamsSave(c *gin.Context) {
 	if id == 0 {
 		_, err := h.S.DB.Exec("INSERT INTO teams (name, color) VALUES (?, ?)", name, color)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	} else {
 		_, err := h.S.DB.Exec("UPDATE teams SET name=?, color=? WHERE id=?", name, color, id)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
@@ -746,7 +746,7 @@ var seasonNewFormTmpl = template.Must(template.New("season_form").Parse(`<form i
 func (h *Handler) HtmxSeasonsNewForm(c *gin.Context) {
 	modules, err := h.queryModules()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Header("Content-Type", "text/html; charset=utf-8")

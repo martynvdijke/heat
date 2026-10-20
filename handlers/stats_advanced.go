@@ -40,7 +40,7 @@ func (h *Handler) GetHeadToHead(c *gin.Context) {
 
 	result, err := racing.HeadToHead(h.S.DB, racer1, racer2, seasonIDs)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, models.HeadToHead{
@@ -71,7 +71,7 @@ func (h *Handler) GetPointsProgression(c *gin.Context) {
 
 	progression, err := racing.PointsProgression(h.S.DB, racerID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if progression == nil {
@@ -103,7 +103,7 @@ func (h *Handler) GetStreaks(c *gin.Context) {
 		}
 		result, err := racing.Streaks(h.S.DB, racerID, seasonIDs)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 		streaks := []models.StreakInfo{}
@@ -159,7 +159,7 @@ func (h *Handler) GetELORatings(c *gin.Context) {
 	}
 	ratings, err := racing.ELORatings(h.S.DB, seasonIDs)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.StatsCache.Set(cacheKey, ratings)
@@ -181,7 +181,7 @@ func (h *Handler) ExportStatsCSV(c *gin.Context) {
 
 	rows, err := h.S.DB.Query("SELECT r.id, r.name, r.car_name, r.points, r.rank, COALESCE(rs.races, 0), COALESCE(rs.wins, 0), COALESCE(rs.gold, 0), COALESCE(rs.silver, 0), COALESCE(rs.bronze, 0), COALESCE(rs.fastest_laps, 0), COALESCE(rs.dnf, 0), COALESCE(rs.dns, 0) FROM racers r LEFT JOIN racer_stats rs ON rs.racer_id = r.id ORDER BY r.rank")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()

@@ -18,7 +18,7 @@ import (
 func (h *Handler) GetRacers(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT r.id, r.name, r.profile_picture, r.car_color, r.car_name, r.points, r.rank, r.position, COALESCE(r.team_id, 0), COALESCE(t.name, ''), COALESCE(t.color, '') FROM racers r LEFT JOIN teams t ON r.team_id = t.id ORDER BY r.rank ASC")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -64,7 +64,7 @@ func (h *Handler) UpdateRacer(c *gin.Context) {
 			SetTeamID(r.TeamID).
 			Exec(c.Request.Context())
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	} else {
@@ -79,7 +79,7 @@ func (h *Handler) UpdateRacer(c *gin.Context) {
 			SetTeamID(r.TeamID).
 			Exec(c.Request.Context())
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
@@ -110,7 +110,7 @@ func (h *Handler) UpdateRacerRanks(c *gin.Context) {
 
 	tx, err := h.S.DB.Begin()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer tx.Rollback()
@@ -120,7 +120,7 @@ func (h *Handler) UpdateRacerRanks(c *gin.Context) {
 	}
 
 	if err := tx.Commit(); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -147,7 +147,7 @@ func (h *Handler) DeleteRacer(c *gin.Context) {
 
 	err = h.S.Ent.Racer.DeleteOneID(id).Exec(c.Request.Context())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

@@ -28,7 +28,7 @@ import (
 func (h *Handler) GetRacerEmails(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT id, racer_id, COALESCE(email, '') FROM racer_emails ORDER BY racer_id")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -61,7 +61,7 @@ func (h *Handler) SaveRacerEmail(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT OR REPLACE INTO racer_emails (id, racer_id, email) VALUES ((SELECT id FROM racer_emails WHERE racer_id = ?), ?, ?)",
 		e.RacerID, e.RacerID, e.Email)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -98,7 +98,7 @@ func (h *Handler) SendRaceEmailManual(c *gin.Context) {
 
 	rRows, err := h.S.DB.Query("SELECT racer_id, racer_name, position, points, fastest_lap FROM race_results WHERE race_id = ? ORDER BY position", raceID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rRows.Close()
@@ -295,7 +295,7 @@ func (h *Handler) TestNotification(c *gin.Context) {
 	err := sendGotifyNotification("Test Notification", "This is a test notification from HEAT", s.GotiFyURL, s.GotiFyToken)
 	if err != nil {
 		h.S.Log.Errorf("notification", "TestNotification failed: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

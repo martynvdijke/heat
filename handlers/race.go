@@ -63,7 +63,7 @@ func (h *Handler) UpdateRaceInfo(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT INTO race_info (country, track, track_id, laps, next_race_date) VALUES (?, ?, ?, ?, ?)",
 		ri.Country, ri.Track, ri.TrackID, ri.Laps, ri.NextRaceDate)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -134,7 +134,7 @@ func (h *Handler) SaveRaceToHistory(c *gin.Context) {
 	result, err := h.S.DB.Exec("INSERT INTO race_history (name, race_date, country, track, track_id, total_laps, race_type, season_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 		input.Name, input.RaceDate, input.Country, input.Track, input.TrackID, input.TotalLaps, input.RaceType, seasonID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	raceID, _ := result.LastInsertId()
@@ -245,7 +245,7 @@ func (h *Handler) GetRaceHistory(c *gin.Context) {
 		return innerErr
 	})
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()

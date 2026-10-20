@@ -29,7 +29,7 @@ type trmnlNextRace struct {
 func (h *Handler) GetTRMNLNextRace(c *gin.Context) {
 	nextRace, err := h.trmnlNextRace()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

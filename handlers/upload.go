@@ -205,7 +205,7 @@ func saveImage(path string, img image.Image, format string) error {
 func (h *Handler) GetUploads(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT id, hash, ext, url, resized_url, thumbnail_url, COALESCE(created_at, '') FROM uploads ORDER BY created_at DESC LIMIT 50")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()

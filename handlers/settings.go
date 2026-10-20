@@ -65,7 +65,7 @@ func (h *Handler) SaveAISettings(c *gin.Context) {
 		s.TrackExtractURL, s.TextGenURL, s.TextGenModel, s.APIKey, db.BoolToInt(s.Enabled))
 	if err != nil {
 		h.S.Log.Errorf("ai", "SaveAISettings: DB error: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.Log.Infof("ai", "AI settings saved: track_extract_url=%q text_gen_url=%q text_gen_model=%q enabled=%v", s.TrackExtractURL, s.TextGenURL, s.TextGenModel, s.Enabled)
@@ -124,7 +124,7 @@ func (h *Handler) SaveNotificationSettings(c *gin.Context) {
 		s.GotiFyURL, s.GotiFyToken, db.BoolToInt(s.NotifyWinner), db.BoolToInt(s.NotifyRaceStart), db.BoolToInt(s.NotifyPodium))
 	if err != nil {
 		h.S.Log.Errorf("notification", "SaveNotificationSettings: DB error: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.Log.Infof("notification", "Notification settings saved: url=%q winner=%v podium=%v race_start=%v", s.GotiFyURL, s.NotifyWinner, s.NotifyPodium, s.NotifyRaceStart)
@@ -189,7 +189,7 @@ func (h *Handler) SaveEmailSettings(c *gin.Context) {
 		s.SMTPHost, s.SMTPPort, s.Username, s.Password, s.FromAddr, db.BoolToInt(s.Enabled))
 	if err != nil {
 		h.S.Log.Errorf("email", "SaveEmailSettings: DB error: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -241,7 +241,7 @@ func (h *Handler) SaveUmamiSettings(c *gin.Context) {
 		s.URL, s.WebsiteID, db.BoolToInt(s.Enabled))
 	if err != nil {
 		h.S.Log.Errorf("umami", "SaveUmamiSettings: DB error: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.Log.Infof("umami", "Umami settings saved: url=%q enabled=%v", s.URL, s.Enabled)
@@ -295,7 +295,7 @@ func (h *Handler) SaveOTelSettings(c *gin.Context) {
 		s.Endpoint, db.BoolToInt(s.TracesEnabled), db.BoolToInt(s.MetricsEnabled), db.BoolToInt(s.LogsEnabled))
 	if err != nil {
 		h.S.Log.Errorf("otel", "SaveOTelSettings: DB error: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.Log.Infof("otel", "OTel settings saved: endpoint=%q traces=%v metrics=%v logs=%v", s.Endpoint, s.TracesEnabled, s.MetricsEnabled, s.LogsEnabled)
@@ -317,7 +317,7 @@ func (h *Handler) GetOneOffRaces(c *gin.Context) {
 		return innerErr
 	})
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -388,7 +388,7 @@ func (h *Handler) SaveWLEDSettings(c *gin.Context) {
 	_, err := h.S.DB.Exec(`INSERT OR REPLACE INTO wled_settings (id, url, enabled, presets) VALUES (1, ?, ?, ?)`,
 		s.URL, db.BoolToInt(s.Enabled), string(presets))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.Log.Infof("wled", "WLED settings saved: url=%q enabled=%v", s.URL, s.Enabled)

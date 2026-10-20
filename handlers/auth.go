@@ -67,14 +67,12 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 		hashed := hashPassword(input.Password)
 		_, err := h.S.DB.Exec("INSERT INTO admin_users (username, password, email) VALUES (?, ?, ?)", input.Username, hashed, input.Email)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 
 		sessionID := generateSessionID()
-		h.S.SessionStoreMu.Lock()
-		h.S.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
-		h.S.SessionStoreMu.Unlock()
+		h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()})
 		setSessionCookie(c, sessionID, h.S.SecureCookies)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		return
@@ -87,7 +85,7 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -100,9 +98,7 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 	}
 
 	sessionID := generateSessionID()
-	h.S.SessionStoreMu.Lock()
-	h.S.SessionStore[sessionID] = app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()}
-	h.S.SessionStoreMu.Unlock()
+	h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()})
 	setSessionCookie(c, sessionID, h.S.SecureCookies)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
@@ -117,9 +113,7 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 func (h *Handler) HandleLogout(c *gin.Context) {
 	cookie, err := c.Request.Cookie("session")
 	if err == nil {
-		h.S.SessionStoreMu.Lock()
-		delete(h.S.SessionStore, cookie.Value)
-		h.S.SessionStoreMu.Unlock()
+		h.S.DeleteSession(cookie.Value)
 	}
 	c.SetCookie("session", "", -1, "/", "", h.S.SecureCookies, true)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})

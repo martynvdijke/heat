@@ -77,7 +77,7 @@ func (h *Handler) UpdateRacerStats(c *gin.Context) {
 	}
 
 	if err := racing.UpsertRacerStats(h.S.DB, stats); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	h.S.StatsCache.InvalidatePrefix("stats:")
@@ -104,7 +104,7 @@ func (h *Handler) GetTrackStats(c *gin.Context) {
 	}
 	stats, err := racing.TrackStats(h.S.DB, seasonIDs)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	result := make([]models.TrackStats, len(stats))

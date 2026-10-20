@@ -13,7 +13,7 @@ import (
 func (h *Handler) GetRaceState(c *gin.Context) {
 	st, err := h.S.GetRaceState()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, st)
@@ -37,7 +37,7 @@ func (h *Handler) PostRaceState(c *gin.Context) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

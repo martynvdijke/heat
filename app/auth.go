@@ -36,13 +36,14 @@ func (s *Server) ValidateSession(sessionID, clientIP string) bool {
 	info, ok := s.SessionStore[sessionID]
 	s.SessionStoreMu.RUnlock()
 	if !ok {
-		return false
+		info, ok = s.LookupSession(sessionID)
+		if !ok {
+			return false
+		}
 	}
 
 	if time.Now().Unix() > info.Expiry {
-		s.SessionStoreMu.Lock()
-		delete(s.SessionStore, sessionID)
-		s.SessionStoreMu.Unlock()
+		s.DeleteSession(sessionID)
 		return false
 	}
 

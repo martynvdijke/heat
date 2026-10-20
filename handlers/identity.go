@@ -429,7 +429,7 @@ func (h *Handler) MeBuyUpgrade(c *gin.Context) {
 	res, err := h.S.DB.Exec("INSERT INTO player_upgrades (racer_id, upgrade_id, season_id, equipped, round_bought) VALUES (?, ?, ?, 1, ?)",
 		racerID, req.UpgradeID, req.SeasonID, req.Round)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	id, _ := res.LastInsertId()
@@ -475,7 +475,7 @@ func (h *Handler) MeToggleUpgrade(c *gin.Context) {
 	}
 	res, err := h.S.DB.Exec("UPDATE player_upgrades SET equipped = ? WHERE id = ? AND racer_id = ?", equipped, req.ID, racerID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if n, _ := res.RowsAffected(); n == 0 {

@@ -27,7 +27,7 @@ func (h *Handler) GetHeatCards(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -52,7 +52,7 @@ func (h *Handler) AddHeatCard(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT INTO heat_cards (racer_id, location, card_type, lap_added) VALUES (?, ?, ?, ?)",
 		hc.RacerID, hc.Location, hc.CardType, hc.LapAdded)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{Type: "heat_cards", RacerID: hc.RacerID, Action: "added"})
@@ -70,7 +70,7 @@ func (h *Handler) MoveHeatCard(c *gin.Context) {
 	}
 	_, err := h.S.DB.Exec("UPDATE heat_cards SET location = ? WHERE id = ?", req.Location, req.CardID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -123,7 +123,7 @@ func (h *Handler) GetGearShifts(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -148,7 +148,7 @@ func (h *Handler) AddGearShift(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT INTO gear_shifts (racer_id, race_id, lap, gear, stress) VALUES (?, ?, ?, ?, ?)",
 		gs.RacerID, gs.RaceID, gs.Lap, gs.Gear, gs.Stress)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{
@@ -177,7 +177,7 @@ func (h *Handler) DeleteGearShift(c *gin.Context) {
 func (h *Handler) GetUpgradeCards(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT id, name, description, card_type, cost, effects, extension_id FROM upgrade_cards ORDER BY card_type, cost")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -203,14 +203,14 @@ func (h *Handler) SaveUpgradeCard(c *gin.Context) {
 		_, err := h.S.DB.Exec("INSERT INTO upgrade_cards (name, description, card_type, cost, effects, extension_id) VALUES (?, ?, ?, ?, ?, ?)",
 			u.Name, u.Description, u.CardType, u.Cost, u.Effects, u.ExtensionID)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	} else {
 		_, err := h.S.DB.Exec("UPDATE upgrade_cards SET name=?, description=?, card_type=?, cost=?, effects=?, extension_id=? WHERE id=?",
 			u.Name, u.Description, u.CardType, u.Cost, u.Effects, u.ExtensionID, u.ID)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			internalError(c, err)
 			return
 		}
 	}
@@ -254,7 +254,7 @@ func (h *Handler) GetPlayerUpgrades(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -287,7 +287,7 @@ func (h *Handler) BuyUpgrade(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT INTO player_upgrades (racer_id, upgrade_id, season_id, equipped, round_bought) VALUES (?, ?, ?, 1, ?)",
 		req.RacerID, req.UpgradeID, req.SeasonID, req.Round)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	app.TrySend(h.S, h.S.GameMechanicsBroadcast, models.GameMechanicsUpdate{
@@ -315,7 +315,7 @@ func (h *Handler) ToggleUpgrade(c *gin.Context) {
 	}
 	_, err := h.S.DB.Exec("UPDATE player_upgrades SET equipped = ? WHERE id = ?", equipped, req.ID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -339,7 +339,7 @@ func (h *Handler) GetLegendAbilities(c *gin.Context) {
 	rows, err := h.S.DB.Query(`SELECT id, name, description, ability_type, racer_name, extension_id FROM legend_abilities
 		WHERE extension_id = 0 OR extension_id IN (SELECT extension_id FROM owned_extensions)`)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -371,7 +371,7 @@ func (h *Handler) GetRacerLegendAbilities(c *gin.Context) {
 
 	rows, err := h.S.DB.Query(query, args...)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -402,7 +402,7 @@ func (h *Handler) AssignLegendAbility(c *gin.Context) {
 	_, err := h.S.DB.Exec("INSERT OR IGNORE INTO racer_legend_abilities (racer_id, ability_id, active) VALUES (?, ?, 1)",
 		req.RacerID, req.AbilityID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -423,7 +423,7 @@ func (h *Handler) ToggleLegendAbility(c *gin.Context) {
 	}
 	_, err := h.S.DB.Exec("UPDATE racer_legend_abilities SET active = ? WHERE id = ?", active, req.ID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -442,7 +442,7 @@ func (h *Handler) GetAvailableUpgradesForRacer(c *gin.Context) {
 			SELECT upgrade_id FROM player_upgrades WHERE racer_id = ?
 		) ORDER BY uc.cost`, racerID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()

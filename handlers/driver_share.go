@@ -36,7 +36,7 @@ func (h *Handler) GenerateDriverShareToken(c *gin.Context) {
 	_, err = h.S.DB.Exec("INSERT OR REPLACE INTO driver_shares (id, racer_id, token, created_at) VALUES ((SELECT id FROM driver_shares WHERE racer_id = ?), ?, ?, datetime('now'))",
 		racerID, racerID, token)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *Handler) GenerateDriverShareToken(c *gin.Context) {
 func (h *Handler) GetDriverShareTokens(c *gin.Context) {
 	rows, err := h.S.DB.Query("SELECT ds.id, ds.racer_id, ds.token, ds.created_at, r.name FROM driver_shares ds JOIN racers r ON r.id = ds.racer_id ORDER BY r.name")
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	defer rows.Close()
@@ -109,7 +109,7 @@ func (h *Handler) DeleteDriverShareToken(c *gin.Context) {
 
 	_, err = h.S.DB.Exec("DELETE FROM driver_shares WHERE racer_id = ?", racerID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
