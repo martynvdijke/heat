@@ -15,7 +15,7 @@ plugins:
   - [
       "@semantic-release/exec",
       {
-        prepareCmd: "sed -i 's/\"version\": \".*\"/\"version\": \"${nextRelease.version}\"/' package.json && sed -i 's/CurrentVersion:[[:space:]]*\"[^\"]*\"/CurrentVersion:         \"${nextRelease.version}\"/' app/app.go && sed -i 's/\"version\": \".*\"/\"version\": \"${nextRelease.version}\"/' static/swagger.json && sed -i 's/^version: .*/version: ${nextRelease.version}+1/' mobile/pubspec.yaml"
+        prepareCmd: "VERSION='${nextRelease.version}' && CODE=$(echo \"$VERSION\" | awk -F. '{printf \"%d%03d%03d\", $1, $2, $3}') && sed -i 's/\"version\": \".*\"/\"version\": \"$VERSION\"/' package.json && sed -i 's/CurrentVersion:[[:space:]]*\"[^\"]*\"/CurrentVersion:         \"$VERSION\"/' app/app.go && sed -i 's/\"version\": \".*\"/\"version\": \"$VERSION\"/' static/swagger.json && sed -i 's/^version: .*/version: $VERSION+$CODE/' mobile/pubspec.yaml"
       }
     ]
   - [
