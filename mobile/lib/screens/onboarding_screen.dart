@@ -44,25 +44,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (base.isEmpty) { setState(() { _status = 'Enter server URL'; _checking = false; }); return; }
     final store = ref.read(sessionStoreProvider);
     await store.setBaseUrl(base);
+    if (!mounted) return;
     final api = ref.read(apiClientProvider);
     try {
       await api.fetchRaceState();
+      if (!mounted) return;
       setState(() => _status = 'Server reachable');
     } catch (_) {
       try {
         await api.fetchRacers();
+        if (!mounted) return;
         setState(() => _status = 'Server reachable');
       } catch (e) {
+        if (!mounted) return;
         setState(() => _status = 'Cannot reach server: $e');
         _checking = false;
         return;
       }
     }
     final enabled = await api.checkOidcEnabled();
+    if (!mounted) return;
     try {
       final racers = await api.fetchRacers();
+      if (!mounted) return;
       _racers = racers.map((r) => {'id': r.id, 'name': r.name}).toList();
     } catch (_) {}
+    if (!mounted) return;
     setState(() { _oidcEnabled = enabled; _checking = false; });
   }
 
@@ -72,9 +79,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(apiClientProvider).loginRaceDirector(_userCtrl.text.trim(), _passCtrl.text);
       if (mounted) Navigator.of(context).pushReplacementNamed('/home');
     } catch (e) {
-      setState(() => _status = 'Login failed: $e');
+      if (mounted) setState(() => _status = 'Login failed: $e');
     } finally {
-      setState(() => _checking = false);
+      if (mounted) setState(() => _checking = false);
     }
   }
 
@@ -85,9 +92,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(apiClientProvider).loginPlayer(_selectedRacerId!, 'android');
       if (mounted) Navigator.of(context).pushReplacementNamed('/home');
     } catch (e) {
-      setState(() => _status = 'Player login failed: $e');
+      if (mounted) setState(() => _status = 'Player login failed: $e');
     } finally {
-      setState(() => _checking = false);
+      if (mounted) setState(() => _checking = false);
     }
   }
 
@@ -102,9 +109,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(sessionStoreProvider).setPlayerToken(t, rid, rname);
       if (mounted) Navigator.of(context).pushReplacementNamed('/home');
     } catch (e) {
-      setState(() => _status = 'Invalid token: $e');
+      if (mounted) setState(() => _status = 'Invalid token: $e');
     } finally {
-      setState(() => _checking = false);
+      if (mounted) setState(() => _checking = false);
     }
   }
 

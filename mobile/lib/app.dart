@@ -18,13 +18,14 @@ class HeatApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final store = SessionStore(prefs);
     final hasBase = store.baseUrl != null && store.baseUrl!.isNotEmpty;
+    final authed = store.isRaceDirector || store.isPlayer;
     return ProviderScope(
       overrides: [sessionStoreProvider.overrideWithValue(store)],
       child: MaterialApp(
         title: 'Heat',
         theme: AppTheme.dark,
         debugShowCheckedModeBanner: false,
-        initialRoute: hasBase ? '/home' : '/onboarding',
+        initialRoute: (hasBase && authed) ? '/home' : '/onboarding',
         routes: {
           '/onboarding': (_) => const OnboardingScreen(),
           '/home': (_) => const HomeScreen(),

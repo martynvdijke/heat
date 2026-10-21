@@ -20,8 +20,14 @@ class SessionStore {
   bool get isPlayer => playerToken != null && playerToken!.isNotEmpty;
 
   Future<void> setBaseUrl(String v) => prefs.setString(_kBaseUrl, v);
-  Future<void> setSessionCookie(String v) => prefs.setString(_kSessionCookie, v);
+  Future<void> setSessionCookie(String v) async {
+    await prefs.remove(_kPlayerToken);
+    await prefs.remove(_kPlayerRacerId);
+    await prefs.remove(_kPlayerRacerName);
+    await prefs.setString(_kSessionCookie, v);
+  }
   Future<void> setPlayerToken(String token, int racerId, String racerName) async {
+    await prefs.remove(_kSessionCookie);
     await prefs.setString(_kPlayerToken, token);
     await prefs.setInt(_kPlayerRacerId, racerId);
     await prefs.setString(_kPlayerRacerName, racerName);

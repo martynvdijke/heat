@@ -60,7 +60,10 @@ class ApiClient {
       throw DioException(requestOptions: res.requestOptions, response: res, message: 'Login failed: ${res.statusCode}');
     }
     final cookie = _extractSessionCookie(res);
-    if (cookie != null) await store.setSessionCookie(cookie);
+    if (cookie == null || cookie.isEmpty) {
+      throw Exception('Login succeeded but the server did not return a session cookie');
+    }
+    await store.setSessionCookie(cookie);
   }
 
   Map<String, String> mutatingHeaders() {
@@ -128,6 +131,22 @@ class ApiClient {
   Future<void> logoutPlayer() async {
     try {
       await dio.post('$_base/api/player/logout', options: Options(headers: _authHeaders()));
+    } finally {
+      await store.clearAuth();
+    }
+  }
+
+  /// Clears the local session and best-effort invalidates it on the server.
+  Future<void> logout() async {
+    try {
+      if (store.isRaceDirector) {
+        await dio.post('$_base/api/logout', options: Options(headers: _authHeaders(mutating: true), validateStatus: (_) => true));
+      }
+      if (store.isPlayer) {
+        await dio.post('$_base/api/player/logout', options: Options(headers: _authHeaders(mutating: true), validateStatus: (_) => true));
+      }
+    } catch (_) {
+      // Best effort; local credentials are always cleared.
     } finally {
       await store.clearAuth();
     }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
+import '../providers/session_providers.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
@@ -79,7 +81,12 @@ class HomeScreen extends StatelessWidget {
                   title: 'SETTINGS',
                   subtitle: 'Server URL · sign out',
                   hint: 'CFG',
-                  onTap: () => Navigator.pushNamed(context, '/onboarding'),
+                  onTap: () async {
+                    await ref.read(apiClientProvider).logout();
+                    if (context.mounted) {
+                      Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
+                    }
+                  },
                   muted: true,
                 ),
                 const SizedBox(height: 24),
