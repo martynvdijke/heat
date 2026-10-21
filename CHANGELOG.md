@@ -1,3 +1,11 @@
+## [1.72.2](https://github.com/martynvdijke/heat/compare/v1.72.1...v1.72.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency cupertino_icons to v2 ([#122](https://github.com/martynvdijke/heat/issues/122)) ([cdb27a1](https://github.com/martynvdijke/heat/commit/cdb27a18a466a5491d13d26aba6d6f70578c9d62))
+* **deps:** update dependency fl_chart to v1 ([#123](https://github.com/martynvdijke/heat/issues/123)) ([2ac110f](https://github.com/martynvdijke/heat/commit/2ac110f76f0deba74f01fe44f879cfcfb419c176))
+
 ## [1.72.1](https://github.com/martynvdijke/heat/compare/v1.72.0...v1.72.1) (2026-10-21)
 
 # [1.72.0](https://github.com/martynvdijke/heat/compare/v1.71.0...v1.72.0) (2026-10-21)
