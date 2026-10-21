@@ -80,6 +80,36 @@ class ApiClient {
     }
   }
 
+  /// Starts a native OIDC login. The returned `auth_url` must be opened in an
+  /// external browser; the app then polls [pollOIDCMobileLogin] with the
+  /// `device_code` until the callback completes.
+  Future<Map<String, dynamic>> startOIDCMobileLogin() async {
+    final res = await dio.post(
+      '$_base/api/auth/oidc/mobile/start',
+      options: Options(validateStatus: (_) => true),
+    );
+    final data = res.data is Map ? Map<String, dynamic>.from(res.data as Map) : <String, dynamic>{};
+    if (res.statusCode != 200) {
+      throw Exception(data['error'] ?? 'OIDC login unavailable (${res.statusCode})');
+    }
+    return data;
+  }
+
+  /// Polls a native OIDC login. Returns `{status: pending}`, `{status: ok,
+  /// session: ...}` or `{status: error, error: ...}`.
+  Future<Map<String, dynamic>> pollOIDCMobileLogin(String deviceCode) async {
+    final res = await dio.get(
+      '$_base/api/auth/oidc/mobile/status',
+      queryParameters: {'device': deviceCode},
+      options: Options(validateStatus: (_) => true),
+    );
+    final data = res.data is Map ? Map<String, dynamic>.from(res.data as Map) : <String, dynamic>{};
+    if (res.statusCode != 200) {
+      throw Exception(data['error'] ?? 'OIDC status failed (${res.statusCode})');
+    }
+    return data;
+  }
+
   Future<Map<String, dynamic>> loginPlayer(int racerId, String deviceName) async {
     final res = await dio.post('$_base/api/player/login', data: {'racer_id': racerId, 'device_name': deviceName});
     final data = res.data as Map<String, dynamic>;

@@ -966,6 +966,51 @@ paths:
       summary: OIDC logout
       tags:
       - Auth
+  /api/auth/oidc/mobile/done:
+    get:
+      description: Shown in the external browser after a successful app login
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML
+          schema:
+            type: string
+      summary: Native OIDC completion page
+      tags:
+      - Auth
+  /api/auth/oidc/mobile/start:
+    post:
+      description: Creates a device code and browser URL for the app to poll after
+        the browser flow
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Start OIDC login from a native app
+      tags:
+      - Auth
+  /api/auth/oidc/mobile/status:
+    get:
+      description: Returns pending until the browser callback completes, then the
+        session exactly once
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Poll a native OIDC login
+      tags:
+      - Auth
   /api/backup-settings:
     get:
       description: Get the backup configuration settings

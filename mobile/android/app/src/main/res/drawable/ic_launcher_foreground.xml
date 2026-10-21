@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive launcher foreground derived from static/favicon.svg.
+     The car is centred inside the 66dp adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:translateX="13.2"
+        android:translateY="10.8"
+        android:scaleX="2.4"
+        android:scaleY="2.4">
+        <!-- Cigar-shaped body -->
+        <path
+            android:fillColor="#D40000"
+            android:pathData="M4,18 C4,14 8,13 12,13 L24,14 C28,14 30,16 30,18 C30,20 28,22 24,22 L12,23 C8,23 4,22 4,18 Z" />
+        <!-- Cockpit -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M12,15 a4,2 0 1,0 8,0 a4,2 0 1,0 -8,0 Z" />
+        <!-- Rear wheel -->
+        <path
+            android:fillColor="#000000"
+            android:strokeColor="#333333"
+            android:strokeWidth="1"
+            android:pathData="M4,20 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 Z" />
+        <!-- Front wheel -->
+        <path
+            android:fillColor="#000000"
+            android:strokeColor="#333333"
+            android:strokeWidth="1"
+            android:pathData="M20.5,19 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0 Z" />
+    </group>
+</vector>

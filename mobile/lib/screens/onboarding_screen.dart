@@ -19,6 +19,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _checking = false;
   String? _status;
   bool? _oidcEnabled;
+  int _ssoGeneration = 0;
+  bool _ssoWaiting = false;
   int? _selectedRacerId;
   String? _selectedRacerName;
   List<Map<String, dynamic>> _racers = [];
@@ -106,10 +108,76 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  void _cancelSso() {
+    _ssoGeneration++;
+    setState(() {
+      _checking = false;
+      _ssoWaiting = false;
+      _status = 'Sign-in cancelled';
+    });
+  }
+
   Future<void> _openSso() async {
     final base = _normalizedBase(_urlCtrl.text);
-    final url = Uri.parse('$base/api/auth/oidc/login');
-    if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication);
+    if (base.isEmpty) {
+      setState(() => _status = 'Enter server URL');
+      return;
+    }
+    final generation = ++_ssoGeneration;
+    final store = ref.read(sessionStoreProvider);
+    setState(() {
+      _checking = true;
+      _ssoWaiting = false;
+      _status = 'Opening your browser…';
+    });
+    await store.setBaseUrl(base);
+    try {
+      final start = await ref.read(apiClientProvider).startOIDCMobileLogin();
+      final authUrl = start['auth_url'] as String?;
+      final deviceCode = start['device_code'] as String?;
+      if (authUrl == null || deviceCode == null) {
+        throw Exception('Server did not return an OIDC login URL');
+      }
+      final opened = await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication);
+      if (!opened) throw Exception('Could not open the browser');
+      if (!mounted || generation != _ssoGeneration) return;
+      setState(() {
+        _ssoWaiting = true;
+        _status = 'Complete sign-in in your browser, then return to the app.';
+      });
+
+      // The browser owns the OIDC cookies; poll until the callback hands the
+      // session back (or fails). 2s * 150 ≈ 5 minutes.
+      for (var attempt = 0; attempt < 150; attempt++) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+        if (!mounted || generation != _ssoGeneration) return;
+        final result = await ref.read(apiClientProvider).pollOIDCMobileLogin(deviceCode);
+        switch (result['status']) {
+          case 'ok':
+            final session = result['session'] as String?;
+            if (session == null || session.isEmpty) {
+              throw Exception('Server returned an empty session');
+            }
+            await store.setSessionCookie(session);
+            if (mounted) Navigator.of(context).pushReplacementNamed('/home');
+            return;
+          case 'error':
+            throw Exception(result['error'] ?? 'Sign-in failed');
+        }
+      }
+      throw Exception('Sign-in timed out');
+    } catch (e) {
+      if (mounted && generation == _ssoGeneration) {
+        setState(() => _status = 'SSO login failed: $e');
+      }
+    } finally {
+      if (mounted && generation == _ssoGeneration) {
+        setState(() {
+          _checking = false;
+          _ssoWaiting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -149,7 +217,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   key: const Key('serverUrlField'),
                   controller: _urlCtrl,
                   style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
-                  decoration: const InputDecoration(labelText: 'Server URL (e.g. http://192.168.1.10:6270)', hintText: 'http://192.168.1.10:6270', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Server URL', border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -225,9 +293,35 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       SizedBox(height: 44, child: ElevatedButton(onPressed: _checking ? null : _loginDirector, child: const Text('SIGN IN AS RACE DIRECTOR'))),
       if (_oidcEnabled == true) ...[
         const SizedBox(height: 10),
-        SizedBox(height: 44, child: OutlinedButton(onPressed: _openSso, child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.open_in_new, size: 14), SizedBox(width: 8), Text('SIGN IN WITH SSO')]))),
+        SizedBox(
+          height: 44,
+          child: OutlinedButton(
+            key: const Key('ssoButton'),
+            onPressed: _checking ? null : _openSso,
+            child: _ssoWaiting
+                ? const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    SizedBox(height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                    SizedBox(width: 8),
+                    Text('WAITING FOR BROWSER'),
+                  ])
+                : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.open_in_new, size: 14),
+                    SizedBox(width: 8),
+                    Text('SIGN IN WITH SSO'),
+                  ]),
+          ),
+        ),
         const SizedBox(height: 8),
-        const Text('SSO opens in external browser. Session cookie cannot be captured natively (out of scope).', style: TextStyle(fontSize: 11, color: AppTheme.textDim)),
+        const Text(
+          'SSO opens in your browser. Finish signing in there and return here — the app picks up the session automatically.',
+          style: TextStyle(fontSize: 11, color: AppTheme.textDim),
+        ),
+        if (_ssoWaiting)
+          TextButton(
+            key: const Key('cancelSsoButton'),
+            onPressed: _cancelSso,
+            child: const Text('CANCEL SIGN-IN'),
+          ),
       ],
     ]);
   }

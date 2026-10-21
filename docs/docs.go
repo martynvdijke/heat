@@ -607,6 +607,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/auth/oidc/mobile/done": {
+            "get": {
+                "description": "Shown in the external browser after a successful app login",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Native OIDC completion page",
+                "responses": {
+                    "200": {
+                        "description": "HTML",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/oidc/mobile/start": {
+            "post": {
+                "description": "Creates a device code and browser URL for the app to poll after the browser flow",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Start OIDC login from a native app",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/oidc/mobile/status": {
+            "get": {
+                "description": "Returns pending until the browser callback completes, then the session exactly once",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Poll a native OIDC login",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/backup-settings": {
             "get": {
                 "description": "Get the backup configuration settings",

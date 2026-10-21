@@ -358,6 +358,9 @@ func main() {
 	r.GET("/api/auth/oidc/login", middleware.RateLimitMiddleware(server), h.HandleOIDCLogin)
 	r.GET("/api/auth/oidc/callback", middleware.RateLimitMiddleware(server), h.HandleOIDCCallback)
 	r.GET("/api/auth/oidc/logout", h.HandleOIDCLogout)
+	r.POST("/api/auth/oidc/mobile/start", middleware.RateLimitMiddleware(server), h.HandleOIDCMobileStart)
+	r.GET("/api/auth/oidc/mobile/status", h.HandleOIDCMobileStatus)
+	r.GET("/api/auth/oidc/mobile/done", h.HandleOIDCMobileDone)
 
 	r.GET("/api/racers", h.GetRacers)
 

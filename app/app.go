@@ -23,6 +23,15 @@ type SessionInfo struct {
 	IP     string
 }
 
+// OIDCPendingLogin holds the result of a completed OIDC login that was started
+// from a native app. The app polls for the session using the device code it
+// supplied to /api/auth/oidc/login.
+type OIDCPendingLogin struct {
+	Expiry    int64
+	SessionID string
+	Error     string
+}
+
 // RacerSessionCookie is the cookie name carrying a verified racer's website
 // session. It is intentionally distinct from the admin "session" cookie.
 const RacerSessionCookie = "racer_session"
@@ -77,6 +86,8 @@ type Server struct {
 	Ent             *ent.Client
 	SessionStore    map[string]SessionInfo
 	SessionStoreMu  sync.RWMutex
+	OIDCPending     map[string]OIDCPendingLogin
+	OIDCPendingMu   sync.Mutex
 	RacerSessions   map[string]RacerSession
 	RacerSessionsMu sync.RWMutex
 	Broadcast       chan []models.Racer
@@ -115,6 +126,7 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		SessionStore:           make(map[string]SessionInfo),
+		OIDCPending:            make(map[string]OIDCPendingLogin),
 		RacerSessions:          make(map[string]RacerSession),
 		Broadcast:              make(chan []models.Racer, wsChannelBuffer),
 		FlagBroadcast:          make(chan models.FlagCommand, wsChannelBuffer),

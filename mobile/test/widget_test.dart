@@ -16,6 +16,9 @@ void main() {
     await tester.pumpWidget(ProviderScope(overrides: [sessionStoreProvider.overrideWithValue(store)], child: const MaterialApp(home: OnboardingScreen())));
     expect(find.text('Race Director'), findsOneWidget);
     expect(find.text('Username'), findsOneWidget);
+    expect(find.text('Server URL'), findsOneWidget);
+    // No compiled-in default or sample server address is suggested.
+    expect(find.textContaining('192.168.'), findsNothing);
     await tester.tap(find.text('Player Token'));
     await tester.pump();
     expect(find.textContaining('paste existing token'), findsOneWidget);

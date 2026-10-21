@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +21,9 @@ func setupOIDCRouter() *gin.Engine {
 	r.GET("/api/auth/oidc/login", testHandler.HandleOIDCLogin)
 	r.GET("/api/auth/oidc/callback", testHandler.HandleOIDCCallback)
 	r.GET("/api/auth/oidc/logout", testHandler.HandleOIDCLogout)
+	r.POST("/api/auth/oidc/mobile/start", testHandler.HandleOIDCMobileStart)
+	r.GET("/api/auth/oidc/mobile/status", testHandler.HandleOIDCMobileStatus)
+	r.GET("/api/auth/oidc/mobile/done", testHandler.HandleOIDCMobileDone)
 	return r
 }
 
@@ -103,5 +109,93 @@ func TestOIDCLinkOrProvision(t *testing.T) {
 	}
 	if username != "oidcfirst" || password != "" {
 		t.Fatalf("provisioned = (%q, pwlen %d), want (oidcfirst, empty pw)", username, len(password))
+	}
+}
+
+func TestOIDCMobileDeviceFlow(t *testing.T) {
+	testServer.OIDC.Enabled = true
+	testServer.OIDC.RedirectURL = "https://heat.example.com/heat/api/auth/oidc/callback"
+	defer func() {
+		testServer.OIDC.Enabled = false
+		testServer.OIDC.RedirectURL = ""
+	}()
+	r := setupOIDCRouter()
+
+	// The app asks for a device code and browser URL.
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/auth/oidc/mobile/start", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("start = %d %s, want 200", w.Code, w.Body.String())
+	}
+	var start struct {
+		DeviceCode string `json:"device_code"`
+		AuthURL    string `json:"auth_url"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &start); err != nil {
+		t.Fatalf("decode start = %v", err)
+	}
+	if start.DeviceCode == "" {
+		t.Fatal("start returned an empty device_code")
+	}
+	wantAuth := "https://heat.example.com/heat/api/auth/oidc/login?device=" + url.QueryEscape(start.DeviceCode)
+	if start.AuthURL != wantAuth {
+		t.Fatalf("auth_url = %q, want %q", start.AuthURL, wantAuth)
+	}
+
+	// Until the browser callback completes the app sees "pending".
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/auth/oidc/mobile/status?device="+url.QueryEscape(start.DeviceCode), nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"status":"pending"`) {
+		t.Fatalf("pending status = %d %s", w.Code, w.Body.String())
+	}
+	if got := w.Header().Get("Cache-Control"); got != "no-store" {
+		t.Fatalf("status Cache-Control = %q, want no-store", got)
+	}
+
+	// Completing the browser flow hands the session to the app exactly once.
+	testServer.PutOIDCPendingLogin(start.DeviceCode, "mobile-session-id")
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/auth/oidc/mobile/status?device="+url.QueryEscape(start.DeviceCode), nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"session":"mobile-session-id"`) {
+		t.Fatalf("ok status = %d %s", w.Code, w.Body.String())
+	}
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/auth/oidc/mobile/status?device="+url.QueryEscape(start.DeviceCode), nil)
+	r.ServeHTTP(w, req)
+	if !strings.Contains(w.Body.String(), `"status":"pending"`) {
+		t.Fatalf("session was returned more than once: %s", w.Body.String())
+	}
+
+	// Browser-side failures are surfaced instead of polling forever. The
+	// callback reads the device code from the cookie set by /login.
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/auth/oidc/callback?error=access_denied&error_description=denied", nil)
+	req.AddCookie(&http.Cookie{Name: "oidc_device", Value: start.DeviceCode})
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("callback error = %d, want 400", w.Code)
+	}
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/auth/oidc/mobile/status?device="+url.QueryEscape(start.DeviceCode), nil)
+	r.ServeHTTP(w, req)
+	if !strings.Contains(w.Body.String(), `"status":"error"`) || !strings.Contains(w.Body.String(), "access_denied") {
+		t.Fatalf("error status = %s", w.Body.String())
+	}
+
+	// Codes are opaque tokens; arbitrary query values are rejected.
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/auth/oidc/mobile/status?device=../etc/passwd", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("invalid device status = %d, want 400", w.Code)
+	}
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/auth/oidc/login?device=not%20a%20token", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("invalid login device = %d, want 400", w.Code)
 	}
 }
