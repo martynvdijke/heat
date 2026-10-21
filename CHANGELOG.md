@@ -1,3 +1,16 @@
+# [1.71.0](https://github.com/martynvdijke/heat/compare/v1.70.1...v1.71.0) (2026-10-21)
+
+
+### Bug Fixes
+
+* **mobile:** harden login state and sign-out flow ([d02c9df](https://github.com/martynvdijke/heat/commit/d02c9df3f3400ff1853df2e527c9289085a7e4a6))
+* **release:** restore version bumps after placeholder regression ([48b2577](https://github.com/martynvdijke/heat/commit/48b2577190181b8265b5b5f5085972d1f84123ae))
+
+
+### Features
+
+* **mobile:** add native OIDC login and branded Android icon ([dbb32dc](https://github.com/martynvdijke/heat/commit/dbb32dcfa49e8981fa7fdc95bcaa08a397751a1a))
+
 ## [1.70.1](https://github.com/martynvdijke/heat/compare/v1.70.0...v1.70.1) (2026-10-20)
 
 
