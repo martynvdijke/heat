@@ -1,3 +1,10 @@
+# [1.72.0](https://github.com/martynvdijke/heat/compare/v1.71.0...v1.72.0) (2026-10-21)
+
+
+### Features
+
+* **pwa:** use safe maskable icon and add apple-touch-icon ([62df50b](https://github.com/martynvdijke/heat/commit/62df50bd480d20f57202c0904687c286fc49b65c))
+
 # [1.71.0](https://github.com/martynvdijke/heat/compare/v1.70.1...v1.71.0) (2026-10-21)
 
 
