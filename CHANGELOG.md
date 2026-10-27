@@ -1,3 +1,10 @@
+# [1.73.0](https://github.com/martynvdijke/heat/compare/v1.72.3...v1.73.0) (2026-10-27)
+
+
+### Features
+
+* **release:** publish android bundles to google play ([729a0d1](https://github.com/martynvdijke/heat/commit/729a0d1a1ee5a42412bad4dc6a97d4275681ee5a))
+
 ## [1.72.3](https://github.com/martynvdijke/heat/compare/v1.72.2...v1.72.3) (2026-10-25)
 
 ## [1.72.2](https://github.com/martynvdijke/heat/compare/v1.72.1...v1.72.2) (2026-10-21)
