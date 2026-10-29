@@ -835,6 +835,10 @@ func main() {
 			servePage(c, filepath.Join(server.BasePath, "static/replay.html"), server)
 		})
 
+		pages.GET("/startlights.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(server.BasePath, "static/startlights.html"), server)
+		})
+
 		pages.GET("/player.html", func(c *gin.Context) {
 			servePage(c, filepath.Join(server.BasePath, "static/player.html"), server)
 		})

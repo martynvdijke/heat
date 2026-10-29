@@ -194,7 +194,7 @@ func wsPayload(t *testing.T, m map[string]any) map[string]any {
 
 // TestWSAuthHandshake covers handshake classification: no credentials is
 // spectator, valid session is controller, valid token is player, and invalid
-// credentials are rejected with 401.
+// player tokens are rejected with 401.
 func TestWSAuthHandshake(t *testing.T) {
 	url, _, srv := newAuthTestServer(t)
 
@@ -205,13 +205,13 @@ func TestWSAuthHandshake(t *testing.T) {
 		t.Fatalf("spectator should be denied flags, got %v", m)
 	}
 
-	// Invalid session -> 401.
-	header := http.Header{}
-	header.Add("Cookie", "session=does-not-exist")
-	if _, resp, err := (&websocket.Dialer{}).Dial(url, header); err == nil {
-		t.Fatal("invalid session was accepted")
-	} else if resp == nil || resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("expected 401 for invalid session, got %v", resp)
+	// Invalid/expired session cookie -> spectator, not a rejected handshake.
+	// Public display pages carry whatever cookie the browser still has; a stale
+	// admin session must not take live flags/race state away from them.
+	stale := wsDial(t, url, "does-not-exist")
+	wsSend(t, stale, `{"type":"flag","flag":"safety","state":"on"}`)
+	if m := wsWaitFor(t, stale, "error", 2*time.Second); m["code"] != float64(403) {
+		t.Fatalf("stale session should be treated as spectator, got %v", m)
 	}
 
 	// Valid session -> controller.
@@ -232,11 +232,31 @@ func TestWSAuthHandshake(t *testing.T) {
 	}
 
 	// Invalid player token -> 401.
-	header = http.Header{}
+	header := http.Header{}
 	if _, resp, err := (&websocket.Dialer{Subprotocols: []string{"heat", "heat.token.bogus"}}).Dial(url, header); err == nil {
 		t.Fatal("invalid player token was accepted")
 	} else if resp == nil || resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("expected 401 for invalid player token, got %v", resp)
+	}
+}
+
+// TestWSPlayerTokenBeatsAmbientSession proves a player token classifies the
+// connection as a player even when the browser also carries an admin session
+// cookie (or a stale one). Without the token-first rule the player would be
+// treated as a controller/spectator and its self-service events would fail.
+func TestWSPlayerTokenBeatsAmbientSession(t *testing.T) {
+	url, _, srv := newAuthTestServer(t)
+
+	racerID := createTestRacer(t, "Token Priority Racer")
+	token := createTestPlayerToken(t, racerID)
+
+	for _, sessionID := range []string{"does-not-exist", addTestSession(t, srv)} {
+		player := wsDial(t, url, sessionID, "heat", "heat.token."+token)
+		wsSend(t, player, fmt.Sprintf(`{"type":"self_service","racer_id":%d,"lap":1}`, racerID))
+		m := wsWaitFor(t, player, "self_service", 2*time.Second)
+		if m == nil {
+			t.Fatalf("player token with session %q did not produce self_service", sessionID)
+		}
 	}
 }
 
