@@ -23,6 +23,22 @@ func scorePointsForPosition(position int, dnf, dns bool) int {
 	return racing.PointsForPosition(position)
 }
 
+// effectivePodiumPosition returns the finishing position that should count
+// toward a podium. DNF/DNS never podium, regardless of the recorded position.
+func effectivePodiumPosition(position int, dnf, dns bool) int {
+	if dnf || dns {
+		return 0
+	}
+	return position
+}
+
+// recalcRacerRanks recomputes every racer's rank from points (desc) with name
+// as the tie-breaker. It must be called inside a transaction.
+func recalcRacerRanks(tx *sql.Tx) error {
+	_, err := tx.Exec(`UPDATE racers SET rank = (SELECT COUNT(*) FROM racers r2 WHERE r2.points > racers.points OR (r2.points = racers.points AND r2.name < racers.name)) + 1`)
+	return err
+}
+
 // ensureRacerStats makes sure a racer has a stats row, inserting a zeroed one
 // when missing. It must be called inside a transaction.
 func ensureRacerStats(tx *sql.Tx, racerID int) error {
@@ -363,23 +379,24 @@ func (h *Handler) DeleteRoundSnapshot(c *gin.Context) {
 	defer tx.Rollback()
 
 	if status == "final" {
-		rows, err := tx.Query("SELECT racer_id, applied_points, applied_dnf, applied_dns, applied_spins, applied_overheated FROM round_snapshot_scores WHERE snapshot_id = ?", id)
+		rows, err := tx.Query("SELECT racer_id, applied_points, applied_dnf, applied_dns, applied_spins, applied_overheated, applied_position FROM round_snapshot_scores WHERE snapshot_id = ?", id)
 		if err != nil {
 			internalError(c, err)
 			return
 		}
 		type applied struct {
-			RacerID    int
-			Points     int
-			DNF        int
-			DNS        int
-			Spins      int
-			Overheated int
+			RacerID         int
+			Points          int
+			DNF             int
+			DNS             int
+			Spins           int
+			Overheated      int
+			AppliedPosition int
 		}
 		var appliedScores []applied
 		for rows.Next() {
 			var a applied
-			if err := rows.Scan(&a.RacerID, &a.Points, &a.DNF, &a.DNS, &a.Spins, &a.Overheated); err != nil {
+			if err := rows.Scan(&a.RacerID, &a.Points, &a.DNF, &a.DNS, &a.Spins, &a.Overheated, &a.AppliedPosition); err != nil {
 				continue
 			}
 			appliedScores = append(appliedScores, a)
@@ -395,11 +412,17 @@ func (h *Handler) DeleteRoundSnapshot(c *gin.Context) {
 				internalError(c, err)
 				return
 			}
-			if _, err := tx.Exec("UPDATE racer_stats SET races = MAX(0, races - 1), dnf = MAX(0, dnf - ?), dns = MAX(0, dns - ?), spins = MAX(0, spins - ?), overheated = MAX(0, overheated - ?) WHERE racer_id = ?",
-				a.DNF, a.DNS, a.Spins, a.Overheated, a.RacerID); err != nil {
+			wins, gold, silver, bronze := racing.PodiumForPosition(a.AppliedPosition)
+			if _, err := tx.Exec("UPDATE racer_stats SET races = MAX(0, races - 1), wins = MAX(0, wins - ?), gold = MAX(0, gold - ?), silver = MAX(0, silver - ?), bronze = MAX(0, bronze - ?), dnf = MAX(0, dnf - ?), dns = MAX(0, dns - ?), spins = MAX(0, spins - ?), overheated = MAX(0, overheated - ?) WHERE racer_id = ?",
+				wins, gold, silver, bronze, a.DNF, a.DNS, a.Spins, a.Overheated, a.RacerID); err != nil {
 				internalError(c, err)
 				return
 			}
+		}
+
+		if err := recalcRacerRanks(tx); err != nil {
+			internalError(c, err)
+			return
 		}
 	}
 
@@ -415,6 +438,8 @@ func (h *Handler) DeleteRoundSnapshot(c *gin.Context) {
 		internalError(c, err)
 		return
 	}
+	h.S.StatsCache.InvalidatePrefix("stats:")
+	h.S.BroadcastRacers()
 	c.Status(http.StatusOK)
 }
 
@@ -484,9 +509,10 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 			AppliedDNS        int
 			AppliedSpins      int
 			AppliedOverheated int
+			AppliedPosition   int
 		}
-		err := tx.QueryRow("SELECT racer_id, applied, applied_points, applied_dnf, applied_dns, applied_spins, applied_overheated FROM round_snapshot_scores WHERE id = ? AND snapshot_id = ?", sc.ID, idStr).
-			Scan(&old.RacerID, &old.Applied, &old.AppliedPoints, &old.AppliedDNF, &old.AppliedDNS, &old.AppliedSpins, &old.AppliedOverheated)
+		err := tx.QueryRow("SELECT racer_id, applied, applied_points, applied_dnf, applied_dns, applied_spins, applied_overheated, applied_position FROM round_snapshot_scores WHERE id = ? AND snapshot_id = ?", sc.ID, idStr).
+			Scan(&old.RacerID, &old.Applied, &old.AppliedPoints, &old.AppliedDNF, &old.AppliedDNS, &old.AppliedSpins, &old.AppliedOverheated, &old.AppliedPosition)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "score does not belong to round"})
@@ -499,10 +525,11 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 		newPoints := scorePointsForPosition(sc.Position, sc.DNF, sc.DNS)
 		newDNF := boolToInt(sc.DNF)
 		newDNS := boolToInt(sc.DNS)
+		newPosition := effectivePodiumPosition(sc.Position, sc.DNF, sc.DNS)
 
 		if isFinal {
-			if _, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, position = ?, dnf = ?, dns = ?, spins = ?, overheated = ?, applied = 1, applied_points = ?, applied_dnf = ?, applied_dns = ?, applied_spins = ?, applied_overheated = ? WHERE id = ? AND snapshot_id = ?",
-				newPoints, sc.Position, sc.DNF, sc.DNS, sc.Spins, sc.Overheated, newPoints, newDNF, newDNS, sc.Spins, sc.Overheated, sc.ID, idStr); err != nil {
+			if _, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, position = ?, dnf = ?, dns = ?, spins = ?, overheated = ?, applied = 1, applied_points = ?, applied_dnf = ?, applied_dns = ?, applied_spins = ?, applied_overheated = ?, applied_position = ? WHERE id = ? AND snapshot_id = ?",
+				newPoints, sc.Position, sc.DNF, sc.DNS, sc.Spins, sc.Overheated, newPoints, newDNF, newDNS, sc.Spins, sc.Overheated, newPosition, sc.ID, idStr); err != nil {
 				internalError(c, err)
 				return
 			}
@@ -516,8 +543,14 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 				internalError(c, err)
 				return
 			}
-			if _, err := tx.Exec("UPDATE racer_stats SET dnf = MAX(0, dnf + ?), dns = MAX(0, dns + ?), spins = MAX(0, spins + ?), overheated = MAX(0, overheated + ?) WHERE racer_id = ?",
-				newDNF-old.AppliedDNF, newDNS-old.AppliedDNS, sc.Spins-old.AppliedSpins, sc.Overheated-old.AppliedOverheated, old.RacerID); err != nil {
+
+			// Podium deltas are derived from the position that was previously
+			// applied versus the position now being applied.
+			oldWins, oldGold, oldSilver, oldBronze := racing.PodiumForPosition(old.AppliedPosition)
+			newWins, newGold, newSilver, newBronze := racing.PodiumForPosition(newPosition)
+			if _, err := tx.Exec("UPDATE racer_stats SET dnf = MAX(0, dnf + ?), dns = MAX(0, dns + ?), spins = MAX(0, spins + ?), overheated = MAX(0, overheated + ?), wins = MAX(0, wins + ?), gold = MAX(0, gold + ?), silver = MAX(0, silver + ?), bronze = MAX(0, bronze + ?) WHERE racer_id = ?",
+				newDNF-old.AppliedDNF, newDNS-old.AppliedDNS, sc.Spins-old.AppliedSpins, sc.Overheated-old.AppliedOverheated,
+				newWins-oldWins, newGold-oldGold, newSilver-oldSilver, newBronze-oldBronze, old.RacerID); err != nil {
 				internalError(c, err)
 				return
 			}
@@ -530,10 +563,20 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 		}
 	}
 
+	if isFinal {
+		if err := recalcRacerRanks(tx); err != nil {
+			internalError(c, err)
+			return
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		internalError(c, err)
 		return
 	}
+
+	h.S.StatsCache.InvalidatePrefix("stats:")
+	h.S.BroadcastRacers()
 
 	c.JSON(http.StatusOK, gin.H{"status": "saved"})
 }
@@ -581,7 +624,7 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 		return
 	}
 
-	rows, err := h.S.DB.Query("SELECT id, racer_id, racer_name, position, dnf, dns, spins, overheated, applied, applied_points, applied_dnf, applied_dns, applied_spins, applied_overheated FROM round_snapshot_scores WHERE snapshot_id = ?", idStr)
+	rows, err := h.S.DB.Query("SELECT id, racer_id, racer_name, position, dnf, dns, spins, overheated, applied, applied_points, applied_dnf, applied_dns, applied_spins, applied_overheated, applied_position FROM round_snapshot_scores WHERE snapshot_id = ?", idStr)
 	if err != nil {
 		internalError(c, err)
 		return
@@ -603,13 +646,14 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 		AppliedDNS        int
 		AppliedSpins      int
 		AppliedOverheated int
+		AppliedPosition   int
 		Points            int
 	}
 	var scores []score
 	var emailScores []models.RoundSnapshotScore
 	for rows.Next() {
 		var s score
-		if err := rows.Scan(&s.ID, &s.RacerID, &s.RacerName, &s.Position, &s.DNF, &s.DNS, &s.Spins, &s.Overheated, &s.Applied, &s.AppliedPoints, &s.AppliedDNF, &s.AppliedDNS, &s.AppliedSpins, &s.AppliedOverheated); err != nil {
+		if err := rows.Scan(&s.ID, &s.RacerID, &s.RacerName, &s.Position, &s.DNF, &s.DNS, &s.Spins, &s.Overheated, &s.Applied, &s.AppliedPoints, &s.AppliedDNF, &s.AppliedDNS, &s.AppliedSpins, &s.AppliedOverheated, &s.AppliedPosition); err != nil {
 			continue
 		}
 		s.Points = scorePointsForPosition(s.Position, s.DNF, s.DNS)
@@ -637,6 +681,9 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 	for _, s := range scores {
 		newDNF := boolToInt(s.DNF)
 		newDNS := boolToInt(s.DNS)
+		newPosition := effectivePodiumPosition(s.Position, s.DNF, s.DNS)
+		newWins, newGold, newSilver, newBronze := racing.PodiumForPosition(newPosition)
+		oldWins, oldGold, oldSilver, oldBronze := racing.PodiumForPosition(s.AppliedPosition)
 
 		if s.Applied == 0 {
 			// First application: add full values and count the race once.
@@ -648,8 +695,8 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 				internalError(c, err)
 				return
 			}
-			if _, err := tx.Exec("UPDATE racer_stats SET races = races + 1, dnf = dnf + ?, dns = dns + ?, spins = spins + ?, overheated = overheated + ? WHERE racer_id = ?",
-				newDNF, newDNS, s.Spins, s.Overheated, s.RacerID); err != nil {
+			if _, err := tx.Exec("UPDATE racer_stats SET races = races + 1, wins = wins + ?, gold = gold + ?, silver = silver + ?, bronze = bronze + ?, dnf = dnf + ?, dns = dns + ?, spins = spins + ?, overheated = overheated + ? WHERE racer_id = ?",
+				newWins, newGold, newSilver, newBronze, newDNF, newDNS, s.Spins, s.Overheated, s.RacerID); err != nil {
 				internalError(c, err)
 				return
 			}
@@ -663,18 +710,24 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 				internalError(c, err)
 				return
 			}
-			if _, err := tx.Exec("UPDATE racer_stats SET dnf = MAX(0, dnf + ?), dns = MAX(0, dns + ?), spins = MAX(0, spins + ?), overheated = MAX(0, overheated + ?) WHERE racer_id = ?",
-				newDNF-s.AppliedDNF, newDNS-s.AppliedDNS, s.Spins-s.AppliedSpins, s.Overheated-s.AppliedOverheated, s.RacerID); err != nil {
+			if _, err := tx.Exec("UPDATE racer_stats SET dnf = MAX(0, dnf + ?), dns = MAX(0, dns + ?), spins = MAX(0, spins + ?), overheated = MAX(0, overheated + ?), wins = MAX(0, wins + ?), gold = MAX(0, gold + ?), silver = MAX(0, silver + ?), bronze = MAX(0, bronze + ?) WHERE racer_id = ?",
+				newDNF-s.AppliedDNF, newDNS-s.AppliedDNS, s.Spins-s.AppliedSpins, s.Overheated-s.AppliedOverheated,
+				newWins-oldWins, newGold-oldGold, newSilver-oldSilver, newBronze-oldBronze, s.RacerID); err != nil {
 				internalError(c, err)
 				return
 			}
 		}
 
-		if _, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, applied = 1, applied_points = ?, applied_dnf = ?, applied_dns = ?, applied_spins = ?, applied_overheated = ? WHERE id = ?",
-			s.Points, s.Points, newDNF, newDNS, s.Spins, s.Overheated, s.ID); err != nil {
+		if _, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, position = ?, applied = 1, applied_points = ?, applied_dnf = ?, applied_dns = ?, applied_spins = ?, applied_overheated = ?, applied_position = ? WHERE id = ?",
+			s.Points, s.Position, s.Points, newDNF, newDNS, s.Spins, s.Overheated, newPosition, s.ID); err != nil {
 			internalError(c, err)
 			return
 		}
+	}
+
+	if err := recalcRacerRanks(tx); err != nil {
+		internalError(c, err)
+		return
 	}
 
 	// Mark round as final
@@ -689,6 +742,7 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 		return
 	}
 
+	h.S.StatsCache.InvalidatePrefix("stats:")
 	h.S.BroadcastRacers()
 
 	if !wasFinal {

@@ -20,3 +20,17 @@ func PointsForPosition(position int) int {
 		return 0
 	}
 }
+
+// PodiumForPosition returns the podium counters to award for a finishing
+// position: P1 counts as a win (and gold), P2 as silver, P3 as bronze.
+func PodiumForPosition(position int) (wins, gold, silver, bronze int) {
+	switch position {
+	case 1:
+		return 1, 1, 0, 0
+	case 2:
+		return 0, 0, 1, 0
+	case 3:
+		return 0, 0, 0, 1
+	}
+	return 0, 0, 0, 0
+}
