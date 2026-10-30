@@ -13,6 +13,7 @@ import (
 	"heat/db"
 	"heat/middleware"
 	"heat/models"
+	"heat/racing"
 )
 
 // @Summary Get current race info
@@ -112,6 +113,16 @@ func (h *Handler) SaveRaceToHistory(c *gin.Context) {
 	}
 	if input.RaceType == "" {
 		input.RaceType = "season"
+	}
+
+	// Championship points are server-authoritative: ignore whatever the client
+	// sent and derive them from the finishing position.
+	for i := range input.Results {
+		if !input.Results[i].Finished || input.Results[i].DidNotStart {
+			input.Results[i].Points = 0
+		} else {
+			input.Results[i].Points = racing.PointsForPosition(input.Results[i].Position)
+		}
 	}
 
 	isOneOff := input.RaceType == "oneoff"

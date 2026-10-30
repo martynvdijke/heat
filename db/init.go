@@ -68,6 +68,19 @@ func Init(s *app.Server) {
 	srv.DB.Exec("ALTER TABLE round_snapshot_scores ADD COLUMN overheated INTEGER NOT NULL DEFAULT 0")
 	srv.DB.Exec("ALTER TABLE racer_stats ADD COLUMN overheated INTEGER NOT NULL DEFAULT 0")
 
+	// Track which score values have already been applied to racer totals and
+	// stats, so finalized rounds can be edited without double-counting.
+	srv.DB.Exec("ALTER TABLE round_snapshot_scores ADD COLUMN applied INTEGER NOT NULL DEFAULT 0")
+	srv.DB.Exec("ALTER TABLE round_snapshot_scores ADD COLUMN applied_points INTEGER NOT NULL DEFAULT 0")
+	srv.DB.Exec("ALTER TABLE round_snapshot_scores ADD COLUMN applied_dnf INTEGER NOT NULL DEFAULT 0")
+	srv.DB.Exec("ALTER TABLE round_snapshot_scores ADD COLUMN applied_dns INTEGER NOT NULL DEFAULT 0")
+	srv.DB.Exec("ALTER TABLE round_snapshot_scores ADD COLUMN applied_spins INTEGER NOT NULL DEFAULT 0")
+	srv.DB.Exec("ALTER TABLE round_snapshot_scores ADD COLUMN applied_overheated INTEGER NOT NULL DEFAULT 0")
+
+	// Backfill legacy finalized rounds so their already-counted results are
+	// recorded as applied instead of being counted again on the next edit.
+	srv.DB.Exec(`UPDATE round_snapshot_scores SET applied = 1, applied_points = points, applied_dnf = dnf, applied_dns = dns, applied_spins = spins, applied_overheated = overheated WHERE applied = 0 AND snapshot_id IN (SELECT id FROM round_snapshots WHERE status = 'final')`)
+
 	// Migrate tracks table: ensure columns from the Ent schema exist
 	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN use_map_image INTEGER NOT NULL DEFAULT 0")
 	srv.DB.Exec("ALTER TABLE tracks ADD COLUMN map_image_url TEXT NOT NULL DEFAULT ''")

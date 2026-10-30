@@ -648,7 +648,7 @@ async function takeRoundSnapshot(): Promise<void> {
 }
 
 function getPointsForPosition(pos: number): number {
-    const points = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+    const points = [9, 6, 4, 3, 2, 1];
     return points[pos - 1] || 0;
 }
 

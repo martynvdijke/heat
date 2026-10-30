@@ -1724,6 +1724,8 @@ document.body.addEventListener('htmx:afterOnLoad', (evt: any) => {
 });
 
 let editingRoundId: number | null = null;
+let editingRoundStatus: string = '';
+let editingRoundTableWrap: HTMLElement | null = null;
 let activeSeasonId: number | null = null;
 let loadedQuotes: Quote[] = [];
 
@@ -1744,6 +1746,26 @@ function invalidateSeasonCache(): void {
     activeSeasonId = null;
 }
 
+// Fixed points ladder: P1-P6 score 9-6-4-3-2-1, everything else scores 0.
+const ROUND_POINT_VALUES = [9, 6, 4, 3, 2, 1];
+
+function pointsForPosition(position: number): number {
+    if (position >= 1 && position <= ROUND_POINT_VALUES.length) {
+        return ROUND_POINT_VALUES[position - 1];
+    }
+    return 0;
+}
+
+async function readApiError(res: Response): Promise<string> {
+    try {
+        const data = await res.json();
+        if (data && typeof data.error === 'string' && data.error) return data.error;
+    } catch {
+        // No JSON body to read.
+    }
+    return res.statusText || `HTTP ${res.status}`;
+}
+
 async function loadRoundsList(): Promise<void> {
     try {
         if (editingRoundId !== null) return; // don't refresh while editing
@@ -1752,22 +1774,21 @@ async function loadRoundsList(): Promise<void> {
         const rounds = await roundsRes.json();
         const list = document.getElementById('rounds-list')!;
         if (!Array.isArray(rounds) || rounds.length === 0) {
-            list.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No rounds yet.</td></tr>';
+            list.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No race results yet. Use <strong>Add Race Result</strong> to create one.</td></tr>';
             return;
         }
         list.innerHTML = rounds.map((r: any) => {
-            const isDraft = r.status === 'draft';
+            const isFinal = r.status === 'final';
+            const statusLabel = isFinal ? 'Applied' : 'Draft';
+            const statusHint = isFinal ? 'Results are applied to driver totals' : 'Results are saved but not applied yet';
             return `<tr>
                 <td class="ps-4 fw-bold">#${r.round || r.id}</td>
-                <td>${r.race_name}</td>
-                <td>${r.race_date}</td>
-                <td><span class="badge ${isDraft ? 'bg-warning text-dark' : 'bg-success'}">${r.status}</span></td>
-                <td class="text-end pe-4">
-                    ${isDraft
-                        ? `<button class="btn btn-sm btn-outline-primary me-1" onclick="editRound(${r.id})"><i class="fa-solid fa-pen"></i> Edit</button>
-                           <button class="btn btn-sm btn-outline-danger" onclick="deleteRound(${r.id})"><i class="fa-solid fa-trash"></i></button>`
-                        : `<button class="btn btn-sm btn-outline-secondary" disabled><i class="fa-solid fa-lock"></i> Final</button>
-                           <button class="btn btn-sm btn-outline-danger" onclick="deleteRound(${r.id})"><i class="fa-solid fa-trash"></i></button>`}
+                <td>${escapeHtml(r.race_name || '')}</td>
+                <td class="text-muted">${escapeHtml(r.race_date || '')}</td>
+                <td><span class="badge ${isFinal ? 'bg-success' : 'bg-warning text-dark'}" title="${statusHint}">${statusLabel}</span></td>
+                <td class="text-end pe-4 text-nowrap">
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editRound(${r.id})"><i class="fa-solid fa-pen me-1"></i>Edit</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRound(${r.id})" title="Delete race result" aria-label="Delete race result"><i class="fa-solid fa-trash"></i></button>
                 </td>
             </tr>`;
         }).join('');
@@ -1777,154 +1798,312 @@ async function loadRoundsList(): Promise<void> {
 }
 
 async function takeAdminRoundSnapshot(): Promise<void> {
-    const name = prompt('Round name:', `Round ${new Date().toLocaleDateString()}`);
-    if (!name) return;
+    const entered = prompt('Race name:', `Round ${new Date().toLocaleDateString()}`);
+    if (entered === null) return;
+    const raceName = entered.trim();
+    if (!raceName) {
+        showToast('A race name is required.', 'error');
+        return;
+    }
     const sid = await getActiveSeasonId();
     const res = await fetch('/api/rounds', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ race_name: name, round: 0, season_id: sid })
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
+        body: JSON.stringify({ race_name: raceName, round: 0, season_id: sid })
     });
-    if (res.ok) {
-        showToast('Round draft created!', 'success');
-        loadRoundsList();
-    } else {
-        const err = await res.json();
-        showToast('Failed: ' + (err.error || 'Unknown error'), 'error');
+    if (!res.ok) {
+        showToast('Could not add the race: ' + await readApiError(res), 'error');
+        return;
+    }
+    const created = await res.json().catch(() => ({} as any));
+    editingRoundId = null;
+    showToast('Race added. Pick the finishing order, then save.', 'success');
+    await loadRoundsList();
+    if (created && created.id) {
+        await editRound(created.id);
     }
 }
 
 async function deleteRound(id: number): Promise<void> {
-    if (!confirm('Delete this round snapshot?')) return;
-    await fetch(`/api/rounds?id=${id}`, { method: 'DELETE' });
+    if (!confirm('Delete this race result? This cannot be undone.')) return;
+    const res = await fetch(`/api/rounds?id=${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+        showToast('Could not delete: ' + await readApiError(res), 'error');
+        return;
+    }
+    showToast('Race result deleted.', 'success');
     loadRoundsList();
 }
 
 async function editRound(id: number): Promise<void> {
-    editingRoundId = id;
-    const res = await fetch(`/api/rounds?id=${id}`);
-    const round = await res.json();
-    const list = document.getElementById('rounds-list')!;
-    const scores = round.scores || [];
-    list.innerHTML = `
-        <tr><td colspan="5" class="p-0 border-0">
-            <div class="p-3 bg-light rounded">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-pen me-2"></i>Editing: ${round.race_name} (#${round.round})</h6>
-                    <div>
-                        <button class="btn btn-sm btn-success me-1" onclick="saveRoundDraft(${id})"><i class="fa-solid fa-save me-1"></i>Save Draft</button>
-                        <button class="btn btn-sm btn-primary me-1" onclick="finalizeRound(${id})"><i class="fa-solid fa-check me-1"></i>Finalize</button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="cancelRoundEdit()"><i class="fa-solid fa-xmark me-1"></i>Cancel</button>
+    try {
+        const res = await fetch(`/api/rounds?id=${id}`);
+        if (!res.ok) throw new Error(await readApiError(res));
+        const round = await res.json();
+
+        editingRoundId = id;
+        editingRoundStatus = round.status === 'final' ? 'final' : 'draft';
+
+        const scores: any[] = Array.isArray(round.scores) ? round.scores : [];
+        const ordered = [...scores].sort((a, b) => (a.position || 999) - (b.position || 999));
+        let total = Math.max(ordered.length, 1);
+        for (const s of ordered) {
+            const position = s.position || 0;
+            // Anything at 900+ is the legacy "did not finish" marker, not a real place.
+            if (position >= 1 && position < 900) {
+                total = Math.max(total, position);
+            }
+        }
+
+        const isFinal = editingRoundStatus === 'final';
+        const statusBadge = `<span class="badge ${isFinal ? 'bg-success' : 'bg-warning text-dark'}">${isFinal ? 'Applied' : 'Draft'}</span>`;
+        const helperNote = isFinal ? '' : ' Saving applies these points to the standings.';
+
+        const rows = ordered.length === 0
+            ? '<tr><td colspan="7" class="text-center text-muted py-3">No drivers found for this round.</td></tr>'
+            : ordered.map((s: any) => {
+                const isOut = !!s.dnf || !!s.dns;
+                const points = isOut ? 0 : pointsForPosition(s.position);
+                const driver = escapeHtml(s.racer_name || '');
+                return `<tr data-score-id="${s.id}">
+                    <td class="ps-2">
+                        <select class="form-select form-select-sm round-score-pos" aria-label="Position for ${driver}">
+                            ${roundPositionOptions(total, s.position)}
+                        </select>
+                    </td>
+                    <td class="fw-semibold">${driver}</td>
+                    <td class="text-center">
+                        <span class="badge rounded-pill bg-body-secondary text-body fw-semibold round-score-pts" data-id="${s.id}" style="min-width:2rem" title="Points are set from the position">${points}</span>
+                    </td>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input round-score-dnf" aria-label="DNF for ${driver}" ${s.dnf ? 'checked' : ''}>
+                    </td>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input round-score-dns" aria-label="DNS for ${driver}" ${s.dns ? 'checked' : ''}>
+                    </td>
+                    <td class="text-center">
+                        <input type="number" class="form-control form-control-sm round-score-spins text-center mx-auto" style="width:4.5rem" min="0" value="${s.spins || 0}" aria-label="Spins for ${driver}">
+                    </td>
+                    <td class="text-center">
+                        <input type="number" class="form-control form-control-sm round-score-overheated text-center mx-auto" style="width:4.5rem" min="0" value="${s.overheated || 0}" aria-label="Overheated for ${driver}">
+                    </td>
+                </tr>`;
+            }).join('');
+
+        showRoundEditor(`
+            <div class="p-3 p-md-4 bg-light">
+                <div class="row g-3 align-items-end mb-2">
+                    <div class="col-12 col-lg-6">
+                        <label for="round-name-input" class="form-label small fw-semibold text-uppercase text-muted mb-1">Race name</label>
+                        <input type="text" class="form-control" id="round-name-input" placeholder="e.g. Monaco Grand Prix" autocomplete="off">
+                        <div class="form-text mt-1">Round #${round.round || id} &middot; ${statusBadge}</div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                            <button type="button" class="btn btn-outline-secondary" onclick="cancelRoundEdit()">Cancel</button>
+                            <button type="button" class="btn btn-success" id="round-save-btn" onclick="saveRoundResults(${id})"><i class="fa-solid fa-check me-1"></i>Save Results</button>
+                        </div>
                     </div>
                 </div>
+                <p class="small text-muted mb-2">
+                    <i class="fa-solid fa-calculator me-1"></i>Points are automatic: <strong>9-6-4-3-2-1</strong> for P1-P6. P7 and below, DNF and DNS score 0.${helperNote}
+                </p>
                 <div class="table-responsive">
-                    <table class="table table-sm table-bordered mb-0">
+                    <table class="table table-sm align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th class="ps-2" style="width:7rem">Position</th>
                                 <th>Driver</th>
-                                <th style="width:80px">Points</th>
-                                <th style="width:80px">Position</th>
-                                <th style="width:60px">DNF</th>
-                                <th style="width:60px">DNS</th>
-                                <th style="width:80px">Spins</th>
-                                <th style="width:80px">Overheated</th>
+                                <th class="text-center" style="width:5rem">Points</th>
+                                <th class="text-center" style="width:3.5rem">DNF</th>
+                                <th class="text-center" style="width:3.5rem">DNS</th>
+                                <th class="text-center" style="width:5.5rem">Spins</th>
+                                <th class="text-center" style="width:6.5rem">Overheated</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${scores.map((s: any) => `
-                                <tr>
-                                    <td class="text-muted">${s.position}</td>
-                                    <td>${s.racer_name}</td>
-                                    <td><input type="number" class="form-control form-control-sm round-score-pts" data-id="${s.id}" value="${s.points}" min="0"></td>
-                                    <td><input type="number" class="form-control form-control-sm round-score-pos" data-id="${s.id}" value="${s.position}" min="0"></td>
-                                    <td><input type="checkbox" class="form-check-input round-score-dnf" data-id="${s.id}" ${s.dnf ? 'checked' : ''}></td>
-                                    <td><input type="checkbox" class="form-check-input round-score-dns" data-id="${s.id}" ${s.dns ? 'checked' : ''}></td>
-                                    <td><input type="number" class="form-control form-control-sm round-score-spins" data-id="${s.id}" value="${s.spins}" min="0"></td>
-                                    <td><input type="number" class="form-control form-control-sm round-score-overheated" data-id="${s.id}" value="${s.overheated || 0}" min="0"></td>
-                                </tr>
-                            `).join('')}
+                        <tbody id="round-scores-body">
+                            ${rows}
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </td></tr>`;
+            </div>`);
+
+        // Bind the race name outside of the markup so odd characters stay intact.
+        const nameInput = document.getElementById('round-name-input') as HTMLInputElement | null;
+        if (!nameInput) throw new Error('Editor did not open');
+        nameInput.value = round.race_name || '';
+
+        const tbody = document.getElementById('round-scores-body');
+        if (tbody) {
+            tbody.querySelectorAll<HTMLTableRowElement>('tr[data-score-id]').forEach(row => syncRoundRow(row));
+            tbody.addEventListener('change', (ev) => {
+                const target = ev.target as HTMLElement;
+                if (!target.matches('.round-score-pos, .round-score-dnf, .round-score-dns')) return;
+                const row = target.closest('tr');
+                if (row) syncRoundRow(row as HTMLTableRowElement);
+            });
+        }
+    } catch (e: any) {
+        closeRoundEditPanel();
+        editingRoundId = null;
+        editingRoundStatus = '';
+        showToast('Could not open the race: ' + (e?.message || 'Unknown error'), 'error');
+    }
 }
 
-async function saveRoundDraft(id: number): Promise<void> {
-    const scores = buildScoresFromEditForm();
-    const res = await fetch(`/api/rounds?id=${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
-        body: JSON.stringify(scores)
-    });
-    if (res.ok) {
-        showToast('Round draft saved!', 'success');
-        editingRoundId = null;
-        loadRoundsList();
-    } else {
-        const err = await res.json();
-        showToast('Failed: ' + (err.error || 'Unknown error'), 'error');
+// The editor sits above the list instead of inside the table, so the form stays
+// put on narrow screens while the driver table scrolls sideways.
+function showRoundEditor(html: string): void {
+    const list = document.getElementById('rounds-list');
+    const wrap = list?.closest('.table-responsive') as HTMLElement | null;
+    const parent = wrap?.parentElement;
+    if (!wrap || !parent) {
+        if (list) list.innerHTML = '<tr><td colspan="5" class="text-danger p-3">Could not open this race.</td></tr>';
+        return;
     }
+
+    let host = document.getElementById('round-editor-host');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'round-editor-host';
+        parent.insertBefore(host, wrap);
+    }
+    host.innerHTML = html;
+
+    editingRoundTableWrap = wrap;
+    wrap.classList.add('d-none');
+}
+
+function closeRoundEditPanel(): void {
+    document.getElementById('round-editor-host')?.remove();
+    if (editingRoundTableWrap) {
+        editingRoundTableWrap.classList.remove('d-none');
+        editingRoundTableWrap = null;
+    }
+}
+
+function roundPositionOptions(total: number, current: number): string {
+    const options: string[] = [];
+    // Keep positions the select can't represent (unset, or the legacy DNF marker).
+    if (current < 1 || current > total) {
+        const label = current >= 1 && current < 900 ? `P${current}` : '&mdash;';
+        options.push(`<option value="${current}" selected>${label}</option>`);
+    }
+    for (let i = 1; i <= total; i++) {
+        options.push(`<option value="${i}"${i === current ? ' selected' : ''}>P${i}</option>`);
+    }
+    return options.join('');
+}
+
+function syncRoundRow(row: HTMLTableRowElement): void {
+    const positionSelect = row.querySelector<HTMLSelectElement>('.round-score-pos');
+    const dnf = row.querySelector<HTMLInputElement>('.round-score-dnf');
+    const dns = row.querySelector<HTMLInputElement>('.round-score-dns');
+    const pointsBadge = row.querySelector<HTMLElement>('.round-score-pts');
+
+    const isOut = !!(dnf?.checked || dns?.checked);
+    if (positionSelect) positionSelect.disabled = isOut;
+
+    const position = parseInt(positionSelect?.value || '0', 10) || 0;
+    const points = isOut ? 0 : pointsForPosition(position);
+    if (pointsBadge) pointsBadge.textContent = String(points);
+}
+
+async function saveRoundResults(id: number, options: { finalize?: boolean } = {}): Promise<void> {
+    const nameInput = document.getElementById('round-name-input') as HTMLInputElement | null;
+    const raceName = (nameInput?.value || '').trim();
+    if (!raceName) {
+        showToast('Give the race a name before saving.', 'error');
+        nameInput?.focus();
+        return;
+    }
+
+    const saveBtn = document.getElementById('round-save-btn') as HTMLButtonElement | null;
+    if (saveBtn) saveBtn.disabled = true;
+
+    // A round that was already applied is updated in place; a draft gets applied on save.
+    const shouldFinalize = options.finalize ?? (editingRoundStatus !== 'final');
+
+    try {
+        const nameRes = await fetch(`/api/rounds/name?id=${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
+            body: JSON.stringify({ race_name: raceName })
+        });
+        if (!nameRes.ok) throw new Error(await readApiError(nameRes));
+
+        const scores = buildScoresFromEditForm();
+        if (scores.length > 0) {
+            const scoresRes = await fetch(`/api/rounds?id=${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
+                body: JSON.stringify(scores)
+            });
+            if (!scoresRes.ok) throw new Error(await readApiError(scoresRes));
+        }
+
+        if (shouldFinalize) {
+            const finalRes = await fetch(`/api/rounds/finalize?id=${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() }
+            });
+            if (!finalRes.ok) throw new Error(await readApiError(finalRes));
+        }
+
+        editingRoundId = null;
+        editingRoundStatus = '';
+        closeRoundEditPanel();
+        showToast(shouldFinalize ? 'Results saved and points applied.' : 'Results updated.', 'success');
+        await loadRoundsList();
+    } catch (e: any) {
+        showToast('Could not save results: ' + (e?.message || 'Unknown error'), 'error');
+    } finally {
+        if (saveBtn && document.body.contains(saveBtn)) saveBtn.disabled = false;
+    }
+}
+
+// Kept for compatibility with any older callers; the editor uses saveRoundResults().
+async function saveRoundDraft(id: number): Promise<void> {
+    await saveRoundResults(id, { finalize: false });
 }
 
 async function finalizeRound(id: number): Promise<void> {
-    if (!confirm('Finalize this round? Points and stats will be applied to all drivers. This cannot be undone.')) return;
-
-    // First save any pending edits
-    const scores = buildScoresFromEditForm();
-    if (scores.length > 0) {
-        const saveRes = await fetch(`/api/rounds?id=${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
-            body: JSON.stringify(scores)
-        });
-        if (!saveRes.ok) {
-            const err = await saveRes.json();
-            showToast('Failed to save before finalizing: ' + (err.error || 'Unknown error'), 'error');
-            return;
-        }
-    }
-
-    const res = await fetch(`/api/rounds/finalize?id=${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() }
-    });
-    if (res.ok) {
-        showToast('Round finalized! Driver points and stats updated.', 'success');
-        editingRoundId = null;
-        loadRoundsList();
-    } else {
-        const err = await res.json();
-        showToast('Failed: ' + (err.error || 'Unknown error'), 'error');
-    }
+    await saveRoundResults(id, { finalize: true });
 }
 
 function cancelRoundEdit(): void {
     editingRoundId = null;
+    editingRoundStatus = '';
+    closeRoundEditPanel();
     loadRoundsList();
 }
 
 function buildScoresFromEditForm(): any[] {
-    const scoreInputs = document.querySelectorAll('.round-score-pts');
-    return Array.from(scoreInputs).map(el => {
-        const input = el as HTMLInputElement;
-        const id = parseInt(input.getAttribute('data-id') || '0');
-        const row = input.closest('tr')!;
-        const posInput = row.querySelector('.round-score-pos') as HTMLInputElement;
-        const dnfCheck = row.querySelector('.round-score-dnf') as HTMLInputElement;
-        const dnsCheck = row.querySelector('.round-score-dns') as HTMLInputElement;
-        const spinsInput = row.querySelector('.round-score-spins') as HTMLInputElement;
-        const overheatedInput = row.querySelector('.round-score-overheated') as HTMLInputElement;
-        return {
-            id,
-            points: parseInt(input.value) || 0,
-            position: parseInt(posInput?.value) || 0,
-            dnf: dnfCheck?.checked || false,
-            dns: dnsCheck?.checked || false,
-            spins: parseInt(spinsInput?.value) || 0,
-            overheated: parseInt(overheatedInput?.value) || 0
+    const rows = document.querySelectorAll<HTMLTableRowElement>('#round-scores-body tr[data-score-id]');
+    return Array.from(rows).map(row => {
+        const positionSelect = row.querySelector<HTMLSelectElement>('.round-score-pos');
+        const dnf = row.querySelector<HTMLInputElement>('.round-score-dnf');
+        const dns = row.querySelector<HTMLInputElement>('.round-score-dns');
+        const spins = row.querySelector<HTMLInputElement>('.round-score-spins');
+        const overheated = row.querySelector<HTMLInputElement>('.round-score-overheated');
+
+        const position = parseInt(positionSelect?.value || '0', 10) || 0;
+        const isDnf = !!dnf?.checked;
+        const isDns = !!dns?.checked;
+
+        const payload: any = {
+            position,
+            points: isDnf || isDns ? 0 : pointsForPosition(position),
+            dnf: isDnf,
+            dns: isDns,
+            spins: parseInt(spins?.value || '0', 10) || 0,
+            overheated: parseInt(overheated?.value || '0', 10) || 0
         };
+
+        const scoreId = parseInt(row.getAttribute('data-score-id') || '0', 10);
+        if (scoreId > 0) payload.id = scoreId;
+
+        return payload;
     });
 }
 
@@ -2034,6 +2213,7 @@ async function loadSeasonRounds(seasonId: string): Promise<void> {
 (window as any).takeAdminRoundSnapshot = takeAdminRoundSnapshot;
 (window as any).deleteRound = deleteRound;
 (window as any).editRound = editRound;
+(window as any).saveRoundResults = saveRoundResults;
 (window as any).saveRoundDraft = saveRoundDraft;
 (window as any).finalizeRound = finalizeRound;
 (window as any).cancelRoundEdit = cancelRoundEdit;

@@ -11,7 +11,28 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"heat/models"
+	"heat/racing"
 )
+
+// scorePointsForPosition derives championship points for a snapshot score.
+// DNF/DNS never score; otherwise the fixed P1..P6 table applies.
+func scorePointsForPosition(position int, dnf, dns bool) int {
+	if dnf || dns {
+		return 0
+	}
+	return racing.PointsForPosition(position)
+}
+
+// ensureRacerStats makes sure a racer has a stats row, inserting a zeroed one
+// when missing. It must be called inside a transaction.
+func ensureRacerStats(tx *sql.Tx, racerID int) error {
+	var id int
+	err := tx.QueryRow("SELECT id FROM racer_stats WHERE racer_id = ?", racerID).Scan(&id)
+	if err == sql.ErrNoRows {
+		_, err = tx.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns, spins, overheated) VALUES (?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)", racerID)
+	}
+	return err
+}
 
 // @Summary Take round snapshot
 // @Description Take a snapshot of current racer standings for a season round
@@ -112,7 +133,7 @@ func (h *Handler) TakeRoundSnapshot(c *gin.Context) {
 				query += ", "
 			}
 			query += "(?, ?, ?, ?, ?, 0, 0, 0, 0)"
-			args = append(args, snapshotID, s.ID, s.Name, s.Points, i+1)
+			args = append(args, snapshotID, s.ID, s.Name, racing.PointsForPosition(i+1), i+1)
 		}
 		if _, err := tx.Exec(query, args...); err != nil {
 			internalError(c, err)
@@ -309,30 +330,96 @@ func (h *Handler) DeleteRoundSnapshot(c *gin.Context) {
 
 	// Check if parent season is archived
 	var seasonID int
-	h.S.DB.QueryRow("SELECT season_id FROM round_snapshots WHERE id = ?", id).Scan(&seasonID)
-	if seasonID > 0 {
-		var seasonStatus string
-		if err := h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus); err != nil {
-			if err == sql.ErrNoRows {
-				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
-			} else {
-				internalError(c, err)
-			}
+	var status string
+	err := h.S.DB.QueryRow("SELECT season_id, COALESCE(status, 'draft') FROM round_snapshots WHERE id = ?", id).Scan(&seasonID, &status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Preserve the historical no-op behaviour for unknown round IDs.
+			c.Status(http.StatusOK)
+		} else {
+			internalError(c, err)
+		}
+		return
+	}
+	var seasonStatus string
+	if err := h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus); err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
+		} else {
+			internalError(c, err)
+		}
+		return
+	}
+	if seasonStatus == "archived" {
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot delete rounds in an archived season"})
+		return
+	}
+
+	tx, err := h.S.DB.Begin()
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+	defer tx.Rollback()
+
+	if status == "final" {
+		rows, err := tx.Query("SELECT racer_id, applied_points, applied_dnf, applied_dns, applied_spins, applied_overheated FROM round_snapshot_scores WHERE snapshot_id = ?", id)
+		if err != nil {
+			internalError(c, err)
 			return
 		}
-		if seasonStatus == "archived" {
-			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot delete rounds in an archived season"})
-			return
+		type applied struct {
+			RacerID    int
+			Points     int
+			DNF        int
+			DNS        int
+			Spins      int
+			Overheated int
+		}
+		var appliedScores []applied
+		for rows.Next() {
+			var a applied
+			if err := rows.Scan(&a.RacerID, &a.Points, &a.DNF, &a.DNS, &a.Spins, &a.Overheated); err != nil {
+				continue
+			}
+			appliedScores = append(appliedScores, a)
+		}
+		rows.Close()
+
+		for _, a := range appliedScores {
+			if _, err := tx.Exec("UPDATE racers SET points = MAX(0, points - ?) WHERE id = ?", a.Points, a.RacerID); err != nil {
+				internalError(c, err)
+				return
+			}
+			if err := ensureRacerStats(tx, a.RacerID); err != nil {
+				internalError(c, err)
+				return
+			}
+			if _, err := tx.Exec("UPDATE racer_stats SET races = MAX(0, races - 1), dnf = MAX(0, dnf - ?), dns = MAX(0, dns - ?), spins = MAX(0, spins - ?), overheated = MAX(0, overheated - ?) WHERE racer_id = ?",
+				a.DNF, a.DNS, a.Spins, a.Overheated, a.RacerID); err != nil {
+				internalError(c, err)
+				return
+			}
 		}
 	}
 
-	h.S.DB.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id = ?", id)
-	h.S.DB.Exec("DELETE FROM round_snapshots WHERE id = ?", id)
+	if _, err := tx.Exec("DELETE FROM round_snapshot_scores WHERE snapshot_id = ?", id); err != nil {
+		internalError(c, err)
+		return
+	}
+	if _, err := tx.Exec("DELETE FROM round_snapshots WHERE id = ?", id); err != nil {
+		internalError(c, err)
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		internalError(c, err)
+		return
+	}
 	c.Status(http.StatusOK)
 }
 
-// @Summary Update round scores (draft only)
-// @Description Update the scores for a draft round. Only positions < 900 are counted as finished.
+// @Summary Update round scores
+// @Description Update the scores for a round. Points are always derived server-side.
 // @Tags Seasons
 // @Accept json
 // @Produce json
@@ -355,10 +442,6 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 	err := h.S.DB.QueryRow("SELECT status, season_id FROM round_snapshots WHERE id = ?", idStr).Scan(&status, &seasonID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "round not found"})
-		return
-	}
-	if status != "draft" {
-		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot edit a finalized round"})
 		return
 	}
 
@@ -390,12 +473,60 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 	}
 	defer tx.Rollback()
 
+	isFinal := status == "final"
+
 	for _, sc := range scores {
-		_, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, position = ?, dnf = ?, dns = ?, spins = ?, overheated = ? WHERE id = ? AND snapshot_id = ?",
-			sc.Points, sc.Position, sc.DNF, sc.DNS, sc.Spins, sc.Overheated, sc.ID, idStr)
+		var old struct {
+			RacerID           int
+			Applied           int
+			AppliedPoints     int
+			AppliedDNF        int
+			AppliedDNS        int
+			AppliedSpins      int
+			AppliedOverheated int
+		}
+		err := tx.QueryRow("SELECT racer_id, applied, applied_points, applied_dnf, applied_dns, applied_spins, applied_overheated FROM round_snapshot_scores WHERE id = ? AND snapshot_id = ?", sc.ID, idStr).
+			Scan(&old.RacerID, &old.Applied, &old.AppliedPoints, &old.AppliedDNF, &old.AppliedDNS, &old.AppliedSpins, &old.AppliedOverheated)
 		if err != nil {
-			internalError(c, err)
+			if err == sql.ErrNoRows {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "score does not belong to round"})
+			} else {
+				internalError(c, err)
+			}
 			return
+		}
+
+		newPoints := scorePointsForPosition(sc.Position, sc.DNF, sc.DNS)
+		newDNF := boolToInt(sc.DNF)
+		newDNS := boolToInt(sc.DNS)
+
+		if isFinal {
+			if _, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, position = ?, dnf = ?, dns = ?, spins = ?, overheated = ?, applied = 1, applied_points = ?, applied_dnf = ?, applied_dns = ?, applied_spins = ?, applied_overheated = ? WHERE id = ? AND snapshot_id = ?",
+				newPoints, sc.Position, sc.DNF, sc.DNS, sc.Spins, sc.Overheated, newPoints, newDNF, newDNS, sc.Spins, sc.Overheated, sc.ID, idStr); err != nil {
+				internalError(c, err)
+				return
+			}
+
+			// Apply only the change since the last applied values.
+			if _, err := tx.Exec("UPDATE racers SET points = MAX(0, points + ?) WHERE id = ?", newPoints-old.AppliedPoints, old.RacerID); err != nil {
+				internalError(c, err)
+				return
+			}
+			if err := ensureRacerStats(tx, old.RacerID); err != nil {
+				internalError(c, err)
+				return
+			}
+			if _, err := tx.Exec("UPDATE racer_stats SET dnf = MAX(0, dnf + ?), dns = MAX(0, dns + ?), spins = MAX(0, spins + ?), overheated = MAX(0, overheated + ?) WHERE racer_id = ?",
+				newDNF-old.AppliedDNF, newDNS-old.AppliedDNS, sc.Spins-old.AppliedSpins, sc.Overheated-old.AppliedOverheated, old.RacerID); err != nil {
+				internalError(c, err)
+				return
+			}
+		} else {
+			if _, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, position = ?, dnf = ?, dns = ?, spins = ?, overheated = ? WHERE id = ? AND snapshot_id = ?",
+				newPoints, sc.Position, sc.DNF, sc.DNS, sc.Spins, sc.Overheated, sc.ID, idStr); err != nil {
+				internalError(c, err)
+				return
+			}
 		}
 	}
 
@@ -408,7 +539,7 @@ func (h *Handler) UpdateRoundScores(c *gin.Context) {
 }
 
 // @Summary Finalize a round
-// @Description Lock a draft round and update driver totals (points, stats, spins).
+// @Description Mark a round final and update driver totals (points, stats, spins).
 // @Tags Seasons
 // @Accept json
 // @Produce json
@@ -433,10 +564,8 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "round not found"})
 		return
 	}
-	if status != "draft" {
-		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "round is already finalized"})
-		return
-	}
+	wasFinal := status == "final"
+
 	// Check if parent season is archived
 	var seasonStatus string
 	if err := h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus); err != nil {
@@ -452,7 +581,7 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 		return
 	}
 
-	rows, err := h.S.DB.Query("SELECT racer_id, racer_name, points, position, dnf, dns, spins, overheated FROM round_snapshot_scores WHERE snapshot_id = ?", idStr)
+	rows, err := h.S.DB.Query("SELECT id, racer_id, racer_name, position, dnf, dns, spins, overheated, applied, applied_points, applied_dnf, applied_dns, applied_spins, applied_overheated FROM round_snapshot_scores WHERE snapshot_id = ?", idStr)
 	if err != nil {
 		internalError(c, err)
 		return
@@ -460,22 +589,30 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 	defer rows.Close()
 
 	type score struct {
-		RacerID    int
-		RacerName  string
-		Points     int
-		Position   int
-		DNF        bool
-		DNS        bool
-		Spins      int
-		Overheated int
+		ID                int
+		RacerID           int
+		RacerName         string
+		Position          int
+		DNF               bool
+		DNS               bool
+		Spins             int
+		Overheated        int
+		Applied           int
+		AppliedPoints     int
+		AppliedDNF        int
+		AppliedDNS        int
+		AppliedSpins      int
+		AppliedOverheated int
+		Points            int
 	}
 	var scores []score
 	var emailScores []models.RoundSnapshotScore
 	for rows.Next() {
 		var s score
-		if err := rows.Scan(&s.RacerID, &s.RacerName, &s.Points, &s.Position, &s.DNF, &s.DNS, &s.Spins, &s.Overheated); err != nil {
+		if err := rows.Scan(&s.ID, &s.RacerID, &s.RacerName, &s.Position, &s.DNF, &s.DNS, &s.Spins, &s.Overheated, &s.Applied, &s.AppliedPoints, &s.AppliedDNF, &s.AppliedDNS, &s.AppliedSpins, &s.AppliedOverheated); err != nil {
 			continue
 		}
+		s.Points = scorePointsForPosition(s.Position, s.DNF, s.DNS)
 		scores = append(scores, s)
 		emailScores = append(emailScores, models.RoundSnapshotScore{
 			RacerID:    s.RacerID,
@@ -498,37 +635,45 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 	defer tx.Rollback()
 
 	for _, s := range scores {
-		// Add points to racer total
-		tx.Exec("UPDATE racers SET points = points + ? WHERE id = ?", s.Points, s.RacerID)
+		newDNF := boolToInt(s.DNF)
+		newDNS := boolToInt(s.DNS)
 
-		// Update racer_stats — increment races, add DNF/DNS/spins
-		var existingID int
-		err := tx.QueryRow("SELECT id FROM racer_stats WHERE racer_id = ?", s.RacerID).Scan(&existingID)
-		if err != nil {
-			// Create new stats row
-			var name string
-			tx.QueryRow("SELECT name FROM racers WHERE id = ?", s.RacerID).Scan(&name)
-			dnfVal := 0
-			if s.DNF {
-				dnfVal = 1
+		if s.Applied == 0 {
+			// First application: add full values and count the race once.
+			if _, err := tx.Exec("UPDATE racers SET points = points + ? WHERE id = ?", s.Points, s.RacerID); err != nil {
+				internalError(c, err)
+				return
 			}
-			dnsVal := 0
-			if s.DNS {
-				dnsVal = 1
+			if err := ensureRacerStats(tx, s.RacerID); err != nil {
+				internalError(c, err)
+				return
 			}
-			tx.Exec("INSERT INTO racer_stats (racer_id, races, wins, gold, silver, bronze, fastest_laps, dnf, dns, spins, overheated) VALUES (?, 1, 0, 0, 0, 0, ?, ?, ?, ?)",
-				s.RacerID, dnfVal, dnsVal, s.Spins, s.Overheated)
+			if _, err := tx.Exec("UPDATE racer_stats SET races = races + 1, dnf = dnf + ?, dns = dns + ?, spins = spins + ?, overheated = overheated + ? WHERE racer_id = ?",
+				newDNF, newDNS, s.Spins, s.Overheated, s.RacerID); err != nil {
+				internalError(c, err)
+				return
+			}
 		} else {
-			dnfAdd := 0
-			if s.DNF {
-				dnfAdd = 1
+			// Already applied: only apply the deltas, never count another race.
+			if _, err := tx.Exec("UPDATE racers SET points = MAX(0, points + ?) WHERE id = ?", s.Points-s.AppliedPoints, s.RacerID); err != nil {
+				internalError(c, err)
+				return
 			}
-			dnsAdd := 0
-			if s.DNS {
-				dnsAdd = 1
+			if err := ensureRacerStats(tx, s.RacerID); err != nil {
+				internalError(c, err)
+				return
 			}
-			tx.Exec("UPDATE racer_stats SET races = races + 1, dnf = dnf + ?, dns = dns + ?, spins = spins + ?, overheated = overheated + ? WHERE id = ?",
-				dnfAdd, dnsAdd, s.Spins, s.Overheated, existingID)
+			if _, err := tx.Exec("UPDATE racer_stats SET dnf = MAX(0, dnf + ?), dns = MAX(0, dns + ?), spins = MAX(0, spins + ?), overheated = MAX(0, overheated + ?) WHERE racer_id = ?",
+				newDNF-s.AppliedDNF, newDNS-s.AppliedDNS, s.Spins-s.AppliedSpins, s.Overheated-s.AppliedOverheated, s.RacerID); err != nil {
+				internalError(c, err)
+				return
+			}
+		}
+
+		if _, err := tx.Exec("UPDATE round_snapshot_scores SET points = ?, applied = 1, applied_points = ?, applied_dnf = ?, applied_dns = ?, applied_spins = ?, applied_overheated = ? WHERE id = ?",
+			s.Points, s.Points, newDNF, newDNS, s.Spins, s.Overheated, s.ID); err != nil {
+			internalError(c, err)
+			return
 		}
 	}
 
@@ -546,13 +691,80 @@ func (h *Handler) FinalizeRound(c *gin.Context) {
 
 	h.S.BroadcastRacers()
 
-	// Send email notifications asynchronously
-	go h.SendRoundEmail(raceName, raceDate, emailScores)
+	if !wasFinal {
+		// Send email notifications asynchronously
+		go h.SendRoundEmail(raceName, raceDate, emailScores)
 
-	// Push the finalized results to Telegram subscribers (non-blocking).
-	h.enqueueTelegram(models.TelegramEvent{Kind: "round_final"})
+		// Push the finalized results to Telegram subscribers (non-blocking).
+		h.enqueueTelegram(models.TelegramEvent{Kind: "round_final"})
+	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "finalized"})
+}
+
+// @Summary Rename a round
+// @Description Rename a round/race name (works for draft and final rounds)
+// @Tags Seasons
+// @Accept json
+// @Produce json
+// @Param id query string true "Round snapshot ID"
+// @Param body body object true "Round name (race_name)"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Security cookieAuth
+// @Router /api/rounds/name [patch]
+func (h *Handler) RenameRound(c *gin.Context) {
+	idStr := c.Query("id")
+	if idStr == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "id required"})
+		return
+	}
+
+	var input struct {
+		RaceName string `json:"race_name"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	input.RaceName = strings.TrimSpace(input.RaceName)
+	if input.RaceName == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "race_name required"})
+		return
+	}
+
+	var seasonID int
+	if err := h.S.DB.QueryRow("SELECT season_id FROM round_snapshots WHERE id = ?", idStr).Scan(&seasonID); err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "round not found"})
+		} else {
+			internalError(c, err)
+		}
+		return
+	}
+
+	var seasonStatus string
+	if err := h.S.DB.QueryRow("SELECT status FROM seasons WHERE id = ?", seasonID).Scan(&seasonStatus); err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "season not found"})
+		} else {
+			internalError(c, err)
+		}
+		return
+	}
+	if seasonStatus == "archived" {
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "cannot edit rounds in an archived season"})
+		return
+	}
+
+	if _, err := h.S.DB.Exec("UPDATE round_snapshots SET race_name = ? WHERE id = ?", input.RaceName, idStr); err != nil {
+		internalError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "renamed"})
 }
 
 // @Summary List seasons
