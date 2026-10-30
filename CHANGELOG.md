@@ -1,3 +1,10 @@
+# [1.74.0](https://github.com/martynvdijke/heat/compare/v1.73.2...v1.74.0) (2026-10-30)
+
+
+### Features
+
+* simplify race results with fixed points and editable rounds ([1e48988](https://github.com/martynvdijke/heat/commit/1e489882094c6884671ef57e9dd1b97e1f268f7b))
+
 ## [1.73.2](https://github.com/martynvdijke/heat/compare/v1.73.1...v1.73.2) (2026-10-29)
 
 
