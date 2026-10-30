@@ -1,3 +1,11 @@
+## [1.74.1](https://github.com/martynvdijke/heat/compare/v1.74.0...v1.74.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* keep round standings and racer stats consistent ([84f2394](https://github.com/martynvdijke/heat/commit/84f23947aeff2799bd2d0905db536a4b717878e3))
+* recompute content length after umami script injection ([119be35](https://github.com/martynvdijke/heat/commit/119be355d2741a6e9cb0aef1c8ef8faa22c32bb9))
+
 # [1.74.0](https://github.com/martynvdijke/heat/compare/v1.73.2...v1.74.0) (2026-10-30)
 
 
