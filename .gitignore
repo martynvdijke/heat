@@ -27,3 +27,6 @@ site/
 mobile/android/key.properties
 mobile/android/*.jks
 mobile/android/*.keystore
+
+# Runtime uploaded media
+media/assets/
