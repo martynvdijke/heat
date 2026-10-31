@@ -1,3 +1,12 @@
+## [1.75.3](https://github.com/martynvdijke/heat/compare/v1.75.2...v1.75.3) (2026-10-31)
+
+
+### Bug Fixes
+
+* **ci:** point play store flutter setup at root fvmrc ([83adcf8](https://github.com/martynvdijke/heat/commit/83adcf8087a3e436b752528d23f085d1916ac555))
+* **deps:** update dependency flutter_riverpod to v3 ([f8b62ed](https://github.com/martynvdijke/heat/commit/f8b62edecfb0459e5a5781243324e42aa8af0af1))
+* **mobile:** import Riverpod 3 legacy provider APIs ([484a69f](https://github.com/martynvdijke/heat/commit/484a69fd02bfceccec039925b8c7cdb30dd900ce))
+
 ## [1.75.2](https://github.com/martynvdijke/heat/compare/v1.75.1...v1.75.2) (2026-10-31)
 
 
