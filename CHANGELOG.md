@@ -1,3 +1,15 @@
+# [1.75.0](https://github.com/martynvdijke/heat/compare/v1.74.1...v1.75.0) (2026-10-31)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([a6fbd5c](https://github.com/martynvdijke/heat/commit/a6fbd5ce7262b9bb9621b37e51473df091a48091))
+
+
+### Features
+
+* **mobile:** default to heat.vandijke.xyz and offer self-hosted option ([2e10db4](https://github.com/martynvdijke/heat/commit/2e10db490f5271e2f0cd27c5c54e9b36fad0f423))
+
 ## [1.74.1](https://github.com/martynvdijke/heat/compare/v1.74.0...v1.74.1) (2026-10-30)
 
 
