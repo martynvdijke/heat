@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import '../models/race_state.dart';
 import '../models/racer.dart';
 import '../models/standing.dart';
