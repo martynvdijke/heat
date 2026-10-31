@@ -27,6 +27,25 @@ void main() {
     expect(find.text('Username'), findsOneWidget);
   });
 
+  testWidgets('onboarding prefills the default server on first run', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final store = SessionStore(prefs);
+    await tester.pumpWidget(ProviderScope(overrides: [sessionStoreProvider.overrideWithValue(store)], child: const MaterialApp(home: OnboardingScreen())));
+    final field = tester.widget<TextField>(find.byKey(const Key('serverUrlField')));
+    expect(field.controller!.text, kDefaultBaseUrl);
+    expect(find.textContaining('or enter another self-hosted Heat server'), findsOneWidget);
+  });
+
+  testWidgets('onboarding keeps a saved server URL', (tester) async {
+    SharedPreferences.setMockInitialValues({'base_url': 'https://heat.example.org'});
+    final prefs = await SharedPreferences.getInstance();
+    final store = SessionStore(prefs);
+    await tester.pumpWidget(ProviderScope(overrides: [sessionStoreProvider.overrideWithValue(store)], child: const MaterialApp(home: OnboardingScreen())));
+    final field = tester.widget<TextField>(find.byKey(const Key('serverUrlField')));
+    expect(field.controller!.text, 'https://heat.example.org');
+  });
+
   testWidgets('HUD renders standings from fake provider', (tester) async {
     // Use LiveNotifier directly via ProviderScope override to avoid real WS
     final container = ProviderContainer();
