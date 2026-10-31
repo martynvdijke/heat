@@ -1,3 +1,10 @@
+## [1.75.1](https://github.com/martynvdijke/heat/compare/v1.75.0...v1.75.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* **android:** track MainActivity ignored by root gitignore ([31a938f](https://github.com/martynvdijke/heat/commit/31a938f4d5898ae081e45357131313bc257c8e5f))
+
 # [1.75.0](https://github.com/martynvdijke/heat/compare/v1.74.1...v1.75.0) (2026-10-31)
 
 
