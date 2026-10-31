@@ -2603,7 +2603,7 @@ const docTemplate = `{
                         "cookieAuth": []
                     }
                 ],
-                "description": "Update the scores for a draft round. Only positions \u003c 900 are counted as finished.",
+                "description": "Update the scores for a round. Points are always derived server-side.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2613,7 +2613,7 @@ const docTemplate = `{
                 "tags": [
                     "Seasons"
                 ],
-                "summary": "Update round scores (draft only)",
+                "summary": "Update round scores",
                 "parameters": [
                     {
                         "type": "string",
@@ -2705,7 +2705,7 @@ const docTemplate = `{
                         "cookieAuth": []
                     }
                 ],
-                "description": "Lock a draft round and update driver totals (points, stats, spins).",
+                "description": "Mark a round final and update driver totals (points, stats, spins).",
                 "consumes": [
                     "application/json"
                 ],
@@ -2737,6 +2737,82 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rounds/name": {
+            "patch": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "description": "Rename a round/race name (works for draft and final rounds)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Rename a round",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Round snapshot ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Round name (race_name)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {

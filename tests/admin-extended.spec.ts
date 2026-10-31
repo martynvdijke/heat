@@ -291,14 +291,15 @@ test.describe.serial('Admin Extended Features', () => {
       }, roundId);
       expect(scores.length).toBeGreaterThanOrEqual(1);
 
-      // Modify scores via API
-      const updated = scores.map((s: any) => ({
+      // Modify scores via API. Points are server-derived from position, so the
+      // client-sent points value must be ignored.
+      const updated = scores.map((s: any, i: number) => ({
         id: s.id,
-        points: s.points + 5,
-        position: s.position,
+        points: 999,
+        position: i === 0 ? 1 : s.position,
         dnf: false,
         dns: false,
-        spins: 1
+        spins: i === 0 ? 1 : 0
       }));
       const saveRes = await page.evaluate(async (data) => {
         const res = await fetch(`/api/rounds?id=${data.roundId}`, {
@@ -316,7 +317,7 @@ test.describe.serial('Admin Extended Features', () => {
         const round = await res.json();
         return (round.scores || []).map((s: any) => ({ points: s.points, spins: s.spins }));
       }, roundId);
-      expect(verifyScores[0].points).toBe(scores[0].points + 5);
+      expect(verifyScores[0].points).toBe(9);
       expect(verifyScores[0].spins).toBe(1);
     });
 
@@ -370,8 +371,8 @@ test.describe.serial('Admin Extended Features', () => {
       }
     });
 
-    test('should reject editing after finalization', async ({ page }) => {
-      // Try to edit the already-finalized round from test #3
+    test('should allow editing after finalization', async ({ page }) => {
+      // Edit the already-finalized round from test #3
       const editResult = await page.evaluate(async () => {
         const roundsRes = await fetch('/api/rounds');
         const rounds = await roundsRes.json();
@@ -379,7 +380,8 @@ test.describe.serial('Admin Extended Features', () => {
         const finalRound = Array.isArray(rounds) ? rounds.find((r: any) => r.status === 'final') : null;
         if (!finalRound) return { error: 'no final round', rounds: JSON.stringify(rounds) };
 
-        // Try to update it
+        // Update one score, including client-supplied points that the server
+        // must ignore in favour of the position-derived value.
         const scoresRes = await fetch(`/api/rounds?id=${finalRound.id}`);
         const roundDetail = await scoresRes.json();
         const scores = roundDetail.scores || [];
@@ -390,10 +392,25 @@ test.describe.serial('Admin Extended Features', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([{ id: scores[0].id, points: 999, position: 1, dnf: false, dns: false, spins: 0 }])
         });
-        return { ok: res.ok, status: res.status, errorText: res.statusText };
+        const body = await res.json();
+        return { ok: res.ok, status: res.status, body };
       });
-      expect(editResult.ok).toBeFalsy();
-      expect(editResult.status).toBe(409);
+      expect(editResult.ok).toBeTruthy();
+      expect(editResult.status).toBe(200);
+      expect(editResult.body.status).toBe('saved');
+
+      // The round must remain usable afterwards.
+      const stillThere = await page.evaluate(async () => {
+        const roundsRes = await fetch('/api/rounds');
+        const rounds = await roundsRes.json();
+        const finalRound = Array.isArray(rounds) ? rounds.find((r: any) => r.status === 'final') : null;
+        if (!finalRound) return null;
+        const res = await fetch(`/api/rounds?id=${finalRound.id}`);
+        return { ok: res.ok, status: res.status };
+      });
+      expect(stillThere).not.toBeNull();
+      expect(stillThere!.ok).toBeTruthy();
+      expect(stillThere!.status).toBe(200);
     });
   });
 

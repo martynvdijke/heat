@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../providers/session_providers.dart';
+import '../services/session_store.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -29,7 +30,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void initState() {
     super.initState();
     final s = ref.read(sessionStoreProvider);
-    if (s.baseUrl != null) _urlCtrl.text = s.baseUrl!;
+    // First run: default to the hosted instance. Otherwise respect the URL the
+    // user already saved.
+    final saved = s.baseUrl;
+    _urlCtrl.text = (saved != null && saved.isNotEmpty) ? saved : kDefaultBaseUrl;
+  }
+
+  /// Persists the server the user is about to talk to.
+  Future<void> _persistBase() async {
+    final base = _normalizedBase(_urlCtrl.text);
+    if (base.isEmpty) return;
+    await ref.read(sessionStoreProvider).setBaseUrl(base);
   }
 
   String _normalizedBase(String raw) {
@@ -42,8 +53,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() { _checking = true; _status = null; });
     final base = _normalizedBase(_urlCtrl.text);
     if (base.isEmpty) { setState(() { _status = 'Enter server URL'; _checking = false; }); return; }
-    final store = ref.read(sessionStoreProvider);
-    await store.setBaseUrl(base);
+    await _persistBase();
     if (!mounted) return;
     final api = ref.read(apiClientProvider);
     try {
@@ -76,6 +86,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Future<void> _loginDirector() async {
     setState(() { _checking = true; _status = null; });
     try {
+      await _persistBase();
       await ref.read(apiClientProvider).loginRaceDirector(_userCtrl.text.trim(), _passCtrl.text);
       if (mounted) Navigator.of(context).pushReplacementNamed('/home');
     } catch (e) {
@@ -89,6 +100,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (_selectedRacerId == null) { setState(() => _status = 'Pick a racer'); return; }
     setState(() { _checking = true; });
     try {
+      await _persistBase();
       await ref.read(apiClientProvider).loginPlayer(_selectedRacerId!, 'android');
       if (mounted) Navigator.of(context).pushReplacementNamed('/home');
     } catch (e) {
@@ -103,6 +115,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (t.isEmpty) return;
     setState(() { _checking = true; });
     try {
+      await _persistBase();
       final data = await ref.read(apiClientProvider).validatePlayerToken(t);
       final rid = (data['racer_id'] as num).toInt();
       final rname = data['racer_name'] as String;
@@ -219,6 +232,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   const Spacer(),
                   if (reachable) Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: AppTheme.stateRacing.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(99), border: Border.all(color: AppTheme.stateRacing.withValues(alpha: 0.24))), child: Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppTheme.stateRacing, shape: BoxShape.circle)), const SizedBox(width: 6), const Text('ONLINE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: AppTheme.stateRacing))])),
                 ]),
+                const SizedBox(height: 12),
+                const Text(
+                  'Use the default instance below, or enter another self-hosted Heat server.',
+                  key: Key('serverHelperText'),
+                  style: TextStyle(fontSize: 11, color: AppTheme.textDim),
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   key: const Key('serverUrlField'),

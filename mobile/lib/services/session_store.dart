@@ -1,5 +1,9 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Hosted Heat instance used on first run. Users may point the app at any
+/// other self-hosted server instead.
+const String kDefaultBaseUrl = 'https://heat.vandijke.xyz';
+
 class SessionStore {
   static const _kBaseUrl = 'base_url';
   static const _kSessionCookie = 'session_cookie';

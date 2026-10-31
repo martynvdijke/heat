@@ -1,7 +1,7 @@
 name: heat
 description: Heat racing companion app.
 publish_to: 'none'
-version: 1.72.2+1072002
+version: 1.75.2+1075002
 environment:
   sdk: ^3.13.2
 dependencies:

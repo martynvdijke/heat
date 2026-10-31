@@ -1,3 +1,62 @@
+## [1.75.2](https://github.com/martynvdijke/heat/compare/v1.75.1...v1.75.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([#131](https://github.com/martynvdijke/heat/issues/131)) ([e692e15](https://github.com/martynvdijke/heat/commit/e692e15eff098f2171861a23808257643fa2e7b1))
+
+## [1.75.1](https://github.com/martynvdijke/heat/compare/v1.75.0...v1.75.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* **android:** track MainActivity ignored by root gitignore ([31a938f](https://github.com/martynvdijke/heat/commit/31a938f4d5898ae081e45357131313bc257c8e5f))
+
+# [1.75.0](https://github.com/martynvdijke/heat/compare/v1.74.1...v1.75.0) (2026-10-31)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([a6fbd5c](https://github.com/martynvdijke/heat/commit/a6fbd5ce7262b9bb9621b37e51473df091a48091))
+
+
+### Features
+
+* **mobile:** default to heat.vandijke.xyz and offer self-hosted option ([2e10db4](https://github.com/martynvdijke/heat/commit/2e10db490f5271e2f0cd27c5c54e9b36fad0f423))
+
+## [1.74.1](https://github.com/martynvdijke/heat/compare/v1.74.0...v1.74.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* keep round standings and racer stats consistent ([84f2394](https://github.com/martynvdijke/heat/commit/84f23947aeff2799bd2d0905db536a4b717878e3))
+* recompute content length after umami script injection ([119be35](https://github.com/martynvdijke/heat/commit/119be355d2741a6e9cb0aef1c8ef8faa22c32bb9))
+
+# [1.74.0](https://github.com/martynvdijke/heat/compare/v1.73.2...v1.74.0) (2026-10-30)
+
+
+### Features
+
+* simplify race results with fixed points and editable rounds ([1e48988](https://github.com/martynvdijke/heat/commit/1e489882094c6884671ef57e9dd1b97e1f268f7b))
+
+## [1.73.2](https://github.com/martynvdijke/heat/compare/v1.73.1...v1.73.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **ws:** keep display pages connected with a stale session cookie ([a37ba14](https://github.com/martynvdijke/heat/commit/a37ba14f14f6d55283888f880bf238b0ab35a0b5))
+
+## [1.73.1](https://github.com/martynvdijke/heat/compare/v1.73.0...v1.73.1) (2026-10-27)
+
+# [1.73.0](https://github.com/martynvdijke/heat/compare/v1.72.3...v1.73.0) (2026-10-27)
+
+
+### Features
+
+* **release:** publish android bundles to google play ([729a0d1](https://github.com/martynvdijke/heat/commit/729a0d1a1ee5a42412bad4dc6a97d4275681ee5a))
+
+## [1.72.3](https://github.com/martynvdijke/heat/compare/v1.72.2...v1.72.3) (2026-10-25)
+
 ## [1.72.2](https://github.com/martynvdijke/heat/compare/v1.72.1...v1.72.2) (2026-10-21)
 
 

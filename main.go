@@ -580,6 +580,7 @@ func main() {
 	r.GET("/api/rounds/batch", h.GetRoundSnapshotsBatch)
 	r.PATCH("/api/rounds", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.UpdateRoundScores)
 	r.PATCH("/api/rounds/finalize", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.FinalizeRound)
+	r.PATCH("/api/rounds/name", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.RenameRound)
 	r.DELETE("/api/rounds", h.DeleteRoundSnapshot)
 	r.GET("/api/seasons", h.GetSeasons)
 	r.GET("/api/trmnl/summary", h.GetTRMNLSummary)
@@ -833,6 +834,10 @@ func main() {
 
 		pages.GET("/replay.html", func(c *gin.Context) {
 			servePage(c, filepath.Join(server.BasePath, "static/replay.html"), server)
+		})
+
+		pages.GET("/startlights.html", func(c *gin.Context) {
+			servePage(c, filepath.Join(server.BasePath, "static/startlights.html"), server)
 		})
 
 		pages.GET("/player.html", func(c *gin.Context) {

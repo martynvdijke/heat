@@ -3,6 +3,7 @@ package middleware
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,7 @@ func UmamiMiddleware(s *app.Server) gin.HandlerFunc {
 		c.Next()
 
 		ct := w.Header().Get("Content-Type")
+		payload := w.body.Bytes()
 		if strings.Contains(ct, "text/html") && w.body.Len() > 0 {
 			html := w.body.String()
 			var umami models.UmamiSettings
@@ -45,11 +47,21 @@ func UmamiMiddleware(s *app.Server) gin.HandlerFunc {
 					w.ResponseWriter.Header().Set("Content-Security-Policy", csp)
 				}
 			}
-			w.ResponseWriter.WriteHeader(w.Status())
-			w.ResponseWriter.Write([]byte(html))
+			payload = []byte(html)
+		}
+
+		// The handler may have set Content-Length for the original body. The
+		// injected Umami script changes the length, and net/http rejects writes
+		// that exceed it (returning ErrContentLength with an empty response).
+		// Recompute it for the final payload before committing the headers.
+		if len(payload) == 0 {
+			w.ResponseWriter.Header().Del("Content-Length")
 		} else {
-			w.ResponseWriter.WriteHeader(w.Status())
-			w.ResponseWriter.Write(w.body.Bytes())
+			w.ResponseWriter.Header().Set("Content-Length", strconv.Itoa(len(payload)))
+		}
+		w.ResponseWriter.WriteHeader(w.Status())
+		if len(payload) > 0 {
+			_, _ = w.ResponseWriter.Write(payload)
 		}
 	}
 }

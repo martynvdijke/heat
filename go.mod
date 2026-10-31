@@ -1,13 +1,13 @@
 module heat
 
-go 1.26.2
+go 1.26.10
 
 require github.com/mattn/go-sqlite3 v1.14.52
 
 require (
 	entgo.io/ent v0.14.6
 	github.com/coreos/go-oidc/v3 v3.21.0
-	github.com/gin-contrib/gzip v1.2.8
+	github.com/gin-contrib/gzip v1.2.9
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-telegram/bot v1.27.0
 	github.com/gorilla/websocket v1.5.3
@@ -35,7 +35,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0
 	golang.org/x/crypto v0.58.0
 	golang.org/x/image v0.47.0
-	golang.org/x/net v0.61.0
+	golang.org/x/net v0.62.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/time v0.16.0
 )

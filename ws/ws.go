@@ -239,18 +239,15 @@ func newConnID() string {
 	return hex.EncodeToString(b)
 }
 
-// authenticate classifies an upgrade request. ok=false means the request
-// carried invalid/expired credentials and must be rejected with 401.
+// authenticate classifies an upgrade request. ok=false is reserved for a
+// connection that supplied an explicit credential (a player token) which is
+// invalid. An optional admin session cookie that is missing, expired, or bound
+// to another IP simply grants no privileges and the connection continues as a
+// spectator: display pages (TV, pitboard, index, start lights) are public and
+// must keep receiving live flags even when the browser carries a stale session
+// cookie from a previous login.
 func (m *Manager) authenticate(c *gin.Context) (*ConnMeta, bool) {
 	meta := &ConnMeta{ID: newConnID(), LastSeen: time.Now()}
-
-	sessionID := ""
-	for _, cookie := range c.Request.Cookies() {
-		if cookie.Name == "session" {
-			sessionID = cookie.Value
-			break
-		}
-	}
 
 	token := ""
 	for _, proto := range websocket.Subprotocols(c.Request) {
@@ -260,21 +257,29 @@ func (m *Manager) authenticate(c *gin.Context) (*ConnMeta, bool) {
 		}
 	}
 
-	switch {
-	case sessionID != "":
-		if !m.S.ValidateSession(sessionID, c.ClientIP()) {
-			return nil, false
-		}
-		meta.Role = RoleController
-	case token != "":
+	// A player token is the credential for this connection and takes
+	// precedence over an ambient admin cookie (an admin testing the player page
+	// in the same browser should still be a player, not a controller).
+	if token != "" {
 		racerID, ok := m.S.RacerIDForToken(token)
 		if !ok {
 			return nil, false
 		}
 		meta.Role = RolePlayer
 		meta.RacerID = racerID
-	default:
-		meta.Role = RoleSpectator
+	} else {
+		sessionID := ""
+		for _, cookie := range c.Request.Cookies() {
+			if cookie.Name == "session" {
+				sessionID = cookie.Value
+				break
+			}
+		}
+		if sessionID != "" && m.S.ValidateSession(sessionID, c.ClientIP()) {
+			meta.Role = RoleController
+		} else {
+			meta.Role = RoleSpectator
+		}
 	}
 
 	meta.topics = defaultTopics(meta.Role)
