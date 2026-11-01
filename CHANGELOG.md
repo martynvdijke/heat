@@ -1,3 +1,10 @@
+## [1.75.4](https://github.com/martynvdijke/heat/compare/v1.75.3...v1.75.4) (2026-11-01)
+
+
+### Bug Fixes
+
+* **ci:** skip Play Store publish when credentials are missing ([071fd40](https://github.com/martynvdijke/heat/commit/071fd4004ada393e2921f2b4e29104fa353a1919))
+
 ## [1.75.3](https://github.com/martynvdijke/heat/compare/v1.75.2...v1.75.3) (2026-10-31)
 
 
