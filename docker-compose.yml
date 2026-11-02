@@ -33,6 +33,13 @@ services:
       # (e.g. https://heat.example.com). Recommended: the Telegram bot requests
       # links over localhost, so without this they would point at localhost.
       - PUBLIC_BASE_URL=https://heat.vandijke.xyz
+      # Legal identity published on /privacy, /terms and /account/delete.
+      # Set the real controller before publishing the app. Contact details may
+      # be left empty, in which case the pages do not invent one.
+      - LEGAL_CONTROLLER_NAME=
+      - LEGAL_CONTACT_EMAIL=
+      - LEGAL_CONTACT_ADDRESS=
+      - LEGAL_HOSTING_REGION=the European Union
       # Allow embedding Heat pages in iframes (e.g. a Slidev presentation).
       # "*" allows any origin; otherwise a comma-separated list of ancestors,
       # e.g. "http://localhost:3030". Leave empty to deny framing (default).

@@ -1,0 +1,113 @@
+{{define "title"}}Privacy notice - HEAT{{end}}
+
+{{define "nav"}}
+<ul class="mb-0 d-flex flex-wrap gap-3 list-unstyled justify-content-center">
+    <li><a href="/" class="text-uppercase"><i class="fa-solid fa-house me-2"></i>Home</a></li>
+    <li><a href="/terms" class="text-uppercase"><i class="fa-solid fa-file-contract me-2"></i>Terms</a></li>
+    <li><a href="/account/delete" class="text-uppercase"><i class="fa-solid fa-user-slash me-2"></i>Delete account</a></li>
+</ul>
+{{end}}
+
+{{define "content"}}
+<section class="mb-4">
+    <h1 class="mb-2">Privacy notice</h1>
+    <p class="text-muted mb-1">Last updated: {{.Legal.LastUpdated}}</p>
+    <p class="text-muted">This notice explains what this HEAT instance stores, why it stores it, who processes it, and how you can get it back or have it deleted. It is written for the General Data Protection Regulation (GDPR), including Article 13.</p>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">1. Who is responsible</h2>
+            <p class="mb-2">The controller for this instance is <strong>{{.Legal.Controller}}</strong>.</p>
+            {{if .Legal.ContactEmail}}<p class="mb-2">Privacy contact: <a href="mailto:{{.Legal.ContactEmail}}">{{.Legal.ContactEmail}}</a></p>{{else}}<p class="mb-2">No privacy contact address has been configured for this instance. Use the contact route published by the operator; if you cannot find one, ask the person who runs the server.</p>{{end}}
+            {{if .Legal.ContactAddress}}<p class="mb-2">Postal address: {{.Legal.ContactAddress}}</p>{{end}}
+            <p class="mb-0">The instance is hosted in {{.Legal.HostingRegion}}.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">2. Two kinds of account</h2>
+            <p>HEAT has two separate identity models. They are not linked to each other.</p>
+            <h3 class="h6 text-uppercase mt-3">Admin accounts</h3>
+            <p>The race director or administrator signs in with a username and password. We store the username, a bcrypt password hash (never the password itself), an optional recovery email address, an optional OpenID Connect subject and authentication method, and web-session records. A web session contains a random session identifier, the client IP address and an expiry time. Sessions last up to 24 hours.</p>
+            <h3 class="h6 text-uppercase mt-3">Racer identities</h3>
+            <p>Racers sign in passwordlessly with a one-time link sent to the email address on file. We store the racer name, optional profile picture, car name and colour, team, points, rank and position, one or more email addresses, upgrade and legend-ability ownership, achievements, and race results. If a racer links a Telegram chat, we store the chat identifier and the Telegram username and first name that Telegram supplies. A player session stores a random device token, an optional device name and last-seen timestamps. Lap, sector, turbo, heat-card and gear-shift records may also be stored while a race is running.</p>
+            <p class="mb-0"><strong>Public visibility.</strong> Racer names, profile pictures, car and team details, points, rankings, race results and round scores may be shown on public leaderboards, public race state and the public API, including while a race is live. A driver-share link created by an administrator exposes that racer's statistics to anyone who has the link. Do not use a real name or photograph that you do not want published.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">3. Why we process it, and on what legal basis</h2>
+            <ul class="mb-0">
+                <li><strong>Providing the championship service</strong> (accounts, sign-in, race state, results, upgrades): performance of a contract with you, or steps taken at your request before a contract (Article 6(1)(b) GDPR).</li>
+                <li><strong>Running and securing the instance</strong> (session binding, rate limits, abuse prevention, backups, diagnostics): legitimate interests of the operator in keeping the service available and safe (Article 6(1)(f)).</li>
+                <li><strong>Email sign-in links and Telegram linking</strong>: consent, requested by you when you ask for a link or send the Telegram /login command (Article 6(1)(a)). You can withdraw consent at any time by not using the feature and asking for deletion.</li>
+                <li><strong>Optional notifications</strong> (email, Telegram, Gotify): consent or the legitimate interest in delivering race information you subscribed to.</li>
+                <li><strong>Legal obligations</strong>: where the operator must keep or disclose records under applicable law (Article 6(1)(c)).</li>
+            </ul>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">4. Who processes data for us</h2>
+            <p>Data is only shared with a processor when the operator has enabled that integration. The list below reflects this instance's live configuration.</p>
+            <ul>
+                {{if .Legal.SMTP}}<li><strong>Email delivery (SMTP).</strong> The operator's configured SMTP provider receives the recipient address and the message content when a sign-in link, password reset or race email is sent.</li>{{end}}
+                {{if .Legal.Telegram}}<li><strong>Telegram Bot API.</strong> When Telegram is enabled and you link a chat, Telegram receives your chat identifier, username/first name and the messages the bot sends you.</li>{{end}}
+                {{if .Legal.Gotify}}<li><strong>Gotify.</strong> The operator's configured Gotify server receives notification text about race events. It is normally self-hosted by the operator.</li>{{end}}
+                {{if .Legal.Umami}}<li><strong>Umami analytics.</strong> When enabled, the operator's configured Umami endpoint receives page-view and usage events, together with request metadata such as IP address and user agent, to produce aggregate statistics.</li>{{end}}
+                {{if .Legal.OIDC}}<li><strong>OpenID Connect provider (for example Authelia).</strong> If you choose single sign-on, the identity provider authenticates you and returns your subject identifier, email address and group membership. The provider's own privacy notice applies to that login.</li>{{end}}
+                {{if .Legal.OTLP}}<li><strong>OpenTelemetry collector.</strong> When tracing, metrics or logs are enabled, traces, metrics and logs, which may include request paths and IP addresses, are sent to the operator's configured collector.</li>{{end}}
+                {{if .Legal.WLED}}<li><strong>WLED controller.</strong> When enabled, race-state commands are sent to a WLED device on the operator's local network. No personal profile data is sent.</li>{{end}}
+                {{if .Legal.AI}}<li><strong>AI endpoints.</strong> When enabled, text or images you submit for quote suggestions or track extraction are sent to the operator's configured AI endpoint. Do not submit personal data in those inputs.</li>{{end}}
+                <li><strong>Content delivery networks and fonts.</strong> The web pages load Bootstrap from jsDelivr, Font Awesome from cdnjs, and Google Fonts from Google. Your browser therefore sends your IP address and request metadata to those providers when it loads a page. This happens even if no optional integration is enabled.</li>
+            </ul>
+            <p class="mb-0">Some of these providers may process data outside the European Economic Area. Where that happens, the operator relies on the safeguards offered by the provider (for example standard contractual clauses) or on your consent where required. Ask the contact above for details of the specific provider in use.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">5. How long we keep it</h2>
+            <ul class="mb-0">
+                <li><strong>Admin account</strong>: until you delete it. Password-reset tokens expire after 30 minutes and are single-use. Web sessions expire after 24 hours.</li>
+                <li><strong>Racer identity</strong>: until you delete it. Email sign-in and Telegram link tokens expire after 15 minutes and are single-use.</li>
+                <li><strong>Player sessions</strong>: until you sign out that device, delete the racer identity, or an administrator removes the session.</li>
+                <li><strong>Race results and round scores</strong>: when a racer identity is deleted, historical results are kept for the integrity of the championship but detached from the identity and the name is replaced with "Deleted racer". Gameplay records tied to the identity (laps, sectors, turbo logs, heat cards, gear shifts, race events, upgrades, achievements, stats) are deleted.</li>
+                <li><strong>Server logs</strong>: kept for the period configured in the instance's log settings, then rotated.</li>
+                <li><strong>Backups</strong>: periodic database backups are retained according to the instance's backup settings (seven by default) and then pruned. Deleted data can therefore remain in an existing backup until that backup is rotated out. Backups are used only for disaster recovery.</li>
+            </ul>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">6. Your rights</h2>
+            <p>Under the GDPR you have the right to access your data, correct it, delete it, restrict or object to processing, receive it in a portable format, and withdraw consent at any time. The account pages provide self-service export and deletion for both account types. You can also use the contact above.</p>
+            <p class="mb-0">If you believe the processing is unlawful, you can lodge a complaint with the data protection authority in your country. For a controller established in the Netherlands this is the Autoriteit Persoonsgegevens; otherwise use your local EU/EEA supervisory authority. You also have the right to an effective judicial remedy.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">7. Children</h2>
+            <p class="mb-0">The service is not intended for children under 16. The operator does not knowingly create accounts for, or collect personal data from, children under 16. If you believe a child under 16 has provided personal data, contact the operator so it can be removed.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">8. Automated decisions and changes</h2>
+            <p>Statistics such as ELO ratings, standings and streaks are descriptive calculations. They do not produce legal effects and are not used for automated decision-making about you.</p>
+            <p class="mb-0">This notice may be updated when the instance's configuration or the law changes. The date at the top shows the current version. Material changes affecting an account will be announced through the instance where practical.</p>
+        </section>
+    </div>
+
+    <aside class="col-lg-4">
+        <div class="race-card p-4 mb-3">
+            <h2 class="h5">Quick links</h2>
+            <ul class="list-unstyled mb-0">
+                <li class="mb-2"><a href="/account/delete"><i class="fa-solid fa-user-slash me-2"></i>Delete an account</a></li>
+                <li class="mb-2"><a href="/terms"><i class="fa-solid fa-file-contract me-2"></i>Terms of use</a></li>
+                <li class="mb-2"><a href="/me.html"><i class="fa-solid fa-id-card me-2"></i>Racer sign-in</a></li>
+                <li><a href="/login.html"><i class="fa-solid fa-lock me-2"></i>Admin sign-in</a></li>
+            </ul>
+        </div>
+        <div class="race-card p-4">
+            <h2 class="h5">In short</h2>
+            <p class="small mb-2">We store what is needed to run a race championship: your identity, your results and the links that let you sign in.</p>
+            <p class="small mb-0">Names and results can be public. You can export or delete your account without asking permission.</p>
+        </div>
+    </aside>
+</div>
+{{end}}

@@ -9,6 +9,7 @@ import 'screens/home_screen.dart';
 import 'screens/hud_screen.dart';
 import 'screens/snapshot_screen.dart';
 import 'screens/standings_screen.dart';
+import 'screens/settings_screen.dart';
 
 class HeatApp extends ConsumerWidget {
   final SharedPreferences prefs;
@@ -32,6 +33,7 @@ class HeatApp extends ConsumerWidget {
           '/hud': (_) => const HudScreen(),
           '/snapshot': (_) => const SnapshotScreen(),
           '/standings': (_) => const StandingsScreen(),
+          '/settings': (_) => const SettingsScreen(),
         },
       ),
     );

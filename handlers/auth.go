@@ -65,14 +65,15 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 			return
 		}
 		hashed := hashPassword(input.Password)
-		_, err := h.S.DB.Exec("INSERT INTO admin_users (username, password, email) VALUES (?, ?, ?)", input.Username, hashed, input.Email)
+		res, err := h.S.DB.Exec("INSERT INTO admin_users (username, password, email) VALUES (?, ?, ?)", input.Username, hashed, input.Email)
 		if err != nil {
 			internalError(c, err)
 			return
 		}
+		userID, _ := res.LastInsertId()
 
 		sessionID := generateSessionID()
-		h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()})
+		h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP(), AdminUserID: int(userID)})
 		setSessionCookie(c, sessionID, h.S.SecureCookies)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		return
@@ -98,7 +99,7 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 	}
 
 	sessionID := generateSessionID()
-	h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()})
+	h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP(), AdminUserID: user.ID})
 	setSessionCookie(c, sessionID, h.S.SecureCookies)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

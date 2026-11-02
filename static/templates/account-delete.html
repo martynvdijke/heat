@@ -1,0 +1,109 @@
+{{define "title"}}Delete your account - HEAT{{end}}
+
+{{define "nav"}}
+<ul class="mb-0 d-flex flex-wrap gap-3 list-unstyled justify-content-center">
+    <li><a href="/" class="text-uppercase"><i class="fa-solid fa-house me-2"></i>Home</a></li>
+    <li><a href="/privacy" class="text-uppercase"><i class="fa-solid fa-shield-halved me-2"></i>Privacy</a></li>
+    <li><a href="/terms" class="text-uppercase"><i class="fa-solid fa-file-contract me-2"></i>Terms</a></li>
+</ul>
+{{end}}
+
+{{define "content"}}
+<section class="mb-4">
+    <h1 class="mb-2">Delete your account</h1>
+    <p class="text-muted mb-1">Last updated: {{.Legal.LastUpdated}}</p>
+    <p class="text-muted mb-0">HEAT has two separate kinds of account. Both can be deleted without asking the operator, in the mobile app or on the website. This page also explains what is removed and what is kept.</p>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">Racer identity</h2>
+            <p>A racer identity is the profile with your name, car, team, results and upgrades. It is separate from an admin account.</p>
+            <h3 class="h6 text-uppercase mt-3">In the mobile app</h3>
+            <ol>
+                <li>Open the HEAT app and sign in as the racer.</li>
+                <li>Open <strong>Settings</strong>.</li>
+                <li>Choose <strong>Delete racer identity</strong>.</li>
+                <li>Type <code>DELETE</code> in the confirmation field and confirm. The app signs you out on that device afterwards.</li>
+            </ol>
+            <h3 class="h6 text-uppercase mt-3">On the website</h3>
+            <ol>
+                <li>Open <a href="/me.html">the racer sign-in page</a> and request a one-time link for the email address on file.</li>
+                <li>Follow the link in the email.</li>
+                <li>On your profile, choose <strong>Delete my racer identity</strong>.</li>
+                <li>Type <code>DELETE</code> and confirm.</li>
+            </ol>
+            <p class="mb-0">If the email address on file is no longer reachable, use the email fallback below. The operator can verify ownership another way and perform the deletion.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">Admin account</h2>
+            <p>An admin account is the username and password used to manage the championship. Deleting it does not delete race data.</p>
+            <h3 class="h6 text-uppercase mt-3">In the mobile app</h3>
+            <ol>
+                <li>Open the HEAT app and sign in as <strong>Race Director</strong>.</li>
+                <li>Open <strong>Settings</strong>.</li>
+                <li>Choose <strong>Delete admin account</strong>.</li>
+                <li>Type <code>DELETE</code> and confirm. Every admin web session is revoked.</li>
+            </ol>
+            <h3 class="h6 text-uppercase mt-3">On the website</h3>
+            <p class="mb-0">The web admin panel does not currently have a delete control. Sign in with the mobile app as race director, or use the email fallback below. The API endpoint is <code>DELETE /api/account</code>; it requires a signed-in admin session and a JSON body <code>{"confirm":"DELETE"}</code>.</p>
+            <p class="mt-3 mb-0"><strong>Last admin.</strong> The last remaining admin account cannot be deleted, because that would leave the instance with nobody able to administer it. Create or promote another admin first.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">What is removed</h2>
+            <h3 class="h6 text-uppercase mt-3">Racer identity</h3>
+            <ul>
+                <li>the racer profile: name, profile picture reference, car, team assignment, points, rank and position;</li>
+                <li>every email address stored for racer sign-in;</li>
+                <li>Telegram links (chat identifier), pending link tokens and per-chat notification/RSVP preferences;</li>
+                <li>player session tokens and device names;</li>
+                <li>upgrades, legend abilities, achievements, derived racer statistics and driver-share links;</li>
+                <li>live gameplay records: heat cards, gear shifts, lap and sector records, turbo logs, race events and race radio entries.</li>
+            </ul>
+            <h3 class="h6 text-uppercase mt-3">Admin account</h3>
+            <ul class="mb-0">
+                <li>the admin row: username, password hash, recovery email, OIDC subject and authentication method;</li>
+                <li>password-reset tokens issued for that admin;</li>
+                <li>every admin web session, which is revoked immediately.</li>
+            </ul>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">What is kept</h2>
+            <ul class="mb-0">
+                <li><strong>Historical results.</strong> Race results and round scores are part of the championship record. When a racer identity is deleted, those rows are detached from the person and the stored racer name is replaced with <em>Deleted racer</em>. They no longer link to an account, email address or Telegram chat.</li>
+                <li><strong>Race, track, season and team data.</strong> Deleting an admin account does not delete race data, and deleting a racer identity does not delete the races they took part in.</li>
+                <li><strong>Backups.</strong> A database backup taken before the deletion can still contain the old data until that backup is pruned under the instance's backup retention setting (seven backups by default). Backups are used only for disaster recovery.</li>
+                <li><strong>Server logs.</strong> Access and error logs may still contain request metadata, including IP addresses, for the period configured in the instance's log settings.</li>
+            </ul>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">Timing</h2>
+            <p class="mb-0">Deletion takes effect immediately for the live database and signs out the affected sessions. Backups and logs disappear according to their own retention periods described above. You do not need to create a new account to ask a question about a deletion.</p>
+        </section>
+    </div>
+
+    <aside class="col-lg-4">
+        <div class="race-card p-4 mb-3">
+            <h2 class="h5">Email fallback</h2>
+            {{if .Legal.ContactEmail}}<p class="small">If you cannot sign in, email <a href="mailto:{{.Legal.ContactEmail}}?subject=HEAT%20account%20deletion">{{.Legal.ContactEmail}}</a> from an address the operator can verify.</p>{{else}}<p class="small">If you cannot sign in, contact the person who runs this server from an address they can verify. No contact address has been configured for this instance.</p>{{end}}
+            <p class="small mb-0">Say whether you want the racer identity or the admin account deleted, and include the racer name or admin username. Never send your password.</p>
+        </div>
+        <div class="race-card p-4 mb-3">
+            <h2 class="h5">Export first</h2>
+            <p class="small mb-0">Both account types can download a JSON copy of their data before deletion. In the mobile app this is under Settings; the API endpoints are <code>GET /api/me/export</code> and <code>GET /api/account/export</code>. Exports never contain password hashes or session tokens.</p>
+        </div>
+        <div class="race-card p-4">
+            <h2 class="h5">More information</h2>
+            <ul class="list-unstyled small mb-0">
+                <li class="mb-2"><a href="/privacy">Privacy notice</a></li>
+                <li><a href="/terms">Terms of use</a></li>
+            </ul>
+        </div>
+    </aside>
+</div>
+{{end}}

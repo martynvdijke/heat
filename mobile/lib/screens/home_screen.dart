@@ -79,14 +79,9 @@ class HomeScreen extends ConsumerWidget {
                   accent: AppTheme.textDim,
                   icon: Icons.settings_outlined,
                   title: 'SETTINGS',
-                  subtitle: 'Server URL · sign out',
+                  subtitle: 'Server · legal · delete account',
                   hint: 'CFG',
-                  onTap: () async {
-                    await ref.read(apiClientProvider).logout();
-                    if (context.mounted) {
-                      Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
-                    }
-                  },
+                  onTap: () => Navigator.pushNamed(context, '/settings'),
                   muted: true,
                 ),
                 const SizedBox(height: 24),

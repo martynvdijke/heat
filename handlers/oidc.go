@@ -391,7 +391,9 @@ func (h *Handler) HandleOIDCCallback(c *gin.Context) {
 		return
 	}
 	sessionID := generateSessionID()
-	h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()})
+	var oidcAdminID int
+	_ = h.S.DB.QueryRow("SELECT id FROM admin_users WHERE oidc_sub = ?", sub).Scan(&oidcAdminID)
+	h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP(), AdminUserID: oidcAdminID})
 	if device != "" {
 		// Native app flow: hand the session to the polling client rather than
 		// setting a cookie in the browser that happens to complete the login.

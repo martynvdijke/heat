@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -200,8 +201,17 @@ func (h *Handler) HtmxRacersDelete(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
-	h.S.DB.Exec("DELETE FROM racers WHERE id=?", id)
-	h.S.DB.Exec("DELETE FROM racer_stats WHERE racer_id=?", id)
+	if err := h.deleteRacer(c.Request.Context(), id); err != nil && err != sql.ErrNoRows {
+		internalError(c, err)
+		return
+	}
+	h.S.RacerSessionsMu.Lock()
+	for token, sess := range h.S.RacerSessions {
+		if sess.RacerID == id {
+			delete(h.S.RacerSessions, token)
+		}
+	}
+	h.S.RacerSessionsMu.Unlock()
 	h.S.BroadcastRacers()
 	h.HtmxRacersTable(c)
 }

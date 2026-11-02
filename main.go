@@ -362,6 +362,17 @@ func main() {
 	r.GET("/api/auth/oidc/mobile/status", h.HandleOIDCMobileStatus)
 	r.GET("/api/auth/oidc/mobile/done", h.HandleOIDCMobileDone)
 
+	// Legal pages (public, no session): privacy notice, terms, and the
+	// Google Play account-deletion instructions.
+	r.GET("/privacy", h.PrivacyPage)
+	r.GET("/terms", h.TermsPage)
+	r.GET("/account/delete", h.AccountDeletePage)
+
+	// Account self-service. Export and deletion authenticate with the admin
+	// session cookie, so a session revoked on delete cannot keep acting.
+	r.GET("/api/account/export", middleware.AuthMiddleware(server), h.ExportAccount)
+	r.DELETE("/api/account", middleware.CSRFMiddleware(), middleware.AuthMiddleware(server), h.DeleteAccount)
+
 	r.GET("/api/racers", h.GetRacers)
 
 	// Authoritative race clock/lap state. Reads are public; transitions require
@@ -595,13 +606,15 @@ func main() {
 	r.GET("/api/racer-recent-results", h.RacerRecentResults)
 
 	me := r.Group("/api/me")
-	me.Use(middleware.RacerAuthMiddleware(server))
+	me.Use(middleware.RacerOrPlayerAuthMiddleware(server))
 	{
 		me.GET("", h.MeRacer)
 		me.GET("/upgrades", h.MeRacerUpgrades)
 		me.POST("/upgrades/buy", middleware.CSRFMiddleware(), h.MeBuyUpgrade)
 		me.PUT("/upgrades/toggle", middleware.CSRFMiddleware(), h.MeToggleUpgrade)
 		me.POST("/logout", middleware.CSRFMiddleware(), h.MeLogout)
+		me.GET("/export", h.ExportMe)
+		me.DELETE("", middleware.CSRFMiddleware(), h.DeleteMe)
 	}
 
 	// Game Mechanics routes

@@ -21,6 +21,10 @@ import (
 type SessionInfo struct {
 	Expiry int64
 	IP     string
+	// AdminUserID is the admin_users row that owns this session. Zero means
+	// the session predates account-scoped tracking; such a session cannot be
+	// used to close an account because the server cannot prove whom it is.
+	AdminUserID int
 }
 
 // OIDCPendingLogin holds the result of a completed OIDC login that was started
@@ -113,6 +117,7 @@ type Server struct {
 	LoginLimiter         *rate.Limiter
 	SecureCookies        bool
 	OIDC                 OIDCConfig
+	Legal                LegalConfig
 	Upgrader             websocket.Upgrader
 	LoginLimiters        map[string]*rate.Limiter
 	LoginLimitersMu      sync.Mutex
@@ -148,6 +153,7 @@ func NewServer() *Server {
 		MediaPath:              "/app/media",
 		SecureCookies:          os.Getenv("DOCKER") == "true",
 		OIDC:                   LoadOIDCConfig(),
+		Legal:                  LoadLegalConfig(),
 		Upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				origin := r.Header.Get("Origin")

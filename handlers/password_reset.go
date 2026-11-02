@@ -135,7 +135,7 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 
 	// Auto-login: create a session for the admin whose password was reset.
 	sessionID := generateSessionID()
-	h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP()})
+	h.S.PutSession(sessionID, app.SessionInfo{Expiry: time.Now().Add(24 * time.Hour).Unix(), IP: c.ClientIP(), AdminUserID: userID})
 	setSessionCookie(c, sessionID, h.S.SecureCookies)
 
 	h.S.Log.Infof("password-reset", "Password reset for user %d", userID)

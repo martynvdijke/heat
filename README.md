@@ -17,6 +17,34 @@
 - ⚡ **Digital Dashboard** - A live, synchronized view for all players to see gaps, rankings, and fastest laps.
 - 📈 **Statistics & Analytics** - Advanced stats including head-to-head comparisons, points progression charts, streaks, ELO ratings, and CSV export.
 
+## ⚖️ Privacy, Terms and Account Deletion
+
+The server publishes three public pages that need no sign-in:
+
+| Page | URL |
+| --- | --- |
+| Privacy notice (GDPR Art. 13) | `/privacy` |
+| Terms of use | `/terms` |
+| Account deletion instructions | `/account/delete` |
+
+Set the controller details before exposing the instance publicly:
+
+```bash
+LEGAL_CONTROLLER_NAME="Your name or club"
+LEGAL_CONTACT_EMAIL="privacy@example.org"
+LEGAL_CONTACT_ADDRESS="Street 1, City, Country"
+LEGAL_HOSTING_REGION="the Netherlands"
+PUBLIC_BASE_URL="https://heat.example.org"
+```
+
+See `.env.example` for a complete example. Both account types can export and
+delete themselves: admins via `GET /api/account/export` / `DELETE /api/account`,
+racers via `GET /api/me/export` / `DELETE /api/me` (website session or
+`X-Player-Token`), or the mobile app's Settings screen. Historical race results
+are retained but anonymised when a racer identity is deleted. Implementation
+details and the Play Store declarations are in [`docs/legal.md`](docs/legal.md)
+and [`docs/play-store.md`](docs/play-store.md).
+
 ## 🚀 Quick Start
 
 ```bash

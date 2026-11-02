@@ -1,0 +1,82 @@
+{{define "title"}}Terms of use - HEAT{{end}}
+
+{{define "nav"}}
+<ul class="mb-0 d-flex flex-wrap gap-3 list-unstyled justify-content-center">
+    <li><a href="/" class="text-uppercase"><i class="fa-solid fa-house me-2"></i>Home</a></li>
+    <li><a href="/privacy" class="text-uppercase"><i class="fa-solid fa-shield-halved me-2"></i>Privacy</a></li>
+    <li><a href="/account/delete" class="text-uppercase"><i class="fa-solid fa-user-slash me-2"></i>Delete account</a></li>
+</ul>
+{{end}}
+
+{{define "content"}}
+<section class="mb-4">
+    <h1 class="mb-2">Terms of use</h1>
+    <p class="text-muted mb-1">Last updated: {{.Legal.LastUpdated}}</p>
+    <p class="text-muted">These terms govern use of this HEAT instance, operated by {{.Legal.Controller}}.</p>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">1. What this service is</h2>
+            <p class="mb-0">HEAT is a fan-made companion for the board game <em>Heat: Pedal to the Metal</em>. It tracks racers, race state, results, statistics and championship seasons. It is not published, endorsed or sponsored by the board game's publisher or designers. Board game names and marks belong to their respective owners.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">2. Accounts and access</h2>
+            <p>Admin accounts are created by the operator. Racer identities are created by an administrator and are accessed with a one-time email link. You are responsible for keeping access to your email account and devices secure, and for activity performed through your identity.</p>
+            <p class="mb-0">Do not share sign-in links, player tokens or driver-share links with people who should not have them. Tell the operator promptly if you believe your access has been compromised.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">3. Acceptable use</h2>
+            <p>You agree not to:</p>
+            <ul>
+                <li>submit false race results, or manipulate race state, statistics or upgrades you are not entitled to change;</li>
+                <li>attempt to access another person's account, session or data;</li>
+                <li>probe, scan, overload or disrupt the instance, or bypass rate limits and authentication;</li>
+                <li>upload unlawful, abusive, infringing or malicious content, including images and track files;</li>
+                <li>use the service to harass other participants or to publish another person's personal data without a lawful basis.</li>
+            </ul>
+            <p class="mb-0">The operator may remove content, suspend access or delete an identity that breaches these rules or threatens the instance.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">4. Your content</h2>
+            <p class="mb-0">You keep ownership of the text, images and files you submit. You grant the operator the limited right to store, display and process that content as needed to run the instance, including showing racer names, pictures, cars, teams and results on public leaderboards and race views. Do not upload a picture or use a name you are not entitled to publish.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">5. Availability, changes and termination</h2>
+            <p>The service is provided on a best-effort basis. The operator may change, suspend or discontinue features, and may take the instance offline for maintenance or because it is no longer operated. There is no service-level guarantee and no fee is charged.</p>
+            <p class="mb-0">You can stop using the service at any time and delete your account from the <a href="/account/delete">account deletion page</a>. The operator may close an account that breaches these terms. Provisions that by their nature should survive termination, including ownership and liability limits, continue to apply.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">6. No warranty and liability</h2>
+            <p class="mb-0">The service is provided "as is" and "as available", without warranties of any kind to the extent permitted by law. The operator is not liable for indirect or consequential loss, lost data, or loss arising from reliance on race results or statistics, except where liability cannot lawfully be excluded. Nothing in these terms limits mandatory consumer rights or liability for intent or gross negligence.</p>
+        </section>
+
+        <section class="race-card p-4 mb-3">
+            <h2 class="h4">7. Privacy and governing law</h2>
+            <p>The <a href="/privacy">privacy notice</a> explains the personal data processing that accompanies these terms and forms part of them.</p>
+            <p class="mb-0">These terms are governed by the law applicable to the operator's establishment, without depriving you of the protection of mandatory rules of your own country of residence. Disputes can be brought before the competent courts under applicable law.</p>
+        </section>
+    </div>
+
+    <aside class="col-lg-4">
+        <div class="race-card p-4 mb-3">
+            <h2 class="h5">Quick links</h2>
+            <ul class="list-unstyled mb-0">
+                <li class="mb-2"><a href="/privacy"><i class="fa-solid fa-shield-halved me-2"></i>Privacy notice</a></li>
+                <li class="mb-2"><a href="/account/delete"><i class="fa-solid fa-user-slash me-2"></i>Delete an account</a></li>
+                <li><a href="/"><i class="fa-solid fa-house me-2"></i>Back to HEAT</a></li>
+            </ul>
+        </div>
+        <div class="race-card p-4">
+            <h2 class="h5">Questions</h2>
+            {{if .Legal.ContactEmail}}<p class="small mb-0">Contact the operator at <a href="mailto:{{.Legal.ContactEmail}}">{{.Legal.ContactEmail}}</a>.</p>{{else}}<p class="small mb-0">Contact the person who runs this server. No contact address has been configured for this instance.</p>{{end}}
+        </div>
+    </aside>
+</div>
+{{end}}

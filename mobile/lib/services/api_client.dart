@@ -254,6 +254,48 @@ class ApiClient {
     if (totalLaps != null) body['total_laps'] = totalLaps;
     await dio.post('$_base/api/race/state', data: body, options: Options(headers: _authHeaders(mutating: true)));
   }
+
+  // Account self-service
+
+  /// Downloads the racer identity export as pretty-printed JSON. Exports never
+  /// contain passwords or session tokens.
+  Future<String> exportMe() async {
+    final res = await dio.get('$_base/api/me/export',
+        options: Options(headers: _authHeaders(), responseType: ResponseType.plain));
+    return res.data.toString();
+  }
+
+  /// Deletes the racer identity. The server requires the literal word DELETE.
+  Future<void> deleteMe(String confirmation) async {
+    final res = await dio.delete('$_base/api/me',
+        data: {'confirm': confirmation},
+        options: Options(headers: _authHeaders(mutating: true), validateStatus: (_) => true));
+    if (res.statusCode != 200) {
+      throw Exception(_errorMessage(res, 'Could not delete the racer identity'));
+    }
+  }
+
+  Future<String> exportAccount() async {
+    final res = await dio.get('$_base/api/account/export',
+        options: Options(headers: _authHeaders(), responseType: ResponseType.plain));
+    return res.data.toString();
+  }
+
+  /// Deletes the signed-in admin account and revokes its sessions.
+  Future<void> deleteAccount(String confirmation) async {
+    final res = await dio.delete('$_base/api/account',
+        data: {'confirm': confirmation},
+        options: Options(headers: _authHeaders(mutating: true), validateStatus: (_) => true));
+    if (res.statusCode != 200) {
+      throw Exception(_errorMessage(res, 'Could not delete the admin account'));
+    }
+  }
+
+  String _errorMessage(Response res, String fallback) {
+    final data = res.data;
+    if (data is Map && data['error'] is String) return data['error'] as String;
+    return '$fallback (HTTP ${res.statusCode})';
+  }
 }
 
 class XFileLike {

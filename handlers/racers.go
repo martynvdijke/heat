@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
 
@@ -145,8 +146,12 @@ func (h *Handler) DeleteRacer(c *gin.Context) {
 		return
 	}
 
-	err = h.S.Ent.Racer.DeleteOneID(id).Exec(c.Request.Context())
+	err = h.deleteRacer(c.Request.Context(), id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Racer not found"})
+			return
+		}
 		internalError(c, err)
 		return
 	}

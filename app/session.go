@@ -5,7 +5,8 @@ import "time"
 const webSessionSchema = `CREATE TABLE IF NOT EXISTS web_sessions (
 	id TEXT PRIMARY KEY,
 	expiry INTEGER NOT NULL,
-	ip TEXT NOT NULL
+	ip TEXT NOT NULL,
+	admin_user_id INTEGER NOT NULL DEFAULT 0
 )`
 
 // PutSession stores a web session in both the in-memory cache and SQLite so
@@ -20,10 +21,13 @@ func (s *Server) PutSession(id string, info SessionInfo) {
 	if _, err := s.DB.Exec(webSessionSchema); err != nil {
 		return
 	}
+	// Older databases predate the admin_user_id column. SQLite has no
+	// ADD COLUMN IF NOT EXISTS, so ignore the duplicate-column error.
+	_, _ = s.DB.Exec(`ALTER TABLE web_sessions ADD COLUMN admin_user_id INTEGER NOT NULL DEFAULT 0`)
 	_, _ = s.DB.Exec(
-		`INSERT INTO web_sessions (id, expiry, ip) VALUES (?, ?, ?)
-		 ON CONFLICT(id) DO UPDATE SET expiry=excluded.expiry, ip=excluded.ip`,
-		id, info.Expiry, info.IP,
+		`INSERT INTO web_sessions (id, expiry, ip, admin_user_id) VALUES (?, ?, ?, ?)
+		 ON CONFLICT(id) DO UPDATE SET expiry=excluded.expiry, ip=excluded.ip, admin_user_id=excluded.admin_user_id`,
+		id, info.Expiry, info.IP, info.AdminUserID,
 	)
 }
 
@@ -36,6 +40,19 @@ func (s *Server) DeleteSession(id string) {
 		return
 	}
 	_, _ = s.DB.Exec(`DELETE FROM web_sessions WHERE id = ?`, id)
+}
+
+// DeleteAllSessions revokes every admin web session, in memory and in SQLite.
+// It is used when an admin account is closed: a session that outlived its user
+// would keep passing AuthMiddleware even though the account row is gone.
+func (s *Server) DeleteAllSessions() {
+	s.SessionStoreMu.Lock()
+	s.SessionStore = make(map[string]SessionInfo)
+	s.SessionStoreMu.Unlock()
+	if s.DB == nil {
+		return
+	}
+	_, _ = s.DB.Exec(`DELETE FROM web_sessions`)
 }
 
 // LookupSession resolves a session from the cache, falling back to SQLite
@@ -54,8 +71,9 @@ func (s *Server) LookupSession(id string) (SessionInfo, bool) {
 	if s.DB == nil {
 		return SessionInfo{}, false
 	}
+	_, _ = s.DB.Exec(`ALTER TABLE web_sessions ADD COLUMN admin_user_id INTEGER NOT NULL DEFAULT 0`)
 	var stored SessionInfo
-	if err := s.DB.QueryRow(`SELECT expiry, ip FROM web_sessions WHERE id = ?`, id).Scan(&stored.Expiry, &stored.IP); err != nil {
+	if err := s.DB.QueryRow(`SELECT expiry, ip, admin_user_id FROM web_sessions WHERE id = ?`, id).Scan(&stored.Expiry, &stored.IP, &stored.AdminUserID); err != nil {
 		return SessionInfo{}, false
 	}
 	if time.Now().Unix() > stored.Expiry {
