@@ -1,3 +1,10 @@
+# [1.76.0](https://github.com/martynvdijke/heat/compare/v1.75.4...v1.76.0) (2026-11-02)
+
+
+### Features
+
+* **legal:** GDPR/Play compliance for HEAT ([86e68f3](https://github.com/martynvdijke/heat/commit/86e68f39ea667c1766c01e78e63103da2f1922c0))
+
 ## [1.75.4](https://github.com/martynvdijke/heat/compare/v1.75.3...v1.75.4) (2026-11-01)
 
 
