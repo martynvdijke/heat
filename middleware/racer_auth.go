@@ -101,4 +101,3 @@ func RacerOrPlayerAuthMiddleware(s *app.Server) gin.HandlerFunc {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 	}
 }
-

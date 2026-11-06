@@ -585,6 +585,68 @@ definitions:
 info:
   contact: {}
 paths:
+  /api/account:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes the admin account, its password-reset tokens and revokes
+        every admin web session. Race, racer and result data are not touched. The
+        last remaining admin cannot be deleted.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Delete the signed-in admin account
+      tags:
+      - Account
+  /api/account/export:
+    get:
+      description: JSON export of the admin profile. Password hashes and session tokens
+        are never included.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - cookieAuth: []
+      summary: Export the signed-in admin account
+      tags:
+      - Account
   /api/admin/log-settings:
     get:
       description: Get the current log verbosity settings per module
@@ -1384,6 +1446,37 @@ paths:
       tags:
       - Auth
   /api/me:
+    delete:
+      consumes:
+      - application/json
+      description: Permanently deletes the racer row and every identity link (email,
+        Telegram, player sessions, upgrades, achievements). Historical race results
+        are kept but detached and the name is replaced with "Deleted racer".
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - RacerSession: []
+      summary: Delete the signed-in racer identity
+      tags:
+      - Account
     get:
       description: Career stats, current-season standing, and recent results for the
         signed-in racer
@@ -1404,6 +1497,29 @@ paths:
       summary: Current racer's personal summary
       tags:
       - Racers
+  /api/me/export:
+    get:
+      description: JSON export of the racer profile, identity, results and upgrades.
+        No secrets or session tokens.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - RacerSession: []
+      summary: Export the signed-in racer's data
+      tags:
+      - Account
   /api/me/logout:
     post:
       description: Clear the racer website session

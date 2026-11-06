@@ -241,7 +241,7 @@ func (h *Handler) ExportAccount(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security cookieAuth
-// @Success 200 {object} map[string]string}
+// @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 409 {object} map[string]string
