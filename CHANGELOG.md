@@ -1,3 +1,15 @@
+# [1.77.0](https://github.com/martynvdijke/heat/compare/v1.76.2...v1.77.0) (2026-11-06)
+
+
+### Bug Fixes
+
+* **docs:** correct account deletion swagger annotation ([4eda3d3](https://github.com/martynvdijke/heat/commit/4eda3d34c76dc60ded5760530d46cf9215aff1e1))
+
+
+### Features
+
+* **mobile:** show racer names and manage upgrade cards ([cdfd5db](https://github.com/martynvdijke/heat/commit/cdfd5dbc95e388e62ebe3efbc19c3164d10d3080))
+
 ## [1.76.2](https://github.com/martynvdijke/heat/compare/v1.76.1...v1.76.2) (2026-11-03)
 
 ## [1.76.1](https://github.com/martynvdijke/heat/compare/v1.76.0...v1.76.1) (2026-11-02)
