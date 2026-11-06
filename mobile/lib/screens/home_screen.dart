@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
-import '../providers/session_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -73,6 +72,16 @@ class HomeScreen extends ConsumerWidget {
                   subtitle: 'Seasons · charts · .ics export',
                   hint: 'PTS',
                   onTap: () => Navigator.pushNamed(context, '/standings'),
+                ),
+                const SizedBox(height: 10),
+                _NavCard(
+                  key: const Key('navUpgrades'),
+                  accent: const Color(0xFF4EA8FF),
+                  icon: Icons.style_outlined,
+                  title: 'UPGRADE CARDS',
+                  subtitle: 'Owned · equip · buy',
+                  hint: 'CARDS',
+                  onTap: () => Navigator.pushNamed(context, '/upgrades'),
                 ),
                 const SizedBox(height: 10),
                 _NavCard(

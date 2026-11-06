@@ -9,6 +9,7 @@ import 'screens/home_screen.dart';
 import 'screens/hud_screen.dart';
 import 'screens/snapshot_screen.dart';
 import 'screens/standings_screen.dart';
+import 'screens/upgrades_screen.dart';
 import 'screens/settings_screen.dart';
 
 class HeatApp extends ConsumerWidget {
@@ -33,6 +34,7 @@ class HeatApp extends ConsumerWidget {
           '/hud': (_) => const HudScreen(),
           '/snapshot': (_) => const SnapshotScreen(),
           '/standings': (_) => const StandingsScreen(),
+          '/upgrades': (_) => const UpgradesScreen(),
           '/settings': (_) => const SettingsScreen(),
         },
       ),

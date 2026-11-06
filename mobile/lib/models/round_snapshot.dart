@@ -1,3 +1,6 @@
+bool _asBool(dynamic value) =>
+    value is bool ? value : value is num && value != 0;
+
 class RoundScore {
   final int id;
   final int snapshotId;
@@ -24,17 +27,17 @@ class RoundScore {
   });
 
   factory RoundScore.fromJson(Map<String, dynamic> j) => RoundScore(
-        id: (j['id'] as num).toInt(),
-        snapshotId: (j['snapshot_id'] as num).toInt(),
-        racerId: (j['racer_id'] as num).toInt(),
-        racerName: j['racer_name'] as String,
-        points: (j['points'] as num).toInt(),
-        position: (j['position'] as num).toInt(),
-        dnf: j['dnf'] as bool? ?? false,
-        dns: j['dns'] as bool? ?? false,
-        spins: (j['spins'] as num?)?.toInt() ?? 0,
-        overheated: j['overheated'] as bool? ?? false,
-      );
+    id: (j['id'] as num).toInt(),
+    snapshotId: (j['snapshot_id'] as num).toInt(),
+    racerId: (j['racer_id'] as num).toInt(),
+    racerName: j['racer_name'] as String,
+    points: (j['points'] as num).toInt(),
+    position: (j['position'] as num).toInt(),
+    dnf: _asBool(j['dnf']),
+    dns: _asBool(j['dns']),
+    spins: (j['spins'] as num?)?.toInt() ?? 0,
+    overheated: _asBool(j['overheated']),
+  );
 }
 
 class RoundSnapshot {
@@ -59,13 +62,15 @@ class RoundSnapshot {
   });
 
   factory RoundSnapshot.fromJson(Map<String, dynamic> j) => RoundSnapshot(
-        id: (j['id'] as num).toInt(),
-        seasonId: (j['season_id'] as num).toInt(),
-        raceName: j['race_name'] as String,
-        raceDate: j['race_date'] as String?,
-        round: (j['round'] as num).toInt(),
-        createdAt: j['created_at'] as String?,
-        status: j['status'] as String? ?? 'draft',
-        scores: ((j['scores'] as List?) ?? []).map((e) => RoundScore.fromJson(e as Map<String, dynamic>)).toList(),
-      );
+    id: (j['id'] as num).toInt(),
+    seasonId: (j['season_id'] as num).toInt(),
+    raceName: j['race_name'] as String,
+    raceDate: j['race_date'] as String?,
+    round: (j['round'] as num).toInt(),
+    createdAt: j['created_at'] as String?,
+    status: j['status'] as String? ?? 'draft',
+    scores: ((j['scores'] as List?) ?? [])
+        .map((e) => RoundScore.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
 }

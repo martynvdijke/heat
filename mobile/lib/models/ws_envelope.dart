@@ -4,14 +4,21 @@ class WsEnvelope {
   final int seq;
   final dynamic payload;
 
-  const WsEnvelope({required this.type, this.topic, required this.seq, this.payload});
+  const WsEnvelope({
+    required this.type,
+    this.topic,
+    required this.seq,
+    this.payload,
+  });
 
   factory WsEnvelope.fromJson(Map<String, dynamic> j) => WsEnvelope(
-        type: j['type'] as String,
-        topic: j['topic'] as String?,
-        seq: (j['seq'] as num?)?.toInt() ?? 0,
-        payload: j['payload'],
-      );
+    type: j['type'] as String,
+    topic: j['topic'] as String?,
+    seq: (j['seq'] as num?)?.toInt() ?? 0,
+    // hello/resync frames carry the snapshot under `snapshot`; normal
+    // broadcast envelopes use `payload`.
+    payload: j['snapshot'] ?? j['payload'],
+  );
 
   /// Returns true if [incomingSeq] indicates a gap after [lastSeq].
   /// Sequence numbers are monotonically increasing. A gap exists when

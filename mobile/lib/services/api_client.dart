@@ -1,18 +1,28 @@
 import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
+
 import 'session_store.dart';
 import '../models/racer.dart';
 import '../models/race_state.dart';
 import '../models/season.dart';
 import '../models/round_snapshot.dart';
 import '../models/racer_stats.dart';
+import '../models/upgrade.dart';
 
 class ApiClient {
   final Dio dio;
   final SessionStore store;
 
   ApiClient({required this.store, Dio? dioOverride})
-      : dio = dioOverride ?? Dio(BaseOptions(connectTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 10)));
+    : dio =
+          dioOverride ??
+          Dio(
+            BaseOptions(
+              connectTimeout: const Duration(seconds: 5),
+              receiveTimeout: const Duration(seconds: 10),
+            ),
+          );
 
   String get _base => store.baseUrl ?? '';
 
@@ -21,10 +31,12 @@ class ApiClient {
     final sc = store.sessionCookie;
     if (sc != null && sc.isNotEmpty) {
       h['Cookie'] = 'session=$sc';
-      if (mutating) {
-        final o = store.originForCsrf();
-        if (o != null) h['Origin'] = o;
-      }
+    }
+    // CSRF middleware requires an Origin header on every unsafe request,
+    // including player-token-only sessions (no cookie).
+    if (mutating) {
+      final o = store.originForCsrf();
+      if (o != null) h['Origin'] = o;
     }
     final pt = store.playerToken;
     if (pt != null && pt.isNotEmpty) {
@@ -34,7 +46,8 @@ class ApiClient {
   }
 
   String? _extractSessionCookie(Response r) {
-    final setCookies = r.headers.map['set-cookie'] ?? r.headers.map['Set-Cookie'] ?? [];
+    final setCookies =
+        r.headers.map['set-cookie'] ?? r.headers.map['Set-Cookie'] ?? [];
     for (final c in setCookies) {
       final m = RegExp(r'session=([0-9a-fA-F]{64})').firstMatch(c);
       if (m != null) return m.group(1);
@@ -53,15 +66,23 @@ class ApiClient {
 
   // Auth
   Future<void> loginRaceDirector(String username, String password) async {
-    final res = await dio.post('$_base/api/login',
-        data: {'username': username, 'password': password},
-        options: Options(headers: mutatingHeaders(), validateStatus: (_) => true));
+    final res = await dio.post(
+      '$_base/api/login',
+      data: {'username': username, 'password': password},
+      options: Options(headers: mutatingHeaders(), validateStatus: (_) => true),
+    );
     if (res.statusCode != 200) {
-      throw DioException(requestOptions: res.requestOptions, response: res, message: 'Login failed: ${res.statusCode}');
+      throw DioException(
+        requestOptions: res.requestOptions,
+        response: res,
+        message: 'Login failed: ${res.statusCode}',
+      );
     }
     final cookie = _extractSessionCookie(res);
     if (cookie == null || cookie.isEmpty) {
-      throw Exception('Login succeeded but the server did not return a session cookie');
+      throw Exception(
+        'Login succeeded but the server did not return a session cookie',
+      );
     }
     await store.setSessionCookie(cookie);
   }
@@ -91,9 +112,13 @@ class ApiClient {
       '$_base/api/auth/oidc/mobile/start',
       options: Options(validateStatus: (_) => true),
     );
-    final data = res.data is Map ? Map<String, dynamic>.from(res.data as Map) : <String, dynamic>{};
+    final data = res.data is Map
+        ? Map<String, dynamic>.from(res.data as Map)
+        : <String, dynamic>{};
     if (res.statusCode != 200) {
-      throw Exception(data['error'] ?? 'OIDC login unavailable (${res.statusCode})');
+      throw Exception(
+        data['error'] ?? 'OIDC login unavailable (${res.statusCode})',
+      );
     }
     return data;
   }
@@ -106,15 +131,25 @@ class ApiClient {
       queryParameters: {'device': deviceCode},
       options: Options(validateStatus: (_) => true),
     );
-    final data = res.data is Map ? Map<String, dynamic>.from(res.data as Map) : <String, dynamic>{};
+    final data = res.data is Map
+        ? Map<String, dynamic>.from(res.data as Map)
+        : <String, dynamic>{};
     if (res.statusCode != 200) {
-      throw Exception(data['error'] ?? 'OIDC status failed (${res.statusCode})');
+      throw Exception(
+        data['error'] ?? 'OIDC status failed (${res.statusCode})',
+      );
     }
     return data;
   }
 
-  Future<Map<String, dynamic>> loginPlayer(int racerId, String deviceName) async {
-    final res = await dio.post('$_base/api/player/login', data: {'racer_id': racerId, 'device_name': deviceName});
+  Future<Map<String, dynamic>> loginPlayer(
+    int racerId,
+    String deviceName,
+  ) async {
+    final res = await dio.post(
+      '$_base/api/player/login',
+      data: {'racer_id': racerId, 'device_name': deviceName},
+    );
     final data = res.data as Map<String, dynamic>;
     final token = data['token'] as String;
     final rid = (data['racer_id'] as num).toInt();
@@ -124,13 +159,19 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> validatePlayerToken(String token) async {
-    final res = await dio.get('$_base/api/player/validate', options: Options(headers: {'X-Player-Token': token}));
+    final res = await dio.get(
+      '$_base/api/player/validate',
+      options: Options(headers: {'X-Player-Token': token}),
+    );
     return res.data as Map<String, dynamic>;
   }
 
   Future<void> logoutPlayer() async {
     try {
-      await dio.post('$_base/api/player/logout', options: Options(headers: _authHeaders()));
+      await dio.post(
+        '$_base/api/player/logout',
+        options: Options(headers: _authHeaders()),
+      );
     } finally {
       await store.clearAuth();
     }
@@ -140,10 +181,22 @@ class ApiClient {
   Future<void> logout() async {
     try {
       if (store.isRaceDirector) {
-        await dio.post('$_base/api/logout', options: Options(headers: _authHeaders(mutating: true), validateStatus: (_) => true));
+        await dio.post(
+          '$_base/api/logout',
+          options: Options(
+            headers: _authHeaders(mutating: true),
+            validateStatus: (_) => true,
+          ),
+        );
       }
       if (store.isPlayer) {
-        await dio.post('$_base/api/player/logout', options: Options(headers: _authHeaders(mutating: true), validateStatus: (_) => true));
+        await dio.post(
+          '$_base/api/player/logout',
+          options: Options(
+            headers: _authHeaders(mutating: true),
+            validateStatus: (_) => true,
+          ),
+        );
       }
     } catch (_) {
       // Best effort; local credentials are always cleared.
@@ -157,6 +210,68 @@ class ApiClient {
     final res = await dio.get('$_base/api/racers');
     final list = res.data as List;
     return list.map((e) => Racer.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Current racer profile, stats and season (GET /api/me).
+  Future<Map<String, dynamic>> fetchMe() async {
+    final res = await dio.get(
+      '$_base/api/me',
+      options: Options(headers: _authHeaders(), validateStatus: (_) => true),
+    );
+    if (res.statusCode != 200) {
+      throw Exception(_errorMessage(res, 'Could not load your racer profile'));
+    }
+    return res.data is Map
+        ? Map<String, dynamic>.from(res.data as Map)
+        : <String, dynamic>{};
+  }
+
+  /// Upgrade cards owned by the racer plus cards available to buy.
+  Future<MyUpgrades> fetchMyUpgrades() async {
+    final res = await dio.get(
+      '$_base/api/me/upgrades',
+      options: Options(headers: _authHeaders(), validateStatus: (_) => true),
+    );
+    if (res.statusCode != 200) {
+      throw Exception(_errorMessage(res, 'Could not load upgrade cards'));
+    }
+    final data = res.data is Map
+        ? Map<String, dynamic>.from(res.data as Map)
+        : <String, dynamic>{};
+    return MyUpgrades.fromJson(data);
+  }
+
+  /// Buys an upgrade for the current season. The server equips it immediately.
+  Future<void> buyUpgrade({
+    required int upgradeId,
+    required int seasonId,
+  }) async {
+    final res = await dio.post(
+      '$_base/api/me/upgrades/buy',
+      data: {'upgrade_id': upgradeId, 'season_id': seasonId, 'round': 0},
+      options: Options(
+        headers: _authHeaders(mutating: true),
+        validateStatus: (_) => true,
+      ),
+    );
+    if (res.statusCode != 200) {
+      throw Exception(_errorMessage(res, 'Could not buy this upgrade'));
+    }
+  }
+
+  /// Equips or unequips an owned upgrade.
+  Future<void> toggleUpgrade({required int id, required bool equipped}) async {
+    final res = await dio.put(
+      '$_base/api/me/upgrades/toggle',
+      data: {'id': id, 'equipped': equipped},
+      options: Options(
+        headers: _authHeaders(mutating: true),
+        validateStatus: (_) => true,
+      ),
+    );
+    if (res.statusCode != 200) {
+      throw Exception(_errorMessage(res, 'Could not update this upgrade'));
+    }
   }
 
   Future<RaceState> fetchRaceState() async {
@@ -193,20 +308,31 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> fetchRacerStatsById(int id) async {
-    final res = await dio.get('$_base/api/racer-stats', queryParameters: {'id': id});
+    final res = await dio.get(
+      '$_base/api/racer-stats',
+      queryParameters: {'id': id},
+    );
     return res.data as Map<String, dynamic>;
   }
 
   Future<Uint8List> fetchIcs() async {
-    final res = await dio.get('$_base/api/races/export.ics', options: Options(responseType: ResponseType.bytes));
+    final res = await dio.get(
+      '$_base/api/races/export.ics',
+      options: Options(responseType: ResponseType.bytes),
+    );
     return Uint8List.fromList(res.data as List<int>);
   }
 
   // Round snapshot adapted contract
-  Future<Map<String, dynamic>> createRoundSnapshot({required String raceName, required int seasonId}) async {
-    final res = await dio.post('$_base/api/rounds',
-        data: {'race_name': raceName, 'season_id': seasonId, 'round': 0},
-        options: Options(headers: _authHeaders(mutating: true)));
+  Future<Map<String, dynamic>> createRoundSnapshot({
+    required String raceName,
+    required int seasonId,
+  }) async {
+    final res = await dio.post(
+      '$_base/api/rounds',
+      data: {'race_name': raceName, 'season_id': seasonId, 'round': 0},
+      options: Options(headers: _authHeaders(mutating: true)),
+    );
     return res.data as Map<String, dynamic>;
   }
 
@@ -215,9 +341,11 @@ class ApiClient {
     final data = res.data;
     if (data is Map<String, dynamic>) {
       // Could be { ... snapshot ... } or wrapper
-      if (data.containsKey('id') && data.containsKey('scores')) return RoundSnapshot.fromJson(data);
+      if (data.containsKey('id') && data.containsKey('scores'))
+        return RoundSnapshot.fromJson(data);
       // If list with single?
-      if (data.containsKey('snapshot')) return RoundSnapshot.fromJson(data['snapshot'] as Map<String, dynamic>);
+      if (data.containsKey('snapshot'))
+        return RoundSnapshot.fromJson(data['snapshot'] as Map<String, dynamic>);
     }
     if (data is List && data.isNotEmpty) {
       return RoundSnapshot.fromJson(data.first as Map<String, dynamic>);
@@ -226,11 +354,19 @@ class ApiClient {
   }
 
   Future<List<RoundSnapshot>> fetchRoundsForSeason(int seasonId) async {
-    final res = await dio.get('$_base/api/rounds', queryParameters: {'season_id': seasonId});
+    final res = await dio.get(
+      '$_base/api/rounds',
+      queryParameters: {'season_id': seasonId},
+    );
     final data = res.data;
-    if (data is List) return data.map((e) => RoundSnapshot.fromJson(e as Map<String, dynamic>)).toList();
+    if (data is List)
+      return data
+          .map((e) => RoundSnapshot.fromJson(e as Map<String, dynamic>))
+          .toList();
     if (data is Map<String, dynamic> && data['rounds'] is List) {
-      return (data['rounds'] as List).map((e) => RoundSnapshot.fromJson(e as Map<String, dynamic>)).toList();
+      return (data['rounds'] as List)
+          .map((e) => RoundSnapshot.fromJson(e as Map<String, dynamic>))
+          .toList();
     }
     return [];
   }
@@ -241,9 +377,15 @@ class ApiClient {
       'image': MultipartFile.fromBytes(file.bytes, filename: file.name),
     });
     try {
-      final res = await dio.post('$_base/api/upload', data: form, options: Options(headers: _authHeaders(mutating: true)));
+      final res = await dio.post(
+        '$_base/api/upload',
+        data: form,
+        options: Options(headers: _authHeaders(mutating: true)),
+      );
       final data = res.data as Map<String, dynamic>;
-      return data['url'] as String? ?? data['resized_url'] as String? ?? data['thumbnail_url'] as String?;
+      return data['url'] as String? ??
+          data['resized_url'] as String? ??
+          data['thumbnail_url'] as String?;
     } catch (_) {
       return null;
     }
@@ -252,7 +394,11 @@ class ApiClient {
   Future<void> postRaceAction(String action, {int? totalLaps}) async {
     final body = <String, dynamic>{'action': action};
     if (totalLaps != null) body['total_laps'] = totalLaps;
-    await dio.post('$_base/api/race/state', data: body, options: Options(headers: _authHeaders(mutating: true)));
+    await dio.post(
+      '$_base/api/race/state',
+      data: body,
+      options: Options(headers: _authHeaders(mutating: true)),
+    );
   }
 
   // Account self-service
@@ -260,32 +406,54 @@ class ApiClient {
   /// Downloads the racer identity export as pretty-printed JSON. Exports never
   /// contain passwords or session tokens.
   Future<String> exportMe() async {
-    final res = await dio.get('$_base/api/me/export',
-        options: Options(headers: _authHeaders(), responseType: ResponseType.plain));
+    final res = await dio.get(
+      '$_base/api/me/export',
+      options: Options(
+        headers: _authHeaders(),
+        responseType: ResponseType.plain,
+      ),
+    );
     return res.data.toString();
   }
 
   /// Deletes the racer identity. The server requires the literal word DELETE.
   Future<void> deleteMe(String confirmation) async {
-    final res = await dio.delete('$_base/api/me',
-        data: {'confirm': confirmation},
-        options: Options(headers: _authHeaders(mutating: true), validateStatus: (_) => true));
+    final res = await dio.delete(
+      '$_base/api/me',
+      data: {'confirm': confirmation},
+      options: Options(
+        headers: _authHeaders(mutating: true),
+        validateStatus: (_) => true,
+      ),
+    );
     if (res.statusCode != 200) {
-      throw Exception(_errorMessage(res, 'Could not delete the racer identity'));
+      throw Exception(
+        _errorMessage(res, 'Could not delete the racer identity'),
+      );
     }
   }
 
   Future<String> exportAccount() async {
-    final res = await dio.get('$_base/api/account/export',
-        options: Options(headers: _authHeaders(), responseType: ResponseType.plain));
+    final res = await dio.get(
+      '$_base/api/account/export',
+      options: Options(
+        headers: _authHeaders(),
+        responseType: ResponseType.plain,
+      ),
+    );
     return res.data.toString();
   }
 
   /// Deletes the signed-in admin account and revokes its sessions.
   Future<void> deleteAccount(String confirmation) async {
-    final res = await dio.delete('$_base/api/account',
-        data: {'confirm': confirmation},
-        options: Options(headers: _authHeaders(mutating: true), validateStatus: (_) => true));
+    final res = await dio.delete(
+      '$_base/api/account',
+      data: {'confirm': confirmation},
+      options: Options(
+        headers: _authHeaders(mutating: true),
+        validateStatus: (_) => true,
+      ),
+    );
     if (res.statusCode != 200) {
       throw Exception(_errorMessage(res, 'Could not delete the admin account'));
     }

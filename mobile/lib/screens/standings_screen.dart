@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
 import '../providers/session_providers.dart';
+import '../models/racer.dart';
 import '../models/racer_stats.dart';
 
 class StandingsScreen extends ConsumerWidget {
@@ -14,6 +15,14 @@ class StandingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final seasonsAsync = ref.watch(seasonsProvider);
     final statsAsync = ref.watch(racerStatsListProvider);
+    // Names only decorate the stats labels; while this is loading or failing we
+    // fall back to `Racer #<id>` so the stats section never waits on it.
+    final racers = ref.watch(racersProvider).value ?? const <Racer>[];
+    final racerNames = <int, String>{
+      for (final r in racers)
+        if (r.name.trim().isNotEmpty) r.id: r.name,
+    };
+    String nameFor(int id) => racerNames[id] ?? 'Racer #$id';
     final base = ref.watch(sessionStoreProvider).baseUrl ?? '';
     return Scaffold(
       backgroundColor: AppTheme.bg,
@@ -137,7 +146,7 @@ class StandingsScreen extends ConsumerWidget {
                         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, meta) {
                           final idx = v.toInt();
-                          if (idx < top.length) return Padding(padding: const EdgeInsets.only(top: 6), child: Text('#${top[idx].racerId}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.textDim, fontFeatures: [FontFeature.tabularFigures()])));
+                          if (idx < top.length) return Padding(padding: const EdgeInsets.only(top: 6), child: Text(_barLabel(top[idx].racerId, racerNames), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.textDim, fontFeatures: [FontFeature.tabularFigures()])));
                           return const Text('');
                         })),
                       ),
@@ -167,7 +176,7 @@ class StandingsScreen extends ConsumerWidget {
                             const SizedBox(width: 8),
                             Container(width: 1, height: 12, color: AppTheme.borderCol),
                             const SizedBox(width: 8),
-                            Flexible(child: Text('Racer ${s.racerId}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary), overflow: TextOverflow.ellipsis)),
+                            Flexible(child: Text(nameFor(s.racerId), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary), overflow: TextOverflow.ellipsis)),
                           ]),
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 2),
@@ -181,7 +190,7 @@ class StandingsScreen extends ConsumerWidget {
                             ]),
                           ),
                           trailing: const Icon(Icons.chevron_right, size: 16, color: AppTheme.textDim),
-                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RacerDetailScreen(racerId: s.racerId))),
+                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RacerDetailScreen(racerId: s.racerId, racerName: racerNames[s.racerId]))),
                         ),
                       ),
                     )),
@@ -192,6 +201,29 @@ class StandingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Bump this only if the chart's label font/padding changes; it is roughly the
+/// number of glyphs that fit under one of the eight bars at 10px without
+/// colliding with its neighbours.
+const int _barLabelMaxChars = 6;
+
+/// Chart axis labels have very little room, so use the full name when it is
+/// short, otherwise the first name, otherwise an ellipsized first name. Full
+/// names stay available on the stats rows below the chart.
+String _shortRacerName(String name) {
+  final full = name.trim();
+  if (full.length <= _barLabelMaxChars) return full;
+  final first = full.split(RegExp(r'\s+')).first;
+  if (first.length <= _barLabelMaxChars) return first;
+  return '${first.substring(0, _barLabelMaxChars - 1)}…';
+}
+
+/// Falls back to the previous `#<id>` label when the racer is unknown.
+String _barLabel(int id, Map<int, String> names) {
+  final name = names[id];
+  if (name == null) return '#$id';
+  return _shortRacerName(name);
 }
 
 Widget statChip(String label, int v, Color c) => Container(
@@ -260,21 +292,24 @@ class SeasonRoundsScreen extends ConsumerWidget {
 
 class RacerDetailScreen extends ConsumerWidget {
   final int racerId;
-  const RacerDetailScreen({super.key, required this.racerId});
+  final String? racerName;
+  const RacerDetailScreen({super.key, required this.racerId, this.racerName});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final name = racerName?.trim();
+    final title = (name == null || name.isEmpty) ? 'RACER #$racerId' : name;
     return FutureBuilder(
       future: ref.read(apiClientProvider).fetchRacerStatsById(racerId),
       builder: (context, snap) {
-        if (!snap.hasData) return Scaffold(backgroundColor: AppTheme.bg, appBar: AppBar(title: Text('RACER $racerId')), body: const Center(child: CircularProgressIndicator(color: AppTheme.accent)));
+        if (!snap.hasData) return Scaffold(backgroundColor: AppTheme.bg, appBar: AppBar(title: Text(title)), body: const Center(child: CircularProgressIndicator(color: AppTheme.accent)));
         final data = snap.data!;
         final stats = data['stats'] as Map<String, dynamic>?;
-        if (stats == null) return Scaffold(backgroundColor: AppTheme.bg, appBar: AppBar(title: Text('RACER $racerId')), body: const Center(child: Text('No stats', style: TextStyle(color: AppTheme.textDim))));
+        if (stats == null) return Scaffold(backgroundColor: AppTheme.bg, appBar: AppBar(title: Text(title)), body: const Center(child: Text('No stats', style: TextStyle(color: AppTheme.textDim))));
         final s = RacerStats.fromJson(stats);
         final other = (s.races - s.wins).clamp(0, 9999);
         return Scaffold(
           backgroundColor: AppTheme.bg,
-          appBar: AppBar(title: Text('RACER $racerId')),
+          appBar: AppBar(title: Text(title)),
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(children: [
