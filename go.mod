@@ -2,7 +2,7 @@ module heat
 
 go 1.26.10
 
-require github.com/mattn/go-sqlite3 v1.14.52
+require github.com/mattn/go-sqlite3 v1.14.53
 
 require (
 	entgo.io/ent v0.14.6
