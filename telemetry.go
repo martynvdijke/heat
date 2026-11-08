@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/log/global"
 	apiometrict "go.opentelemetry.io/otel/metric"
@@ -112,6 +113,13 @@ func metricsMiddleware() gin.HandlerFunc {
 // It reads OTel settings from standard OTEL_* env vars, falling back to database settings.
 // Returns a shutdown function to flush and close all providers.
 func initOTel(server *app.Server) func() {
+	// Prevent OTel export failures from recursing back into the log pipeline:
+	// slog.SetDefault redirects the standard library logger into OTel logs, so
+	// the default error handler (which uses log.Print) would loop on failures.
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		fmt.Fprintf(os.Stderr, "[OTEL] %v\n", err)
+	}))
+
 	// Set the global propagator so inbound W3C traceparent headers are
 	// extracted (otelgin) and outbound requests can be correlated. Without
 	// this the global default is a no-op and distributed traces are dropped.
@@ -142,8 +150,8 @@ func initOTel(server *app.Server) func() {
 	}
 
 	if endpoint == "" {
-		log.Printf("[OTEL] No OTLP endpoint configured, falling back to stdout exporter")
-		return initStdoutOTel(server.CurrentVersion)
+		log.Printf("[OTEL] No OTLP endpoint configured, using local exporters")
+		return initLocalOTel(server.CurrentVersion, tracesEnabled == 1, metricsEnabled == 1, logsEnabled == 1)
 	}
 
 	// Detect OTLP protocol (default: grpc)
@@ -153,17 +161,7 @@ func initOTel(server *app.Server) func() {
 	}
 
 	// Build resource from env (OTEL_RESOURCE_ATTRIBUTES, OTEL_SERVICE_NAME) and defaults
-	envRes, _ := resource.New(context.Background(),
-		resource.WithFromEnv(),
-	)
-	res := resource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceNameKey.String("heat"),
-		attribute.String("service.version", server.CurrentVersion),
-	)
-	// Merge(a, b) lets b win, so env-derived values (OTEL_SERVICE_NAME,
-	// OTEL_RESOURCE_ATTRIBUTES) take precedence over the code defaults.
-	mergedRes, _ := resource.Merge(res, envRes)
+	mergedRes := buildResource(server.CurrentVersion)
 
 	var shutdownFuncs []func()
 
@@ -336,11 +334,7 @@ func initOTel(server *app.Server) func() {
 			global.SetLoggerProvider(lp)
 
 			// Wire the OTel slog bridge so slog records flow through OTel logs with trace context
-			slogHandler := otelslog.NewHandler(
-				"heat",
-				otelslog.WithLoggerProvider(lp),
-			)
-			slog.SetDefault(slog.New(slogHandler))
+			setupSlogBridge(lp)
 			log.Printf("[OTEL] slog bridge initialized for log-to-trace correlation")
 
 			shutdownFuncs = append(shutdownFuncs, func() {
@@ -367,35 +361,164 @@ func initOTel(server *app.Server) func() {
 	}
 }
 
-// initStdoutOTel initializes OTel with a stdout trace exporter (fallback when no OTLP endpoint).
-func initStdoutOTel(version string) func() {
-	exporter, err := stdouttrace.New(
-		stdouttrace.WithPrettyPrint(),
-	)
-	if err != nil {
-		log.Printf("[OTEL] Failed to create stdout exporter: %v (continuing without OTel)", err)
-		return func() {}
+// initLocalOTel initializes the enabled OTel signals with local exporters when
+// no OTLP collector is configured: traces to stdout, metrics to the Prometheus
+// registry served at /metrics/prometheus, and logs to stdout. This keeps all
+// three pillars functional for local development and single-node deployments.
+func initLocalOTel(version string, tracesEnabled, metricsEnabled, logsEnabled bool) func() {
+	res := buildResource(version)
+
+	var shutdownFuncs []func()
+
+	// --- Traces ---
+	if tracesEnabled {
+		exporter, err := stdouttrace.New(
+			stdouttrace.WithPrettyPrint(),
+		)
+		if err != nil {
+			log.Printf("[OTEL] Failed to create stdout trace exporter: %v (traces disabled)", err)
+		} else {
+			tp := sdktrace.NewTracerProvider(
+				sdktrace.WithBatcher(exporter),
+				sdktrace.WithResource(res),
+			)
+			otel.SetTracerProvider(tp)
+			shutdownFuncs = append(shutdownFuncs, func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := tp.Shutdown(ctx); err != nil {
+					log.Printf("[OTEL] Error shutting down tracer provider: %v", err)
+				}
+			})
+			log.Printf("[OTEL] Local trace exporter initialized (stdout)")
+		}
 	}
 
+	// --- Metrics ---
+	if metricsEnabled {
+		promExporter, err := otelprometheus.New(
+			otelprometheus.WithRegisterer(prometheus.DefaultRegisterer),
+		)
+		if err != nil {
+			log.Printf("[OTEL] Failed to create Prometheus exporter: %v (metrics disabled)", err)
+		} else {
+			mp := metric.NewMeterProvider(
+				metric.WithReader(promExporter),
+				metric.WithResource(res),
+			)
+			otel.SetMeterProvider(mp)
+			shutdownFuncs = append(shutdownFuncs, func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := mp.Shutdown(ctx); err != nil {
+					log.Printf("[OTEL] Error shutting down meter provider: %v", err)
+				}
+			})
+			log.Printf("[OTEL] Local metric exporter initialized (prometheus)")
+		}
+	}
+
+	// --- Logs ---
+	if logsEnabled {
+		exporter, err := stdoutlog.New(
+			stdoutlog.WithPrettyPrint(),
+		)
+		if err != nil {
+			log.Printf("[OTEL] Failed to create stdout log exporter: %v (logs disabled)", err)
+		} else {
+			lp := sdklog.NewLoggerProvider(
+				sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
+				sdklog.WithResource(res),
+			)
+			global.SetLoggerProvider(lp)
+			setupSlogBridge(lp)
+			shutdownFuncs = append(shutdownFuncs, func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := lp.Shutdown(ctx); err != nil {
+					log.Printf("[OTEL] Error shutting down logger provider: %v", err)
+				}
+			})
+			log.Printf("[OTEL] Local log exporter initialized (stdout)")
+		}
+	}
+
+	log.Printf("[OTEL] OpenTelemetry initialized with local exporters (traces=%v metrics=%v logs=%v)",
+		tracesEnabled, metricsEnabled, logsEnabled)
+
+	return func() {
+		// Shutdown in reverse order (logs first, then metrics, then traces)
+		for i := len(shutdownFuncs) - 1; i >= 0; i-- {
+			shutdownFuncs[i]()
+		}
+	}
+}
+
+// buildResource builds the OTel resource from code defaults merged with
+// OTEL_SERVICE_NAME / OTEL_RESOURCE_ATTRIBUTES from the environment.
+func buildResource(version string) *resource.Resource {
+	envRes, _ := resource.New(context.Background(),
+		resource.WithFromEnv(),
+	)
 	res := resource.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String("heat"),
 		attribute.String("service.version", version),
 	)
+	// Merge(a, b) lets b win, so env-derived values take precedence.
+	merged, _ := resource.Merge(res, envRes)
+	return merged
+}
 
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(res),
-	)
+// setupSlogBridge routes slog records to both the OTel log pipeline and stderr.
+// The stderr handler keeps local console output intact when OTel logs are on.
+func setupSlogBridge(lp *sdklog.LoggerProvider) {
+	handlers := []slog.Handler{
+		slog.NewTextHandler(os.Stderr, nil),
+		otelslog.NewHandler("heat", otelslog.WithLoggerProvider(lp)),
+	}
+	slog.SetDefault(slog.New(fanoutHandler{handlers: handlers}))
+}
 
-	otel.SetTracerProvider(tp)
+// fanoutHandler forwards each record to every child handler that accepts it.
+// It is used to keep console logging while also exporting to OTel.
+type fanoutHandler struct {
+	handlers []slog.Handler
+}
 
-	log.Printf("[OTEL] OpenTelemetry initialized with stdout exporter")
-	return func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := tp.Shutdown(ctx); err != nil {
-			log.Printf("[OTEL] Error shutting down tracer provider: %v", err)
+func (f fanoutHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	for _, h := range f.handlers {
+		if h.Enabled(ctx, level) {
+			return true
 		}
 	}
+	return false
+}
+
+func (f fanoutHandler) Handle(ctx context.Context, r slog.Record) error {
+	for _, h := range f.handlers {
+		if !h.Enabled(ctx, r.Level) {
+			continue
+		}
+		if err := h.Handle(ctx, r.Clone()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f fanoutHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	handlers := make([]slog.Handler, len(f.handlers))
+	for i, h := range f.handlers {
+		handlers[i] = h.WithAttrs(attrs)
+	}
+	return fanoutHandler{handlers: handlers}
+}
+
+func (f fanoutHandler) WithGroup(name string) slog.Handler {
+	handlers := make([]slog.Handler, len(f.handlers))
+	for i, h := range f.handlers {
+		handlers[i] = h.WithGroup(name)
+	}
+	return fanoutHandler{handlers: handlers}
 }

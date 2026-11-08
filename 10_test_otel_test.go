@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,7 +13,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	otellog "go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/trace"
 	apitrace "go.opentelemetry.io/otel/trace"
 
@@ -27,6 +33,8 @@ func enableOTelSignals() {
 // TestInitOTelStdoutFallback verifies initOTel falls back to stdout exporter
 // when no OTLP endpoint is configured (DB has empty endpoint seeded by db.Init).
 func TestInitOTelStdoutFallback(t *testing.T) {
+	// The fallback (no OTLP endpoint) only initializes signals the DB enables.
+	enableOTelSignals()
 	os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	os.Unsetenv("OTEL_EXPORTER_OTLP_PROTOCOL")
 	os.Unsetenv("OTEL_TRACES_SAMPLER")
@@ -187,6 +195,8 @@ func TestTraceDBQueryHelper(t *testing.T) {
 // propagator, so inbound traceparent headers are honoured and outbound requests
 // can carry trace context.
 func TestTextMapPropagatorConfigured(t *testing.T) {
+	// A real (sampled) tracer provider is required for an injectable span context.
+	enableOTelSignals()
 	os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 
 	shutdown := initOTel(testServer)
@@ -205,5 +215,79 @@ func TestTextMapPropagatorConfigured(t *testing.T) {
 	extracted := otel.GetTextMapPropagator().Extract(context.Background(), carrier)
 	if got := apitrace.SpanContextFromContext(extracted); got.TraceID() != span.SpanContext().TraceID() {
 		t.Fatalf("injected and extracted trace IDs differ: %s != %s", got.TraceID(), span.SpanContext().TraceID())
+	}
+}
+
+// TestInitOTelLocalLogsProvider verifies the no-collector fallback initializes a
+// real OTel logger provider that pkg/logger can emit records through.
+func TestInitOTelLocalLogsProvider(t *testing.T) {
+	enableOTelSignals()
+	t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+
+	shutdown := initOTel(testServer)
+	defer shutdown()
+
+	lp, ok := global.GetLoggerProvider().(*sdklog.LoggerProvider)
+	if !ok {
+		t.Fatalf("expected SDK logger provider after local init, got %T", global.GetLoggerProvider())
+	}
+
+	// Emitting through the global provider must work (pkg/logger uses this path).
+	rec := otellog.Record{}
+	rec.SetBody(attribute.StringValue("otel-log-test"))
+	rec.SetSeverity(otellog.SeverityInfo)
+	lp.Logger("heat").Emit(context.Background(), rec)
+}
+
+// TestInitOTelOTLPAllSignalProviders verifies traces, metrics and logs all get
+// real SDK providers when an OTLP endpoint is configured.
+func TestInitOTelOTLPAllSignalProviders(t *testing.T) {
+	enableOTelSignals()
+	t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://127.0.0.1:1")
+	t.Setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "http")
+
+	shutdown := initOTel(testServer)
+	defer shutdown()
+
+	if _, ok := otel.GetTracerProvider().(*trace.TracerProvider); !ok {
+		t.Errorf("expected SDK tracer provider, got %T", otel.GetTracerProvider())
+	}
+	if _, ok := otel.GetMeterProvider().(*sdkmetric.MeterProvider); !ok {
+		t.Errorf("expected SDK meter provider, got %T", otel.GetMeterProvider())
+	}
+	if _, ok := global.GetLoggerProvider().(*sdklog.LoggerProvider); !ok {
+		t.Errorf("expected SDK logger provider, got %T", global.GetLoggerProvider())
+	}
+}
+
+// recordingHandler is a slog.Handler that records messages for assertions.
+type recordingHandler struct {
+	messages []string
+}
+
+func (r *recordingHandler) Enabled(context.Context, slog.Level) bool { return true }
+
+func (r *recordingHandler) Handle(_ context.Context, rec slog.Record) error {
+	r.messages = append(r.messages, rec.Message)
+	return nil
+}
+
+func (r *recordingHandler) WithAttrs([]slog.Attr) slog.Handler { return r }
+func (r *recordingHandler) WithGroup(string) slog.Handler      { return r }
+
+// TestFanoutHandlerForwardsToAllHandlers verifies the slog fanout used by
+// setupSlogBridge delivers records to the console and OTel handlers alike.
+func TestFanoutHandlerForwardsToAllHandlers(t *testing.T) {
+	console := &recordingHandler{}
+	otelHandler := &recordingHandler{}
+	logger := slog.New(fanoutHandler{handlers: []slog.Handler{console, otelHandler}})
+
+	logger.Info("hello")
+
+	if len(console.messages) != 1 {
+		t.Errorf("console handler received %d records, want 1", len(console.messages))
+	}
+	if len(otelHandler.messages) != 1 {
+		t.Errorf("otel handler received %d records, want 1", len(otelHandler.messages))
 	}
 }
