@@ -375,6 +375,10 @@ func main() {
 
 	r.GET("/api/racers", h.GetRacers)
 
+	// Public read of the telemetry endpoint so mobile clients can configure
+	// OTLP at runtime. Writing the settings stays admin-only.
+	r.GET("/api/otel-settings", h.GetOTelSettings)
+
 	// Authoritative race clock/lap state. Reads are public; transitions require
 	// a controller (admin) session.
 	r.GET("/api/race/state", h.GetRaceState)
@@ -408,7 +412,6 @@ func main() {
 		admin.DELETE("/oneoff-races", h.DeleteOneOffRace)
 		admin.GET("/umami-settings", h.GetUmamiSettings)
 		admin.POST("/umami-settings", h.SaveUmamiSettings)
-		admin.GET("/otel-settings", h.GetOTelSettings)
 		admin.POST("/otel-settings", h.SaveOTelSettings)
 		admin.GET("/wled-settings", h.GetWLEDSettings)
 		admin.POST("/wled-settings", h.SaveWLEDSettings)
