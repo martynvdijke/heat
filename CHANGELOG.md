@@ -1,3 +1,10 @@
+# [1.78.0](https://github.com/martynvdijke/heat/compare/v1.77.1...v1.78.0) (2026-11-08)
+
+
+### Features
+
+* **mobile:** add OpenTelemetry tracing with runtime endpoint from API ([f931e47](https://github.com/martynvdijke/heat/commit/f931e4720b7b7dce60881335b6a0c64dd2d51934))
+
 ## [1.77.1](https://github.com/martynvdijke/heat/compare/v1.77.0...v1.77.1) (2026-11-08)
 
 
