@@ -1,3 +1,10 @@
+## [1.77.1](https://github.com/martynvdijke/heat/compare/v1.77.0...v1.77.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **observability:** complete OpenTelemetry traces, metrics, and logs support ([83ef277](https://github.com/martynvdijke/heat/commit/83ef277d0d4794a8f63d7bc5571a8c12eca6c8b1))
+
 # [1.77.0](https://github.com/martynvdijke/heat/compare/v1.76.2...v1.77.0) (2026-11-06)
 
 
