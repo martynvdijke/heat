@@ -1,3 +1,10 @@
+## [1.78.1](https://github.com/martynvdijke/heat/compare/v1.78.0...v1.78.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **renovate:** disable platform automerge so Renovate merges green PRs itself ([a2ce022](https://github.com/martynvdijke/heat/commit/a2ce022c6262fe70da1d90471fc32d6fb8dd2127))
+
 # [1.78.0](https://github.com/martynvdijke/heat/compare/v1.77.1...v1.78.0) (2026-11-08)
 
 
