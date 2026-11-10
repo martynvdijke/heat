@@ -341,11 +341,13 @@ class ApiClient {
     final data = res.data;
     if (data is Map<String, dynamic>) {
       // Could be { ... snapshot ... } or wrapper
-      if (data.containsKey('id') && data.containsKey('scores'))
+      if (data.containsKey('id') && data.containsKey('scores')) {
         return RoundSnapshot.fromJson(data);
+      }
       // If list with single?
-      if (data.containsKey('snapshot'))
+      if (data.containsKey('snapshot')) {
         return RoundSnapshot.fromJson(data['snapshot'] as Map<String, dynamic>);
+      }
     }
     if (data is List && data.isNotEmpty) {
       return RoundSnapshot.fromJson(data.first as Map<String, dynamic>);
@@ -359,10 +361,11 @@ class ApiClient {
       queryParameters: {'season_id': seasonId},
     );
     final data = res.data;
-    if (data is List)
+    if (data is List) {
       return data
           .map((e) => RoundSnapshot.fromJson(e as Map<String, dynamic>))
           .toList();
+    }
     if (data is Map<String, dynamic> && data['rounds'] is List) {
       return (data['rounds'] as List)
           .map((e) => RoundSnapshot.fromJson(e as Map<String, dynamic>))

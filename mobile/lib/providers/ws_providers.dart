@@ -105,16 +105,19 @@ class LiveNotifier extends StateNotifier<LiveState> {
     List<Racer>? racers;
     List<Standing>? standings;
     RaceState? rs;
-    if (snap['racers'] is List)
+    if (snap['racers'] is List) {
       racers = (snap['racers'] as List)
           .map((e) => Racer.fromJson(e as Map<String, dynamic>))
           .toList();
-    if (snap['standings'] is List)
+    }
+    if (snap['standings'] is List) {
       standings = (snap['standings'] as List)
           .map((e) => Standing.fromJson(e as Map<String, dynamic>))
           .toList();
-    if (snap['race_state'] is Map<String, dynamic>)
+    }
+    if (snap['race_state'] is Map<String, dynamic>) {
       rs = RaceState.fromJson(snap['race_state'] as Map<String, dynamic>);
+    }
     state = state.copyWith(
       racers: racers,
       standings: standings,

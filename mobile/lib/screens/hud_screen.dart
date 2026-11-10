@@ -54,9 +54,10 @@ class _HudScreenState extends ConsumerState<HudScreen>
           .read(apiClientProvider)
           .postRaceAction(action, totalLaps: action == 'start' ? 10 : null);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Race action failed: $e')));
+      }
     }
   }
 
@@ -451,12 +452,13 @@ class _GapCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLead = gap.toUpperCase() == 'LEAD';
     final isEmpty = gap.trim().isEmpty;
-    if (isEmpty)
+    if (isEmpty) {
       return const Text(
         '—',
         textAlign: TextAlign.right,
         style: TextStyle(color: AppTheme.textDim, fontSize: 12),
       );
+    }
     if (isLead) {
       return Container(
         alignment: Alignment.centerRight,
